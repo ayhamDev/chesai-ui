@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "vite-component-library-template",
+      "name": "chesai-ui",
       "dependencies": {
         "react": "19.1.0",
         "react-dom": "19.1.0",

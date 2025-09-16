@@ -1,28 +1,28 @@
 {
-  "name": "vite-component-library-template",
+  "name": "chesai-ui",
   "private": false,
   "version": "3.0.1",
   "packageManager": "pnpm@10.12.1",
   "repository": {
     "type": "git",
-    "url": "https://github.com/IgnacioNMiranda/vite-component-library-template"
+    "url": "https://github.com/ayhamdev/chesai-ui"
   },
-  "main": "./dist/vite-component-library-template.umd.js",
-  "module": "./dist/vite-component-library-template.es.js",
+  "main": "./dist/chesai-ui.umd.js",
+  "module": "./dist/chesai-ui.es.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/vite-component-library-template.es.js",
-      "require": "./dist/vite-component-library-template.umd.js"
+      "import": "./dist/chesai-ui.es.js",
+      "require": "./dist/chesai-ui.umd.js"
     },
-    "./styles.css": "./dist/vite-component-library-template.css"
+    "./styles.css": "./dist/chesai-ui.css"
   },
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "dev": "storybook dev -p 6006",
+    "dev": "storybook dev -p 8000",
     "build": "storybook build",
     "build:lib": "tsc && vite build",
     "lint": "npx @biomejs/biome lint --write ./src",
