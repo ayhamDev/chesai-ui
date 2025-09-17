@@ -71,7 +71,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const [, event] = useRipple({
       ref: rippleRef,
       color: rippleColor,
-      duration: 600,
+      duration: 400,
       disabled: disabled,
     });
     return (
