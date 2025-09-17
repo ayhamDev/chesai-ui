@@ -1,1 +1,35 @@
-@import 'tailwindcss';
+/* src\lib\tailwind\theme.css */
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+@import "tailwindcss";
+@theme {
+    --font-manrope: manrope, sans-serif;
+      /* Graphite Color Theme Definitions */
+  --color-graphite-primary: hsl(0 0% 9%);            /* #171717 */
+  --color-graphite-primaryForeground: hsl(0 0% 98%);  /* #FAFAFA */
+  --color-graphite-secondary: hsl(0 0% 96.1%);       /* #F5F5F5 */
+  --color-graphite-secondaryForeground: hsl(0 0% 9%); /* #171717 */
+  --color-graphite-background: hsl(33 33% 98%);      /* #FDFBFA */
+  --color-graphite-foreground: hsl(0 0% 9%);         /* #171717 */
+  --color-graphite-card: hsl(0 0% 100%);             /* #FFFFFF */
+  --color-graphite-cardForeground: hsl(0 0% 9%);
+  --color-graphite-border: hsl(0 0% 93%);            /* #EDEDED */
+  --color-graphite-ring: hsl(0 0% 9%);
+
+}
+@layer base {
+
+
+  body {
+    @apply font-manrope  text-gray-900;
+  }
+}
+
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}

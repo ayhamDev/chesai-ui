@@ -32,8 +32,12 @@
     "prepack": "json -f package.json -I -e \"delete this.devDependencies; delete this.dependencies\""
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "framer-motion": "^12.23.13",
+    "lucide-react": "^0.544.0",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "use-ripple-hook": "^1.0.24"
   },
   "devDependencies": {
     "@babel/core": "7.27.4",

@@ -1,4 +1,10 @@
 {
+  "tailwindCSS.experimental.classRegex": [
+    ["variants \\=([^;]*);", "'([^']*)'"],
+    ["variants \\=([^;]*);", "\"([^\"]*)\""],
+    ["variants \\=([^;]*);", "\\`([^\\`]*)\\`"],
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ],
   "[javascript]": {
     "editor.defaultFormatter": "biomejs.biome",
     "editor.formatOnSave": true,
@@ -17,6 +23,6 @@
   },
   "[json]": {
     "editor.defaultFormatter": "biomejs.biome",
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": true
   }
 }
