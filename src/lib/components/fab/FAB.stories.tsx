@@ -77,7 +77,7 @@ export const InteractiveAnimation: Story = {
     const [isExtended, setIsExtended] = useState(false);
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 flex flex-col">
         <p>Click the button below to see the smooth FAB animation.</p>
         <Button
           variant="secondary"
