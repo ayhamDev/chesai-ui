@@ -353,7 +353,7 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       >
         <motion.div
           ref={mainRowRef}
-          className="flex w-full items-center"
+          className="flex w-full items-center "
           style={{ height: headerRowHeight }}
         >
           <div className="flex flex-1 items-center gap-2 px-4 min-w-0">
@@ -379,7 +379,7 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
             </div>
           </div>
           {centerAdornment && (
-            <div className="flex justify-center items-center min-w-max">
+            <div className="flex justify-center items-center min-w-max flex-1 ">
               {centerAdornment}
             </div>
           )}

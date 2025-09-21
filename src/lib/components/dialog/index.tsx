@@ -1,7 +1,7 @@
 // src/components/dialog/index.tsx
 import { clsx } from "clsx";
 import FocusTrap from "focus-trap-react";
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { AnimatePresence, motion, type Variants } from "motion/react";
 import React, {
   createContext,
   useContext,
@@ -97,69 +97,80 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
 );
 DialogTrigger.displayName = "DialogTrigger";
 
-// --- ANIMATION VARIANTS (UPDATED) ---
+// --- OPTIMIZED ANIMATION VARIANTS ---
 const basicDialogVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.2,
+      ease: [0.4, 0, 0.2, 1], // Use cubic-bezier instead of spring
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.96,
+    transition: {
+      duration: 0.15,
+      ease: [0.4, 0, 1, 1],
+    },
+  },
 };
 
+// Optimized fullscreen variants - use transform3d and will-change
 const fullscreenDialogVariants: Variants = {
   hidden: {
     y: "100%",
-    borderRadius: "28px 28px 0px 0px",
+    scale: 0.9,
     opacity: 0,
-    scale: 0.92,
   },
   visible: {
     y: "0%",
-    borderRadius: "0px",
-    opacity: 1,
     scale: 1,
+    opacity: 1,
     transition: {
-      type: "spring",
-      damping: 30,
-      stiffness: 300,
-      mass: 0.8,
-      when: "beforeChildren",
-      staggerChildren: 0.05,
+      duration: 0.3,
+      ease: [0.4, 0, 0.2, 1], // Cubic bezier instead of spring
     },
   },
   exit: {
-    y: "70%",
+    y: "100%",
+    scale: 0.9,
     opacity: 0,
-    borderRadius: "28px 28px 0px 0px",
-    scale: 0.95,
     transition: {
-      type: "spring",
-      damping: 25,
-      stiffness: 300,
-      mass: 0.6,
+      duration: 0.25,
+      ease: [0.4, 0, 1, 1],
     },
-  },
-};
-const fullscreenBackdropVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 0.6,
-    transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-  },
-  exit: {
-    opacity: 0,
-    transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
-  },
-};
-const contentItemVariants: Variants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { type: "spring", damping: 25, stiffness: 400, mass: 0.5 },
   },
 };
 
-// --- CONTENT (UPDATED FOR SCROLLING) ---
+// Simplified backdrop variants
+const backdropVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.2 },
+  },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.15 },
+  },
+};
+
+// Simplified content variants - removed stagger for better performance
+const contentVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.2,
+      delay: 0.1, // Simple delay instead of stagger
+    },
+  },
+};
+
+// --- CONTENT (OPTIMIZED) ---
 export interface DialogContentProps
   extends React.HTMLAttributes<HTMLDivElement> {
   shape?: CardProps["shape"];
@@ -171,17 +182,21 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
     useEffect(() => {
       if (open) {
-        // Only prevent body scroll for basic dialogs
         if (variant === "basic") {
           document.body.style.overflow = "hidden";
         }
         if (variant === "fullscreen") {
           document.body.style.overscrollBehavior = "none";
+          // Disable iOS bounce scrolling
+          document.body.style.position = "fixed";
+          document.body.style.width = "100%";
         }
       }
       return () => {
         document.body.style.overflow = "";
         document.body.style.overscrollBehavior = "";
+        document.body.style.position = "";
+        document.body.style.width = "";
       };
     }, [open, variant]);
 
@@ -189,7 +204,9 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
     return (
       <Portal>
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
+          {" "}
+          {/* Use wait mode for better performance */}
           {open && (
             <FocusTrap
               active={open}
@@ -207,26 +224,21 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                 )}
                 {...props}
               >
+                {/* Backdrop */}
                 <motion.div
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  variants={
-                    isFullscreen
-                      ? fullscreenBackdropVariants
-                      : {
-                          hidden: { opacity: 0 },
-                          visible: { opacity: 1 },
-                          exit: { opacity: 0 },
-                        }
-                  }
-                  transition={{ ease: [0.4, 0, 0.2, 1], duration: 0.3 }}
+                  variants={backdropVariants}
                   className={clsx(
                     "absolute inset-0",
                     isFullscreen ? "bg-black/40" : "bg-black/50"
                   )}
                   onClick={() => !isFullscreen && onOpenChange(false)}
+                  style={{ willChange: "opacity" }} // Optimize for opacity changes
                 />
+
+                {/* Dialog */}
                 <motion.div
                   role="dialog"
                   aria-modal="true"
@@ -240,43 +252,35 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  transition={
-                    !isFullscreen
-                      ? { ease: [0.4, 0, 0.2, 1], duration: 0.3 }
-                      : undefined
-                  }
                   className={clsx(
                     "relative z-10 flex flex-col",
                     isFullscreen
-                      ? "h-full w-full overflow-hidden bg-graphite-card shadow-2xl"
+                      ? "h-full w-full bg-graphite-card shadow-2xl"
                       : "w-full max-w-lg",
                     className
                   )}
-                  style={
-                    isFullscreen
-                      ? {
-                          willChange: "transform, border-radius",
-                          backfaceVisibility: "hidden",
-                        }
-                      : undefined
-                  }
+                  style={{
+                    // Optimize for transforms
+                    willChange: isFullscreen
+                      ? "transform, opacity"
+                      : "transform, opacity",
+                    backfaceVisibility: "hidden",
+                    // Use transform3d for hardware acceleration
+                    transform: "translate3d(0, 0, 0)",
+                  }}
                 >
                   {isFullscreen ? (
                     <motion.div
-                      className="flex h-full flex-col overflow-hidden"
+                      className="flex h-full flex-col"
                       initial="hidden"
                       animate="visible"
-                      variants={{
-                        visible: {
-                          transition: {
-                            staggerChildren: 0.08,
-                            delayChildren: 0.1,
-                          },
-                        },
+                      variants={contentVariants}
+                      style={{
+                        willChange: "opacity",
+                        transform: "translate3d(0, 0, 0)", // Force hardware acceleration
                       }}
                     >
                       {React.Children.map(children, (child, index) => {
-                        // Check if this is the last child (content area) to make it scrollable
                         const isLastChild =
                           index === React.Children.count(children) - 1;
                         const isHeader =
@@ -286,26 +290,33 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                           React.isValidElement(child) &&
                           child.type === DialogFooter;
 
+                        // No individual motion.div wrappers for better performance
                         return (
-                          <motion.div
+                          <div
                             key={index}
-                            variants={contentItemVariants}
                             className={clsx(
                               "flex-shrink-0",
-                              // Make the main content area scrollable
                               !isHeader &&
                                 !isFooter &&
                                 isLastChild &&
                                 "flex-1 overflow-y-auto",
-                              // If it's not header/footer but also not last, still allow it to grow
                               !isHeader &&
                                 !isFooter &&
                                 !isLastChild &&
                                 "flex-1 flex flex-col"
                             )}
+                            style={{
+                              // Add scroll optimization for content areas
+                              ...(!isHeader &&
+                                !isFooter &&
+                                isLastChild && {
+                                  WebkitOverflowScrolling: "touch", // iOS momentum scrolling
+                                  overscrollBehavior: "contain", // Prevent overscroll
+                                }),
+                            }}
                           >
                             {child}
-                          </motion.div>
+                          </div>
                         );
                       })}
                     </motion.div>
@@ -328,7 +339,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 );
 DialogContent.displayName = "DialogContent";
 
-// --- CLOSE and HELPER Components (Updated DialogHeader for fullscreen scrolling) ---
+// --- CLOSE and HELPER Components (Optimized) ---
 interface DialogCloseProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
@@ -365,10 +376,17 @@ const DialogHeader = (props: React.HTMLAttributes<HTMLDivElement>) => {
           "px-6 py-4",
           "bg-graphite-card/95 backdrop-blur-sm",
           "bg-gradient-to-r from-graphite-card to-graphite-card/95",
-          "sticky top-0 z-10", // Make header sticky
+          "sticky top-0 z-10",
         ],
         props.className
       )}
+      style={{
+        // Optimize sticky positioning
+        ...(variant === "fullscreen" && {
+          willChange: "transform",
+          transform: "translate3d(0, 0, 0)",
+        }),
+      }}
       {...props}
     />
   );
@@ -387,10 +405,17 @@ const DialogFooter = (props: React.HTMLAttributes<HTMLDivElement>) => {
           "border-t border-graphite-border/80",
           "px-6 py-4",
           "bg-graphite-card/95 backdrop-blur-sm",
-          "sticky bottom-0 z-10", // Make footer sticky
+          "sticky bottom-0 z-10",
         ],
         props.className
       )}
+      style={{
+        // Optimize sticky positioning
+        ...(variant === "fullscreen" && {
+          willChange: "transform",
+          transform: "translate3d(0, 0, 0)",
+        }),
+      }}
       {...props}
     />
   );
@@ -429,7 +454,7 @@ const DialogDescription = React.forwardRef<
 });
 DialogDescription.displayName = "DialogDescription";
 
-// --- NEW: Scrollable Content Area Component ---
+// --- Optimized Scrollable Content Area ---
 const DialogBody = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -443,6 +468,15 @@ const DialogBody = React.forwardRef<
         variant === "basic" && "flex-1",
         props.className
       )}
+      style={{
+        // Optimize scrolling performance
+        ...(variant === "fullscreen" && {
+          WebkitOverflowScrolling: "touch", // iOS momentum scrolling
+          overscrollBehavior: "contain", // Prevent overscroll bounce
+          willChange: "scroll-position",
+          transform: "translate3d(0, 0, 0)", // Force hardware acceleration
+        }),
+      }}
       {...props}
     />
   );

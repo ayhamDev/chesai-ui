@@ -1,10 +1,9 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import React from "react";
 import useRipple from "use-ripple-hook";
-import { BouncyBox } from "../bouncy-box";
 
 const buttonVariants = cva(
-  "font-semibold cursor-pointer  focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden",
+  "font-semibold cursor-pointer min-w-max focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden",
   {
     variants: {
       variant: {
