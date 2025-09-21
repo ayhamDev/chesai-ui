@@ -1,11 +1,11 @@
 import React from "react";
 import { clsx } from "clsx";
-import { Check } from "lucide-react"; // We can use the Check icon for the inner dot
 
 // --- Individual Radio Item ---
 export interface RadioGroupItemProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  value?: string; // Added explicit value prop
 }
 
 const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
@@ -86,36 +86,33 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
     return (
       <div className="flex flex-col gap-2">
         {label && (
-          <label
+          <div
             id={labelId}
             className="mb-2 block text-sm font-medium text-graphite-primary"
           >
             {label}
-          </label>
+          </div>
         )}
         <div
           ref={ref}
           role="radiogroup"
-          aria-labelledby={labelId}
+          aria-labelledby={label ? labelId : undefined}
           className={clsx("flex flex-col gap-3", className)}
           {...props}
         >
           {React.Children.map(children, (child) => {
-            if (!React.isValidElement(child)) return child;
+            if (!React.isValidElement<RadioGroupItemProps>(child)) return child;
 
             // Inject props into each RadioGroup.Item
-            return React.cloneElement(
-              child as React.ReactElement<RadioGroupItemProps>,
-              {
-                name: groupName,
-                checked: child.props.value === value,
-                disabled: disabled || child.props.disabled,
-                onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                  onValueChange?.(e.currentTarget.value);
-                  child.props.onChange?.(e);
-                },
-              }
-            );
+            return React.cloneElement(child, {
+              name: groupName,
+              checked: child.props.value === value,
+              disabled: disabled || child.props.disabled,
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                onValueChange?.(e.currentTarget.value);
+                child.props.onChange?.(e);
+              },
+            });
           })}
         </div>
       </div>

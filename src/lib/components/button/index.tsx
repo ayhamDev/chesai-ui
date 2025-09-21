@@ -4,7 +4,7 @@ import useRipple from "use-ripple-hook";
 import { BouncyBox } from "../bouncy-box";
 
 const buttonVariants = cva(
-  "font-semibold focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden",
+  "font-semibold cursor-pointer  focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden",
   {
     variants: {
       variant: {
@@ -76,25 +76,21 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       disabled: disabled,
     });
     return (
-      <BouncyBox scaleAmount={0.95}>
-        <button
-          className={buttonVariants({ variant, size, shape, className })}
-          ref={localRef}
-          onPointerDown={event}
-          disabled={disabled}
-          {...props}
-        >
-          <span className="relative z-10 flex items-center justify-center">
-            {startIcon && (
-              <span className="mr-2 flex items-center">{startIcon}</span>
-            )}
-            {children}
-            {endIcon && (
-              <span className="ml-2 flex items-center">{endIcon}</span>
-            )}
-          </span>
-        </button>
-      </BouncyBox>
+      <button
+        className={buttonVariants({ variant, size, shape, className })}
+        ref={localRef}
+        onPointerDown={event}
+        disabled={disabled}
+        {...props}
+      >
+        <span className="relative z-10 flex items-center justify-center">
+          {startIcon && (
+            <span className="mr-2 flex items-center">{startIcon}</span>
+          )}
+          {children}
+          {endIcon && <span className="ml-2 flex items-center">{endIcon}</span>}
+        </span>
+      </button>
     );
   }
 );

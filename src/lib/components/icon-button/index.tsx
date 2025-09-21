@@ -1,7 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import React from "react";
 import useRipple from "use-ripple-hook";
-import { BouncyBox } from "../bouncy-box";
 
 const iconButtonVariants = cva(
   "font-semibold focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden p-0",
@@ -59,17 +58,15 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       disabled: disabled,
     });
     return (
-      <BouncyBox scaleAmount={0.95}>
-        <button
-          className={iconButtonVariants({ variant, size, shape, className })}
-          ref={localRef}
-          onPointerDown={event}
-          disabled={disabled}
-          {...props}
-        >
-          <span className="relative z-10">{children}</span>
-        </button>
-      </BouncyBox>
+      <button
+        className={iconButtonVariants({ variant, size, shape, className })}
+        ref={localRef}
+        onPointerDown={event}
+        disabled={disabled}
+        {...props}
+      >
+        <span className="relative z-10">{children}</span>
+      </button>
     );
   }
 );

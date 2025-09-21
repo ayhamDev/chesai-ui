@@ -33,8 +33,10 @@
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.16",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@uidotdev/usehooks": "^2.4.1",
     "class-variance-authority": "^0.7.1",
+    "focus-trap-react": "^11.0.4",
     "framer-motion": "^12.23.13",
     "lucide-react": "^0.544.0",
     "react": "19.1.0",

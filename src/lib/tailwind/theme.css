@@ -15,6 +15,38 @@
   --color-graphite-border: hsl(0 0% 93%);            /* #EDEDED */
   --color-graphite-ring: hsl(0 0% 9%);
 
+    /* ======================================================================= */
+  /* MATERIAL DESIGN MOTION TOKENS (Web Curve Conversion)                      */
+  /* ======================================================================= */
+
+  /* --- EASING (Transition Timing Function) --- */
+  --ease-expressive-fast: cubic-bezier(0.42, 1.67, 0.21, 0.90);
+  --ease-expressive-default: cubic-bezier(0.38, 1.21, 0.22, 1.00);
+  --ease-expressive-slow: cubic-bezier(0.39, 1.29, 0.35, 0.98);
+  
+  --ease-standard-fast: cubic-bezier(0.27, 1.06, 0.18, 1.00);
+  --ease-standard-default: cubic-bezier(0.27, 1.06, 0.18, 1.00);
+  --ease-standard-slow: cubic-bezier(0.27, 1.06, 0.18, 1.00);
+  
+  /* Note: 'effects' curves are for non-spatial animations like opacity */
+  --ease-effects-fast: cubic-bezier(0.31, 0.94, 0.34, 1.00);
+  --ease-effects-default: cubic-bezier(0.34, 0.80, 0.34, 1.00);
+  --ease-effects-slow: cubic-bezier(0.34, 0.88, 0.34, 1.00);
+
+  /* --- DURATION (Transition Duration) --- */
+  --duration-expressive-fast: 350ms;
+  --duration-expressive-default: 500ms;
+  --duration-expressive-slow: 650ms;
+
+  --duration-standard-fast: 350ms;
+  --duration-standard-default: 500ms;
+  --duration-standard-slow: 750ms;
+
+  --duration-effects-fast: 150ms;
+  --duration-effects-default: 200ms;
+  --duration-effects-slow: 300ms;
+
+
 }
 @layer base {
 
@@ -31,10 +63,11 @@ input::-webkit-inner-spin-button {
   margin: 0;
 }
 input[type="number"] {
-  -moz-appearance: textfield;
+  -moz-appearance: none;
 }
 @media only screen and (hover: none) and (pointer: coarse) {
   * {
+    cursor: default !important;
     user-select: none;
     -ms-user-select: none;
     -moz-user-select: none;
