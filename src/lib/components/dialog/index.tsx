@@ -97,80 +97,112 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
 );
 DialogTrigger.displayName = "DialogTrigger";
 
-// --- OPTIMIZED ANIMATION VARIANTS ---
+// --- NATIVE iOS-STYLE ANIMATION VARIANTS ---
+// iOS modal presentation uses a subtle scale with spring physics
 const basicDialogVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.96 },
+  hidden: {
+    opacity: 0,
+    scale: 0.95,
+  },
   visible: {
     opacity: 1,
     scale: 1,
     transition: {
-      duration: 0.2,
-      ease: [0.4, 0, 0.2, 1], // Use cubic-bezier instead of spring
+      duration: 0.3,
+      ease: [0.2, 0, 0, 1], // Material Design "Emphasized" curve
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.96,
+    scale: 0.95,
     transition: {
-      duration: 0.15,
-      ease: [0.4, 0, 1, 1],
+      duration: 0.2,
+      ease: [0.4, 0, 1, 1], // Material Design "Accelerate" curve
     },
   },
 };
 
-// Optimized fullscreen variants - use transform3d and will-change
+// Material You fullscreen dialog - slides up from bottom with deceleration
 const fullscreenDialogVariants: Variants = {
   hidden: {
-    y: "100%",
-    scale: 0.9,
-    opacity: 0,
+    y: "100%", // Start completely off-screen
+    opacity: 0, // Material You doesn't fade the dialog itself
   },
   visible: {
     y: "0%",
-    scale: 1,
     opacity: 1,
+
     transition: {
-      duration: 0.3,
-      ease: [0.4, 0, 0.2, 1], // Cubic bezier instead of spring
+      duration: 0.35, // Material You standard duration
+      ease: [0.2, 0.7, 0.1, 1], // Material You emphasized decelerate
     },
   },
   exit: {
     y: "100%",
-    scale: 0.9,
-    opacity: 0,
+    opacity: 0.2, // Keep opaque during exit
+    transition: {
+      duration: 0.2, // Slightly faster exit
+      ease: [0.2, 0.2, 0.5, 1], // Material You emphasized decelerate
+    },
+  },
+};
+
+// iOS backdrop - quick fade
+const iosBackdropVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
     transition: {
       duration: 0.25,
+      ease: [0.25, 0.46, 0.45, 0.94], // iOS ease curve
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: {
+      duration: 0.2,
+      ease: [0.25, 0.46, 0.45, 0.94],
+    },
+  },
+};
+
+// Material You backdrop - slower, more pronounced fade
+const materialBackdropVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.25,
+      ease: [0.4, 0, 0.2, 1], // Material You standard
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: {
+      duration: 0.2,
       ease: [0.4, 0, 1, 1],
     },
   },
 };
 
-// Simplified backdrop variants
-const backdropVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { duration: 0.2 },
-  },
-  exit: {
+// Content animation for fullscreen - delayed appearance
+const materialContentVariants: Variants = {
+  hidden: {
     opacity: 0,
-    transition: { duration: 0.15 },
+    y: 8, // Slight upward movement
   },
-};
-
-// Simplified content variants - removed stagger for better performance
-const contentVariants: Variants = {
-  hidden: { opacity: 0 },
   visible: {
     opacity: 1,
+    y: 0,
     transition: {
-      duration: 0.2,
-      delay: 0.1, // Simple delay instead of stagger
+      duration: 0.25,
+      delay: 0.1, // Delay for staggered effect
+      ease: [0.4, 0, 0.2, 1],
     },
   },
 };
 
-// --- CONTENT (OPTIMIZED) ---
+// --- CONTENT (ENHANCED WITH NATIVE TRANSITIONS) ---
 export interface DialogContentProps
   extends React.HTMLAttributes<HTMLDivElement> {
   shape?: CardProps["shape"];
@@ -186,10 +218,9 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
           document.body.style.overflow = "hidden";
         }
         if (variant === "fullscreen") {
+          document.body.style.overflow = "hidden";
           document.body.style.overscrollBehavior = "none";
-          // Disable iOS bounce scrolling
-          document.body.style.position = "fixed";
-          document.body.style.width = "100%";
+          // Material You doesn't fix position, just prevents scroll
         }
       }
       return () => {
@@ -201,12 +232,13 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
     }, [open, variant]);
 
     const isFullscreen = variant === "fullscreen";
+    const backdropVariants = isFullscreen
+      ? materialBackdropVariants
+      : iosBackdropVariants;
 
     return (
       <Portal>
         <AnimatePresence mode="wait">
-          {" "}
-          {/* Use wait mode for better performance */}
           {open && (
             <FocusTrap
               active={open}
@@ -220,7 +252,9 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                 ref={ref}
                 className={clsx(
                   "fixed inset-0 z-50 flex",
-                  !isFullscreen && "items-center justify-center p-4 sm:p-8"
+                  !isFullscreen && "items-center justify-center p-4 sm:p-8",
+                  isFullscreen &&
+                    "items-end sm:items-center sm:justify-center sm:p-8"
                 )}
                 {...props}
               >
@@ -232,10 +266,11 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                   variants={backdropVariants}
                   className={clsx(
                     "absolute inset-0",
-                    isFullscreen ? "bg-black/40" : "bg-black/50"
+                    // Material You uses lighter scrim
+                    isFullscreen ? "bg-black/32" : "bg-black/50"
                   )}
-                  onClick={() => !isFullscreen && onOpenChange(false)}
-                  style={{ willChange: "opacity" }} // Optimize for opacity changes
+                  onClick={() => onOpenChange(false)}
+                  style={{ willChange: "opacity" }}
                 />
 
                 {/* Dialog */}
@@ -255,29 +290,31 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                   className={clsx(
                     "relative z-10 flex flex-col",
                     isFullscreen
-                      ? "h-full w-full bg-graphite-card shadow-2xl"
+                      ? [
+                          "w-full bg-white shadow-2xl",
+                          // Material You fullscreen on mobile, dialog on desktop
+                          "h-full sm:h-auto sm:max-h-[90vh] sm:w-full sm:max-w-2xl",
+                          "sm:rounded-3xl", // Material You large corner radius
+                          "overflow-hidden",
+                        ]
                       : "w-full max-w-lg",
                     className
                   )}
                   style={{
-                    // Optimize for transforms
-                    willChange: isFullscreen
-                      ? "transform, opacity"
-                      : "transform, opacity",
+                    willChange: "transform, opacity",
                     backfaceVisibility: "hidden",
-                    // Use transform3d for hardware acceleration
                     transform: "translate3d(0, 0, 0)",
                   }}
                 >
                   {isFullscreen ? (
                     <motion.div
-                      className="flex h-full flex-col"
+                      className="flex h-full flex-col sm:h-auto"
                       initial="hidden"
                       animate="visible"
-                      variants={contentVariants}
+                      variants={materialContentVariants}
                       style={{
                         willChange: "opacity",
-                        transform: "translate3d(0, 0, 0)", // Force hardware acceleration
+                        transform: "translate3d(0, 0, 0)",
                       }}
                     >
                       {React.Children.map(children, (child, index) => {
@@ -290,7 +327,6 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                           React.isValidElement(child) &&
                           child.type === DialogFooter;
 
-                        // No individual motion.div wrappers for better performance
                         return (
                           <div
                             key={index}
@@ -306,12 +342,11 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                                 "flex-1 flex flex-col"
                             )}
                             style={{
-                              // Add scroll optimization for content areas
                               ...(!isHeader &&
                                 !isFooter &&
                                 isLastChild && {
-                                  WebkitOverflowScrolling: "touch", // iOS momentum scrolling
-                                  overscrollBehavior: "contain", // Prevent overscroll
+                                  WebkitOverflowScrolling: "touch",
+                                  overscrollBehavior: "contain",
                                 }),
                             }}
                           >
@@ -339,7 +374,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 );
 DialogContent.displayName = "DialogContent";
 
-// --- CLOSE and HELPER Components (Optimized) ---
+// --- CLOSE and HELPER Components (Enhanced Material You styling) ---
 interface DialogCloseProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
@@ -372,16 +407,14 @@ const DialogHeader = (props: React.HTMLAttributes<HTMLDivElement>) => {
           "flex flex-col space-y-1.5 text-center sm:text-left",
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row items-center justify-between",
-          "border-b border-graphite-border/80",
-          "px-6 py-4",
-          "bg-graphite-card/95 backdrop-blur-sm",
-          "bg-gradient-to-r from-graphite-card to-graphite-card/95",
-          "sticky top-0 z-10",
+          // Material You header styling
+          "px-6 py-4 sm:px-8 sm:py-6",
+          "bg-white",
+          "border-b border-gray-200/60",
         ],
         props.className
       )}
       style={{
-        // Optimize sticky positioning
         ...(variant === "fullscreen" && {
           willChange: "transform",
           transform: "translate3d(0, 0, 0)",
@@ -401,16 +434,15 @@ const DialogFooter = (props: React.HTMLAttributes<HTMLDivElement>) => {
         variant === "basic" &&
           "mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
         variant === "fullscreen" && [
-          "flex flex-shrink-0 flex-row justify-end gap-2",
-          "border-t border-graphite-border/80",
-          "px-6 py-4",
-          "bg-graphite-card/95 backdrop-blur-sm",
-          "sticky bottom-0 z-10",
+          "flex flex-shrink-0 flex-row justify-end gap-3",
+          // Material You footer styling
+          "px-6 py-4 sm:px-8 sm:py-6",
+          "bg-white",
+          "border-t border-gray-200/60",
         ],
         props.className
       )}
       style={{
-        // Optimize sticky positioning
         ...(variant === "fullscreen" && {
           willChange: "transform",
           transform: "translate3d(0, 0, 0)",
@@ -426,12 +458,16 @@ const DialogTitle = React.forwardRef<
   HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
-  const { titleId } = useDialogContext();
+  const { titleId, variant } = useDialogContext();
   return (
     <h2
       ref={ref}
       id={titleId}
-      className="text-xl font-semibold tracking-tight"
+      className={clsx(
+        "font-semibold tracking-tight",
+        // Material You uses larger titles in fullscreen
+        variant === "fullscreen" ? "text-2xl sm:text-3xl" : "text-xl"
+      )}
       {...props}
     />
   );
@@ -447,14 +483,14 @@ const DialogDescription = React.forwardRef<
     <p
       ref={ref}
       id={descriptionId}
-      className="text-sm text-gray-500"
+      className="text-sm text-gray-600"
       {...props}
     />
   );
 });
 DialogDescription.displayName = "DialogDescription";
 
-// --- Optimized Scrollable Content Area ---
+// --- Enhanced Scrollable Content Area ---
 const DialogBody = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -464,17 +500,17 @@ const DialogBody = React.forwardRef<
     <div
       ref={ref}
       className={clsx(
-        variant === "fullscreen" && "flex-1 overflow-y-auto px-6 py-4",
+        variant === "fullscreen" &&
+          "flex-1 overflow-y-auto px-6 py-4 sm:px-8 sm:py-6",
         variant === "basic" && "flex-1",
         props.className
       )}
       style={{
-        // Optimize scrolling performance
         ...(variant === "fullscreen" && {
-          WebkitOverflowScrolling: "touch", // iOS momentum scrolling
-          overscrollBehavior: "contain", // Prevent overscroll bounce
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
           willChange: "scroll-position",
-          transform: "translate3d(0, 0, 0)", // Force hardware acceleration
+          transform: "translate3d(0, 0, 0)",
         }),
       }}
       {...props}

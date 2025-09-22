@@ -18,18 +18,21 @@ import React, {
   useState,
 } from "react";
 
-// --- CONSTANTS (NOW USED AS FALLBACKS) ---
+// --- CONSTANTS ---
 const FALLBACK_NORMAL_HEADER_ROW_HEIGHT = 64;
 const FALLBACK_LARGE_HEADER_ROW_HEIGHT = 96;
+const FOLD_ANIMATION_DISTANCE = 50; // How many pixels to scroll to complete the fold
+const FOLD_BORDER_RADIUS = 24; // Equivalent to rounded-3xl
 
 // --- TYPE DEFINITIONS ---
 type AppBarColor = "background" | "card" | "primary" | "secondary";
 type AppBarScrollBehavior = "sticky" | "conditionally-sticky";
-type AppBarAnimatedBehavior = "none" | "appbar-color";
+// Added 'fold' to the possible behaviors
+type AppBarAnimatedBehavior = "none" | "appbar-color" | "fold";
 type AppBarSize = "md" | "lg";
 type StickyHideTarget = "main-row" | "full-appbar";
 
-// --- CONTEXT ---
+// --- CONTEXT (No changes) ---
 interface AppBarContextProps {
   isScrolled: boolean;
   scrollY: MotionValue<number>;
@@ -49,7 +52,7 @@ const useAppBarContext = () => {
   return context;
 };
 
-// --- PROVIDER ---
+// --- PROVIDER (No changes) ---
 interface AppBarProviderProps {
   children: React.ReactNode;
   mainContentColor?: AppBarColor;
@@ -157,7 +160,8 @@ export interface AppBarProps
   centerAdornment?: React.ReactNode;
   endAdornments?: React.ReactNode[];
   scrollBehavior?: AppBarScrollBehavior;
-  animatedBehavior?: AppBarAnimatedBehavior;
+  // Prop is now an array of behaviors
+  animatedBehavior?: AppBarAnimatedBehavior[];
   animatedColor?: AppBarColor;
   size?: AppBarSize;
   largeHeaderContent?: React.ReactNode;
@@ -175,7 +179,8 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       centerAdornment,
       endAdornments = [],
       scrollBehavior = "sticky",
-      animatedBehavior = "none",
+      // Default to an empty array for safety
+      animatedBehavior = [],
       animatedColor = "secondary",
       size = "md",
       largeHeaderContent,
@@ -197,7 +202,6 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
     const mainRowRef = useRef<HTMLDivElement>(null);
     const largeHeaderRef = useRef<HTMLDivElement>(null);
 
-    // NEW: Simplified state to store raw measured heights
     const [measuredHeights, setMeasuredHeights] = useState({
       mainRow:
         size === "lg"
@@ -214,15 +218,9 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       setScrollBehavior(scrollBehavior);
     }, [scrollBehavior, setScrollBehavior]);
 
-    // --- REFACTORED EFFECT LOGIC ---
-
-    // Effect 1: Always measure the DOM after every render to get the most accurate heights.
-    // This is lightweight and ensures custom classes like `h-20` are captured.
     useLayoutEffect(() => {
       const measuredMainRow = mainRowRef.current?.offsetHeight;
       const measuredLargeContent = largeHeaderRef.current?.offsetHeight;
-
-      // Only update state if a value has actually changed to prevent re-render loops.
       if (
         (measuredMainRow && measuredMainRow !== measuredHeights.mainRow) ||
         (measuredLargeContent !== undefined &&
@@ -233,42 +231,28 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
           largeContent: measuredLargeContent || 0,
         });
       }
-    }); // No dependency array: runs after every render to guarantee fresh measurements.
+    });
 
-    // Effect 2: Perform calculations and update the context ONLY when measured heights change.
     useEffect(() => {
       const { mainRow, largeContent } = measuredHeights;
-
       const currentCollapseDistance = isCollapsible ? largeContent : 0;
       setCollapseDistance(currentCollapseDistance);
-
       let heightToHide: number;
-
-      // 1. Determine default behavior based on the latest measurements
       if (isCollapsible) {
-        // The final height after collapse is not measurable until it happens,
-        // so we must use the fallback constant for the animation target.
         heightToHide = FALLBACK_NORMAL_HEADER_ROW_HEIGHT;
       } else {
-        // For ANY non-collapsible bar (md, lg-static, or custom), the height to hide
-        // is simply its total measured height. This is the key fix.
         heightToHide = mainRow + largeContent;
       }
-
-      // 2. Apply user override if it exists
       if (stickyHideTarget === "full-appbar" && size === "lg") {
         heightToHide = mainRow + largeContent;
       } else if (stickyHideTarget === "main-row") {
-        // For a static bar, "main-row" is just its measured height.
-        // For a collapsible bar, it's the final collapsed height.
         heightToHide = isCollapsible
           ? FALLBACK_NORMAL_HEADER_ROW_HEIGHT
           : mainRow;
       }
-
       setHeightToHideForSticky(heightToHide);
     }, [
-      measuredHeights, // This effect now correctly depends on the measured state.
+      measuredHeights,
       isCollapsible,
       size,
       stickyHideTarget,
@@ -276,15 +260,24 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       setHeightToHideForSticky,
     ]);
 
-    const finalColor =
-      animatedBehavior === "appbar-color" && isScrolled
-        ? animatedColor
-        : appBarColor;
+    // --- REFACTORED ANIMATION LOGIC ---
+    const shouldAnimateColor = animatedBehavior.includes("appbar-color");
+    const shouldFold = animatedBehavior.includes("fold");
 
-    // --- ANIMATIONS ---
+    const finalColor =
+      shouldAnimateColor && isScrolled ? animatedColor : appBarColor;
+
+    // New animation for the folding effect
+    const animatedBorderRadius = useTransform(
+      scrollY,
+      [0, FOLD_ANIMATION_DISTANCE],
+      [0, FOLD_BORDER_RADIUS],
+      { clamp: true }
+    );
+
+    // --- (Rest of the animation logic is unchanged) ---
     const collapseAnimDistance = measuredHeights.largeContent;
     const largeRowHeight = measuredHeights.mainRow;
-
     const totalExpandedHeight = largeRowHeight + collapseAnimDistance;
     const animatedTotalHeight = useTransform(
       scrollY,
@@ -292,25 +285,20 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       [totalExpandedHeight, FALLBACK_NORMAL_HEADER_ROW_HEIGHT],
       { clamp: true }
     );
-
     const smoothAnimatedTotalHeight = useSpring(animatedTotalHeight, {
       stiffness: 300,
       damping: 30,
       mass: 0.5,
     });
-
     const animatedMainRowHeight = useTransform(
       scrollY,
       [0, collapseAnimDistance],
       [largeRowHeight, FALLBACK_NORMAL_HEADER_ROW_HEIGHT],
       { clamp: true }
     );
-
     const headerRowHeight = isCollapsible
       ? animatedMainRowHeight
       : measuredHeights.mainRow;
-
-    // ... (rest of the animation logic is unchanged)
     const largeHeaderOpacity = useTransform(
       scrollY,
       [0, collapseAnimDistance * 0.75],
@@ -343,11 +331,17 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
         ref={ref}
         className={clsx(
           appBarVariants({ appBarColor: finalColor, className }),
-          isCollapsible && "overflow-hidden"
+          // Add overflow-hidden when folding or collapsing to clip content
+          (isCollapsible || shouldFold) && "overflow-hidden"
         )}
         style={{
           y: headerY,
           height: isCollapsible ? smoothAnimatedTotalHeight : undefined,
+          // Conditionally apply the folding animation style
+          borderBottomLeftRadius: shouldFold ? animatedBorderRadius : undefined,
+          borderBottomRightRadius: shouldFold
+            ? animatedBorderRadius
+            : undefined,
         }}
         {...props}
       >
@@ -356,6 +350,7 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
           className="flex w-full items-center "
           style={{ height: headerRowHeight }}
         >
+          {/* ... (inner content is unchanged) ... */}
           <div className="flex flex-1 items-center gap-2 px-4 min-w-0">
             {startAdornment && (
               <div className="flex justify-center items-center min-w-max">
@@ -409,7 +404,6 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
 );
 AppBarRoot.displayName = "AppBar";
 
-// --- EXPORTS ---
 export const AppBar = Object.assign(AppBarRoot, {
   Provider: AppBarProvider,
 });

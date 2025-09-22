@@ -32,7 +32,7 @@ const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {
 
 // 1. Define the component's specific props
 type TypographyOwnProps = {
-  variant: keyof typeof variants;
+  variant?: keyof typeof variants;
   className?: string;
 };
 

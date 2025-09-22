@@ -2,7 +2,6 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import React from "react";
 
-// ... cva definition remains the same ...
 const inputWrapperVariants = cva(
   "flex items-center transition-all duration-200 w-full px-4 border-2",
   {
@@ -16,6 +15,11 @@ const inputWrapperVariants = cva(
         minimal: "rounded-2xl",
         sharp: "rounded-none",
       },
+      size: {
+        sm: "h-10 text-sm",
+        md: "h-12 text-base",
+        lg: "h-14 text-lg",
+      },
       isErrored: { true: "" },
       isFocused: { true: "" },
       disabled: {
@@ -26,38 +30,69 @@ const inputWrapperVariants = cva(
       {
         variant: "primary",
         isErrored: false,
+        isFocused: false,
         className: "border-graphite-border",
       },
       {
         variant: "secondary",
         isErrored: false,
+        isFocused: false,
         className: "border-transparent",
       },
       {
+        variant: "primary",
         isFocused: true,
         isErrored: false,
         className: "border-graphite-primary",
       },
-      { isFocused: false, isErrored: true, className: "border-red-500" },
-      { isFocused: true, isErrored: true, className: "border-red-600" },
+      {
+        variant: "secondary",
+        isFocused: true,
+        isErrored: false,
+        className: "border-graphite-primary",
+      },
+      {
+        variant: "primary",
+        isFocused: false,
+        isErrored: true,
+        className: "border-red-500",
+      },
+      {
+        variant: "secondary",
+        isFocused: false,
+        isErrored: true,
+        className: "border-red-500",
+      },
+      {
+        variant: "primary",
+        isFocused: true,
+        isErrored: true,
+        className: "border-red-600",
+      },
+      {
+        variant: "secondary",
+        isFocused: true,
+        isErrored: true,
+        className: "border-red-600",
+      },
     ],
     defaultVariants: {
       variant: "primary",
       shape: "minimal",
+      size: "md",
     },
   }
 );
 
-// ... props interface remains the same ...
+// FIX #2: Use VariantProps to remove the unused import warning and keep types in sync.
 export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
+    VariantProps<typeof inputWrapperVariants> {
   label?: string;
   startAdornment?: React.ReactNode;
   endAdornment?: React.ReactNode;
   error?: string;
-  shape?: "full" | "minimal" | "sharp";
   wrapperClassName?: string;
-  variant?: "primary" | "secondary";
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
@@ -71,6 +106,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       error,
       disabled,
       shape,
+      size,
       wrapperClassName,
       variant,
       onFocus,
@@ -82,7 +118,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    // ... state and focus/blur handlers remain the same ...
     const uniqueId = React.useId();
     const inputId = id || uniqueId;
     const hasError = !!error;
@@ -98,9 +133,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       onBlur?.(e);
     };
 
-    // ============================ START: UPDATED NUMBER LOGIC ============================
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (type === "number") {
+        // FIX #1: Corrected the syntax error here.
         const { value } = e.currentTarget;
         const allowedKeys = [
           "Backspace",
@@ -113,20 +148,15 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           "Home",
           "End",
         ];
-
-        // 1. Allow a single decimal point
         if (e.key === "." && !value.includes(".")) {
           return;
         }
-
         if (allowedKeys.includes(e.key)) {
           return;
         }
-
         if (e.ctrlKey || e.metaKey) {
           return;
         }
-
         if (!/^[0-9]$/.test(e.key)) {
           e.preventDefault();
         }
@@ -137,14 +167,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
       if (type === "number") {
         const pastedText = e.clipboardData.getData("text");
-        // 2. Updated regex to allow for valid floating-point numbers
         if (!/^\d*\.?\d*$/.test(pastedText)) {
           e.preventDefault();
         }
       }
       onPaste?.(e);
     };
-    // ============================= END: UPDATED NUMBER LOGIC ==============================
 
     return (
       <div className="w-full flex flex-col gap-2">
@@ -160,6 +188,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className={inputWrapperVariants({
             variant,
             shape,
+            size,
             isErrored: hasError,
             isFocused,
             disabled,
@@ -167,7 +196,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           })}
         >
           {startAdornment && (
-            <div className="flex items-center  mr-2">{startAdornment}</div>
+            <div className="flex items-center mr-2">{startAdornment}</div>
           )}
           <input
             id={inputId}
@@ -179,7 +208,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             className={clsx(
-              "w-full flex-1 bg-transparent focus:outline-none py-4",
+              "w-full flex-1 bg-transparent focus:outline-none",
               "disabled:cursor-not-allowed",
               variant === "secondary" && "placeholder:text-gray-500",
               className
@@ -187,7 +216,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {endAdornment && (
-            <div className="flex items-center  ml-2">{endAdornment}</div>
+            <div className="flex items-center ml-2">{endAdornment}</div>
           )}
         </div>
         {hasError && <p className="mt-2 text-sm text-red-600">{error}</p>}

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { BouncyBox } from "./index";
-import { Card } from "../card"; // Import Card
 import { Button } from "../button"; // Import Button
+import { Card } from "../card"; // Import Card
 import { Typography } from "../typography"; // Import Typography
+import { BouncyBox } from "./index";
 
 const meta: Meta<typeof BouncyBox> = {
   title: "Components/BouncyBox",

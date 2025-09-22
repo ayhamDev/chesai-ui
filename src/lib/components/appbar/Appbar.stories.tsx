@@ -7,7 +7,6 @@ import {
   Search,
   User,
 } from "lucide-react";
-import React from "react";
 import { IconButton } from "../icon-button"; // Assuming these are in your project
 import { Typography } from "../typography"; // Assuming these are in your project
 import { AppBar } from "./index";
@@ -39,9 +38,10 @@ const meta: Meta<typeof AppBar> = {
       control: "select",
       options: ["sticky", "conditionally-sticky"],
     },
+    // Updated control to 'check' for multi-select
     animatedBehavior: {
-      control: "select",
-      options: ["none", "appbar-color"],
+      control: "check",
+      options: ["appbar-color", "fold"],
     },
     animatedColor: {
       control: "select",
@@ -79,16 +79,12 @@ const DummyContent = () => (
 
 // A smart render function to wrap stories and handle padding
 const render = (args: any) => {
-  // This is an approximation for Storybook's isolated environment.
-  // In a real app, you would have a layout component that handles this.
-  // We calculate the initial padding based on the AppBar's configuration.
   let paddingTop = "pt-[64px]"; // Default for 'md'
   if (args.size === "lg" && args.largeHeaderContent) {
-    // A rough estimate for lg size: 96px (main row) + 64px (large content)
     paddingTop = "pt-[160px]";
   }
   if (args.className?.includes("h-20")) {
-    paddingTop = "pt-20"; // For the dynamic height story
+    paddingTop = "pt-20";
   }
 
   return (
@@ -146,7 +142,7 @@ export const AnimatedColor: Story = {
   name: "Medium, Animated Color",
   args: {
     ...Default.args,
-    animatedBehavior: "appbar-color",
+    animatedBehavior: ["appbar-color"], // Now an array
     appBarColor: "background",
     animatedColor: "card",
     children: <Typography variant="h4">Animated Header</Typography>,
@@ -156,7 +152,26 @@ export const AnimatedColor: Story = {
     docs: {
       description: {
         story:
-          "With `animatedBehavior` set to `appbar-color`, the AppBar transitions to the `animatedColor` when the user scrolls.",
+          "With `animatedBehavior` including `appbar-color`, the AppBar transitions to the `animatedColor` when the user scrolls.",
+      },
+    },
+  },
+};
+
+// New story for the folding effect
+export const FoldingOnScroll: Story = {
+  name: "Medium, Folding on Scroll",
+  args: {
+    ...Default.args,
+    animatedBehavior: ["fold"], // Enable the fold effect
+    children: <Typography variant="h4">Folding Header</Typography>,
+  },
+  render,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "With `animatedBehavior` including `fold`, the AppBar's bottom corners become rounded as you scroll down, creating a neat 'folding' effect.",
       },
     },
   },
@@ -213,11 +228,11 @@ export const LargeCollapsing: Story = {
   },
 };
 
+// ... (LargeStatic and LargeStaticWithOverride stories remain unchanged) ...
 export const LargeStatic: Story = {
   name: "Large, Static (No Collapse)",
   args: {
     ...LargeCollapsing.args,
-    // The key difference: `smallHeaderContent` is NOT provided
     smallHeaderContent: undefined,
     children: (
       <Typography variant="h2" className="truncate font-bold">
@@ -257,7 +272,8 @@ export const CombinedEffects: Story = {
   name: "Kitchen Sink (All Effects)",
   args: {
     ...LargeCollapsing.args,
-    animatedBehavior: "appbar-color",
+    // Enable both effects
+    animatedBehavior: ["appbar-color", "fold"],
     animatedColor: "secondary",
   },
   render,
@@ -265,7 +281,7 @@ export const CombinedEffects: Story = {
     docs: {
       description: {
         story:
-          "A demonstration of all features working in harmony. This `lg` AppBar collapses, hides on scroll, and animates its color simultaneously.",
+          "A demonstration of all features working in harmony. This `lg` AppBar collapses, hides on scroll, animates its color, and folds its corners simultaneously.",
       },
     },
   },

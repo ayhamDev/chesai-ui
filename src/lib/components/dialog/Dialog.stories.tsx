@@ -4,6 +4,7 @@ import { useState } from "react";
 // Import the AppBar component
 import { AppBar } from "../appbar";
 import { Button } from "../button";
+import { IconButton } from "../icon-button";
 import { Input } from "../input";
 import { Typography } from "../typography";
 import {
@@ -19,7 +20,6 @@ import {
   type DialogContentProps,
   type DialogProps,
 } from "./index";
-import { IconButton } from "../icon-button";
 
 // Combined type for story controls
 type StoryComponentProps = DialogProps & Pick<DialogContentProps, "shape">;

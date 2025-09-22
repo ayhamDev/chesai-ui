@@ -16,6 +16,10 @@ const meta: Meta<typeof Input> = {
       control: "select",
       options: ["full", "minimal", "sharp"],
     },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+    },
     label: { control: "text" },
     placeholder: { control: "text" },
     disabled: { control: "boolean" },
@@ -30,10 +34,37 @@ export const Default: Story = {
   args: {
     variant: "primary",
     shape: "minimal",
+    size: "md", // Default size
     label: "Email Address",
     placeholder: "you@example.com",
     startAdornment: <Mail className="h-4 w-4" />,
   },
+};
+
+export const AllSizes: Story = {
+  name: "All Sizes",
+  render: () => (
+    <div className="flex flex-col gap-6 max-w-sm">
+      <Input
+        size="sm"
+        label="Small"
+        placeholder="Small input (sm)"
+        startAdornment={<Search className="h-4 w-4" />}
+      />
+      <Input
+        size="md"
+        label="Medium (Default)"
+        placeholder="Medium input (md)"
+        startAdornment={<Search className="h-5 w-5" />}
+      />
+      <Input
+        size="lg"
+        label="Large"
+        placeholder="Large input (lg)"
+        startAdornment={<Search className="h-6 w-6" />}
+      />
+    </div>
+  ),
 };
 
 export const AllVariantsAndShapes: Story = {
@@ -161,7 +192,6 @@ export const WithAdornments: Story = {
     </div>
   ),
 };
-// In Input.stories.tsx
 
 export const NumberInput: Story = {
   name: "Number Input",
@@ -179,6 +209,7 @@ export const NumberInput: Story = {
     },
   },
 };
+
 export const PasswordInput: Story = {
   name: "Password Input Example",
   render: () => {
