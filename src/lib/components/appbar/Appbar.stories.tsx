@@ -274,6 +274,7 @@ export const CombinedEffects: Story = {
     ...LargeCollapsing.args,
     // Enable both effects
     animatedBehavior: ["appbar-color", "fold"],
+
     animatedColor: "secondary",
   },
   render,

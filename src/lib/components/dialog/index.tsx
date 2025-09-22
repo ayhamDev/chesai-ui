@@ -358,7 +358,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                   ) : (
                     <Card
                       shape={shape}
-                      className="relative w-full p-6 shadow-2xl"
+                      className="relative w-full p-8 shadow-2xl"
                     >
                       {children}
                     </Card>

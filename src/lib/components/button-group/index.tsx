@@ -1,5 +1,5 @@
-import React from "react";
 import { clsx } from "clsx";
+import React from "react";
 
 // Explicitly define the shape type for clarity and type safety
 type ButtonShape = "full" | "minimal" | "sharp";
@@ -23,41 +23,48 @@ export const ButtonGroup = ({
     sharp: { left: "rounded-l-none", right: "rounded-r-none" },
   };
 
+  const childArray = React.Children.toArray(children);
+
   return (
     <div
       className={clsx("inline-flex items-center", className)}
       role="group" // Important for accessibility
       {...props}
     >
-      {React.Children.map(children, (child, index) => {
-        // Skip over any non-element children (like text nodes or nulls)
+      {childArray.map((child, index) => {
         if (!React.isValidElement(child)) {
           return child;
         }
 
-        // Safely cast the child to a type we can work with
-        const typedChild = child as React.ReactElement<{ className?: string }>;
-
         const isFirst = index === 0;
-        const isLast = React.Children.count(children) - 1 === index;
+        const isLast = index === childArray.length - 1;
 
-        // Build the new class names to inject into the child
+        // --- NEW, ROBUST LOGIC INSPIRED BY SPLITBUTTON ---
+        // Determine the precise rounding classes based on the child's position.
+        // This is more explicit and reliable than trying to reset with '!rounded-none'.
+        let positionClasses = "";
+        if (isFirst) {
+          // The first child gets the group's left rounding and a sharp right corner.
+          positionClasses = clsx(shapeClasses[shape].left, "rounded-r-none");
+        } else if (isLast) {
+          // The last child gets the group's right rounding and a sharp left corner.
+          positionClasses = clsx(shapeClasses[shape].right, "rounded-l-none");
+        } else {
+          // All middle children are forced to be sharp on both sides.
+          positionClasses = "rounded-none";
+        }
+
         const newClassName = clsx(
-          typedChild.props.className,
-          // 1. Force all inner corners to be sharp
-          "!rounded-none",
-          // 2. Add back the correct rounding to the first and last items
-          isFirst && shapeClasses[shape].left,
-          isLast && shapeClasses[shape].right,
-          // 3. Create the overlapping border effect for a seamless look
+          child.props.className,
+          positionClasses,
+          // Create the overlapping border effect for a seamless look.
           !isFirst && "-ml-px",
-          // 4. Ensure the focused button renders on top of its siblings
+          // Ensure the focused button renders on top of its siblings.
           "focus:z-10"
         );
 
-        // Clone the child element and apply the new, combined className
-        return React.cloneElement(typedChild, {
-          ...typedChild.props,
+        return React.cloneElement(child, {
+          ...child.props,
           className: newClassName,
         });
       })}

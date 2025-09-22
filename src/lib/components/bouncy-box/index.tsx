@@ -14,7 +14,7 @@ export const BouncyBox = React.forwardRef<HTMLDivElement, BouncyBoxProps>(
       <motion.div
         ref={ref}
         className={clsx(
-          "inline cursor-pointer", // Use inline-flex to wrap content tightly
+          "cursor-pointer", // Use inline-flex to wrap content tightly
           className
         )}
         // The magic prop: animates to this state while tapped/clicked
