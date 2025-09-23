@@ -129,7 +129,7 @@ export const DatePicker = ({
           onSelect={setTempValue}
         />
       )}
-      <div className="flex justify-end gap-2 p-4">
+      <div className="flex justify-end gap-2 ">
         <Button variant="ghost" onClick={() => handleOpenChange(false)}>
           Cancel
         </Button>

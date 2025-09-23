@@ -12,13 +12,13 @@ import {
   DialogBody,
   DialogClose,
   DialogContent,
+  type DialogContentProps,
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  type DialogProps,
   DialogTitle,
   DialogTrigger,
-  type DialogContentProps,
-  type DialogProps,
 } from "./index";
 
 // Combined type for story controls
@@ -140,7 +140,7 @@ export const FullScreen: Story = {
                     </IconButton>
                   </DialogClose>
                 }
-                animatedBehavior="appbar-color"
+                animatedBehavior={["appbar-color"]}
                 animatedColor="background"
                 endAdornments={[
                   <Button key="save" size={"sm"} variant="secondary">

@@ -26,7 +26,7 @@
 
   /*
   |--------------------------------------------------------------------------
-  | Material You (MD3) Dropdown Menu Animations
+  | Animations
   |--------------------------------------------------------------------------
   */
 
@@ -52,6 +52,30 @@
       transform: scale(0.9) translateY(-0.5rem);
     }
   }
+
+  /* --- SELECT ANIMATIONS (Center-Out Clip-Path) --- */
+  @keyframes select-enter-clip {
+    from {
+      opacity: 0;
+      clip-path: inset(50% 0 50% 0);
+    }
+    to {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  @keyframes select-exit-clip {
+    from {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+    }
+    to {
+      opacity: 0;
+      clip-path: inset(50% 0 50% 0);
+    }
+  }
+  /* --- END SELECT ANIMATIONS --- */
 
   @keyframes submenu-enter-right {
     from { opacity: 0; transform: scale(0.95) translateX(-0.5rem); }
@@ -88,6 +112,11 @@
   --animate-menu-enter: menu-enter 300ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-menu-exit: menu-exit 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
   
+  /* --- SELECT UTILITIES --- */
+  --animate-select-enter: select-enter-clip 200ms cubic-bezier(0.2, 0, 0, 1) forwards;
+  --animate-select-exit: select-exit-clip 1500ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  /* --- END SELECT UTILITIES --- */
+
   --animate-submenu-enter-right: submenu-enter-right 250ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-submenu-enter-left: submenu-enter-left 250ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-submenu-exit-right: submenu-exit-right 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
@@ -119,4 +148,9 @@ input[type="number"] {
     -moz-user-select: none;
     -webkit-user-select: none;
   }
+  ::-webkit-scrollbar {
+  display: none; /* Hides the scrollbar visually */
+  width: 0; /* Removes any allocated space for the scrollbar */
+  background: transparent; /* Makes the scrollbar track transparent */
+}
 }

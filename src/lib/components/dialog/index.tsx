@@ -431,8 +431,7 @@ const DialogFooter = (props: React.HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       className={clsx(
-        variant === "basic" &&
-          "mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        variant === "basic" && "mt-6 flex gap-2 sm:justify-end",
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row justify-end gap-3",
           // Material You footer styling
