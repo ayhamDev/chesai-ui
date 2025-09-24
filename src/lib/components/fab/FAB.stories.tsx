@@ -1,7 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Plus } from "lucide-react";
+import { CreditCard, LogOut, Plus, Settings, User } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "../dropdown-menu"; // Assuming this is the correct path
 import { FAB } from "./index";
 
 const meta: Meta<typeof FAB> = {
@@ -13,7 +21,6 @@ const meta: Meta<typeof FAB> = {
       control: "select",
       options: ["sm", "md", "lg"],
     },
-    // Add the new 'shape' control
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
@@ -39,7 +46,6 @@ export const Default: Story = {
   },
 };
 
-// New story to showcase the shape variations
 export const AllShapes: Story = {
   name: "All Shapes",
   render: (args) => (
@@ -90,4 +96,49 @@ export const InteractiveAnimation: Story = {
       </div>
     );
   },
+};
+
+// New story showcasing FAB with a Dropdown Menu
+export const WithDropdownMenu: Story = {
+  name: "With Dropdown Menu",
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        story:
+          "A FAB can be used as a trigger for a Dropdown Menu. Wrap the FAB with the `DropdownMenuTrigger` component and pass the `asChild` prop.",
+      },
+    },
+  },
+  render: (args) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        {/* Render the FAB as the trigger, using args from Storybook controls */}
+        <FAB {...args} isExtended={false} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem>
+          <User className="mr-2 h-4 w-4" />
+          <span>Profile</span>
+          <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <CreditCard className="mr-2 h-4 w-4" />
+          <span>Billing</span>
+          <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Settings</span>
+          <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Log out</span>
+          <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ),
 };

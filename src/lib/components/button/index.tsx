@@ -1,6 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader, Loader2 } from "lucide-react"; // Import Loader from lucide-react
+import { Loader2 } from "lucide-react"; // Import Loader from lucide-react
 import React from "react";
 import useRipple from "use-ripple-hook";
 
@@ -52,7 +52,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       className,
-      variant,
+      variant = "primary",
       size,
       shape,
       children,

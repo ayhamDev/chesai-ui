@@ -1,9 +1,9 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import React from "react";
+import React, { useEffect, useImperativeHandle, useRef } from "react";
 
-const inputWrapperVariants = cva(
-  "flex items-center transition-all duration-200 w-full px-4 border-2",
+const textAreaWrapperVariants = cva(
+  "flex items-start transition-all duration-200 w-full px-4 border-2",
   {
     variants: {
       variant: {
@@ -16,9 +16,9 @@ const inputWrapperVariants = cva(
         sharp: "rounded-none",
       },
       size: {
-        sm: "h-10 text-sm",
-        md: "h-12 text-base",
-        lg: "h-14 text-lg",
+        sm: "py-2 text-sm",
+        md: "py-3 text-base",
+        lg: "py-4 text-lg",
       },
       isErrored: { true: "" },
       isFocused: { true: "" },
@@ -84,25 +84,20 @@ const inputWrapperVariants = cva(
   }
 );
 
-// FIX #2: Use VariantProps to remove the unused import warning and keep types in sync.
-export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
-    VariantProps<typeof inputWrapperVariants> {
+export interface TextAreaProps
+  extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "size">,
+    VariantProps<typeof textAreaWrapperVariants> {
   label?: string;
-  startAdornment?: React.ReactNode;
-  endAdornment?: React.ReactNode;
   error?: string;
   wrapperClassName?: string;
 }
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
   (
     {
       className,
       id,
       label,
-      startAdornment,
-      endAdornment,
       error,
       disabled,
       shape,
@@ -111,81 +106,68 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       variant,
       onFocus,
       onBlur,
-      onKeyDown,
-      onPaste,
-      type,
+      onChange,
+      rows = 3, // Default to 3 rows
+      value,
       ...props
     },
     ref
   ) => {
     const uniqueId = React.useId();
-    const inputId = id || uniqueId;
+    const textAreaId = id || uniqueId;
     const hasError = !!error;
     const [isFocused, setIsFocused] = React.useState(false);
 
-    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Create a local ref to manage the textarea DOM element
+    const localRef = useRef<HTMLTextAreaElement>(null);
+    // Bridge the forwarded ref with our local ref
+    useImperativeHandle(ref, () => localRef.current!);
+
+    // Function to resize the textarea
+    const resizeTextArea = () => {
+      const textArea = localRef.current;
+      if (textArea) {
+        // Temporarily reset height to allow scrollHeight to be calculated correctly
+        textArea.style.height = "auto";
+        // Set the height to match the content's scroll height
+        textArea.style.height = `${textArea.scrollHeight}px`;
+      }
+    };
+
+    // Resize on initial mount and when the value prop changes programmatically
+    useEffect(() => {
+      resizeTextArea();
+    }, [value]);
+
+    const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
       setIsFocused(true);
       onFocus?.(e);
     };
 
-    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
       setIsFocused(false);
       onBlur?.(e);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (type === "number") {
-        // FIX #1: Corrected the syntax error here.
-        const { value } = e.currentTarget;
-        const allowedKeys = [
-          "Backspace",
-          "Delete",
-          "Tab",
-          "Escape",
-          "Enter",
-          "ArrowLeft",
-          "ArrowRight",
-          "Home",
-          "End",
-        ];
-        if (e.key === "." && !value.includes(".")) {
-          return;
-        }
-        if (allowedKeys.includes(e.key)) {
-          return;
-        }
-        if (e.ctrlKey || e.metaKey) {
-          return;
-        }
-        if (!/^[0-9]$/.test(e.key)) {
-          e.preventDefault();
-        }
-      }
-      onKeyDown?.(e);
-    };
-
-    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-      if (type === "number") {
-        const pastedText = e.clipboardData.getData("text");
-        if (!/^\d*\.?\d*$/.test(pastedText)) {
-          e.preventDefault();
-        }
-      }
-      onPaste?.(e);
+    // Wrap the onChange handler to trigger resize on every input
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      resizeTextArea();
+      // Forward the event to the original onChange handler if it exists
+      onChange?.(e);
     };
 
     return (
       <div className="w-full flex flex-col gap-2">
         {label && (
           <label
-            htmlFor={inputId}
+            htmlFor={textAreaId}
             className="block text-sm font-medium text-graphite-primary"
           >
             {label}
           </label>
         )}
         <div
-          className={inputWrapperVariants({
+          className={textAreaWrapperVariants({
             variant,
             shape,
             size,
@@ -195,29 +177,25 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className: wrapperClassName,
           })}
         >
-          {startAdornment && (
-            <div className="flex items-center mr-2">{startAdornment}</div>
-          )}
-          <input
-            id={inputId}
-            ref={ref}
+          <textarea
+            id={textAreaId}
+            ref={localRef}
             disabled={disabled}
-            type={type}
+            rows={rows} // Set the initial row height
             onFocus={handleFocus}
             onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
+            onChange={handleChange}
+            value={value}
             className={clsx(
-              "w-full flex-1 bg-transparent focus:outline-none",
+              // `resize-none` is important for auto-sizing to work smoothly
+              // `overflow-hidden` prevents the scrollbar from flashing during resize
+              "w-full flex-1 bg-transparent focus:outline-none resize-none overflow-hidden",
               "disabled:cursor-not-allowed",
               variant === "secondary" && "placeholder:text-gray-500",
               className
             )}
             {...props}
           />
-          {endAdornment && (
-            <div className="flex items-center ml-2">{endAdornment}</div>
-          )}
         </div>
         {hasError && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </div>
@@ -225,4 +203,4 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   }
 );
 
-Input.displayName = "Input";
+TextArea.displayName = "TextArea";

@@ -159,3 +159,38 @@ input[type="number"] {
   [data-vaul-drawer][data-vaul-drawer-direction="bottom"]::after {
     opacity: var(--vaul-after-display, block);
   }
+
+    [data-vaul-drawer][data-vaul-drawer-direction="left"]::after {
+    opacity: var(--vaul-after-display, block);
+  }
+
+      [data-vaul-drawer][data-vaul-drawer-direction="right"]::after {
+    opacity: var(--vaul-after-display, block);
+  }
+
+      [data-vaul-drawer][data-vaul-drawer-direction="top"]::after {
+    opacity: var(--vaul-after-display, block);
+  }
+
+  
+/*  */
+  [data-vaul-drawer][data-vaul-drawer-direction=bottom]::after {
+    opacity: var(--vaul-after-display, block);
+  }
+
+    [data-vaul-drawer][data-vaul-drawer-direction=left]::after {
+    opacity: var(--vaul-after-display, block);
+  }
+
+      [data-vaul-drawer][data-vaul-drawer-direction=right]::after {
+    opacity: var(--vaul-after-display, block);
+  }
+
+      [data-vaul-drawer][data-vaul-drawer-direction=top]::after {
+    opacity: var(--vaul-after-display, block);
+  }
+
+  textarea {
+  resize: none;
+}
+
