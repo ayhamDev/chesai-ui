@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Button } from "../button"; // Import Button
-import { Typography } from "../typography"; // Import Typography
+import { Button } from "../button";
+import { Typography } from "../typography";
 import { Card } from "./index";
 
 const meta: Meta<typeof Card> = {
@@ -8,6 +8,10 @@ const meta: Meta<typeof Card> = {
   component: Card,
   tags: ["autodocs"],
   argTypes: {
+    variant: {
+      control: "select",
+      options: ["primary", "secondary", "selected"],
+    },
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
@@ -20,7 +24,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    shape: "full",
+    variant: "primary",
+    shape: "minimal",
   },
   render: (args) => (
     <Card {...args} className="max-w-md">
@@ -30,6 +35,27 @@ export const Default: Story = {
         components inside it.
       </Typography>
     </Card>
+  ),
+};
+
+// --- NEW STORY TO SHOWCASE VARIANTS ---
+export const AllVariants: Story = {
+  name: "All Variants",
+  render: () => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Card variant="primary" shape="minimal">
+        <Typography variant="h4">Primary</Typography>
+        <Typography variant="p">The default card style.</Typography>
+      </Card>
+      <Card variant="secondary" shape="minimal">
+        <Typography variant="h4">Secondary</Typography>
+        <Typography variant="p">For less emphasis.</Typography>
+      </Card>
+      <Card variant="selected" shape="minimal">
+        <Typography variant="h4">Selected</Typography>
+        <Typography variant="p">To indicate selection.</Typography>
+      </Card>
+    </div>
   ),
 };
 

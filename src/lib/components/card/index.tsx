@@ -2,21 +2,26 @@ import { cva, type VariantProps } from "class-variance-authority";
 import React from "react";
 
 const cardVariants = cva(
-  // Base classes from your original component
-  "bg-graphite-card p-5 shadow-xs",
+  // Base classes: Added transition for smooth color/border changes
+  "p-5 shadow-xs transition-colors duration-200",
   {
     variants: {
+      variant: {
+        primary: "bg-graphite-card",
+        secondary: "bg-graphite-secondary",
+        // Selected variant adds a border to indicate its state
+        selected: "bg-graphite-card border-2 border-graphite-primary",
+      },
       shape: {
-        // Your original style corresponds to 'full'
         full: "rounded-3xl",
-        // A less-rounded "minimal" option
         minimal: "rounded-xl",
-        // A sharp, no-rounding option
         sharp: "rounded-none",
       },
     },
+    // Set default variant to primary
     defaultVariants: {
-      shape: "minimal", // Match the original style by default
+      variant: "primary",
+      shape: "minimal",
     },
   }
 );
@@ -26,10 +31,10 @@ export interface CardProps
     VariantProps<typeof cardVariants> {}
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, shape, ...props }, ref) => {
+  ({ className, shape, variant, ...props }, ref) => {
     return (
       <div
-        className={cardVariants({ shape, className })}
+        className={cardVariants({ shape, variant, className })}
         ref={ref}
         {...props}
       />

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Plus } from "lucide-react";
+import { useState } from "react";
 import { IconButton } from "./index";
 
 const meta: Meta<typeof IconButton> = {
@@ -15,12 +16,12 @@ const meta: Meta<typeof IconButton> = {
       control: "select",
       options: ["xs", "sm", "md", "lg"],
     },
-    // Add the new 'shape' control
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
       description: "The border radius of the icon button.",
     },
+    isLoading: { control: "boolean" }, // Added isLoading control
     disabled: { control: "boolean" },
     onClick: { action: "clicked" },
   },
@@ -33,9 +34,9 @@ export const Primary: Story = {
   args: {
     variant: "primary",
     size: "md",
-    shape: "full", // Default shape
+    shape: "full",
     children: <Plus className="h-6 w-6" />,
-    "aria-label": "Add new item", // Essential for accessibility
+    "aria-label": "Add new item",
   },
 };
 
@@ -79,7 +80,6 @@ export const AllSizes: Story = {
   ),
 };
 
-// New story to showcase the shape variations
 export const AllShapes: Story = {
   name: "All Shapes",
   render: () => (
@@ -110,4 +110,47 @@ export const AllShapes: Story = {
       </IconButton>
     </div>
   ),
+};
+
+// --- NEW STORIES FOR LOADING STATE ---
+
+export const Loading: Story = {
+  name: "Loading State",
+  render: () => (
+    <div className="flex flex-wrap items-center gap-4">
+      <IconButton variant="primary" size="md" aria-label="Loading" isLoading>
+        <Plus className="h-6 w-6" />
+      </IconButton>
+      <IconButton variant="secondary" size="md" aria-label="Loading" isLoading>
+        <Plus className="h-6 w-6" />
+      </IconButton>
+      <IconButton variant="ghost" size="md" aria-label="Loading" isLoading>
+        <Plus className="h-6 w-6" />
+      </IconButton>
+    </div>
+  ),
+};
+
+export const InteractiveLoading: Story = {
+  name: "Interactive Loading",
+  render: () => {
+    const [isLoading, setIsLoading] = useState(false);
+    const handleClick = () => {
+      setIsLoading(true);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 2000);
+    };
+    return (
+      <IconButton
+        variant="primary"
+        size="lg"
+        aria-label="Submit"
+        isLoading={isLoading}
+        onClick={handleClick}
+      >
+        <Plus className="h-8 w-8" />
+      </IconButton>
+    );
+  },
 };

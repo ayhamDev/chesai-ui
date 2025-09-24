@@ -21,11 +21,13 @@ import {
 interface SelectContextProps {
   variant: "primary" | "secondary";
   shape: "full" | "minimal" | "sharp";
+  size: "sm" | "md" | "lg";
 }
 
 const SelectContext = createContext<SelectContextProps>({
   variant: "primary",
   shape: "minimal",
+  size: "md",
 });
 
 const useSelectContext = () => useContext(SelectContext);
@@ -103,6 +105,27 @@ const selectContentVariants = cva(
   }
 );
 
+const selectItemVariants = cva(
+  "relative flex w-full cursor-pointer select-none items-center rounded-lg pr-2 pl-8 outline-none overflow-hidden transition-colors duration-150 ease-in-out data-[highlighted]:bg-graphite-secondary/80 focus:bg-graphite-secondary/80 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+  {
+    variants: {
+      size: {
+        sm: "py-2 text-sm",
+        md: "py-2 text-base",
+        lg: "py-2.5 text-lg",
+      },
+      shape: {
+        full: "",
+        minimal: "",
+        sharp: "!rounded-none",
+      },
+    },
+    defaultVariants: {
+      size: "md",
+    },
+  }
+);
+
 // --- PRIMITIVE COMPONENTS (For Desktop Popover) ---
 
 const SelectGroup = SelectPrimitive.Group;
@@ -112,16 +135,18 @@ interface SelectProps extends SelectPrimitive.SelectProps {
   children: React.ReactNode;
   variant?: SelectContextProps["variant"];
   shape?: SelectContextProps["shape"];
+  size?: SelectContextProps["size"];
 }
 
 const Select: React.FC<SelectProps> = ({
   children,
   variant = "primary",
   shape = "minimal",
+  size = "md",
   ...props
 }) => {
   return (
-    <SelectContext.Provider value={{ variant, shape }}>
+    <SelectContext.Provider value={{ variant, shape, size }}>
       <SelectPrimitive.Root {...props}>{children}</SelectPrimitive.Root>
     </SelectContext.Provider>
   );
@@ -182,7 +207,7 @@ const SelectContent = React.forwardRef<
           position === "popper"
             ? "data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit w-[var(--radix-select-trigger-width)]"
             : "data-[state=open]:animate-select-enter data-[state=closed]:animate-select-exit",
-          "data-[side=bottom]:origin-top data-[side=top]:origin-bottom",
+          "data-[side=bottom]:origin-top data-[side=top]:origin-bottom ",
           className
         )}
         position={position}
@@ -191,7 +216,11 @@ const SelectContent = React.forwardRef<
         <SelectPrimitive.Viewport
           className={clsx(
             "p-1",
-            // Make the viewport take the full width of the content, which is now constrained
+            // Only apply max-height and fade mask for popper position (which supports scrolling)
+            position === "popper" && [
+              "max-h-64",
+              "[mask-image:linear-gradient(to_bottom,transparent,black_1rem,black_calc(100%-1rem),transparent)]",
+            ],
             position === "popper" && "w-full"
           )}
         >
@@ -207,7 +236,7 @@ const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, ...props }, ref) => {
-  const { shape, variant } = useSelectContext();
+  const { shape, variant, size } = useSelectContext();
   const localRef = useRef<HTMLDivElement>(null);
   const rippleColor =
     variant === "primary" ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)";
@@ -218,21 +247,14 @@ const SelectItem = React.forwardRef<
     duration: 400,
     disabled: props.disabled,
   });
-  // FIX: Removed non-null assertion
+
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
   return (
     <SelectPrimitive.Item
       ref={localRef}
       onPointerDown={event}
-      className={clsx(
-        "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-8 pr-2 text-sm outline-none overflow-hidden",
-        "transition-colors duration-150 ease-in-out",
-        "data-[highlighted]:bg-graphite-secondary/80 focus:bg-graphite-secondary/80",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        shape === "sharp" && "!rounded-none",
-        className
-      )}
+      className={clsx(selectItemVariants({ size, shape }), className)}
       {...props}
     >
       <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
@@ -251,13 +273,24 @@ SelectItem.displayName = SelectPrimitive.Item.displayName;
 const SelectLabel = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
->(({ className, ...props }, ref) => (
-  <SelectPrimitive.Label
-    ref={ref}
-    className={clsx("py-1.5 pl-8 pr-2 text-sm font-semibold", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const { size } = useSelectContext();
+  return (
+    <SelectPrimitive.Label
+      ref={ref}
+      className={clsx(
+        "py-1.5 pl-8 pr-2 font-semibold",
+        {
+          "text-sm": size === "sm",
+          "text-base": size === "md",
+          "text-lg": size === "lg",
+        },
+        className
+      )}
+      {...props}
+    />
+  );
+});
 SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
 const SelectSeparator = React.forwardRef<
@@ -300,7 +333,7 @@ const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
   return (
     <button
       ref={localRef}
-      type="button" // FIX: Added explicit button type
+      type="button"
       onPointerDown={event}
       disabled={item.disabled}
       onClick={() => onSelect(item.value)}
@@ -339,10 +372,7 @@ interface SelectWrapperProps
   value?: string;
 }
 
-const SelectInput = React.forwardRef<
-  HTMLButtonElement, // Ref is now on a button element
-  SelectWrapperProps
->(
+const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
   (
     {
       label,
@@ -361,7 +391,6 @@ const SelectInput = React.forwardRef<
     },
     ref
   ) => {
-    // FIX: All hooks are now at the top level
     const isMobile = useMediaQuery("(max-width: 768px)");
     const uniqueId = React.useId();
     const [isOpen, setIsOpen] = useState(false);
@@ -372,7 +401,7 @@ const SelectInput = React.forwardRef<
     if (isMobile && contentPosition === "popper") {
       const handleOpenChange = (open: boolean) => {
         if (open) {
-          setTempValue(value); // Reset temp state when opening
+          setTempValue(value);
         }
         setIsOpen(open);
       };
@@ -389,7 +418,6 @@ const SelectInput = React.forwardRef<
 
       return (
         <div className="w-full flex flex-col gap-2">
-          {/* FIX: Replaced label with a div to avoid accessibility error */}
           {label && (
             <div className="block text-sm font-medium text-graphite-primary">
               {label}
@@ -397,7 +425,6 @@ const SelectInput = React.forwardRef<
           )}
           <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-              {/* FIX: Added explicit button type */}
               <button
                 ref={ref}
                 type="button"
@@ -424,7 +451,7 @@ const SelectInput = React.forwardRef<
               </DialogHeader>
               <div
                 className={clsx(
-                  "mt-4 max-h-[40vh] overflow-y-auto",
+                  "mt-4 max-h-[40vh] overflow-y-auto ",
                   "[mask-image:linear-gradient(to_bottom,transparent,black_1rem,black_calc(100%-1rem),transparent)]"
                 )}
               >
@@ -438,21 +465,15 @@ const SelectInput = React.forwardRef<
                   />
                 ))}
               </div>
-              <DialogFooter>
+              <DialogFooter className="flex justify-end gap-4">
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   size="sm"
-                  className="flex-1"
                   onClick={() => setIsOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button
-                  className="flex-1"
-                  size="sm"
-                  variant="primary"
-                  onClick={handleConfirm}
-                >
+                <Button size="sm" variant="primary" onClick={handleConfirm}>
                   Done
                 </Button>
               </DialogFooter>
@@ -478,13 +499,14 @@ const SelectInput = React.forwardRef<
           disabled={disabled}
           variant={variant}
           shape={shape}
+          size={size}
           value={value}
           onValueChange={onValueChange}
           {...props}
         >
           <SelectTrigger
             id={selectId}
-            ref={ref} // FIX: Removed 'as any' cast
+            ref={ref}
             size={size}
             error={error}
             disabled={disabled}

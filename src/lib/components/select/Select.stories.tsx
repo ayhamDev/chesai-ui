@@ -42,10 +42,18 @@ const fruitItems = [
   { value: "banana", label: "Banana" },
   { value: "blueberry", label: "Blueberry" },
   { value: "grapes", label: "Grapes" },
-
   { value: "pineapple", label: "Pineapple", disabled: true },
+  { value: "strawberry", label: "Strawberry" },
+  { value: "orange", label: "Orange" },
+  { value: "mango", label: "Mango" },
+  { value: "kiwi", label: "Kiwi" },
+  { value: "peach", label: "Peach" },
+  { value: "pear", label: "Pear" },
+  { value: "watermelon", label: "Watermelon" },
+  { value: "cherry", label: "Cherry" },
+  { value: "raspberry", label: "Raspberry" },
+  { value: "lemon", label: "Lemon" },
 ];
-
 export const Default: Story = {
   args: {
     variant: "primary",

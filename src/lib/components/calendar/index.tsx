@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { clsx } from "clsx";
 import * as React from "react";
 import { DayPicker } from "react-day-picker";
-import { clsx } from "clsx";
 import { buttonVariants } from "../button"; // Your existing button variants
+import { iconButtonVariants } from "../icon-button";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
@@ -37,7 +37,7 @@ function Calendar({
         row: "flex w-full mt-2 justify-center",
         cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-full [&:has([aria-selected].day-outside)]:bg-graphite-secondary/50 [&:has([aria-selected])]:bg-graphite-secondary first:[&:has([aria-selected])]:rounded-l-full last:[&:has([aria-selected])]:rounded-r-full focus-within:relative focus-within:z-20",
         day: clsx(
-          buttonVariants({ variant: "ghost", shape: "full" }),
+          iconButtonVariants({ variant: "ghost", shape: "full" }),
           "h-9 w-9 p-0 font-normal aria-selected:opacity-100"
         ),
         day_range_end: "day-range-end",

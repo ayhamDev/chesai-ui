@@ -47,7 +47,8 @@
     "react": "19.1.0",
     "react-day-picker": "^9.11.0",
     "react-dom": "19.1.0",
-    "use-ripple-hook": "^1.0.24"
+    "use-ripple-hook": "^1.0.24",
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@babel/core": "7.27.4",

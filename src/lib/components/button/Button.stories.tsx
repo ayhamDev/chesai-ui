@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ChevronRight, Plus } from "lucide-react";
+import { useState } from "react";
 import { Button } from "./index";
 
 const meta: Meta<typeof Button> = {
@@ -9,19 +10,18 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: "select",
-      // Removed 'icon' as it's now a separate component
       options: ["primary", "secondary", "ghost", "link"],
     },
     size: {
       control: "select",
       options: ["xs", "sm", "md", "lg"],
     },
-    // Added the new 'shape' control
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
       description: "The border radius of the button.",
     },
+    isLoading: { control: "boolean" }, // Added isLoading control
     disabled: { control: "boolean" },
     onClick: { action: "clicked" },
   },
@@ -34,7 +34,7 @@ export const Primary: Story = {
   args: {
     variant: "primary",
     size: "md",
-    shape: "full", // Default shape
+    shape: "full",
     children: "Primary Button",
   },
 };
@@ -71,7 +71,6 @@ export const AllSizes: Story = {
   ),
 };
 
-// New story to showcase the shape variations
 export const AllShapes: Story = {
   name: "All Shapes",
   render: () => (
@@ -103,7 +102,7 @@ export const WithIcons: Story = {
       <Button
         variant="secondary"
         size="md"
-        shape="minimal" // Example of using a different shape with an icon
+        shape="minimal"
         endIcon={<ChevronRight className="h-5 w-5" />}
       >
         Continue
@@ -112,19 +111,39 @@ export const WithIcons: Story = {
   ),
 };
 
-export const FocusState: Story = {
-  name: "Focus State (Click Me!)",
-  args: {
-    variant: "primary",
-    size: "md",
-    children: "Click or Tab to Focus",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "This story demonstrates the focus ring that appears on click or when navigating with the keyboard.",
-      },
-    },
+// --- NEW STORIES FOR LOADING STATE ---
+
+export const Loading: Story = {
+  name: "Loading State",
+  render: () => (
+    <div className="flex flex-wrap items-center gap-4">
+      <Button variant="primary" isLoading>
+        Saving...
+      </Button>
+      <Button variant="secondary" isLoading>
+        Loading...
+      </Button>
+      <Button variant="ghost" isLoading>
+        Processing...
+      </Button>
+    </div>
+  ),
+};
+
+export const InteractiveLoading: Story = {
+  name: "Interactive Loading",
+  render: () => {
+    const [isLoading, setIsLoading] = useState(false);
+    const handleClick = () => {
+      setIsLoading(true);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 2000);
+    };
+    return (
+      <Button variant="primary" isLoading={isLoading} onClick={handleClick}>
+        {isLoading ? "Submitting..." : "Click to Submit"}
+      </Button>
+    );
   },
 };

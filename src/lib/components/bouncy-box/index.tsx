@@ -11,10 +11,10 @@ export interface BouncyBoxProps extends HTMLMotionProps<"div"> {
 export const BouncyBox = React.forwardRef<HTMLDivElement, BouncyBoxProps>(
   ({ className, children, scaleAmount = 0.95, ...props }, ref) => {
     return (
-      <motion.div
+      <motion.span
         ref={ref}
         className={clsx(
-          "cursor-pointer", // Use inline-flex to wrap content tightly
+          "cursor-pointer inline-block", // Use inline-flex to wrap content tightly
           className
         )}
         // The magic prop: animates to this state while tapped/clicked
@@ -24,7 +24,7 @@ export const BouncyBox = React.forwardRef<HTMLDivElement, BouncyBoxProps>(
         {...props}
       >
         {children}
-      </motion.div>
+      </motion.span>
     );
   }
 );
