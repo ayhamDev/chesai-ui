@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import ReactDOM from "react-dom";
 import { Card, type CardProps } from "../card";
+import { Typography } from "../typography";
 
 // --- CONTEXT and PORTAL (No Changes) ---
 type DialogVariant = "basic" | "fullscreen";
@@ -102,14 +103,14 @@ DialogTrigger.displayName = "DialogTrigger";
 const basicDialogVariants: Variants = {
   hidden: {
     opacity: 0,
-    scale: 0.95,
+    scale: 0.92,
   },
   visible: {
     opacity: 1,
     scale: 1,
     transition: {
       duration: 0.3,
-      ease: [0.2, 0, 0, 1], // Material Design "Emphasized" curve
+      ease: [0.2, 0, 0, 1.1], // Material Design "Emphasized" curve
     },
   },
   exit: {
@@ -478,14 +479,7 @@ const DialogDescription = React.forwardRef<
   React.HTMLAttributes<HTMLParagraphElement>
 >((props, ref) => {
   const { descriptionId } = useDialogContext();
-  return (
-    <p
-      ref={ref}
-      id={descriptionId}
-      className="text-sm text-gray-600"
-      {...props}
-    />
-  );
+  return <Typography variant="muted" ref={ref} id={descriptionId} {...props} />;
 });
 DialogDescription.displayName = "DialogDescription";
 
