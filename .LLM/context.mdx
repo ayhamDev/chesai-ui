@@ -4077,6 +4077,599 @@ export const WithSubMenu: Story = {
 ```
 
 
+### Component: `elastic-scroll-area`
+
+This section contains the source code for the `elastic-scroll-area` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\elastic-scroll-area\index.tsx`)**
+```tsx
+"use client";
+
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
+import { clsx } from "clsx";
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
+import { ArrowDown, Loader2 } from "lucide-react";
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+// --- CONSTANTS ---
+const OVERSCROLL_DAMPING = 0.25;
+const MAX_OVERSCROLL_DESKTOP = 200;
+const SNAP_BACK_STIFFNESS = 300;
+const SNAP_BACK_DAMPING = 30;
+const DEFAULT_PULL_THRESHOLD = 80;
+
+// --- TYPE DEFINITIONS ---
+interface RefreshIndicatorProps {
+  pullProgress: MotionValue<number>;
+  isRefreshing: boolean;
+}
+
+export interface ElasticScrollAreaProps
+  extends React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
+  elasticity?: boolean;
+  dampingFactor?: number;
+  scrollbarVisibility?: "auto" | "always" | "scroll";
+  pullToRefresh?: boolean;
+  onRefresh?: () => Promise<unknown>;
+  pullThreshold?: number;
+  RefreshIndicatorComponent?: React.ComponentType<RefreshIndicatorProps>;
+}
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(value, max));
+}
+
+// --- DEFAULT REFRESH INDICATOR ---
+const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
+  pullProgress,
+  isRefreshing,
+}) => {
+  const rotation = useTransform(
+    pullProgress,
+    [0, DEFAULT_PULL_THRESHOLD],
+    [0, 180]
+  );
+
+  return isRefreshing ? (
+    <Loader2 className="h-5 w-5 animate-spin text-graphite-primary" />
+  ) : (
+    <motion.div style={{ rotate: rotation }}>
+      <ArrowDown className="h-5 w-5 text-graphite-foreground/70" />
+    </motion.div>
+  );
+};
+
+// --- OVERSCROLL & PULL-TO-REFRESH LOGIC HOOK ---
+const useElasticAndRefresh = (
+  viewportRef: React.RefObject<HTMLDivElement>,
+  y: MotionValue<number>,
+  options: {
+    isEnabled: boolean;
+    damping: number;
+    isRefreshEnabled: boolean;
+    onRefresh?: () => Promise<unknown>;
+    pullThreshold: number;
+  }
+) => {
+  const { isEnabled, damping, isRefreshEnabled, onRefresh, pullThreshold } =
+    options;
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const isTouching = useRef(false);
+  const startY = useRef(0);
+  const isOverscrolling = useRef(false);
+  const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const springToZero = useCallback(() => {
+    animate(y, 0, {
+      type: "spring",
+      stiffness: SNAP_BACK_STIFFNESS,
+      damping: SNAP_BACK_DAMPING,
+    });
+  }, [y]);
+
+  // --- MODIFIED: triggerRefresh now snaps content back immediately ---
+  const triggerRefresh = useCallback(async () => {
+    if (!onRefresh) {
+      console.warn(
+        "ElasticScrollArea: `onRefresh` prop is missing but `pullToRefresh` is enabled."
+      );
+      springToZero();
+      return;
+    }
+    setIsRefreshing(true);
+    // Snap the content back to 0 immediately.
+    // The indicator's style will be handled separately in the JSX.
+    springToZero();
+    try {
+      await onRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [onRefresh, springToZero]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || !isEnabled) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (isRefreshing) return;
+
+      const { scrollTop, scrollHeight, clientHeight } = viewport;
+      const isAtTop = scrollTop <= 0;
+      const isAtBottom = scrollTop >= scrollHeight - clientHeight;
+      const isScrollingUp = event.deltaY < 0;
+      const isScrollingDown = event.deltaY > 0;
+
+      if ((isAtTop && isScrollingUp) || (isAtBottom && isScrollingDown)) {
+        event.preventDefault();
+
+        // Use a more controlled accumulation approach
+        const currentY = y.get();
+        const resistance = Math.abs(currentY) / MAX_OVERSCROLL_DESKTOP;
+        const adjustedDelta = event.deltaY * damping * (1 - resistance);
+
+        const newY = Math.max(
+          -MAX_OVERSCROLL_DESKTOP,
+          Math.min(MAX_OVERSCROLL_DESKTOP, currentY - adjustedDelta)
+        );
+
+        y.set(newY);
+
+        // Clear any existing timeout and set a shorter one
+        if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
+        wheelTimeoutRef.current = setTimeout(() => {
+          const finalY = y.get();
+          if (Math.abs(finalY) > 0) {
+            if (isRefreshEnabled && finalY >= pullThreshold) {
+              triggerRefresh();
+            } else {
+              springToZero();
+            }
+          }
+        }, 50); // Shorter timeout for more responsive feel
+      }
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      if (isRefreshing || event.touches.length !== 1) return;
+      isTouching.current = true;
+      startY.current = event.touches[0].clientY;
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!isTouching.current || isRefreshing || event.touches.length !== 1)
+        return;
+
+      const { scrollTop, scrollHeight, clientHeight } = viewport;
+      const currentY = event.touches[0].clientY;
+      const deltaY = currentY - startY.current;
+      const isAtTop = scrollTop <= 0;
+      const isAtBottom = scrollTop >= scrollHeight - clientHeight;
+      const isPullingDown = deltaY > 0;
+      const isPullingUp = deltaY < 0;
+
+      if ((isAtTop && isPullingDown) || (isAtBottom && isPullingUp)) {
+        event.preventDefault();
+        isOverscrolling.current = true;
+        y.set(deltaY * damping);
+      } else {
+        if (isOverscrolling.current) {
+          isOverscrolling.current = false;
+          y.set(0);
+          startY.current = currentY;
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (!isTouching.current) return;
+      isTouching.current = false;
+      if (isOverscrolling.current) {
+        if (isRefreshEnabled && y.get() >= pullThreshold) {
+          triggerRefresh();
+        } else {
+          springToZero();
+        }
+        isOverscrolling.current = false;
+      }
+    };
+
+    viewport.addEventListener("wheel", handleWheel, { passive: false });
+    viewport.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+    viewport.addEventListener("touchmove", handleTouchMove, { passive: false });
+    viewport.addEventListener("touchend", handleTouchEnd, { passive: true });
+    viewport.addEventListener("touchcancel", handleTouchEnd, {
+      passive: true,
+    });
+
+    return () => {
+      viewport.removeEventListener("wheel", handleWheel);
+      viewport.removeEventListener("touchstart", handleTouchStart);
+      viewport.removeEventListener("touchmove", handleTouchMove);
+      viewport.removeEventListener("touchend", handleTouchEnd);
+      viewport.removeEventListener("touchcancel", handleTouchEnd);
+      if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
+    };
+  }, [
+    viewportRef,
+    isEnabled,
+    damping,
+    y,
+    springToZero,
+    isRefreshEnabled,
+    pullThreshold,
+    triggerRefresh,
+    isRefreshing,
+  ]);
+
+  return { isRefreshing };
+};
+
+// --- MAIN COMPONENT ---
+const ElasticScrollAreaRoot = forwardRef<
+  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
+  ElasticScrollAreaProps
+>(
+  (
+    {
+      className,
+      children,
+      elasticity = true,
+      dampingFactor = OVERSCROLL_DAMPING,
+      scrollbarVisibility = "auto",
+      pullToRefresh = false,
+      onRefresh,
+      pullThreshold = DEFAULT_PULL_THRESHOLD,
+      RefreshIndicatorComponent = DefaultRefreshIndicator,
+      ...props
+    },
+    ref
+  ) => {
+    const viewportRef = useRef<HTMLDivElement>(null);
+    const y = useMotionValue(0);
+
+    const { isRefreshing } = useElasticAndRefresh(viewportRef, y, {
+      isEnabled: elasticity || pullToRefresh,
+      damping: dampingFactor,
+      isRefreshEnabled: pullToRefresh,
+      onRefresh,
+      pullThreshold,
+    });
+
+    const pullProgress = useTransform(y, (v) => (v > 0 ? v : 0));
+    const indicatorOpacity = useTransform(
+      pullProgress,
+      [0, pullThreshold * 0.5],
+      [0, 1]
+    );
+
+    return (
+      <ScrollAreaPrimitive.Root
+        ref={ref}
+        className={clsx("relative h-full w-full overflow-hidden", className)}
+        {...props}
+      >
+        {pullToRefresh && (
+          <motion.div
+            className="pointer-events-none absolute inset-x-0 top-[-40px] z-20 flex justify-center"
+            // --- MODIFIED: Decouple indicator from content during refresh ---
+            style={{
+              y: isRefreshing ? pullThreshold + 40 : pullProgress,
+              opacity: isRefreshing ? 1 : indicatorOpacity,
+            }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-graphite-card shadow-md">
+              <RefreshIndicatorComponent
+                pullProgress={pullProgress}
+                isRefreshing={isRefreshing}
+              />
+            </div>
+          </motion.div>
+        )}
+
+        <motion.div style={{ y }} className="h-full w-full">
+          <ScrollAreaPrimitive.Viewport
+            ref={viewportRef}
+            className="h-full w-full rounded-[inherit]"
+          >
+            {children}
+          </ScrollAreaPrimitive.Viewport>
+        </motion.div>
+
+        <ScrollBar scrollbarVisibility={scrollbarVisibility} />
+        <ScrollAreaPrimitive.Corner />
+      </ScrollAreaPrimitive.Root>
+    );
+  }
+);
+ElasticScrollAreaRoot.displayName = "ElasticScrollArea";
+
+// --- STYLED SUB-COMPONENTS ---
+const ScrollBar = forwardRef<
+  React.ElementRef<typeof ScrollAreaPrimitive.Scrollbar>,
+  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Scrollbar> & {
+    scrollbarVisibility?: ElasticScrollAreaProps["scrollbarVisibility"];
+  }
+>(
+  (
+    {
+      className,
+      orientation = "vertical",
+      scrollbarVisibility = "auto",
+      ...props
+    },
+    ref
+  ) => (
+    <ScrollAreaPrimitive.Scrollbar
+      ref={ref}
+      orientation={orientation}
+      className={clsx(
+        "flex touch-none select-none transition-opacity duration-200",
+        orientation === "vertical" &&
+          "h-full w-2.5 border-l border-l-transparent p-[1px]",
+        orientation === "horizontal" &&
+          "h-2.5 border-t border-t-transparent p-[1px]",
+        {
+          "opacity-100": scrollbarVisibility === "always",
+          "data-[state=hidden]:opacity-0": scrollbarVisibility === "scroll",
+          "opacity-0 data-[state=visible]:opacity-100":
+            scrollbarVisibility === "auto",
+        },
+        className
+      )}
+      {...props}
+    >
+      <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-graphite-border" />
+    </ScrollAreaPrimitive.Scrollbar>
+  )
+);
+ScrollBar.displayName = ScrollAreaPrimitive.Scrollbar.displayName;
+
+export const ElasticScrollArea = Object.assign(ElasticScrollAreaRoot, {
+  ScrollBar,
+});
+```
+
+**Storybook Stories (`elastic-scroll-area.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { motion, useTransform, type MotionValue } from "framer-motion";
+import { Sun } from "lucide-react";
+import { Typography } from "../typography";
+import { ElasticScrollArea } from "./index";
+
+const meta: Meta<typeof ElasticScrollArea> = {
+  title: "Components/ElasticScrollArea",
+  component: ElasticScrollArea,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A scroll container that provides a native-like 'rubber band' or elastic overscroll effect, common in modern operating systems like iOS and macOS. It is built on top of Radix UI's accessible Scroll Area primitive and powered by Framer Motion for physics-based animations.",
+      },
+    },
+  },
+  argTypes: {
+    elasticity: {
+      control: "boolean",
+      description: "Toggles the elastic overscroll effect.",
+    },
+    dampingFactor: {
+      control: { type: "range", min: 0.05, max: 0.5, step: 0.01 },
+      description:
+        "Controls the resistance of the pull. Lower values are stiffer.",
+    },
+    scrollbarVisibility: {
+      control: "select",
+      options: ["auto", "always", "scroll"],
+      description: "Controls the visibility of the scrollbar.",
+    },
+    pullToRefresh: {
+      control: "boolean",
+      description: "Enables the pull-to-refresh functionality.",
+    },
+    pullThreshold: {
+      control: { type: "number", min: 40, max: 200, step: 10 },
+      description: "The pixel distance to pull to trigger a refresh.",
+    },
+    onRefresh: { action: "refreshed" },
+    children: { control: false },
+    RefreshIndicatorComponent: { control: false },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof ElasticScrollArea>;
+
+// Helper component to generate scrollable content
+const DummyContent = ({ itemCount = 30 }: { itemCount?: number }) => (
+  <main className="p-6">
+    <Typography variant="h3">Scroll Me</Typography>
+    <Typography variant="muted">
+      Use your mouse wheel, trackpad, or touch to scroll. Try scrolling past the
+      top or bottom edges.
+    </Typography>
+    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {Array.from({ length: itemCount }).map((_, i) => (
+        <div
+          key={i}
+          className="h-24 rounded-2xl bg-graphite-secondary flex items-center justify-center"
+        >
+          <Typography variant="small" className="text-graphite-foreground/50">
+            Item {i + 1}
+          </Typography>
+        </div>
+      ))}
+    </div>
+  </main>
+);
+
+// A mock async function for the onRefresh prop
+const simulateRefresh = () => {
+  return new Promise((resolve) => setTimeout(resolve, 2000));
+};
+
+// A smart render function to wrap stories in a sized container
+const render = (args: any) => (
+  <div className="w-96 h-[600px] rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+    <ElasticScrollArea {...args} />
+  </div>
+);
+
+// --- STORIES ---
+
+export const Default: Story = {
+  name: "1. Default Elasticity",
+  args: {
+    elasticity: true,
+    dampingFactor: 0.25,
+    scrollbarVisibility: "auto",
+    children: <DummyContent />,
+  },
+  render,
+};
+
+export const PullToRefresh: Story = {
+  name: "2. With Pull to Refresh",
+  args: {
+    ...Default.args,
+    pullToRefresh: true,
+    onRefresh: simulateRefresh,
+    pullThreshold: 80,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "**This demonstrates the new behavior.** Set `pullToRefresh={true}` and provide an `onRefresh` async function. When you pull and release, the content will immediately snap back into place while the indicator remains visible during the loading state.",
+      },
+    },
+  },
+  render,
+};
+
+// --- Custom Indicator Example ---
+const CustomWeatherIndicator = ({
+  pullProgress,
+  isRefreshing,
+}: {
+  pullProgress: MotionValue<number>;
+  isRefreshing: boolean;
+}) => {
+  const rotation = useTransform(pullProgress, [0, 150], [0, 360]);
+  return (
+    <motion.div style={{ rotate: rotation }}>
+      <Sun
+        className={
+          isRefreshing
+            ? "h-6 w-6 text-yellow-500 animate-spin"
+            : "h-6 w-6 text-yellow-500"
+        }
+      />
+    </motion.div>
+  );
+};
+
+export const CustomRefreshIndicator: Story = {
+  name: "3. Custom Refresh Indicator",
+  args: {
+    ...PullToRefresh.args,
+    pullThreshold: 100,
+    RefreshIndicatorComponent: CustomWeatherIndicator,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "You can pass a custom component to `RefreshIndicatorComponent` to create unique loading experiences.",
+      },
+    },
+  },
+  render,
+};
+
+export const ScrollbarVisibility: Story = {
+  name: "4. Scrollbar Visibility",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `scrollbarVisibility` prop controls how the scrollbar is displayed. `auto` shows on hover/scroll, `always` keeps it visible, and `scroll` only shows during active scrolling.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex gap-4 items-start">
+      <div className="flex flex-col items-center gap-2">
+        <Typography variant="small" className="font-bold">
+          'auto' (default)
+        </Typography>
+        <div className="w-64 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+          <ElasticScrollArea scrollbarVisibility="auto">
+            <DummyContent itemCount={15} />
+          </ElasticScrollArea>
+        </div>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Typography variant="small" className="font-bold">
+          'always'
+        </Typography>
+        <div className="w-64 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+          <ElasticScrollArea scrollbarVisibility="always">
+            <DummyContent itemCount={15} />
+          </ElasticScrollArea>
+        </div>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Typography variant="small" className="font-bold">
+          'scroll'
+        </Typography>
+        <div className="w-64 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+          <ElasticScrollArea scrollbarVisibility="scroll">
+            <DummyContent itemCount={15} />
+          </ElasticScrollArea>
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const DisabledElasticity: Story = {
+  name: "5. Elasticity Disabled",
+  args: {
+    ...Default.args,
+    elasticity: false,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "When `elasticity` is set to `false`, the component behaves as a standard scroll area with no overscroll effect.",
+      },
+    },
+  },
+  render,
+};
+```
+
+
 ### Component: `fab`
 
 This section contains the source code for the `fab` component and its corresponding Storybook stories.
@@ -5451,244 +6044,385 @@ This section contains the source code for the `pull-to-refresh` component and it
 "use client";
 
 import { clsx } from "clsx";
-import {
-  animate,
-  motion,
-  useMotionValue,
-  useTransform,
-  type PanInfo,
-} from "framer-motion";
+import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { ArrowDown, Loader2 } from "lucide-react";
-import React, { useCallback, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 // --- CONSTANTS ---
-const PULL_THRESHOLD = 100; // Pixels to pull down to trigger refresh
-const LOADING_INDICATOR_HEIGHT = 60; // The height the indicator stays at while loading
+const PULL_THRESHOLD = 100;
+const REFRESH_Y_POSITION = 160;
 
-// --- DEFAULT INDICATOR COMPONENT ---
-// This is shown when the user is pulling down.
-const DefaultRefreshIndicator = ({ y }: { y: any }) => {
-  // Rotate the arrow as the user pulls
-  const rotate = useTransform(y, [0, PULL_THRESHOLD], [0, 180]);
-  return (
-    <motion.div
-      style={{ rotate }}
-      className="flex h-10 w-10 items-center justify-center rounded-full bg-graphite-secondary text-graphite-secondaryForeground"
-    >
-      <ArrowDown className="h-5 w-5" />
+// --- TYPE DEFINITIONS ---
+interface RefreshIndicatorProps {
+  /** The current pull distance as a motion value. */
+  pullProgress: ReturnType<typeof useMotionValue<number>>;
+  /** Whether the component is in the "refreshing" state. */
+  isRefreshing: boolean;
+}
+
+export interface PullToRefreshProps {
+  children: React.ReactNode;
+  onRefresh: () => Promise<unknown>;
+  IndicatorComponent?: React.ComponentType<RefreshIndicatorProps>;
+  pullThreshold?: number;
+  className?: string;
+}
+
+// --- DEFAULT INDICATOR ---
+const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
+  pullProgress,
+  isRefreshing,
+}) => {
+  const rotation = useTransform(pullProgress, [0, PULL_THRESHOLD], [0, 180]);
+
+  return isRefreshing ? (
+    <Loader2 className="h-6 w-6 animate-spin text-graphite-primary" />
+  ) : (
+    <motion.div style={{ rotate: rotation }}>
+      <ArrowDown className="h-6 w-6 text-graphite-foreground/70" />
     </motion.div>
   );
 };
 
-// --- COMPONENT PROPS ---
-export interface PullToRefreshProps {
-  /** The scrollable content that the user will pull down. */
-  children: React.ReactNode;
-  /** An async function that resolves when the refresh action is complete. */
-  onRefresh: () => Promise<any>;
-  /** A custom component or element to display while refreshing. Defaults to the pull indicator. */
-  refreshingIndicator?: React.ReactNode;
-  /** Custom classes for the main wrapper div. */
-  className?: string;
-  /** Custom classes for the content area. */
-  contentClassName?: string;
-}
-
+// --- MAIN COMPONENT ---
 export const PullToRefresh = ({
   children,
   onRefresh,
-  refreshingIndicator,
+  IndicatorComponent = DefaultRefreshIndicator,
+  pullThreshold = PULL_THRESHOLD,
   className,
-  contentClassName,
 }: PullToRefreshProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const startTouchYRef = useRef(0);
+
   const y = useMotionValue(0);
+  const pullProgress = useTransform(y, (v) => (v > 0 ? v : 0));
 
-  // Determine if we're on a touch-enabled device
-  const isTouchDevice =
-    typeof window !== "undefined" &&
-    ("ontouchstart" in window || navigator.maxTouchPoints > 0);
-
-  // Animation to show while actively refreshing
-  const scale = useTransform(
-    y,
-    [0, PULL_THRESHOLD],
-    [0, 1],
-    { clamp: true } // Don't let the indicator scale beyond 1
+  // Dampen the pull distance for the elastic effect on the content
+  const contentY = useTransform(pullProgress, (v) => v * 0.4);
+  const indicatorOpacity = useTransform(
+    pullProgress,
+    [0, pullThreshold * 0.75],
+    [0, 1]
+  );
+  const indicatorScale = useTransform(
+    pullProgress,
+    [pullThreshold * 0.5, pullThreshold],
+    [0.5, 1]
   );
 
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    await onRefresh();
-    // Use a finally block to ensure state is reset even if onRefresh fails
-    setIsRefreshing(false);
-  }, [onRefresh]);
+  const handleTouchStart = (event: TouchEvent): void => {
+    if (isRefreshing) return;
 
-  const handleDragEnd = async (
-    event: MouseEvent | TouchEvent | PointerEvent,
-    info: PanInfo
-  ) => {
-    if (info.offset.y >= PULL_THRESHOLD) {
-      // User pulled far enough, trigger the refresh
-      // 1. Animate the indicator to its "loading" position
-      animate(y, LOADING_INDICATOR_HEIGHT, { type: "spring", damping: 30 });
-      // 2. Call the refresh logic
-      await handleRefresh();
-      // 3. Once refresh is done, animate back to the start
-      animate(y, 0, { type: "spring", damping: 30 });
-    } else {
-      // User didn't pull far enough, snap back to the start
-      animate(y, 0, { type: "spring", damping: 30 });
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Only start if we're at the top and touching with a single finger
+    if (container.scrollTop === 0 && event.touches.length === 1) {
+      startTouchYRef.current = event.touches[0].clientY;
+      isDraggingRef.current = true;
     }
   };
 
+  const handleTouchMove = (event: TouchEvent): void => {
+    if (!isDraggingRef.current || isRefreshing) return;
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const currentY = touch.clientY;
+    const deltaY = currentY - startTouchYRef.current;
+
+    // Only handle downward pulls
+    if (deltaY > 0) {
+      // Prevent default scroll behavior when pulling down
+      event.preventDefault();
+
+      // Apply some resistance to make it feel natural
+      const resistance = Math.min(deltaY * 0.6, pullThreshold * 1.2);
+      y.set(resistance);
+    } else {
+      // If pulling up, reset and allow normal scrolling
+      isDraggingRef.current = false;
+      y.set(0);
+    }
+  };
+
+  const handleTouchEnd = async (): Promise<void> => {
+    if (!isDraggingRef.current || isRefreshing) return;
+
+    isDraggingRef.current = false;
+    const currentY = y.get();
+
+    if (currentY >= pullThreshold) {
+      setIsRefreshing(true);
+      animate(y, REFRESH_Y_POSITION, {
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+      });
+
+      try {
+        await onRefresh();
+      } finally {
+        setIsRefreshing(false);
+        animate(y, 0, { type: "spring", stiffness: 300, damping: 30 });
+      }
+    } else {
+      animate(y, 0, { type: "spring", stiffness: 300, damping: 30 });
+    }
+  };
+
+  // Mouse events for desktop support
+  const handleMouseDown = (event: MouseEvent): void => {
+    if (isRefreshing) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (container.scrollTop === 0) {
+      startTouchYRef.current = event.clientY;
+      isDraggingRef.current = true;
+    }
+  };
+
+  const handleMouseMove = (event: MouseEvent): void => {
+    if (!isDraggingRef.current || isRefreshing) return;
+
+    const currentY = event.clientY;
+    const deltaY = currentY - startTouchYRef.current;
+
+    if (deltaY > 0) {
+      event.preventDefault();
+      const resistance = Math.min(deltaY * 0.6, pullThreshold * 1.2);
+      y.set(resistance);
+    } else {
+      isDraggingRef.current = false;
+      y.set(0);
+    }
+  };
+
+  const handleMouseUp = async (): Promise<void> => {
+    if (!isDraggingRef.current || isRefreshing) return;
+
+    isDraggingRef.current = false;
+    const currentY = y.get();
+
+    if (currentY >= pullThreshold) {
+      setIsRefreshing(true);
+      animate(y, REFRESH_Y_POSITION, {
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+      });
+
+      try {
+        await onRefresh();
+      } finally {
+        setIsRefreshing(false);
+        animate(y, 0, { type: "spring", stiffness: 300, damping: 30 });
+      }
+    } else {
+      animate(y, 0, { type: "spring", stiffness: 300, damping: 30 });
+    }
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Add touch event listeners
+    container.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+    container.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    // Add mouse event listeners for desktop
+    container.addEventListener("mousedown", handleMouseDown);
+
+    // Mouse move and up need to be on document to handle cases where
+    // the mouse moves outside the container
+    const handleDocumentMouseMove = (event: MouseEvent) =>
+      handleMouseMove(event);
+    const handleDocumentMouseUp = () => handleMouseUp();
+
+    document.addEventListener("mousemove", handleDocumentMouseMove);
+    document.addEventListener("mouseup", handleDocumentMouseUp);
+
+    return () => {
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
+      container.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("mousemove", handleDocumentMouseMove);
+      document.removeEventListener("mouseup", handleDocumentMouseUp);
+    };
+  }, [isRefreshing]);
+
   return (
-    <div className={clsx("relative w-full overflow-hidden", className)}>
-      {/* 1. The Indicator Area */}
+    <div
+      className={clsx(
+        "relative w-full h-full overflow-hidden bg-graphite-background",
+        className
+      )}
+    >
+      {/* Indicator */}
       <motion.div
-        className="absolute inset-x-0 top-0 z-0 flex justify-center pt-4"
-        style={{ scale }}
+        className="absolute inset-x-0 top-[-50px] z-10 flex justify-center pt-4"
+        style={{
+          opacity: indicatorOpacity,
+          scale: indicatorScale,
+          y: contentY,
+        }}
       >
-        {isRefreshing ? (
-          refreshingIndicator ?? (
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-graphite-secondary text-graphite-secondaryForeground">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
-          )
-        ) : (
-          <DefaultRefreshIndicator y={y} />
-        )}
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-graphite-card shadow-md">
+          <IndicatorComponent
+            pullProgress={pullProgress}
+            isRefreshing={isRefreshing}
+          />
+        </div>
       </motion.div>
 
-      {/* 2. The Draggable Content Area */}
+      {/* Scrollable Content */}
       <motion.div
-        className={clsx("relative z-10 bg-inherit", contentClassName)}
-        style={{ y }}
-        // Only enable dragging on touch devices
-        drag={"y"}
-        // Constrain the drag to the vertical axis and give it a rubber-band effect
-        dragConstraints={{ top: 0, bottom: PULL_THRESHOLD * 1.5 }}
-        dragElastic={0.2}
-        onDragEnd={handleDragEnd}
-        // Animate presence for smooth appearance
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.2 }}
+        ref={containerRef}
+        style={{
+          y: contentY,
+          // Remove touch-action to allow our custom handling
+        }}
+        className="absolute inset-0 z-0 h-full overflow-y-auto"
       >
         {children}
       </motion.div>
     </div>
   );
 };
-
-PullToRefresh.displayName = "PullToRefresh";
 ```
 
-**Storybook Stories (`Pull-to-refresh.stories.tsx`)**
+**Storybook Stories (`pull-to-refresh.stories.tsx`)**
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react";
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { motion, useTransform, type MotionValue } from "framer-motion";
+import { Sun } from "lucide-react";
+import { Typography } from "../typography";
 import { PullToRefresh } from "./index";
 
 const meta: Meta<typeof PullToRefresh> = {
   title: "Components/PullToRefresh",
   component: PullToRefresh,
-  tags: ["autods"],
+  tags: ["autodocs"],
   parameters: {
-    layout: "fullscreen",
-    // Default to a mobile viewport to make testing easy
-    viewport: {
-      defaultViewport: "mobile1",
-    },
+    layout: "centered",
     docs: {
       description: {
         component:
-          "A touch-specific component that wraps scrollable content to add 'pull to refresh' functionality. **To test this in a desktop browser, use your browser's developer tools to simulate a touch device.**",
+          "An elastic pull-to-refresh component built with Framer Motion's pan gesture. It wraps scrollable content and triggers an async `onRefresh` action. Requires a container with a defined height.",
       },
     },
   },
   argTypes: {
-    children: { control: false },
     onRefresh: { action: "refreshed" },
-    refreshingIndicator: { control: false },
+    pullThreshold: {
+      control: { type: "range", min: 50, max: 200, step: 10 },
+    },
+    children: { control: false },
+    IndicatorComponent: { control: false },
   },
 };
 
 export default meta;
 type Story = StoryObj<typeof PullToRefresh>;
 
-// --- Helper Components for the Story ---
-
-// Generates a list of random "posts"
-const generateItems = (count: number) =>
-  Array.from({ length: count }, (_, i) => ({
-    id: Date.now() + i,
-    title: `Random Post #${Math.floor(Math.random() * 1000)}`,
-    content: "Pull down on this list to refresh the content.",
-  }));
-
-// A simple card to display a post
-const PostCard = ({ title, content }: { title: string; content: string }) => (
-  <div className="rounded-xl border border-graphite-border bg-graphite-card p-4">
-    <p className="font-bold">{title}</p>
-    <p className="text-sm text-gray-600">{content}</p>
-  </div>
+// Helper component to generate scrollable content
+const DummyContent = () => (
+  <main className="p-6 pt-4">
+    <Typography variant="h3">Pull Down to Refresh</Typography>
+    <Typography variant="muted">
+      This container is scrollable. The pull gesture only works when you are at
+      the very top.
+    </Typography>
+    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 30 }).map((_, i) => (
+        <div key={i} className="h-24 rounded-2xl bg-graphite-secondary" />
+      ))}
+    </div>
+  </main>
 );
 
-// --- STORIES ---
+// A mock async function for the onRefresh prop
+const simulateRefresh = () => {
+  return new Promise((resolve) => setTimeout(resolve, 2000));
+};
 
 export const Default: Story = {
-  name: "1. Default Indicator",
-  render: function Render(args) {
-    const [items, setItems] = useState(() => generateItems(100));
-
-    // Simulate a network request
-    const handleRefresh = async () => {
-      args.onRefresh(); // For Storybook action logging
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setItems(generateItems(100));
-    };
-
-    return (
-      <div className="h-screen bg-graphite-background">
-        <div className="p-4 font-bold text-center">
-          Simulating a Mobile App View
-        </div>
-        <PullToRefresh {...args} onRefresh={handleRefresh}>
-          <div className="space-y-3 p-4">
-            {items.map((item) => (
-              <PostCard
-                key={item.id}
-                title={item.title}
-                content={item.content}
-              />
-            ))}
-          </div>
-        </PullToRefresh>
-      </div>
-    );
+  name: "1. Default Behavior",
+  args: {
+    onRefresh: simulateRefresh,
+    pullThreshold: 100,
   },
+  render: (args) => (
+    <div className="w-96 h-[600px] rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+      <PullToRefresh {...args}>
+        <DummyContent />
+      </PullToRefresh>
+    </div>
+  ),
+};
+
+// --- Custom Indicator Example ---
+
+interface CustomIndicatorProps {
+  pullProgress: MotionValue<number>;
+  isRefreshing: boolean;
+}
+
+const CustomWeatherIndicator = ({
+  pullProgress,
+  isRefreshing,
+}: CustomIndicatorProps) => {
+  // Use the motion value passed from the parent for transforms
+  const rotation = useTransform(pullProgress, [0, 150], [0, 360]);
+
+  return (
+    <motion.div style={{ rotate: rotation }}>
+      <Sun
+        className={
+          isRefreshing
+            ? "h-6 w-6 text-yellow-500 animate-spin"
+            : "h-6 w-6 text-yellow-500"
+        }
+      />
+    </motion.div>
+  );
 };
 
 export const CustomIndicator: Story = {
-  name: "2. Custom Refreshing Indicator",
+  name: "2. With a Custom Indicator",
+  args: {
+    ...Default.args,
+    IndicatorComponent: CustomWeatherIndicator,
+    pullThreshold: 150,
+  },
   parameters: {
     docs: {
       description: {
         story:
-          "You can pass any React node to the `refreshingIndicator` prop to customize the loading state. The pulling indicator remains the default arrow.",
+          "You can pass any component to the `IndicatorComponent` prop. It will receive `pullProgress` (a MotionValue) and `isRefreshing` props, allowing you to create custom, fluid animations.",
       },
     },
   },
-  args: {
-    refreshingIndicator: (
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-graphite-primary text-graphite-primaryForeground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    ),
-  },
-  render: (args) => <Default.render {...args} />,
+  render: (args) => (
+    <div className="w-96 h-[600px] rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+      <PullToRefresh {...args}>
+        <DummyContent />
+      </PullToRefresh>
+    </div>
+  ),
 };
 ```
 
