@@ -27,8 +27,8 @@ const FOLD_BORDER_RADIUS = 24; // Equivalent to rounded-3xl
 // --- TYPE DEFINITIONS ---
 type AppBarColor = "background" | "card" | "primary" | "secondary";
 type AppBarScrollBehavior = "sticky" | "conditionally-sticky";
-// Added 'fold' to the possible behaviors
-type AppBarAnimatedBehavior = "none" | "appbar-color" | "fold";
+// Added 'shadow' to the possible behaviors
+type AppBarAnimatedBehavior = "none" | "appbar-color" | "fold" | "shadow";
 type AppBarSize = "md" | "lg";
 type StickyHideTarget = "main-row" | "full-appbar";
 
@@ -136,7 +136,7 @@ const AppBarProvider: React.FC<AppBarProviderProps> = ({
 
 // --- APP BAR ---
 const appBarVariants = cva(
-  "fixed top-0 z-40 w-full transition-colors duration-300 ease-in-out",
+  "fixed top-0 z-40 w-full transition-[colors,box-shadow] duration-300 ease-in-out",
   {
     variants: {
       appBarColor: {
@@ -145,9 +145,15 @@ const appBarVariants = cva(
         primary: "bg-graphite-primary text-graphite-primaryForeground",
         secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
       },
+      // Add shadow variant
+      shadow: {
+        none: "shadow-none",
+        md: "shadow-sm",
+      },
     },
     defaultVariants: {
       appBarColor: "card",
+      shadow: "none", // Default to no shadow
     },
   }
 );
@@ -160,7 +166,6 @@ export interface AppBarProps
   centerAdornment?: React.ReactNode;
   endAdornments?: React.ReactNode[];
   scrollBehavior?: AppBarScrollBehavior;
-  // Prop is now an array of behaviors
   animatedBehavior?: AppBarAnimatedBehavior[];
   animatedColor?: AppBarColor;
   size?: AppBarSize;
@@ -179,7 +184,6 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       centerAdornment,
       endAdornments = [],
       scrollBehavior = "sticky",
-      // Default to an empty array for safety
       animatedBehavior = [],
       animatedColor = "secondary",
       size = "md",
@@ -263,9 +267,13 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
     // --- REFACTORED ANIMATION LOGIC ---
     const shouldAnimateColor = animatedBehavior.includes("appbar-color");
     const shouldFold = animatedBehavior.includes("fold");
+    const shouldAnimateShadow = animatedBehavior.includes("shadow");
 
     const finalColor =
       shouldAnimateColor && isScrolled ? animatedColor : appBarColor;
+
+    // Determine the shadow state based on scroll and the new behavior prop
+    const finalShadow = shouldAnimateShadow && isScrolled ? "md" : "none";
 
     // New animation for the folding effect
     const animatedBorderRadius = useTransform(
@@ -330,14 +338,17 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       <motion.header
         ref={ref}
         className={clsx(
-          appBarVariants({ appBarColor: finalColor, className }),
+          appBarVariants({
+            appBarColor: finalColor,
+            shadow: finalShadow,
+            className,
+          }),
           // Add overflow-hidden when folding or collapsing to clip content
           (isCollapsible || shouldFold) && "overflow-hidden"
         )}
         style={{
           y: headerY,
           height: isCollapsible ? smoothAnimatedTotalHeight : undefined,
-          // Conditionally apply the folding animation style
           borderBottomLeftRadius: shouldFold ? animatedBorderRadius : undefined,
           borderBottomRightRadius: shouldFold
             ? animatedBorderRadius

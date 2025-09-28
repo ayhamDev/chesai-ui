@@ -38,10 +38,9 @@ const meta: Meta<typeof AppBar> = {
       control: "select",
       options: ["sticky", "conditionally-sticky"],
     },
-    // Updated control to 'check' for multi-select
     animatedBehavior: {
       control: "check",
-      options: ["appbar-color", "fold"],
+      options: ["appbar-color", "fold", "shadow"],
     },
     animatedColor: {
       control: "select",
@@ -142,7 +141,7 @@ export const AnimatedColor: Story = {
   name: "Medium, Animated Color",
   args: {
     ...Default.args,
-    animatedBehavior: ["appbar-color"], // Now an array
+    animatedBehavior: ["appbar-color"],
     appBarColor: "background",
     animatedColor: "card",
     children: <Typography variant="h4">Animated Header</Typography>,
@@ -158,12 +157,11 @@ export const AnimatedColor: Story = {
   },
 };
 
-// New story for the folding effect
 export const FoldingOnScroll: Story = {
   name: "Medium, Folding on Scroll",
   args: {
     ...Default.args,
-    animatedBehavior: ["fold"], // Enable the fold effect
+    animatedBehavior: ["fold"],
     children: <Typography variant="h4">Folding Header</Typography>,
   },
   render,
@@ -172,6 +170,25 @@ export const FoldingOnScroll: Story = {
       description: {
         story:
           "With `animatedBehavior` including `fold`, the AppBar's bottom corners become rounded as you scroll down, creating a neat 'folding' effect.",
+      },
+    },
+  },
+};
+
+export const ShadowOnScroll: Story = {
+  name: "Medium, Shadow on Scroll",
+  args: {
+    ...Default.args,
+    animatedBehavior: ["shadow"], // Enable shadow effect
+    appBarColor: "background",
+    children: <Typography variant="h4">Shadow Header</Typography>,
+  },
+  render,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "With `animatedBehavior` including `shadow`, the AppBar gains a subtle shadow when the user scrolls, helping it stand out from the content.",
       },
     },
   },
@@ -228,7 +245,6 @@ export const LargeCollapsing: Story = {
   },
 };
 
-// ... (LargeStatic and LargeStaticWithOverride stories remain unchanged) ...
 export const LargeStatic: Story = {
   name: "Large, Static (No Collapse)",
   args: {
@@ -272,9 +288,7 @@ export const CombinedEffects: Story = {
   name: "Kitchen Sink (All Effects)",
   args: {
     ...LargeCollapsing.args,
-    // Enable both effects
-    animatedBehavior: ["appbar-color", "fold"],
-
+    animatedBehavior: ["appbar-color", "fold", "shadow"],
     animatedColor: "secondary",
   },
   render,
@@ -282,7 +296,7 @@ export const CombinedEffects: Story = {
     docs: {
       description: {
         story:
-          "A demonstration of all features working in harmony. This `lg` AppBar collapses, hides on scroll, animates its color, and folds its corners simultaneously.",
+          "A demonstration of all features working in harmony. This `lg` AppBar collapses, hides on scroll, animates its color, folds its corners, and gains a shadow simultaneously.",
       },
     },
   },

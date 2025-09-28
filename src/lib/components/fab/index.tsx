@@ -70,11 +70,17 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
     return (
       <BouncyBox scaleAmount={0.95}>
         <motion.button
-          // Animate padding to control the container size
+          // --- MODIFICATION START ---
+          // 1. Set the initial state before the component mounts
+          initial={{ scale: 0, opacity: 0 }}
+          // 2. Animate to the final state, merging with existing animations
           animate={{
-            paddingLeft: isExtended ? fabSize / 2 : fabSize / 4, // 24px extended, dynamic when collapsed
+            scale: 1, // Animate scale to 1
+            opacity: 1, // Animate opacity to 1
+            paddingLeft: isExtended ? fabSize / 2 : fabSize / 4,
             paddingRight: isExtended ? fabSize / 2 : fabSize / 4,
           }}
+          // --- MODIFICATION END ---
           transition={transition}
           className={clsx(
             fabVariants({ size, shape, className }),

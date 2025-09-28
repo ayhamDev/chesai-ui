@@ -2,7 +2,7 @@
 
 import { clsx } from "clsx";
 import React from "react";
-import { Avatar, AvatarProps } from "./index";
+import { Avatar, type AvatarProps } from "./index";
 
 export interface AvatarGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
