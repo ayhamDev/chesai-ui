@@ -5,20 +5,11 @@ import {
   useSpring,
   useTransform,
   type MotionStyle,
-  type MotionValue,
 } from "framer-motion";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { type AppBarSharedProps } from "../components/appbar";
 
-// --- CONSTANTS ---
-const FALLBACK_NORMAL_HEADER_ROW_HEIGHT = 64;
-const FALLBACK_LARGE_HEADER_ROW_HEIGHT = 96;
-const FOLD_ANIMATION_DISTANCE = 50;
-const FOLD_BORDER_RADIUS = 24;
-
 // --- HOOK DEFINITION ---
-// FIX: The `appBarColor` prop is part of VariantProps, not shared logic.
-// It should be handled by the component.
 export type UseAppBarOptions = AppBarSharedProps;
 
 export const useAppBar = (
@@ -36,6 +27,11 @@ export const useAppBar = (
     smallHeaderContent,
     stickyHideTarget,
     scrollContainerRef,
+    // --- NEW CUSTOMIZABLE PROPS WITH DEFAULTS ---
+    normalHeaderRowHeight = 64,
+    largeHeaderRowHeight = 96,
+    foldAnimationDistance = 50,
+    foldBorderRadius = 24,
   } = options;
 
   // --- REFS & STATE ---
@@ -47,10 +43,7 @@ export const useAppBar = (
   const headerY = useMotionValue(0);
 
   const [measuredHeights, setMeasuredHeights] = useState({
-    mainRow:
-      size === "lg"
-        ? FALLBACK_LARGE_HEADER_ROW_HEIGHT
-        : FALLBACK_NORMAL_HEADER_ROW_HEIGHT,
+    mainRow: size === "lg" ? largeHeaderRowHeight : normalHeaderRowHeight,
     largeContent: 0,
   });
 
@@ -87,12 +80,10 @@ export const useAppBar = (
       if (stickyHideTarget === "full-appbar" && size === "lg") {
         heightToHide = mainRow + largeContent;
       } else if (stickyHideTarget === "main-row") {
-        heightToHide = isCollapsible
-          ? FALLBACK_NORMAL_HEADER_ROW_HEIGHT
-          : mainRow;
+        heightToHide = isCollapsible ? normalHeaderRowHeight : mainRow;
       } else {
         heightToHide = isCollapsible
-          ? FALLBACK_NORMAL_HEADER_ROW_HEIGHT
+          ? normalHeaderRowHeight
           : mainRow + largeContent;
       }
 
@@ -129,19 +120,19 @@ export const useAppBar = (
 
   const animatedBorderRadius = useTransform(
     scrollY,
-    [0, FOLD_ANIMATION_DISTANCE],
-    [0, FOLD_BORDER_RADIUS],
+    [0, foldAnimationDistance],
+    [0, foldBorderRadius],
     { clamp: true }
   );
 
   const collapseAnimDistance = measuredHeights.largeContent;
-  const largeRowHeight = measuredHeights.mainRow;
-  const totalExpandedHeight = largeRowHeight + collapseAnimDistance;
+  const measuredLargeRowHeight = measuredHeights.mainRow;
+  const totalExpandedHeight = measuredLargeRowHeight + collapseAnimDistance;
 
   const animatedTotalHeight = useTransform(
     scrollY,
     [0, collapseAnimDistance],
-    [totalExpandedHeight, FALLBACK_NORMAL_HEADER_ROW_HEIGHT],
+    [totalExpandedHeight, normalHeaderRowHeight],
     { clamp: true }
   );
   const smoothAnimatedTotalHeight = useSpring(animatedTotalHeight, {
@@ -153,7 +144,7 @@ export const useAppBar = (
   const animatedMainRowHeight = useTransform(
     scrollY,
     [0, collapseAnimDistance],
-    [largeRowHeight, FALLBACK_NORMAL_HEADER_ROW_HEIGHT],
+    [measuredLargeRowHeight, normalHeaderRowHeight],
     { clamp: true }
   );
   const headerRowHeight = isCollapsible

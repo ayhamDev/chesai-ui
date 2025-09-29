@@ -1,19 +1,20 @@
 "use client";
 
-import { useLongPress } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import { Reorder } from "framer-motion";
 import React, { useState } from "react";
 import { ListContext } from "../../context/List.context";
 import { Typography } from "../typography";
-import { ListItem, ListItemProps } from "./ListItem";
+import { ListItem, type ListItemProps } from "./ListItem"; // Import ListItemProps
+
+// Export the type so it can be used elsewhere
+export type { ListItemProps };
 
 const listVariants = cva("flex w-full flex-col overflow-hidden", {
   variants: {
     variant: {
-      primary: "bg-graphite-card",
-      secondary: "bg-graphite-secondary",
+      primary: "",
+      secondary: "",
     },
     shape: {
       full: "rounded-2xl",
@@ -27,33 +28,29 @@ const listVariants = cva("flex w-full flex-col overflow-hidden", {
   },
 });
 
-const Divider = () => <div className="h-px bg-graphite-border" />;
+const Divider = () => <div className="h-px bg-graphite-border ml-4" />;
 
-interface ListProps<T>
+interface ListProps
   extends React.HTMLAttributes<HTMLUListElement>,
     VariantProps<typeof listVariants> {
   children: React.ReactNode;
   dividers?: boolean;
   header?: React.ReactNode;
-  reorderable?: boolean;
-  items?: T[];
-  onReorder?: (newOrder: T[]) => void;
   selectable?: boolean;
+  reorderable?: boolean;
 }
 
-const ListRoot = <T extends { id: string | number }>({
+const ListRoot = ({
   className,
   children,
   dividers = false,
   header,
   variant,
   shape,
-  reorderable = false,
-  items,
-  onReorder,
   selectable = false,
+  reorderable = false,
   ...props
-}: ListProps<T>) => {
+}: ListProps) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string | number>>(
     new Set()
@@ -67,50 +64,29 @@ const ListRoot = <T extends { id: string | number }>({
       } else {
         newSet.add(id);
       }
+
+      if (newSet.size === 0) {
+        setIsSelectionMode(false);
+      }
+
       return newSet;
     });
   };
 
-  const longPressAttrs = useLongPress(
-    () => {
-      if (selectable && !reorderable) setIsSelectionMode(true);
-    },
-    { threshold: 500 }
-  );
-
-  const startReorder = (id: string | number) => {
-    // Optional: could add logic here if needed when drag starts
-  };
-
   const childArray = React.Children.toArray(children);
-
-  const renderContent = () => (
-    <>
-      {childArray.map((child, index) => {
-        if (!React.isValidElement(child)) return child;
-        const isLast = index === childArray.length - 1;
-        return (
-          <React.Fragment key={(child.props as ListItemProps).id}>
-            {child}
-            {dividers && !isLast && <Divider />}
-          </React.Fragment>
-        );
-      })}
-    </>
-  );
 
   return (
     <ListContext.Provider
       value={{
+        isSelectable: selectable,
         isSelectionMode,
         setIsSelectionMode,
         selectedItems,
         toggleSelection,
         isReorderable: reorderable,
-        startReorder,
       }}
     >
-      <div {...(selectable && longPressAttrs)}>
+      <div className="flex flex-col">
         {header && (
           <div className="px-4 py-2">
             <Typography
@@ -121,25 +97,21 @@ const ListRoot = <T extends { id: string | number }>({
             </Typography>
           </div>
         )}
-        {reorderable ? (
-          <Reorder.Group
-            as="ul"
-            axis="y"
-            values={items || []}
-            onReorder={onReorder as any}
-            className={clsx(listVariants({ variant, shape, className }))}
-            {...props}
-          >
-            {children}
-          </Reorder.Group>
-        ) : (
-          <ul
-            className={clsx(listVariants({ variant, shape, className }))}
-            {...props}
-          >
-            {renderContent()}
-          </ul>
-        )}
+        <ul
+          className={clsx(listVariants({ variant, shape, className }), "py-2")}
+          {...props}
+        >
+          {childArray.map((child, index) => {
+            if (!React.isValidElement(child)) return child;
+            const isLast = index === childArray.length - 1;
+            return (
+              <React.Fragment key={child.key}>
+                {child}
+                {dividers && !isLast && <Divider />}
+              </React.Fragment>
+            );
+          })}
+        </ul>
       </div>
     </ListContext.Provider>
   );

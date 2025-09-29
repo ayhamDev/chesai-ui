@@ -9,6 +9,7 @@ import {
   Plane,
   Search,
 } from "lucide-react";
+import { useRef } from "react";
 import { AppBar } from "../appbar";
 import { Card } from "../card";
 import { IconButton } from "../icon-button";
@@ -155,7 +156,7 @@ export const SwipeableCarousel: Story = {
     docs: {
       description: {
         story:
-          "Set `pageTransition='slide'` to create a carousel effect. You can now drag with a mouse or swipe on a touch screen to navigate between panels.",
+          'Set `pageTransition="slide"` to create a carousel effect. You can now drag with a mouse or swipe on a touch screen to navigate between panels.',
       },
     },
   },
@@ -243,7 +244,7 @@ export const Scrollable: Story = {
 };
 
 export const ScrollableWithSwipe: Story = {
-  name: "6. Scrollable Tabs With swipe",
+  name: "6. Scrollable Tabs With Swipe",
   args: {
     ...Primary.args,
     defaultValue: "flights",
@@ -317,11 +318,13 @@ export const WithAppBar: Story = {
     docs: {
       description: {
         story:
-          "This example demonstrates how to integrate the `Tabs` component with the `AppBar`. The `Tabs.List` is placed inside the `largeHeaderContent` slot of a large `AppBar`. The `AppBar.Provider` manages the scrolling container which holds the `Tabs.Content`, allowing the AppBar to collapse and hide correctly as the user scrolls through the tab panels.",
+          "This example demonstrates how to integrate the `Tabs` component with the `AppBar`. The `Tabs.List` is placed inside the `largeHeaderContent` slot of a large `AppBar`. A `ref` is created for the main scrollable container and passed to the `AppBar` via `scrollContainerRef`, allowing the AppBar to collapse and hide correctly as the user scrolls through the tab panels.",
       },
     },
   },
   render: (args) => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+
     const DummyScrollContent = ({ title }: { title: string }) => (
       <main className="p-6">
         <Typography variant="h3">{title}</Typography>
@@ -334,20 +337,26 @@ export const WithAppBar: Story = {
     );
 
     return (
-      <AppBar.Provider mainContentColor="background">
+      <div className="h-screen bg-graphite-background">
         <Tabs {...args}>
           <AppBar
             size="lg"
             scrollBehavior="conditionally-sticky"
             stickyHideTarget="main-row"
             appBarColor="card"
+            scrollContainerRef={scrollRef}
             startAdornment={
-              <IconButton variant="ghost" aria-label="Menu">
+              <IconButton variant="ghost" size={"sm"} aria-label="Menu">
                 <Menu />
               </IconButton>
             }
             endAdornments={[
-              <IconButton key="search" variant="ghost" aria-label="Search">
+              <IconButton
+                key="search"
+                size={"sm"}
+                variant="ghost"
+                aria-label="Search"
+              >
                 <Search />
               </IconButton>,
             ]}
@@ -356,6 +365,7 @@ export const WithAppBar: Story = {
                 My App
               </Typography>
             }
+            largeHeaderRowHeight={50}
             largeHeaderContent={
               // Negative margins stretch the list to the edges and counteract parent padding
               <div className="-mx-4 -mb-4">
@@ -369,7 +379,10 @@ export const WithAppBar: Story = {
             }
           />
 
-          <div className="pt-[160px]">
+          <div
+            ref={scrollRef}
+            className="h-full overflow-y-auto pt-[100px] bg-graphite-background"
+          >
             <Tabs.Content>
               <Tabs.Panel value="flights">
                 <DummyScrollContent title="Search for Flights" />
@@ -386,7 +399,7 @@ export const WithAppBar: Story = {
             </Tabs.Content>
           </div>
         </Tabs>
-      </AppBar.Provider>
+      </div>
     );
   },
 };

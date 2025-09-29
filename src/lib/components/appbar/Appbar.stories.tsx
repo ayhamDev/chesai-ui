@@ -85,7 +85,7 @@ const simulateRefresh = () => {
 
 // A smart render function to wrap stories and demonstrate the headless pattern.
 const renderWithScrollContainer = (args: AppBarProps) => {
-  const scrollRef = useRef<HTMLElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   let paddingTop = "pt-[64px]";
   if (args.size === "lg" && args.largeHeaderContent) {
@@ -95,10 +95,7 @@ const renderWithScrollContainer = (args: AppBarProps) => {
   return (
     <div className="h-screen bg-graphite-background">
       <AppBar {...args} scrollContainerRef={scrollRef} />
-      <div
-        ref={scrollRef as React.RefObject<HTMLDivElement>}
-        className={`h-full overflow-y-auto ${paddingTop}`}
-      >
+      <div ref={scrollRef} className={`h-full overflow-y-auto ${paddingTop}`}>
         <DummyContent />
       </div>
     </div>
@@ -247,13 +244,12 @@ export const CombinedEffects: Story = {
   render: renderWithScrollContainer,
 };
 
-// ============================= FIX IS HERE =============================
-// This new component calls the hook safely *after* its parent has mounted.
+// This helper component calls the useAppBar hook safely *after* its parent has mounted and hydrated the ref.
 const ElasticScrollContent = ({
   scrollRef,
   args,
 }: {
-  scrollRef: React.RefObject<HTMLElement | null>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
   args: AppBarProps;
 }) => {
   // Explicitly pick only the props that the `useAppBar` hook needs.
@@ -277,11 +273,9 @@ const ElasticScrollContent = ({
     largeHeaderContent,
     smallHeaderContent,
     stickyHideTarget,
-    // @ts-ignore
-    appBarColor,
+    appBarColor: appBarColor ?? undefined, // Coalesce null to undefined for type safety
     scrollContainerRef: scrollRef,
   });
-  console.log(contentPaddingTop);
 
   return (
     <div style={{ paddingTop: contentPaddingTop }}>
@@ -307,7 +301,7 @@ export const WithElasticScroll: Story = {
   },
   render: (args) => {
     // This ref will be passed down and attached by ElasticScrollArea
-    const scrollRef = useRef<HTMLElement | null>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     return (
       <div className="h-screen bg-graphite-background">
@@ -315,7 +309,7 @@ export const WithElasticScroll: Story = {
         <AppBar {...args} scrollContainerRef={scrollRef} />
 
         <ElasticScrollArea
-          ref={scrollRef as React.RefObject<HTMLDivElement>}
+          ref={scrollRef}
           className="h-full"
           pullToRefresh={true}
           onRefresh={simulateRefresh}

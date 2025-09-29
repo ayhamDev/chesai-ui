@@ -118,7 +118,7 @@ const TabsProvider: React.FC<TabsProviderProps> = ({
     <TabsContext.Provider
       value={{ activeTab, setActiveTab, variant, pageTransition, indicatorId }}
     >
-      <div>{children}</div>
+      {children}
     </TabsContext.Provider>
   );
 };

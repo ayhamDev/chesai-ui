@@ -22,141 +22,10 @@ This section contains the source code for the `appbar` component and its corresp
 ```tsx
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import {
-  motion,
-  useMotionValue,
-  useMotionValueEvent,
-  useScroll,
-  useSpring,
-  useTransform,
-  type MotionValue,
-} from "framer-motion";
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { motion, type HTMLMotionProps } from "framer-motion";
+import React from "react";
+import { useAppBar } from "../../hooks/useAppbar";
 
-// --- CONSTANTS ---
-const FALLBACK_NORMAL_HEADER_ROW_HEIGHT = 64;
-const FALLBACK_LARGE_HEADER_ROW_HEIGHT = 96;
-const FOLD_ANIMATION_DISTANCE = 50; // How many pixels to scroll to complete the fold
-const FOLD_BORDER_RADIUS = 24; // Equivalent to rounded-3xl
-
-// --- TYPE DEFINITIONS ---
-type AppBarColor = "background" | "card" | "primary" | "secondary";
-type AppBarScrollBehavior = "sticky" | "conditionally-sticky";
-// Added 'shadow' to the possible behaviors
-type AppBarAnimatedBehavior = "none" | "appbar-color" | "fold" | "shadow";
-type AppBarSize = "md" | "lg";
-type StickyHideTarget = "main-row" | "full-appbar";
-
-// --- CONTEXT (No changes) ---
-interface AppBarContextProps {
-  isScrolled: boolean;
-  scrollY: MotionValue<number>;
-  headerY: MotionValue<number>;
-  setCollapseDistance: (distance: number) => void;
-  setHeightToHideForSticky: (height: number) => void;
-  setScrollBehavior: (behavior: AppBarScrollBehavior) => void;
-}
-const AppBarContext = createContext<AppBarContextProps | null>(null);
-const useAppBarContext = () => {
-  const context = useContext(AppBarContext);
-  if (!context) {
-    throw new Error(
-      "AppBar components must be used within an <AppBar.Provider>"
-    );
-  }
-  return context;
-};
-
-// --- PROVIDER (No changes) ---
-interface AppBarProviderProps {
-  children: React.ReactNode;
-  mainContentColor?: AppBarColor;
-}
-
-const AppBarProvider: React.FC<AppBarProviderProps> = ({
-  children,
-  mainContentColor = "card",
-}) => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll({ container: scrollRef });
-
-  const headerY = useMotionValue(0);
-  const [collapseDistance, setCollapseDistance] = useState(0);
-  const [heightToHideForSticky, setHeightToHideForSticky] = useState(
-    FALLBACK_NORMAL_HEADER_ROW_HEIGHT
-  );
-  const [scrollBehavior, setScrollBehavior] =
-    useState<AppBarScrollBehavior>("sticky");
-
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    setIsScrolled(latest > 10);
-
-    if (scrollBehavior === "conditionally-sticky") {
-      const scrollPastCollapse = latest - collapseDistance;
-
-      if (scrollPastCollapse <= 0) {
-        headerY.set(0);
-        return;
-      }
-
-      const previous = scrollY.getPrevious() ?? 0;
-      const previousScrollPastCollapse = Math.max(
-        0,
-        previous - collapseDistance
-      );
-      const delta = scrollPastCollapse - previousScrollPastCollapse;
-      const newHeaderY = headerY.get() - delta;
-
-      const clampedHeaderY = Math.max(
-        -heightToHideForSticky,
-        Math.min(newHeaderY, 0)
-      );
-      headerY.set(clampedHeaderY);
-    } else {
-      headerY.set(0);
-    }
-  });
-
-  const backgroundClasses: Record<AppBarColor, string> = {
-    background: "bg-graphite-background",
-    card: "bg-graphite-card",
-    primary: "bg-graphite-primary",
-    secondary: "bg-graphite-secondary",
-  };
-
-  return (
-    <AppBarContext.Provider
-      value={{
-        isScrolled,
-        scrollY,
-        headerY,
-        setCollapseDistance,
-        setHeightToHideForSticky,
-        setScrollBehavior,
-      }}
-    >
-      <div
-        ref={scrollRef}
-        className={clsx(
-          "h-screen overflow-y-auto",
-          backgroundClasses[mainContentColor]
-        )}
-      >
-        {children}
-      </div>
-    </AppBarContext.Provider>
-  );
-};
-
-// --- APP BAR ---
 const appBarVariants = cva(
   "fixed top-0 z-40 w-full transition-[colors,box-shadow] duration-300 ease-in-out",
   {
@@ -167,7 +36,6 @@ const appBarVariants = cva(
         primary: "bg-graphite-primary text-graphite-primaryForeground",
         secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
       },
-      // Add shadow variant
       shadow: {
         none: "shadow-none",
         md: "shadow-sm",
@@ -175,25 +43,38 @@ const appBarVariants = cva(
     },
     defaultVariants: {
       appBarColor: "card",
-      shadow: "none", // Default to no shadow
+      shadow: "none",
     },
   }
 );
 
+export interface AppBarSharedProps {
+  scrollBehavior?: "sticky" | "conditionally-sticky";
+  animatedBehavior?: Array<"none" | "appbar-color" | "fold" | "shadow">;
+  animatedColor?: "background" | "card" | "primary" | "secondary";
+  size?: "md" | "lg";
+  largeHeaderContent?: React.ReactNode;
+  smallHeaderContent?: React.ReactNode;
+  stickyHideTarget?: "main-row" | "full-appbar";
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
+  // --- NEW CUSTOMIZABLE PROPS ---
+  /** The height of the main app bar row in its normal (md) or collapsed state. @default 64 */
+  normalHeaderRowHeight?: number;
+  /** The height of the main app bar row in its large (lg) expanded state. @default 96 */
+  largeHeaderRowHeight?: number;
+  /** The scroll distance over which the "fold" animation occurs. @default 50 */
+  foldAnimationDistance?: number;
+  /** The border-radius applied at the end of the "fold" animation. @default 24 */
+  foldBorderRadius?: number;
+}
+
 export interface AppBarProps
-  extends Omit<React.ComponentProps<typeof motion.header>, "color">,
-    VariantProps<typeof appBarVariants> {
-  children?: React.ReactNode;
+  extends Omit<HTMLMotionProps<"header">, "color" | "size">,
+    VariantProps<typeof appBarVariants>,
+    AppBarSharedProps {
   startAdornment?: React.ReactNode;
   centerAdornment?: React.ReactNode;
   endAdornments?: React.ReactNode[];
-  scrollBehavior?: AppBarScrollBehavior;
-  animatedBehavior?: AppBarAnimatedBehavior[];
-  animatedColor?: AppBarColor;
-  size?: AppBarSize;
-  largeHeaderContent?: React.ReactNode;
-  smallHeaderContent?: React.ReactNode;
-  stickyHideTarget?: StickyHideTarget;
 }
 
 const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
@@ -201,160 +82,55 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
     {
       className,
       children,
-      appBarColor = "card",
       startAdornment,
       centerAdornment,
       endAdornments = [],
-      scrollBehavior = "sticky",
-      animatedBehavior = [],
-      animatedColor = "secondary",
-      size = "md",
+      appBarColor,
+      scrollBehavior,
+      animatedBehavior,
+      animatedColor,
+      size,
       largeHeaderContent,
       smallHeaderContent,
       stickyHideTarget,
-      ...props
+      scrollContainerRef,
+      // --- DESTRUCTURE NEW PROPS ---
+      normalHeaderRowHeight,
+      largeHeaderRowHeight,
+      foldAnimationDistance,
+      foldBorderRadius,
+      ...rest
     },
     ref
   ) => {
-    const {
-      isScrolled,
-      scrollY,
-      headerY,
-      setCollapseDistance,
-      setHeightToHideForSticky,
-      setScrollBehavior,
-    } = useAppBarContext();
-
-    const mainRowRef = useRef<HTMLDivElement>(null);
-    const largeHeaderRef = useRef<HTMLDivElement>(null);
-
-    const [measuredHeights, setMeasuredHeights] = useState({
-      mainRow:
-        size === "lg"
-          ? FALLBACK_LARGE_HEADER_ROW_HEIGHT
-          : FALLBACK_NORMAL_HEADER_ROW_HEIGHT,
-      largeContent: 0,
-    });
-
-    const isCollapsible =
-      size === "lg" && !!largeHeaderContent && !!smallHeaderContent;
-    const shouldRenderLargeContent = size === "lg" && !!largeHeaderContent;
-
-    useEffect(() => {
-      setScrollBehavior(scrollBehavior);
-    }, [scrollBehavior, setScrollBehavior]);
-
-    useLayoutEffect(() => {
-      const measuredMainRow = mainRowRef.current?.offsetHeight;
-      const measuredLargeContent = largeHeaderRef.current?.offsetHeight;
-      if (
-        (measuredMainRow && measuredMainRow !== measuredHeights.mainRow) ||
-        (measuredLargeContent !== undefined &&
-          measuredLargeContent !== measuredHeights.largeContent)
-      ) {
-        setMeasuredHeights({
-          mainRow: measuredMainRow || measuredHeights.mainRow,
-          largeContent: measuredLargeContent || 0,
-        });
-      }
-    });
-
-    useEffect(() => {
-      const { mainRow, largeContent } = measuredHeights;
-      const currentCollapseDistance = isCollapsible ? largeContent : 0;
-      setCollapseDistance(currentCollapseDistance);
-      let heightToHide: number;
-      if (isCollapsible) {
-        heightToHide = FALLBACK_NORMAL_HEADER_ROW_HEIGHT;
-      } else {
-        heightToHide = mainRow + largeContent;
-      }
-      if (stickyHideTarget === "full-appbar" && size === "lg") {
-        heightToHide = mainRow + largeContent;
-      } else if (stickyHideTarget === "main-row") {
-        heightToHide = isCollapsible
-          ? FALLBACK_NORMAL_HEADER_ROW_HEIGHT
-          : mainRow;
-      }
-      setHeightToHideForSticky(heightToHide);
-    }, [
-      measuredHeights,
-      isCollapsible,
+    const hookProps = {
+      appBarColor,
+      scrollBehavior,
+      animatedBehavior,
+      animatedColor,
       size,
+      largeHeaderContent,
+      smallHeaderContent,
       stickyHideTarget,
-      setCollapseDistance,
-      setHeightToHideForSticky,
-    ]);
+      scrollContainerRef,
+      // --- PASS NEW PROPS TO HOOK ---
+      normalHeaderRowHeight,
+      largeHeaderRowHeight,
+      foldAnimationDistance,
+      foldBorderRadius,
+    };
 
-    // --- REFACTORED ANIMATION LOGIC ---
-    const shouldAnimateColor = animatedBehavior.includes("appbar-color");
-    const shouldFold = animatedBehavior.includes("fold");
-    const shouldAnimateShadow = animatedBehavior.includes("shadow");
-
-    const finalColor =
-      shouldAnimateColor && isScrolled ? animatedColor : appBarColor;
-
-    // Determine the shadow state based on scroll and the new behavior prop
-    const finalShadow = shouldAnimateShadow && isScrolled ? "md" : "none";
-
-    // New animation for the folding effect
-    const animatedBorderRadius = useTransform(
-      scrollY,
-      [0, FOLD_ANIMATION_DISTANCE],
-      [0, FOLD_BORDER_RADIUS],
-      { clamp: true }
-    );
-
-    // --- (Rest of the animation logic is unchanged) ---
-    const collapseAnimDistance = measuredHeights.largeContent;
-    const largeRowHeight = measuredHeights.mainRow;
-    const totalExpandedHeight = largeRowHeight + collapseAnimDistance;
-    const animatedTotalHeight = useTransform(
-      scrollY,
-      [0, collapseAnimDistance],
-      [totalExpandedHeight, FALLBACK_NORMAL_HEADER_ROW_HEIGHT],
-      { clamp: true }
-    );
-    const smoothAnimatedTotalHeight = useSpring(animatedTotalHeight, {
-      stiffness: 300,
-      damping: 30,
-      mass: 0.5,
-    });
-    const animatedMainRowHeight = useTransform(
-      scrollY,
-      [0, collapseAnimDistance],
-      [largeRowHeight, FALLBACK_NORMAL_HEADER_ROW_HEIGHT],
-      { clamp: true }
-    );
-    const headerRowHeight = isCollapsible
-      ? animatedMainRowHeight
-      : measuredHeights.mainRow;
-    const largeHeaderOpacity = useTransform(
-      scrollY,
-      [0, collapseAnimDistance * 0.75],
-      [1, 0],
-      { clamp: true }
-    );
-    const largeHeaderY = useTransform(
-      scrollY,
-      [0, collapseAnimDistance],
-      [0, -40],
-      { clamp: true }
-    );
-    const titleCrossFadeStart = collapseAnimDistance * 0.4;
-    const titleCrossFadeEnd = collapseAnimDistance * 0.9;
-    const childrenOpacity = useTransform(
-      scrollY,
-      [titleCrossFadeStart, titleCrossFadeEnd],
-      [1, 0],
-      { clamp: true }
-    );
-    const smallHeaderOpacity = useTransform(
-      scrollY,
-      [titleCrossFadeStart, titleCrossFadeEnd],
-      [0, 1],
-      { clamp: true }
-    );
+    const {
+      headerProps,
+      mainRowProps,
+      largeContentProps,
+      childrenContainerProps,
+      smallHeaderProps,
+      finalColor,
+      finalShadow,
+      isCollapsible,
+      shouldRenderLargeContent,
+    } = useAppBar(hookProps);
 
     return (
       <motion.header
@@ -365,25 +141,13 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
             shadow: finalShadow,
             className,
           }),
-          // Add overflow-hidden when folding or collapsing to clip content
-          (isCollapsible || shouldFold) && "overflow-hidden"
+          (isCollapsible || animatedBehavior?.includes("fold")) &&
+            "overflow-hidden"
         )}
-        style={{
-          y: headerY,
-          height: isCollapsible ? smoothAnimatedTotalHeight : undefined,
-          borderBottomLeftRadius: shouldFold ? animatedBorderRadius : undefined,
-          borderBottomRightRadius: shouldFold
-            ? animatedBorderRadius
-            : undefined,
-        }}
-        {...props}
+        {...headerProps}
+        {...rest}
       >
-        <motion.div
-          ref={mainRowRef}
-          className="flex w-full items-center "
-          style={{ height: headerRowHeight }}
-        >
-          {/* ... (inner content is unchanged) ... */}
+        <motion.div {...mainRowProps} className="flex w-full items-center">
           <div className="flex flex-1 items-center gap-2 px-4 min-w-0">
             {startAdornment && (
               <div className="flex justify-center items-center min-w-max">
@@ -391,14 +155,10 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
               </div>
             )}
             <div className="min-w-0 relative flex-1">
-              <motion.div
-                style={{ opacity: isCollapsible ? childrenOpacity : 1 }}
-              >
-                {children}
-              </motion.div>
+              <motion.div {...childrenContainerProps}>{children}</motion.div>
               {isCollapsible && (
                 <motion.div
-                  style={{ opacity: smallHeaderOpacity }}
+                  {...smallHeaderProps}
                   className="absolute inset-0 flex items-center"
                 >
                   {smallHeaderContent}
@@ -412,22 +172,12 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
             </div>
           )}
           <div className="flex items-center justify-end gap-1 px-4">
-            {endAdornments.map((adornment, index) => (
-              <React.Fragment key={index}>{adornment}</React.Fragment>
-            ))}
+            {endAdornments}
           </div>
         </motion.div>
 
         {shouldRenderLargeContent && (
-          <motion.div
-            ref={largeHeaderRef}
-            style={{
-              opacity: isCollapsible ? largeHeaderOpacity : 1,
-              y: isCollapsible ? largeHeaderY : 0,
-              pointerEvents: isScrolled && isCollapsible ? "none" : "auto",
-            }}
-            className="px-4 pb-4"
-          >
+          <motion.div {...largeContentProps} className="px-4 pb-4">
             {largeHeaderContent}
           </motion.div>
         )}
@@ -437,9 +187,7 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
 );
 AppBarRoot.displayName = "AppBar";
 
-export const AppBar = Object.assign(AppBarRoot, {
-  Provider: AppBarProvider,
-});
+export const AppBar = AppBarRoot;
 ```
 
 **Storybook Stories (`Appbar.stories.tsx`)**
@@ -453,9 +201,12 @@ import {
   Search,
   User,
 } from "lucide-react";
-import { IconButton } from "../icon-button"; // Assuming these are in your project
-import { Typography } from "../typography"; // Assuming these are in your project
-import { AppBar } from "./index";
+import React, { useRef } from "react";
+import { useAppBar } from "../../hooks/useAppBar";
+import { ElasticScrollArea } from "../elastic-scroll-area";
+import { IconButton } from "../icon-button";
+import { Typography } from "../typography";
+import { AppBar, type AppBarProps } from "./index";
 
 const meta: Meta<typeof AppBar> = {
   title: "Components/AppBar",
@@ -466,7 +217,7 @@ const meta: Meta<typeof AppBar> = {
     docs: {
       description: {
         component:
-          "A versatile AppBar that can be sticky, hide on scroll, and expand to a large, collapsible header. It dynamically measures its own height from the DOM to ensure animations are always accurate.",
+          "A versatile AppBar that is decoupled from its scroll container. It uses a headless hook (`useAppBar`) to manage animations and behavior, allowing it to work with any scrollable element.",
       },
     },
   },
@@ -474,7 +225,6 @@ const meta: Meta<typeof AppBar> = {
     size: {
       control: "select",
       options: ["md", "lg"],
-      description: "Controls the size and collapsing behavior of the AppBar.",
     },
     appBarColor: {
       control: "select",
@@ -495,8 +245,6 @@ const meta: Meta<typeof AppBar> = {
     stickyHideTarget: {
       control: "select",
       options: [undefined, "main-row", "full-appbar"],
-      description:
-        "Overrides the default behavior for `conditionally-sticky`. Forces the hiding behavior to target either the main row or the full app bar height.",
     },
     children: { control: false },
     largeHeaderContent: { control: false },
@@ -504,6 +252,7 @@ const meta: Meta<typeof AppBar> = {
     startAdornment: { control: false },
     centerAdornment: { control: false },
     endAdornments: { control: false },
+    scrollContainerRef: { control: false },
   },
 };
 
@@ -516,29 +265,34 @@ const DummyContent = () => (
     <Typography variant="h3">Scroll Down to See The Effect</Typography>
     <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 30 }).map((_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: strict
         <div key={i} className="h-48 rounded-2xl bg-black/5" />
       ))}
     </div>
   </main>
 );
 
-// A smart render function to wrap stories and handle padding
-const render = (args: any) => {
-  let paddingTop = "pt-[64px]"; // Default for 'md'
+// A mock async function for the onRefresh prop
+const simulateRefresh = () => {
+  return new Promise((resolve) => setTimeout(resolve, 2000));
+};
+
+// A smart render function to wrap stories and demonstrate the headless pattern.
+const renderWithScrollContainer = (args: AppBarProps) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  let paddingTop = "pt-[64px]";
   if (args.size === "lg" && args.largeHeaderContent) {
     paddingTop = "pt-[160px]";
   }
-  if (args.className?.includes("h-20")) {
-    paddingTop = "pt-20";
-  }
 
   return (
-    <AppBar.Provider mainContentColor="background">
-      <AppBar {...args} />
-      <div className={paddingTop}>
+    <div className="h-screen bg-graphite-background">
+      <AppBar {...args} scrollContainerRef={scrollRef} />
+      <div ref={scrollRef} className={`h-full overflow-y-auto ${paddingTop}`}>
         <DummyContent />
       </div>
-    </AppBar.Provider>
+    </div>
   );
 };
 
@@ -562,7 +316,7 @@ export const Default: Story = {
       </IconButton>,
     ],
   },
-  render,
+  render: renderWithScrollContainer,
 };
 
 export const ConditionallySticky: Story = {
@@ -572,15 +326,7 @@ export const ConditionallySticky: Story = {
     scrollBehavior: "conditionally-sticky",
     children: <Typography variant="h4">Hiding Header</Typography>,
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "With `scrollBehavior` set to `conditionally-sticky`, the AppBar scrolls out of view when scrolling down and reappears when scrolling up.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const AnimatedColor: Story = {
@@ -592,15 +338,7 @@ export const AnimatedColor: Story = {
     animatedColor: "card",
     children: <Typography variant="h4">Animated Header</Typography>,
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "With `animatedBehavior` including `appbar-color`, the AppBar transitions to the `animatedColor` when the user scrolls.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const FoldingOnScroll: Story = {
@@ -610,34 +348,18 @@ export const FoldingOnScroll: Story = {
     animatedBehavior: ["fold"],
     children: <Typography variant="h4">Folding Header</Typography>,
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "With `animatedBehavior` including `fold`, the AppBar's bottom corners become rounded as you scroll down, creating a neat 'folding' effect.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const ShadowOnScroll: Story = {
   name: "Medium, Shadow on Scroll",
   args: {
     ...Default.args,
-    animatedBehavior: ["shadow"], // Enable shadow effect
+    animatedBehavior: ["shadow"],
     appBarColor: "background",
     children: <Typography variant="h4">Shadow Header</Typography>,
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "With `animatedBehavior` including `shadow`, the AppBar gains a subtle shadow when the user scrolls, helping it stand out from the content.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const LargeCollapsing: Story = {
@@ -680,15 +402,7 @@ export const LargeCollapsing: Story = {
       </div>
     ),
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "**This is the primary `lg` use case.** When `size` is `lg` and *both* `largeHeaderContent` and `smallHeaderContent` are provided, the AppBar becomes fully collapsible. On scroll, it smoothly animates its height, fades out the large content, and cross-fades the titles. The `conditionally-sticky` behavior engages *after* the header has fully collapsed, hiding the remaining small header.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const LargeStatic: Story = {
@@ -702,15 +416,7 @@ export const LargeStatic: Story = {
       </Typography>
     ),
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "**This demonstrates the smart default behavior.** When `size` is `lg` but `smallHeaderContent` is omitted, the AppBar **does not collapse**. It remains in its large, expanded state. The `conditionally-sticky` behavior adapts and now hides the *entire visible AppBar* on scroll, since there is no smaller state to transition to.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const LargeStaticWithOverride: Story = {
@@ -719,15 +425,7 @@ export const LargeStaticWithOverride: Story = {
     ...LargeStatic.args,
     stickyHideTarget: "main-row",
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "This builds on the 'Large, Static' story. Even though the AppBar is not collapsible, we can use the `stickyHideTarget='main-row'` prop to force the `conditionally-sticky` behavior to hide *only the main title row*, leaving the `largeHeaderContent` (the search bar) visible at the top.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const CombinedEffects: Story = {
@@ -737,14 +435,84 @@ export const CombinedEffects: Story = {
     animatedBehavior: ["appbar-color", "fold", "shadow"],
     animatedColor: "secondary",
   },
-  render,
+  render: renderWithScrollContainer,
+};
+
+// This helper component calls the useAppBar hook safely *after* its parent has mounted and hydrated the ref.
+const ElasticScrollContent = ({
+  scrollRef,
+  args,
+}: {
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  args: AppBarProps;
+}) => {
+  // Explicitly pick only the props that the `useAppBar` hook needs.
+  const {
+    size,
+    scrollBehavior,
+    animatedBehavior,
+    animatedColor,
+    largeHeaderContent,
+    smallHeaderContent,
+    stickyHideTarget,
+    appBarColor,
+  } = args;
+
+  // By the time this component renders, scrollRef.current is hydrated.
+  const { contentPaddingTop } = useAppBar({
+    size,
+    scrollBehavior,
+    animatedBehavior,
+    animatedColor,
+    largeHeaderContent,
+    smallHeaderContent,
+    stickyHideTarget,
+    appBarColor: appBarColor ?? undefined, // Coalesce null to undefined for type safety
+    scrollContainerRef: scrollRef,
+  });
+
+  return (
+    <div style={{ paddingTop: contentPaddingTop }}>
+      <DummyContent />
+    </div>
+  );
+};
+
+export const WithElasticScroll: Story = {
+  name: "With Elastic Scroll & Refresh",
+  args: {
+    ...LargeCollapsing.args,
+    animatedBehavior: ["shadow", "fold"],
+    scrollBehavior: "conditionally-sticky",
+  },
   parameters: {
     docs: {
       description: {
         story:
-          "A demonstration of all features working in harmony. This `lg` AppBar collapses, hides on scroll, animates its color, folds its corners, and gains a shadow simultaneously.",
+          "This story demonstrates composing the `AppBar` with `ElasticScrollArea`. We use a child component to safely call the `useAppBar` hook only after the scroll container's `ref` has been attached, preventing hydration errors.",
       },
     },
+  },
+  render: (args) => {
+    // This ref will be passed down and attached by ElasticScrollArea
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    return (
+      <div className="h-screen bg-graphite-background">
+        {/* AppBar receives the ref but doesn't trigger the hook directly from here */}
+        <AppBar {...args} scrollContainerRef={scrollRef} />
+
+        <ElasticScrollArea
+          ref={scrollRef}
+          className="h-full"
+          pullToRefresh={true}
+          onRefresh={simulateRefresh}
+        >
+          {/* Render the child component that safely calls the hook */}
+          <ElasticScrollContent scrollRef={scrollRef} args={args} />
+        </ElasticScrollArea>
+      </div>
+    );
   },
 };
 ```
@@ -4099,6 +3867,7 @@ import React, {
   forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
 } from "react";
@@ -4126,9 +3895,6 @@ export interface ElasticScrollAreaProps
   pullThreshold?: number;
   RefreshIndicatorComponent?: React.ComponentType<RefreshIndicatorProps>;
 }
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(value, max));
-}
 
 // --- DEFAULT REFRESH INDICATOR ---
 const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
@@ -4149,7 +3915,6 @@ const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
     </motion.div>
   );
 };
-
 // --- OVERSCROLL & PULL-TO-REFRESH LOGIC HOOK ---
 const useElasticAndRefresh = (
   viewportRef: React.RefObject<HTMLDivElement>,
@@ -4179,18 +3944,12 @@ const useElasticAndRefresh = (
     });
   }, [y]);
 
-  // --- MODIFIED: triggerRefresh now snaps content back immediately ---
   const triggerRefresh = useCallback(async () => {
     if (!onRefresh) {
-      console.warn(
-        "ElasticScrollArea: `onRefresh` prop is missing but `pullToRefresh` is enabled."
-      );
       springToZero();
       return;
     }
     setIsRefreshing(true);
-    // Snap the content back to 0 immediately.
-    // The indicator's style will be handled separately in the JSX.
     springToZero();
     try {
       await onRefresh();
@@ -4200,34 +3959,28 @@ const useElasticAndRefresh = (
   }, [onRefresh, springToZero]);
 
   useEffect(() => {
+    // FIX: Add a guard clause to prevent running before the ref is hydrated.
     const viewport = viewportRef.current;
     if (!viewport || !isEnabled) return;
 
     const handleWheel = (event: WheelEvent) => {
+      // ... (rest of the function is unchanged)
       if (isRefreshing) return;
-
       const { scrollTop, scrollHeight, clientHeight } = viewport;
       const isAtTop = scrollTop <= 0;
       const isAtBottom = scrollTop >= scrollHeight - clientHeight;
       const isScrollingUp = event.deltaY < 0;
       const isScrollingDown = event.deltaY > 0;
-
       if ((isAtTop && isScrollingUp) || (isAtBottom && isScrollingDown)) {
         event.preventDefault();
-
-        // Use a more controlled accumulation approach
         const currentY = y.get();
         const resistance = Math.abs(currentY) / MAX_OVERSCROLL_DESKTOP;
         const adjustedDelta = event.deltaY * damping * (1 - resistance);
-
         const newY = Math.max(
           -MAX_OVERSCROLL_DESKTOP,
           Math.min(MAX_OVERSCROLL_DESKTOP, currentY - adjustedDelta)
         );
-
         y.set(newY);
-
-        // Clear any existing timeout and set a shorter one
         if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
         wheelTimeoutRef.current = setTimeout(() => {
           const finalY = y.get();
@@ -4238,7 +3991,7 @@ const useElasticAndRefresh = (
               springToZero();
             }
           }
-        }, 50); // Shorter timeout for more responsive feel
+        }, 50);
       }
     };
 
@@ -4251,7 +4004,6 @@ const useElasticAndRefresh = (
     const handleTouchMove = (event: TouchEvent) => {
       if (!isTouching.current || isRefreshing || event.touches.length !== 1)
         return;
-
       const { scrollTop, scrollHeight, clientHeight } = viewport;
       const currentY = event.touches[0].clientY;
       const deltaY = currentY - startY.current;
@@ -4259,7 +4011,6 @@ const useElasticAndRefresh = (
       const isAtBottom = scrollTop >= scrollHeight - clientHeight;
       const isPullingDown = deltaY > 0;
       const isPullingUp = deltaY < 0;
-
       if ((isAtTop && isPullingDown) || (isAtBottom && isPullingUp)) {
         event.preventDefault();
         isOverscrolling.current = true;
@@ -4318,10 +4069,9 @@ const useElasticAndRefresh = (
 
   return { isRefreshing };
 };
-
 // --- MAIN COMPONENT ---
 const ElasticScrollAreaRoot = forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
+  HTMLDivElement,
   ElasticScrollAreaProps
 >(
   (
@@ -4339,17 +4089,17 @@ const ElasticScrollAreaRoot = forwardRef<
     },
     ref
   ) => {
-    const viewportRef = useRef<HTMLDivElement>(null);
-    const y = useMotionValue(0);
+    const localViewportRef = useRef<HTMLDivElement>(null);
+    useImperativeHandle(ref, () => localViewportRef.current!);
 
-    const { isRefreshing } = useElasticAndRefresh(viewportRef, y, {
+    const y = useMotionValue(0);
+    const { isRefreshing } = useElasticAndRefresh(localViewportRef, y, {
       isEnabled: elasticity || pullToRefresh,
       damping: dampingFactor,
       isRefreshEnabled: pullToRefresh,
       onRefresh,
       pullThreshold,
     });
-
     const pullProgress = useTransform(y, (v) => (v > 0 ? v : 0));
     const indicatorOpacity = useTransform(
       pullProgress,
@@ -4359,14 +4109,12 @@ const ElasticScrollAreaRoot = forwardRef<
 
     return (
       <ScrollAreaPrimitive.Root
-        ref={ref}
         className={clsx("relative h-full w-full overflow-hidden", className)}
         {...props}
       >
         {pullToRefresh && (
           <motion.div
-            className="pointer-events-none absolute inset-x-0 top-[-40px] z-20 flex justify-center"
-            // --- MODIFIED: Decouple indicator from content during refresh ---
+            className="pointer-events-none absolute inset-x-0 top-[-40px] z-50 flex justify-center"
             style={{
               y: isRefreshing ? pullThreshold + 40 : pullProgress,
               opacity: isRefreshing ? 1 : indicatorOpacity,
@@ -4381,16 +4129,14 @@ const ElasticScrollAreaRoot = forwardRef<
             </div>
           </motion.div>
         )}
-
         <motion.div style={{ y }} className="h-full w-full">
           <ScrollAreaPrimitive.Viewport
-            ref={viewportRef}
+            ref={localViewportRef}
             className="h-full w-full rounded-[inherit]"
           >
             {children}
           </ScrollAreaPrimitive.Viewport>
         </motion.div>
-
         <ScrollBar scrollbarVisibility={scrollbarVisibility} />
         <ScrollAreaPrimitive.Corner />
       </ScrollAreaPrimitive.Root>
@@ -8867,7 +8613,7 @@ const TabsProvider: React.FC<TabsProviderProps> = ({
     <TabsContext.Provider
       value={{ activeTab, setActiveTab, variant, pageTransition, indicatorId }}
     >
-      <div>{children}</div>
+      {children}
     </TabsContext.Provider>
   );
 };
@@ -9238,6 +8984,7 @@ import {
   Plane,
   Search,
 } from "lucide-react";
+import { useRef } from "react";
 import { AppBar } from "../appbar";
 import { Card } from "../card";
 import { IconButton } from "../icon-button";
@@ -9384,7 +9131,7 @@ export const SwipeableCarousel: Story = {
     docs: {
       description: {
         story:
-          "Set `pageTransition='slide'` to create a carousel effect. You can now drag with a mouse or swipe on a touch screen to navigate between panels.",
+          'Set `pageTransition="slide"` to create a carousel effect. You can now drag with a mouse or swipe on a touch screen to navigate between panels.',
       },
     },
   },
@@ -9472,7 +9219,7 @@ export const Scrollable: Story = {
 };
 
 export const ScrollableWithSwipe: Story = {
-  name: "6. Scrollable Tabs With swipe",
+  name: "6. Scrollable Tabs With Swipe",
   args: {
     ...Primary.args,
     defaultValue: "flights",
@@ -9546,11 +9293,13 @@ export const WithAppBar: Story = {
     docs: {
       description: {
         story:
-          "This example demonstrates how to integrate the `Tabs` component with the `AppBar`. The `Tabs.List` is placed inside the `largeHeaderContent` slot of a large `AppBar`. The `AppBar.Provider` manages the scrolling container which holds the `Tabs.Content`, allowing the AppBar to collapse and hide correctly as the user scrolls through the tab panels.",
+          "This example demonstrates how to integrate the `Tabs` component with the `AppBar`. The `Tabs.List` is placed inside the `largeHeaderContent` slot of a large `AppBar`. A `ref` is created for the main scrollable container and passed to the `AppBar` via `scrollContainerRef`, allowing the AppBar to collapse and hide correctly as the user scrolls through the tab panels.",
       },
     },
   },
   render: (args) => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+
     const DummyScrollContent = ({ title }: { title: string }) => (
       <main className="p-6">
         <Typography variant="h3">{title}</Typography>
@@ -9563,20 +9312,26 @@ export const WithAppBar: Story = {
     );
 
     return (
-      <AppBar.Provider mainContentColor="background">
+      <div className="h-screen bg-graphite-background">
         <Tabs {...args}>
           <AppBar
             size="lg"
             scrollBehavior="conditionally-sticky"
             stickyHideTarget="main-row"
             appBarColor="card"
+            scrollContainerRef={scrollRef}
             startAdornment={
-              <IconButton variant="ghost" aria-label="Menu">
+              <IconButton variant="ghost" size={"sm"} aria-label="Menu">
                 <Menu />
               </IconButton>
             }
             endAdornments={[
-              <IconButton key="search" variant="ghost" aria-label="Search">
+              <IconButton
+                key="search"
+                size={"sm"}
+                variant="ghost"
+                aria-label="Search"
+              >
                 <Search />
               </IconButton>,
             ]}
@@ -9585,6 +9340,7 @@ export const WithAppBar: Story = {
                 My App
               </Typography>
             }
+            largeHeaderRowHeight={50}
             largeHeaderContent={
               // Negative margins stretch the list to the edges and counteract parent padding
               <div className="-mx-4 -mb-4">
@@ -9598,7 +9354,10 @@ export const WithAppBar: Story = {
             }
           />
 
-          <div className="pt-[160px]">
+          <div
+            ref={scrollRef}
+            className="h-full overflow-y-auto pt-[100px] bg-graphite-background"
+          >
             <Tabs.Content>
               <Tabs.Panel value="flights">
                 <DummyScrollContent title="Search for Flights" />
@@ -9615,7 +9374,7 @@ export const WithAppBar: Story = {
             </Tabs.Content>
           </div>
         </Tabs>
-      </AppBar.Provider>
+      </div>
     );
   },
 };
@@ -10779,6 +10538,233 @@ export const useCalendar = (cursorDate: Date, value?: Date | DateRange, mode: 's
     getDayProps,
   }
 }
+```
+
+
+### Source: `src\lib\hooks\useAppBar.tsx`
+
+```tsx
+import {
+  useMotionValue,
+  useMotionValueEvent,
+  useScroll,
+  useSpring,
+  useTransform,
+  type MotionStyle,
+} from "framer-motion";
+import { useLayoutEffect, useRef, useState } from "react";
+import { type AppBarSharedProps } from "../components/appbar";
+
+// --- HOOK DEFINITION ---
+export type UseAppBarOptions = AppBarSharedProps;
+
+export const useAppBar = (
+  options: UseAppBarOptions & {
+    appBarColor?: "background" | "card" | "primary" | "secondary";
+  }
+) => {
+  const {
+    scrollBehavior = "sticky",
+    animatedBehavior = [],
+    animatedColor = "secondary",
+    appBarColor = "card",
+    size = "md",
+    largeHeaderContent,
+    smallHeaderContent,
+    stickyHideTarget,
+    scrollContainerRef,
+    // --- NEW CUSTOMIZABLE PROPS WITH DEFAULTS ---
+    normalHeaderRowHeight = 64,
+    largeHeaderRowHeight = 96,
+    foldAnimationDistance = 50,
+    foldBorderRadius = 24,
+  } = options;
+
+  // --- REFS & STATE ---
+  const mainRowRef = useRef<HTMLDivElement>(null);
+  const largeHeaderRef = useRef<HTMLDivElement>(null);
+
+  const [isScrolled, setIsScrolled] = useState(false);
+  const { scrollY } = useScroll({ container: scrollContainerRef });
+  const headerY = useMotionValue(0);
+
+  const [measuredHeights, setMeasuredHeights] = useState({
+    mainRow: size === "lg" ? largeHeaderRowHeight : normalHeaderRowHeight,
+    largeContent: 0,
+  });
+
+  // --- BEHAVIOR LOGIC ---
+  const isCollapsible =
+    size === "lg" && !!largeHeaderContent && !!smallHeaderContent;
+  const shouldRenderLargeContent = size === "lg" && !!largeHeaderContent;
+
+  // --- MEASUREMENT EFFECTS ---
+  useLayoutEffect(() => {
+    const measuredMainRow = mainRowRef.current?.offsetHeight;
+    const measuredLargeContent = largeHeaderRef.current?.offsetHeight;
+    if (
+      (measuredMainRow && measuredMainRow !== measuredHeights.mainRow) ||
+      (measuredLargeContent !== undefined &&
+        measuredLargeContent !== measuredHeights.largeContent)
+    ) {
+      setMeasuredHeights({
+        mainRow: measuredMainRow || measuredHeights.mainRow,
+        largeContent: measuredLargeContent || 0,
+      });
+    }
+  });
+
+  // --- ANIMATION LOGIC ---
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    setIsScrolled(latest > 10);
+
+    if (scrollBehavior === "conditionally-sticky") {
+      const { mainRow, largeContent } = measuredHeights;
+      const collapseDistance = isCollapsible ? largeContent : 0;
+
+      let heightToHide: number;
+      if (stickyHideTarget === "full-appbar" && size === "lg") {
+        heightToHide = mainRow + largeContent;
+      } else if (stickyHideTarget === "main-row") {
+        heightToHide = isCollapsible ? normalHeaderRowHeight : mainRow;
+      } else {
+        heightToHide = isCollapsible
+          ? normalHeaderRowHeight
+          : mainRow + largeContent;
+      }
+
+      const scrollPastCollapse = latest - collapseDistance;
+      if (scrollPastCollapse <= 0) {
+        headerY.set(0);
+        return;
+      }
+
+      const previous = scrollY.getPrevious() ?? 0;
+      const previousScrollPastCollapse = Math.max(
+        0,
+        previous - collapseDistance
+      );
+      const delta = scrollPastCollapse - previousScrollPastCollapse;
+      const newHeaderY = headerY.get() - delta;
+
+      const clampedHeaderY = Math.max(-heightToHide, Math.min(newHeaderY, 0));
+      headerY.set(clampedHeaderY);
+    } else {
+      headerY.set(0);
+    }
+  });
+
+  // --- DERIVED ANIMATION VALUES ---
+  const shouldAnimateColor = animatedBehavior.includes("appbar-color");
+  const shouldFold = animatedBehavior.includes("fold");
+  const shouldAnimateShadow = animatedBehavior.includes("shadow");
+
+  const finalColor =
+    shouldAnimateColor && isScrolled ? animatedColor : appBarColor;
+  const finalShadow: "md" | "none" =
+    shouldAnimateShadow && isScrolled ? "md" : "none";
+
+  const animatedBorderRadius = useTransform(
+    scrollY,
+    [0, foldAnimationDistance],
+    [0, foldBorderRadius],
+    { clamp: true }
+  );
+
+  const collapseAnimDistance = measuredHeights.largeContent;
+  const measuredLargeRowHeight = measuredHeights.mainRow;
+  const totalExpandedHeight = measuredLargeRowHeight + collapseAnimDistance;
+
+  const animatedTotalHeight = useTransform(
+    scrollY,
+    [0, collapseAnimDistance],
+    [totalExpandedHeight, normalHeaderRowHeight],
+    { clamp: true }
+  );
+  const smoothAnimatedTotalHeight = useSpring(animatedTotalHeight, {
+    stiffness: 300,
+    damping: 30,
+    mass: 0.5,
+  });
+
+  const animatedMainRowHeight = useTransform(
+    scrollY,
+    [0, collapseAnimDistance],
+    [measuredLargeRowHeight, normalHeaderRowHeight],
+    { clamp: true }
+  );
+  const headerRowHeight = isCollapsible
+    ? animatedMainRowHeight
+    : measuredHeights.mainRow;
+
+  const largeHeaderOpacity = useTransform(
+    scrollY,
+    [0, collapseAnimDistance * 0.75],
+    [1, 0],
+    { clamp: true }
+  );
+  const largeHeaderY = useTransform(
+    scrollY,
+    [0, collapseAnimDistance],
+    [0, -40],
+    { clamp: true }
+  );
+
+  const titleCrossFadeStart = collapseAnimDistance * 0.4;
+  const titleCrossFadeEnd = collapseAnimDistance * 0.9;
+
+  const childrenOpacity = useTransform(
+    scrollY,
+    [titleCrossFadeStart, titleCrossFadeEnd],
+    [1, 0],
+    { clamp: true }
+  );
+  const smallHeaderOpacity = useTransform(
+    scrollY,
+    [titleCrossFadeStart, titleCrossFadeEnd],
+    [0, 1],
+    { clamp: true }
+  );
+
+  const contentPaddingTop = shouldRenderLargeContent
+    ? totalExpandedHeight + 10
+    : measuredHeights.mainRow + 20;
+
+  return {
+    isScrolled,
+    contentPaddingTop,
+    headerProps: {
+      style: {
+        y: headerY,
+        height: isCollapsible ? smoothAnimatedTotalHeight : undefined,
+        borderBottomLeftRadius: shouldFold ? animatedBorderRadius : undefined,
+        borderBottomRightRadius: shouldFold ? animatedBorderRadius : undefined,
+      } as MotionStyle,
+    },
+    mainRowProps: {
+      ref: mainRowRef,
+      style: { height: headerRowHeight },
+    },
+    largeContentProps: {
+      ref: largeHeaderRef,
+      style: {
+        opacity: isCollapsible ? largeHeaderOpacity : 1,
+        y: isCollapsible ? largeHeaderY : 0,
+        pointerEvents: isScrolled && isCollapsible ? "none" : "auto",
+      } as MotionStyle,
+    },
+    childrenContainerProps: {
+      style: { opacity: isCollapsible ? childrenOpacity : 1 },
+    },
+    smallHeaderProps: {
+      style: { opacity: smallHeaderOpacity },
+    },
+    finalColor,
+    finalShadow,
+    isCollapsible,
+    shouldRenderLargeContent,
+  };
+};
 ```
 
 

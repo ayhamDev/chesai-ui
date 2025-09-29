@@ -2,9 +2,8 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import React from "react";
-import { useAppBar } from "../../hooks/useAppbar"; // FIX: Correct casing
+import { useAppBar } from "../../hooks/useAppbar";
 
-// CVA variants remain the same
 const appBarVariants = cva(
   "fixed top-0 z-40 w-full transition-[colors,box-shadow] duration-300 ease-in-out",
   {
@@ -35,8 +34,16 @@ export interface AppBarSharedProps {
   largeHeaderContent?: React.ReactNode;
   smallHeaderContent?: React.ReactNode;
   stickyHideTarget?: "main-row" | "full-appbar";
-  // FIX: Allow null for the initial ref value
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
+  // --- NEW CUSTOMIZABLE PROPS ---
+  /** The height of the main app bar row in its normal (md) or collapsed state. @default 64 */
+  normalHeaderRowHeight?: number;
+  /** The height of the main app bar row in its large (lg) expanded state. @default 96 */
+  largeHeaderRowHeight?: number;
+  /** The scroll distance over which the "fold" animation occurs. @default 50 */
+  foldAnimationDistance?: number;
+  /** The border-radius applied at the end of the "fold" animation. @default 24 */
+  foldBorderRadius?: number;
 }
 
 export interface AppBarProps
@@ -65,6 +72,11 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       smallHeaderContent,
       stickyHideTarget,
       scrollContainerRef,
+      // --- DESTRUCTURE NEW PROPS ---
+      normalHeaderRowHeight,
+      largeHeaderRowHeight,
+      foldAnimationDistance,
+      foldBorderRadius,
       ...rest
     },
     ref
@@ -79,6 +91,11 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       smallHeaderContent,
       stickyHideTarget,
       scrollContainerRef,
+      // --- PASS NEW PROPS TO HOOK ---
+      normalHeaderRowHeight,
+      largeHeaderRowHeight,
+      foldAnimationDistance,
+      foldBorderRadius,
     };
 
     const {

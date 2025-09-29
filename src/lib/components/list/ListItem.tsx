@@ -1,33 +1,48 @@
 "use client";
 
+import { useLongPress } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
-import { motion, Reorder, useDragControls, useSpring } from "framer-motion";
+import { clsx } from "clsx";
+import {
+  animate,
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  type PanInfo,
+} from "framer-motion";
 import { GripVertical } from "lucide-react";
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import useRipple from "use-ripple-hook";
 import { ListContext } from "../../context/List.context";
 import { Checkbox } from "../checkbox";
 import { Typography } from "../typography";
-import clsx from "clsx";
+
+const SWIPE_THRESHOLD = -80; // How far to swipe to snap open
 
 const listItemVariants = cva(
-  "group/item relative w-full text-left focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+  "relative flex w-full items-center justify-between gap-4 px-4 transition-colors duration-200 overflow-hidden", // Added overflow-hidden for ripple
   {
     variants: {
       lines: {
-        "one-line": "min-h-[48px]",
-        "two-line": "min-h-[56px]",
-        "three-line": "min-h-[72px]",
+        "one-line": "min-h-[56px] py-2",
+        "two-line": "min-h-[72px] py-3",
+        "three-line": "min-h-[88px] py-4",
+      },
+      isSelected: {
+        true: "bg-graphite-secondary",
+        // FIX: Removed opacity from hover to prevent swipe actions from showing through
+        false: "bg-graphite-card hover:bg-graphite-secondary",
       },
     },
     defaultVariants: {
-      lines: "two-line",
+      lines: "one-line",
+      isSelected: false,
     },
   }
 );
 
 export interface ListItemProps
-  extends Omit<React.HTMLAttributes<HTMLLIElement>, "id">,
+  extends React.HTMLAttributes<HTMLLIElement>,
     VariantProps<typeof listItemVariants> {
   id: string | number;
   headline: React.ReactNode;
@@ -35,162 +50,172 @@ export interface ListItemProps
   startAdornment?: React.ReactNode;
   endAdornment?: React.ReactNode;
   swipeActions?: React.ReactNode;
-  disabled?: boolean;
+  dndAttributes?: React.HTMLAttributes<any>;
+  dndListeners?: React.HTMLAttributes<any>;
 }
 
 export const ListItem = React.forwardRef<HTMLLIElement, ListItemProps>(
   (
     {
       className,
-      lines,
       id,
       headline,
       supportingText,
       startAdornment,
       endAdornment,
       swipeActions,
-      disabled,
+      lines: propLines,
+      dndAttributes,
+      dndListeners,
+      onClick,
       ...props
     },
     ref
   ) => {
     const context = useContext(ListContext);
     if (!context) {
-      throw new Error("ListItem must be used within a List component");
+      throw new Error("ListItem must be used within a List component.");
     }
 
     const {
+      isSelectable,
       isSelectionMode,
-      toggleSelection,
+      setIsSelectionMode,
       selectedItems,
+      toggleSelection,
       isReorderable,
-      startReorder,
     } = context;
 
     const isSelected = selectedItems.has(id);
-    const localRef = React.useRef<HTMLButtonElement>(null);
-    const dragControls = useDragControls();
+    const hasSwipeActions = !!swipeActions;
+    const x = useMotionValue(0);
+    const swipeActionRef = useRef<HTMLDivElement>(null);
 
-    const [, event] = useRipple({
-      ref: localRef,
-      color: "rgba(128, 128, 128, 0.1)",
+    // --- RIPPLE EFFECT HOOK ---
+    const itemRef = useRef<HTMLDivElement>(null);
+    const [, rippleEvent] = useRipple({
+      ref: itemRef,
+      color: "rgba(0, 0, 0, 0.1)",
       duration: 400,
-      disabled: disabled || isReorderable,
+      disabled: isReorderable,
+    });
+    // --- END RIPPLE EFFECT ---
+
+    const longPressAttrs = useLongPress(() => {
+      if (isSelectable && !isReorderable) {
+        setIsSelectionMode(true);
+        toggleSelection(id);
+      }
     });
 
-    const x = useSpring(0, { stiffness: 300, damping: 30 });
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (isSelectionMode) {
+        toggleSelection(id);
+      } else {
+        onClick?.(e as any);
+      }
+    };
 
-    const finalStartAdornment = isSelectionMode ? (
-      <Checkbox
-        checked={isSelected}
-        onChange={() => toggleSelection(id)}
-        aria-label={`Select ${headline}`}
-      />
-    ) : (
-      startAdornment
-    );
+    const handleDragEnd = (event: MouseEvent | TouchEvent, info: PanInfo) => {
+      const swipeActionWidth = swipeActionRef.current?.offsetWidth || 0;
+      const { offset, velocity } = info;
+      if (offset.x < SWIPE_THRESHOLD || velocity.x < -500) {
+        animate(x, -swipeActionWidth, { type: "spring", bounce: 0.2 });
+      } else {
+        animate(x, 0, { type: "spring", bounce: 0.2 });
+      }
+    };
 
-    const finalEndAdornment = isReorderable ? (
-      <div
-        onPointerDown={(e) => {
-          startReorder(id);
-          dragControls.start(e);
-        }}
-        className="cursor-grab touch-none p-2"
-      >
-        <GripVertical />
-      </div>
-    ) : (
-      endAdornment
-    );
+    useEffect(() => {
+      // If selection mode is turned off, reset swipe state
+      if (!isSelectionMode) {
+        animate(x, 0, { type: "spring", bounce: 0.2 });
+      }
+    }, [isSelectionMode, x]);
 
-    const content = (
-      <button
-        ref={localRef}
-        type="button"
-        onPointerDown={!isReorderable ? event : undefined}
-        disabled={disabled}
-        className="relative z-10 flex w-full cursor-pointer items-center gap-4 overflow-hidden bg-inherit p-4"
-      >
-        {finalStartAdornment && (
-          <div className="flex-shrink-0">{finalStartAdornment}</div>
-        )}
-        <div className="min-w-0 flex-1">
-          <Typography
-            as="div"
-            variant="large"
-            className="truncate font-semibold"
+    const lines = propLines || (supportingText ? "two-line" : "one-line");
+
+    return (
+      <li ref={ref} className="relative bg-graphite-card" {...props}>
+        {hasSwipeActions && (
+          <div
+            ref={swipeActionRef}
+            className="absolute inset-y-0 right-0 flex items-center z-0"
+            aria-hidden
           >
-            {headline}
-          </Typography>
-          {supportingText && (
-            <Typography variant="muted" className="line-clamp-2">
-              {supportingText}
-            </Typography>
-          )}
-        </div>
-        {finalEndAdornment && (
-          <div className="flex-shrink-0">{finalEndAdornment}</div>
-        )}
-      </button>
-    );
-
-    const itemContent = (
-      <div
-        className={clsx(
-          "relative bg-graphite-card", // Ensure content has a background
-          isSelectionMode && "transition-colors duration-200",
-          isSelected && "bg-graphite-secondary"
-        )}
-      >
-        {swipeActions && (
-          <div className="absolute inset-y-0 right-0 z-0 flex items-center">
             {swipeActions}
           </div>
         )}
+
         <motion.div
-          drag="x"
-          dragConstraints={{ left: swipeActions ? -100 : 0, right: 0 }}
-          onDragEnd={() => {
-            if (x.get() < -50) {
-              x.set(-100);
-            } else {
-              x.set(0);
-            }
-          }}
+          ref={itemRef}
+          drag={hasSwipeActions && !isSelectionMode ? "x" : false}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={{ left: 0.8, right: 0 }}
+          onDragEnd={handleDragEnd}
+          onClick={handleClick}
+          onPointerDown={rippleEvent}
+          {...longPressAttrs}
           style={{ x }}
-          className="relative z-10 bg-inherit"
+          className={clsx(
+            "relative w-full cursor-pointer",
+            listItemVariants({ lines, isSelected, className })
+          )}
         >
-          {content}
+          {/* Main content flex container */}
+          <div className="flex flex-1 items-center gap-4 min-w-0">
+            {isReorderable && (
+              <div
+                className="cursor-grab touch-none"
+                {...dndAttributes}
+                {...dndListeners}
+              >
+                <GripVertical className="h-5 w-5 text-graphite-foreground/40" />
+              </div>
+            )}
+
+            <AnimatePresence initial={false}>
+              {isSelectionMode && (
+                <motion.div
+                  initial={{ scale: 0, width: 0, marginRight: 0 }}
+                  animate={{ scale: 1, width: "auto", marginRight: "1rem" }}
+                  exit={{ scale: 0, width: 0, marginRight: 0 }}
+                  className="overflow-hidden"
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    readOnly
+                    aria-label={`Select ${headline}`}
+                    className="pointer-events-none"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {startAdornment && (
+              <div className="flex-shrink-0">{startAdornment}</div>
+            )}
+
+            <div className="flex-1 flex flex-col justify-center min-w-0">
+              <Typography variant="large" className="truncate">
+                {headline}
+              </Typography>
+              {supportingText && (
+                <Typography variant="muted" className="truncate !mt-0">
+                  {supportingText}
+                </Typography>
+              )}
+            </div>
+          </div>
+
+          {/* End Adornment */}
+          {!isSelectionMode && endAdornment && (
+            <div className="flex-shrink-0">{endAdornment}</div>
+          )}
         </motion.div>
-      </div>
-    );
-
-    if (isReorderable) {
-      return (
-        <Reorder.Item
-          ref={ref}
-          value={id}
-          dragListener={false}
-          dragControls={dragControls}
-          className={listItemVariants({ lines, className })}
-          {...props}
-        >
-          {itemContent}
-        </Reorder.Item>
-      );
-    }
-
-    return (
-      <li
-        ref={ref}
-        className={listItemVariants({ lines, className })}
-        {...props}
-      >
-        {itemContent}
       </li>
     );
   }
 );
 
-ListItem.displayName = "ListItem";
+ListItem.displayName = "List.Item";
