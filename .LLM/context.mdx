@@ -878,6 +878,363 @@ export const AllShapes: Story = {
 ```
 
 
+### Component: `bottom-tabs`
+
+This section contains the source code for the `bottom-tabs` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\bottom-tabs\index.tsx`)**
+```tsx
+"use client";
+
+import { cva, type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
+import React, {
+  Children,
+  createContext,
+  useContext,
+  useMemo,
+  useRef,
+} from "react";
+import useRipple from "use-ripple-hook";
+import { Typography } from "../typography";
+
+// --- TYPE DEFINITIONS & CONTEXT ---
+
+export interface ScreenProps {
+  /** A unique name for the screen. */
+  name: string;
+  /** The text label to display. */
+  label: React.ReactNode;
+  /** A function that returns the icon element, receiving active state. */
+  icon: (props: { isActive: boolean }) => React.ReactNode;
+}
+
+interface BottomTabsContextProps {
+  activeTab: string;
+  onTabPress: (name: string) => void;
+  variant: "contained" | "full-width";
+  indicatorId: string;
+}
+
+const BottomTabsContext = createContext<BottomTabsContextProps | null>(null);
+const useBottomTabs = () => {
+  const context = useContext(BottomTabsContext);
+  if (!context) {
+    throw new Error(
+      "BottomTabs components must be used within a <BottomTabs.Navigator>"
+    );
+  }
+  return context;
+};
+
+// --- CVA VARIANTS ---
+
+const navigatorVariants = cva("w-full", {
+  variants: {
+    variant: {
+      contained: "bg-graphite-card shadow-lg",
+      "full-width": "bg-graphite-card border-t border-graphite-border",
+    },
+    shape: {
+      full: "rounded-full",
+      minimal: "rounded-xl",
+      sharp: "rounded-none",
+    },
+  },
+  defaultVariants: {
+    variant: "contained",
+    shape: "full",
+  },
+});
+
+// --- SCREEN COMPONENT (CONFIG ONLY) ---
+
+const BottomTabsScreen: React.FC<ScreenProps> = () => {
+  // This component is only for configuration and does not render anything itself.
+  return null;
+};
+BottomTabsScreen.displayName = "BottomTabs.Screen";
+
+// --- TAB ITEM (INTERNAL) ---
+
+interface TabItemProps {
+  screen: ScreenProps;
+}
+
+const TabItem: React.FC<TabItemProps> = ({ screen }) => {
+  const { name, label, icon } = screen;
+  const { activeTab, onTabPress, variant, indicatorId } = useBottomTabs();
+  const isActive = activeTab === name;
+
+  const localRef = useRef<HTMLButtonElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(0, 0, 0, 0.1)",
+    duration: 400,
+  });
+
+  // The layout changes for the 'full-width' variant when active
+  const isHorizontal = variant === "full-width" && isActive;
+
+  return (
+    <li className="flex-1">
+      <button
+        ref={localRef}
+        type="button"
+        role="tab"
+        aria-selected={isActive}
+        onClick={() => onTabPress(name)}
+        onPointerDown={event}
+        className={clsx(
+          "relative z-10 flex h-16 w-full items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+          // Layout and padding
+          isHorizontal ? "flex-row gap-2 px-4 py-2" : "flex-col gap-1 p-2",
+          isActive
+            ? "text-graphite-primary font-semibold"
+            : "text-graphite-foreground/70",
+          variant === "contained" ? "rounded-full" : "rounded-lg"
+        )}
+      >
+        {/* Active State Indicator Pill */}
+        {isActive && (
+          <motion.div
+            layoutId={indicatorId}
+            className="absolute inset-0 z-0 bg-graphite-secondary"
+            style={{ borderRadius: 9999 }}
+            transition={{ type: "spring", stiffness: 400, damping: 35 }}
+          />
+        )}
+
+        {/* Icon */}
+        <div className="relative z-10">{icon({ isActive })}</div>
+
+        {/* Label */}
+        <AnimatePresence>
+          {isHorizontal ? (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{
+                width: "auto",
+                opacity: 1,
+                transition: { delay: 0.1, duration: 0.2 },
+              }}
+              exit={{ width: 0, opacity: 0, transition: { duration: 0.1 } }}
+              className="relative z-10 overflow-hidden whitespace-nowrap"
+            >
+              <Typography variant="small" className="font-semibold">
+                {label}
+              </Typography>
+            </motion.div>
+          ) : (
+            <div className="relative z-10">
+              <Typography
+                variant="small"
+                className={isActive ? "font-semibold" : ""}
+              >
+                {label}
+              </Typography>
+            </div>
+          )}
+        </AnimatePresence>
+      </button>
+    </li>
+  );
+};
+
+// --- NAVIGATOR COMPONENT ---
+
+interface NavigatorProps
+  extends React.HTMLAttributes<HTMLElement>,
+    VariantProps<typeof navigatorVariants> {
+  children: React.ReactElement<ScreenProps> | React.ReactElement<ScreenProps>[];
+  activeTab: string;
+  onTabPress: (name: string) => void;
+}
+
+const BottomTabsNavigator: React.FC<NavigatorProps> = ({
+  children,
+  activeTab,
+  onTabPress,
+  variant = "contained",
+  shape = "full",
+  className,
+  ...props
+}) => {
+  // Use a unique ID for the layout animation so multiple nav bars don't conflict
+  const indicatorId = React.useId();
+
+  const screens = useMemo(
+    () =>
+      Children.toArray(children)
+        .filter(
+          (child): child is React.ReactElement<ScreenProps> =>
+            React.isValidElement(child) && child.type === BottomTabsScreen
+        )
+        .map((child) => child.props),
+    [children]
+  );
+
+  const contextValue = useMemo(
+    () => ({ activeTab, onTabPress, variant, indicatorId }),
+    [activeTab, onTabPress, variant, indicatorId]
+  );
+
+  return (
+    <BottomTabsContext.Provider value={contextValue}>
+      <nav
+        className={clsx(
+          variant === "contained" && "p-2", // Add padding only for the contained variant
+          navigatorVariants({ variant, shape, className })
+        )}
+        {...props}
+      >
+        <ul className="flex items-center justify-around gap-2">
+          {screens.map((screen) => (
+            <TabItem key={screen.name} screen={screen} />
+          ))}
+        </ul>
+      </nav>
+    </BottomTabsContext.Provider>
+  );
+};
+BottomTabsNavigator.displayName = "BottomTabs.Navigator";
+
+// --- EXPORT COMPOUND COMPONENT ---
+
+export const BottomTabs = {
+  Navigator: BottomTabsNavigator,
+  Screen: BottomTabsScreen,
+};
+```
+
+**Storybook Stories (`bottom-tabs.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { Compass, Home, Library, Radio } from "lucide-react";
+import React from "react";
+import { ShallowRouter, useRouter } from "../shallow-router";
+import { BottomTabs } from "./index";
+
+const meta: Meta<typeof BottomTabs.Navigator> = {
+  title: "Components/Navigators/BottomTabs",
+  component: BottomTabs.Navigator,
+  subcomponents: { Screen: BottomTabs.Screen },
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A responsive and animated bottom navigation component, inspired by native mobile tab bars. It integrates with any routing library by exposing `activeTab` and `onTabPress` props.",
+      },
+    },
+  },
+  argTypes: {
+    variant: {
+      control: "select",
+      options: ["contained", "full-width"],
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+      if: { arg: "variant", eq: "contained" },
+    },
+    activeTab: { control: false },
+    onTabPress: { action: "tabPressed" },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof BottomTabs.Navigator>;
+
+// Helper component to render stories with routing context
+const RenderWithRouter = (args: any) => {
+  const { path: activeTab, push: onTabPress } = useRouter();
+
+  const iconSize = 24;
+  const initialTab = "home";
+
+  return (
+    <div className="w-96">
+      <BottomTabs.Navigator
+        {...args}
+        activeTab={activeTab === "/" ? initialTab : activeTab.substring(1)}
+        onTabPress={(tab) => onTabPress(`/${tab}`)}
+      >
+        <BottomTabs.Screen
+          name="home"
+          label="Home"
+          icon={() => <Home size={iconSize} />}
+        />
+        <BottomTabs.Screen
+          name="browse"
+          label="Browse"
+          icon={() => <Compass size={iconSize} />}
+        />
+        <BottomTabs.Screen
+          name="radio"
+          label="Radio"
+          icon={() => <Radio size={iconSize} />}
+        />
+        <BottomTabs.Screen
+          name="library"
+          label="Library"
+          icon={() => <Library size={iconSize} />}
+        />
+      </BottomTabs.Navigator>
+    </div>
+  );
+};
+
+export const Contained: Story = {
+  name: "1. Contained (Floating)",
+  args: {
+    variant: "contained",
+    shape: "full",
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab">
+      <RenderWithRouter {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const FullWidth: Story = {
+  name: "2. Full Width (Animated Label)",
+  args: {
+    variant: "full-width",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "In the `full-width` variant, the active tab's label animates horizontally, creating a common native mobile pattern.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab">
+      <RenderWithRouter {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const ContainedMinimalShape: Story = {
+  name: "3. Contained (Minimal Shape)",
+  args: {
+    variant: "contained",
+    shape: "minimal",
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab">
+      <RenderWithRouter {...args} />
+    </ShallowRouter>
+  ),
+};
+```
+
+
 ### Component: `bouncy-box`
 
 This section contains the source code for the `bouncy-box` component and its corresponding Storybook stories.
@@ -5486,20 +5843,21 @@ This section contains the source code for the `list` component and its correspon
 ```tsx
 "use client";
 
-import { useLongPress } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import { Reorder } from "framer-motion";
 import React, { useState } from "react";
 import { ListContext } from "../../context/List.context";
 import { Typography } from "../typography";
-import { ListItem, ListItemProps } from "./ListItem";
+import { ListItem, type ListItemProps } from "./ListItem"; // Import ListItemProps
+
+// Export the type so it can be used elsewhere
+export type { ListItemProps };
 
 const listVariants = cva("flex w-full flex-col overflow-hidden", {
   variants: {
     variant: {
-      primary: "bg-graphite-card",
-      secondary: "bg-graphite-secondary",
+      primary: "",
+      secondary: "",
     },
     shape: {
       full: "rounded-2xl",
@@ -5513,33 +5871,29 @@ const listVariants = cva("flex w-full flex-col overflow-hidden", {
   },
 });
 
-const Divider = () => <div className="h-px bg-graphite-border" />;
+const Divider = () => <div className="h-px bg-graphite-border ml-4" />;
 
-interface ListProps<T>
+interface ListProps
   extends React.HTMLAttributes<HTMLUListElement>,
     VariantProps<typeof listVariants> {
   children: React.ReactNode;
   dividers?: boolean;
   header?: React.ReactNode;
-  reorderable?: boolean;
-  items?: T[];
-  onReorder?: (newOrder: T[]) => void;
   selectable?: boolean;
+  reorderable?: boolean;
 }
 
-const ListRoot = <T extends { id: string | number }>({
+const ListRoot = ({
   className,
   children,
   dividers = false,
   header,
   variant,
   shape,
-  reorderable = false,
-  items,
-  onReorder,
   selectable = false,
+  reorderable = false,
   ...props
-}: ListProps<T>) => {
+}: ListProps) => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string | number>>(
     new Set()
@@ -5553,50 +5907,29 @@ const ListRoot = <T extends { id: string | number }>({
       } else {
         newSet.add(id);
       }
+
+      if (newSet.size === 0) {
+        setIsSelectionMode(false);
+      }
+
       return newSet;
     });
   };
 
-  const longPressAttrs = useLongPress(
-    () => {
-      if (selectable && !reorderable) setIsSelectionMode(true);
-    },
-    { threshold: 500 }
-  );
-
-  const startReorder = (id: string | number) => {
-    // Optional: could add logic here if needed when drag starts
-  };
-
   const childArray = React.Children.toArray(children);
-
-  const renderContent = () => (
-    <>
-      {childArray.map((child, index) => {
-        if (!React.isValidElement(child)) return child;
-        const isLast = index === childArray.length - 1;
-        return (
-          <React.Fragment key={(child.props as ListItemProps).id}>
-            {child}
-            {dividers && !isLast && <Divider />}
-          </React.Fragment>
-        );
-      })}
-    </>
-  );
 
   return (
     <ListContext.Provider
       value={{
+        isSelectable: selectable,
         isSelectionMode,
         setIsSelectionMode,
         selectedItems,
         toggleSelection,
         isReorderable: reorderable,
-        startReorder,
       }}
     >
-      <div {...(selectable && longPressAttrs)}>
+      <div className="flex flex-col">
         {header && (
           <div className="px-4 py-2">
             <Typography
@@ -5607,25 +5940,21 @@ const ListRoot = <T extends { id: string | number }>({
             </Typography>
           </div>
         )}
-        {reorderable ? (
-          <Reorder.Group
-            as="ul"
-            axis="y"
-            values={items || []}
-            onReorder={onReorder as any}
-            className={clsx(listVariants({ variant, shape, className }))}
-            {...props}
-          >
-            {children}
-          </Reorder.Group>
-        ) : (
-          <ul
-            className={clsx(listVariants({ variant, shape, className }))}
-            {...props}
-          >
-            {renderContent()}
-          </ul>
-        )}
+        <ul
+          className={clsx(listVariants({ variant, shape, className }), "py-2")}
+          {...props}
+        >
+          {childArray.map((child, index) => {
+            if (!React.isValidElement(child)) return child;
+            const isLast = index === childArray.length - 1;
+            return (
+              <React.Fragment key={child.key}>
+                {child}
+                {dividers && !isLast && <Divider />}
+              </React.Fragment>
+            );
+          })}
+        </ul>
       </div>
     </ListContext.Provider>
   );
@@ -5638,12 +5967,36 @@ export const List = Object.assign(ListRoot, {
 
 **Storybook Stories (`List.stories.tsx`)**
 ```tsx
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { Meta, StoryObj } from "@storybook/react";
-import { MoreVertical, Trash2 } from "lucide-react";
+import { Archive, MoreVertical, Share2, Trash2, User } from "lucide-react";
 import React, { useState } from "react";
 import { Avatar } from "../avatar";
 import { Button } from "../button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../dropdown-menu";
 import { IconButton } from "../icon-button";
+import { Sheet } from "../sheet";
 import { List } from "./index";
 
 const meta: Meta<typeof List> = {
@@ -5665,10 +6018,10 @@ export default meta;
 type Story = StoryObj<typeof List>;
 
 const sampleItems = [
-  { id: 1, name: "Alisa Hester", status: "Online", avatar: "a" },
-  { id: 2, name: "Barrera Ramsey", status: "Last seen 5m ago", avatar: "b" },
-  { id: 3, name: "Carroll Buchanan", status: "Typing...", avatar: "c" },
-  { id: 4, name: "Decker Mckenzie", status: "Away", avatar: "d" },
+  { id: "1", name: "Alisa Hester", status: "Online", avatar: "a" },
+  { id: "2", name: "Barrera Ramsey", status: "Last seen 5m ago", avatar: "b" },
+  { id: "3", name: "Carroll Buchanan", status: "Typing...", avatar: "c" },
+  { id: "4", name: "Decker Mckenzie", status: "Away", avatar: "d" },
 ];
 
 export const Default: Story = {
@@ -5676,96 +6029,11 @@ export const Default: Story = {
   args: {
     header: "Contacts",
     dividers: true,
-    variant: "primary",
-    shape: "minimal",
   },
   render: (args) => (
-    <List {...args}>
-      {sampleItems.map((item) => (
-        <List.Item
-          key={item.id}
-          id={item.id}
-          headline={item.name}
-          supportingText={item.status}
-          startAdornment={<Avatar fallback={item.name} />}
-          endAdornment={
-            <IconButton variant="ghost">
-              <MoreVertical />
-            </IconButton>
-          }
-        />
-      ))}
-    </List>
-  ),
-};
-
-export const SelectionMode: Story = {
-  name: "2. Selection Mode (Long Press)",
-  args: { ...Default.args, selectable: true },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Long press any item to enter selection mode. Clicks will then toggle selection. The `selectable` prop must be true.",
-      },
-    },
-  },
-  render: (args) => <Default.render {...args} />,
-};
-
-export const SwipeToReveal: Story = {
-  name: "3. Swipe to Reveal Actions",
-  args: { ...Default.args },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Swipe an item left to reveal hidden actions. The component handles the animation.",
-      },
-    },
-  },
-  render: (args) => (
-    <List {...args}>
-      {sampleItems.map((item) => (
-        <List.Item
-          key={item.id}
-          id={item.id}
-          headline={item.name}
-          supportingText={item.status}
-          startAdornment={<Avatar fallback={item.name} />}
-          swipeActions={
-            <div className="flex h-full">
-              <Button
-                shape="sharp"
-                className="h-full !rounded-none bg-red-500 hover:bg-red-600"
-                onClick={() => alert(`Deleted ${item.name}`)}
-              >
-                <Trash2 />
-              </Button>
-            </div>
-          }
-        />
-      ))}
-    </List>
-  ),
-};
-
-export const DragToReorder: Story = {
-  name: "4. Drag to Reorder",
-  args: { ...Default.args, reorderable: true, dividers: true },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "When `reorderable` is true, a drag handle appears. Drag items to reorder the list. This requires passing `items` and `onReorder` props.",
-      },
-    },
-  },
-  render: function Render(args) {
-    const [items, setItems] = useState(sampleItems);
-    return (
-      <List {...args} items={items} onReorder={setItems}>
-        {items.map((item) => (
+    <div className="w-96">
+      <List {...args}>
+        {sampleItems.map((item) => (
           <List.Item
             key={item.id}
             id={item.id}
@@ -5775,8 +6043,237 @@ export const DragToReorder: Story = {
           />
         ))}
       </List>
+    </div>
+  ),
+};
+
+export const SelectionMode: Story = {
+  name: "2. Selection Mode (Long Press)",
+  args: { ...Default.args, selectable: true },
+  render: (args) => <Default.render {...args} />,
+};
+
+export const SwipeToReveal: Story = {
+  name: "3. Swipe to Reveal Actions",
+  args: { ...Default.args },
+  render: (args) => (
+    <div className="w-96">
+      <List {...args}>
+        {sampleItems.map((item) => (
+          <List.Item
+            key={item.id}
+            id={item.id}
+            headline={item.name}
+            supportingText={item.status}
+            startAdornment={<Avatar fallback={item.name} />}
+            swipeActions={
+              <div className="flex h-full">
+                <Button
+                  shape="full"
+                  variant={"secondary"}
+                  className="h-full !rounded-none"
+                  onClick={() => alert(`Archived ${item.name}`)}
+                >
+                  <Archive />
+                </Button>
+                <Button
+                  shape="sharp"
+                  className="h-full !rounded-none bg-red-500 hover:bg-red-600"
+                  onClick={() => alert(`Deleted ${item.name}`)}
+                >
+                  <Trash2 />
+                </Button>
+              </div>
+            }
+          />
+        ))}
+      </List>
+    </div>
+  ),
+};
+
+// Helper component for the DND story
+const SortableItem = (props: any) => {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: props.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <List.Item
+      ref={setNodeRef}
+      style={style}
+      dndAttributes={attributes}
+      dndListeners={listeners}
+      {...props}
+    />
+  );
+};
+
+export const DragToReorder: Story = {
+  name: "4. Drag to Reorder (with @dnd-kit)",
+  args: { ...Default.args, reorderable: true, dividers: true },
+  render: function Render(args) {
+    const [items, setItems] = useState(sampleItems);
+    const sensors = useSensors(
+      useSensor(PointerSensor),
+      useSensor(KeyboardSensor, {
+        coordinateGetter: sortableKeyboardCoordinates,
+      })
+    );
+
+    function handleDragEnd(event: DragEndEvent) {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        setItems((currentItems) => {
+          const oldIndex = currentItems.findIndex((i) => i.id === active.id);
+          const newIndex = currentItems.findIndex((i) => i.id === over.id);
+          return arrayMove(currentItems, oldIndex, newIndex);
+        });
+      }
+    }
+
+    return (
+      <div className="w-96">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={items} strategy={verticalListSortingStrategy}>
+            <List {...args}>
+              {items.map((item) => (
+                <SortableItem
+                  key={item.id}
+                  id={item.id}
+                  headline={item.name}
+                  supportingText={item.status}
+                  startAdornment={<Avatar fallback={item.name} />}
+                />
+              ))}
+            </List>
+          </SortableContext>
+        </DndContext>
+      </div>
     );
   },
+};
+
+export const WithDropdownMenu: Story = {
+  name: "5. Integration: Dropdown Menu",
+  args: { ...Default.args },
+  render: (args) => (
+    <div className="w-96">
+      <List {...args}>
+        {sampleItems.map((item) => (
+          <List.Item
+            key={item.id}
+            id={item.id}
+            headline={item.name}
+            supportingText={item.status}
+            startAdornment={<Avatar fallback={item.name} />}
+            endAdornment={
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  asChild
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical />
+                  </IconButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" /> View Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+        ))}
+      </List>
+    </div>
+  ),
+};
+
+export const WithBottomSheet: Story = {
+  name: "6. Integration: Bottom Sheet",
+  args: { ...Default.args },
+  render: (args) => (
+    <div className="w-96">
+      <Sheet forceBottomSheet mode="detached">
+        <List {...args}>
+          {sampleItems.map((item) => (
+            <Sheet.Trigger asChild key={item.id}>
+              <List.Item
+                id={item.id}
+                headline={item.name}
+                supportingText={item.status}
+                startAdornment={<Avatar fallback={item.name} />}
+              />
+            </Sheet.Trigger>
+          ))}
+        </List>
+
+        <Sheet.Content>
+          <Sheet.Grabber />
+          <div className="p-2">
+            <List>
+              <List.Item
+                id="header"
+                lines="two-line"
+                headline="Alisa Hester"
+                supportingText="Online"
+                startAdornment={<Avatar size="lg" fallback="A" />}
+                className="hover:bg-transparent" // Disable hover for header
+              />
+            </List>
+
+            {/* --- THIS IS THE MODIFIED PART --- */}
+            <div className="mt-2">
+              <List shape="minimal" variant="secondary">
+                {/** biome-ignore lint/nursery/useUniqueElementIds: strict */}
+                <List.Item
+                  id="share"
+                  headline="Share"
+                  startAdornment={<Share2 className="h-5 w-5" />}
+                  onClick={() => alert("Shared!")}
+                />
+                {/** biome-ignore lint/nursery/useUniqueElementIds: strict */}
+                <List.Item
+                  id="archive"
+                  headline="Archive"
+                  startAdornment={<Archive className="h-5 w-5" />}
+                  onClick={() => alert("Archived!")}
+                />
+                {/** biome-ignore lint/nursery/useUniqueElementIds: strict */}
+                <List.Item
+                  id="delete"
+                  headline={<span className="text-red-500">Delete</span>}
+                  startAdornment={<Trash2 className="h-5 w-5 text-red-500" />}
+                  onClick={() => alert("Deleted!")}
+                />
+              </List>
+            </div>
+            {/* --- END OF MODIFICATION --- */}
+          </div>
+        </Sheet.Content>
+      </Sheet>
+    </div>
+  ),
 };
 ```
 
@@ -10455,12 +10952,20 @@ export const Polymorphic: Story = {
 import { createContext } from 'react'
 
 export interface ListContextProps {
+  // Selection Mode
   isSelectionMode: boolean
   setIsSelectionMode: (value: boolean) => void
   selectedItems: Set<string | number>
   toggleSelection: (id: string | number) => void
+  isSelectable: boolean
+
+  // Reorder Mode
   isReorderable: boolean
-  startReorder: (id: string | number) => void
+
+  // --- NEW STYLING PROPS ---
+  variant: 'primary' | 'secondary'
+  shape: 'full' | 'minimal' | 'sharp'
+  size: 'sm' | 'md' | 'lg'
 }
 
 export const ListContext = createContext<ListContextProps | null>(null)

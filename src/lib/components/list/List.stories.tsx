@@ -62,7 +62,7 @@ export const Default: Story = {
     dividers: true,
   },
   render: (args) => (
-    <div className="w-full">
+    <div className="w-96">
       <List {...args}>
         {sampleItems.map((item) => (
           <List.Item
@@ -88,7 +88,7 @@ export const SwipeToReveal: Story = {
   name: "3. Swipe to Reveal Actions",
   args: { ...Default.args },
   render: (args) => (
-    <div className="w-full">
+    <div className="w-96">
       <List {...args}>
         {sampleItems.map((item) => (
           <List.Item
@@ -168,7 +168,7 @@ export const DragToReorder: Story = {
     }
 
     return (
-      <div className="w-full">
+      <div className="w-96">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -197,7 +197,7 @@ export const WithDropdownMenu: Story = {
   name: "5. Integration: Dropdown Menu",
   args: { ...Default.args },
   render: (args) => (
-    <div className="w-full">
+    <div className="w-96">
       <List {...args}>
         {sampleItems.map((item) => (
           <List.Item
@@ -244,7 +244,7 @@ export const WithBottomSheet: Story = {
   name: "6. Integration: Bottom Sheet",
   args: { ...Default.args },
   render: (args) => (
-    <div className="w-full">
+    <div className="w-96">
       <Sheet forceBottomSheet mode="detached">
         <List {...args}>
           {sampleItems.map((item) => (

@@ -10,6 +10,11 @@ export interface ListContextProps {
 
   // Reorder Mode
   isReorderable: boolean
+
+  // --- NEW STYLING PROPS ---
+  variant: 'primary' | 'secondary'
+  shape: 'full' | 'minimal' | 'sharp'
+  size: 'sm' | 'md' | 'lg'
 }
 
 export const ListContext = createContext<ListContextProps | null>(null)
