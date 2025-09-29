@@ -14,6 +14,7 @@ import React, {
   forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
 } from "react";
@@ -41,9 +42,6 @@ export interface ElasticScrollAreaProps
   pullThreshold?: number;
   RefreshIndicatorComponent?: React.ComponentType<RefreshIndicatorProps>;
 }
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(value, max));
-}
 
 // --- DEFAULT REFRESH INDICATOR ---
 const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
@@ -64,7 +62,6 @@ const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
     </motion.div>
   );
 };
-
 // --- OVERSCROLL & PULL-TO-REFRESH LOGIC HOOK ---
 const useElasticAndRefresh = (
   viewportRef: React.RefObject<HTMLDivElement>,
@@ -94,18 +91,12 @@ const useElasticAndRefresh = (
     });
   }, [y]);
 
-  // --- MODIFIED: triggerRefresh now snaps content back immediately ---
   const triggerRefresh = useCallback(async () => {
     if (!onRefresh) {
-      console.warn(
-        "ElasticScrollArea: `onRefresh` prop is missing but `pullToRefresh` is enabled."
-      );
       springToZero();
       return;
     }
     setIsRefreshing(true);
-    // Snap the content back to 0 immediately.
-    // The indicator's style will be handled separately in the JSX.
     springToZero();
     try {
       await onRefresh();
@@ -115,34 +106,28 @@ const useElasticAndRefresh = (
   }, [onRefresh, springToZero]);
 
   useEffect(() => {
+    // FIX: Add a guard clause to prevent running before the ref is hydrated.
     const viewport = viewportRef.current;
     if (!viewport || !isEnabled) return;
 
     const handleWheel = (event: WheelEvent) => {
+      // ... (rest of the function is unchanged)
       if (isRefreshing) return;
-
       const { scrollTop, scrollHeight, clientHeight } = viewport;
       const isAtTop = scrollTop <= 0;
       const isAtBottom = scrollTop >= scrollHeight - clientHeight;
       const isScrollingUp = event.deltaY < 0;
       const isScrollingDown = event.deltaY > 0;
-
       if ((isAtTop && isScrollingUp) || (isAtBottom && isScrollingDown)) {
         event.preventDefault();
-
-        // Use a more controlled accumulation approach
         const currentY = y.get();
         const resistance = Math.abs(currentY) / MAX_OVERSCROLL_DESKTOP;
         const adjustedDelta = event.deltaY * damping * (1 - resistance);
-
         const newY = Math.max(
           -MAX_OVERSCROLL_DESKTOP,
           Math.min(MAX_OVERSCROLL_DESKTOP, currentY - adjustedDelta)
         );
-
         y.set(newY);
-
-        // Clear any existing timeout and set a shorter one
         if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
         wheelTimeoutRef.current = setTimeout(() => {
           const finalY = y.get();
@@ -153,7 +138,7 @@ const useElasticAndRefresh = (
               springToZero();
             }
           }
-        }, 50); // Shorter timeout for more responsive feel
+        }, 50);
       }
     };
 
@@ -166,7 +151,6 @@ const useElasticAndRefresh = (
     const handleTouchMove = (event: TouchEvent) => {
       if (!isTouching.current || isRefreshing || event.touches.length !== 1)
         return;
-
       const { scrollTop, scrollHeight, clientHeight } = viewport;
       const currentY = event.touches[0].clientY;
       const deltaY = currentY - startY.current;
@@ -174,7 +158,6 @@ const useElasticAndRefresh = (
       const isAtBottom = scrollTop >= scrollHeight - clientHeight;
       const isPullingDown = deltaY > 0;
       const isPullingUp = deltaY < 0;
-
       if ((isAtTop && isPullingDown) || (isAtBottom && isPullingUp)) {
         event.preventDefault();
         isOverscrolling.current = true;
@@ -233,10 +216,9 @@ const useElasticAndRefresh = (
 
   return { isRefreshing };
 };
-
 // --- MAIN COMPONENT ---
 const ElasticScrollAreaRoot = forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.Root>,
+  HTMLDivElement,
   ElasticScrollAreaProps
 >(
   (
@@ -254,17 +236,17 @@ const ElasticScrollAreaRoot = forwardRef<
     },
     ref
   ) => {
-    const viewportRef = useRef<HTMLDivElement>(null);
-    const y = useMotionValue(0);
+    const localViewportRef = useRef<HTMLDivElement>(null);
+    useImperativeHandle(ref, () => localViewportRef.current!);
 
-    const { isRefreshing } = useElasticAndRefresh(viewportRef, y, {
+    const y = useMotionValue(0);
+    const { isRefreshing } = useElasticAndRefresh(localViewportRef, y, {
       isEnabled: elasticity || pullToRefresh,
       damping: dampingFactor,
       isRefreshEnabled: pullToRefresh,
       onRefresh,
       pullThreshold,
     });
-
     const pullProgress = useTransform(y, (v) => (v > 0 ? v : 0));
     const indicatorOpacity = useTransform(
       pullProgress,
@@ -274,14 +256,12 @@ const ElasticScrollAreaRoot = forwardRef<
 
     return (
       <ScrollAreaPrimitive.Root
-        ref={ref}
         className={clsx("relative h-full w-full overflow-hidden", className)}
         {...props}
       >
         {pullToRefresh && (
           <motion.div
-            className="pointer-events-none absolute inset-x-0 top-[-40px] z-20 flex justify-center"
-            // --- MODIFIED: Decouple indicator from content during refresh ---
+            className="pointer-events-none absolute inset-x-0 top-[-40px] z-50 flex justify-center"
             style={{
               y: isRefreshing ? pullThreshold + 40 : pullProgress,
               opacity: isRefreshing ? 1 : indicatorOpacity,
@@ -296,16 +276,14 @@ const ElasticScrollAreaRoot = forwardRef<
             </div>
           </motion.div>
         )}
-
         <motion.div style={{ y }} className="h-full w-full">
           <ScrollAreaPrimitive.Viewport
-            ref={viewportRef}
+            ref={localViewportRef}
             className="h-full w-full rounded-[inherit]"
           >
             {children}
           </ScrollAreaPrimitive.Viewport>
         </motion.div>
-
         <ScrollBar scrollbarVisibility={scrollbarVisibility} />
         <ScrollAreaPrimitive.Corner />
       </ScrollAreaPrimitive.Root>

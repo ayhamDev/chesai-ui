@@ -68,51 +68,49 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
     const fabSize = fabSizeMap[size || "md"];
 
     return (
-      <BouncyBox scaleAmount={0.95}>
-        <motion.button
-          // --- MODIFICATION START ---
-          // 1. Set the initial state before the component mounts
-          initial={{ scale: 0, opacity: 0 }}
-          // 2. Animate to the final state, merging with existing animations
-          animate={{
-            scale: 1, // Animate scale to 1
-            opacity: 1, // Animate opacity to 1
-            paddingLeft: isExtended ? fabSize / 2 : fabSize / 4,
-            paddingRight: isExtended ? fabSize / 2 : fabSize / 4,
-          }}
-          // --- MODIFICATION END ---
-          transition={transition}
-          className={clsx(
-            fabVariants({ size, shape, className }),
-            // Center the content ONLY when collapsed
-            !isExtended && "justify-center"
-          )}
-          ref={localRef}
-          onPointerDown={event}
-          disabled={disabled}
-          {...props}
-        >
-          {/* The Icon: Add the magic `layout` prop */}
-          <motion.span layout="position" className="flex-shrink-0 z-10">
-            {icon}
-          </motion.span>
+      <motion.button
+        // --- MODIFICATION START ---
+        // 1. Set the initial state before the component mounts
+        initial={{ scale: 0, opacity: 0 }}
+        // 2. Animate to the final state, merging with existing animations
+        animate={{
+          scale: 1, // Animate scale to 1
+          opacity: 1, // Animate opacity to 1
+          paddingLeft: isExtended ? fabSize / 2 : fabSize / 4,
+          paddingRight: isExtended ? fabSize / 2 : fabSize / 4,
+        }}
+        // --- MODIFICATION END ---
+        transition={transition}
+        className={clsx(
+          fabVariants({ size, shape, className }),
+          // Center the content ONLY when collapsed
+          !isExtended && "justify-center"
+        )}
+        ref={localRef}
+        onPointerDown={event}
+        disabled={disabled}
+        {...props}
+      >
+        {/* The Icon: Add the magic `layout` prop */}
+        <motion.span layout="position" className="flex-shrink-0 z-10">
+          {icon}
+        </motion.span>
 
-          <AnimatePresence>
-            {isExtended && (
-              <motion.div
-                // Animate width from 0 to auto
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: "auto", opacity: 1, marginLeft: "0.75rem" }}
-                exit={{ width: 0, opacity: 0, marginLeft: 0 }}
-                transition={transition}
-                className="whitespace-nowrap overflow-hidden"
-              >
-                {children}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.button>
-      </BouncyBox>
+        <AnimatePresence>
+          {isExtended && (
+            <motion.div
+              // Animate width from 0 to auto
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: "auto", opacity: 1, marginLeft: "0.75rem" }}
+              exit={{ width: 0, opacity: 0, marginLeft: 0 }}
+              transition={transition}
+              className="whitespace-nowrap overflow-hidden"
+            >
+              {children}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
     );
   }
 );

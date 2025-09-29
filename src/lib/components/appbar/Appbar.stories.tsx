@@ -7,9 +7,12 @@ import {
   Search,
   User,
 } from "lucide-react";
-import { IconButton } from "../icon-button"; // Assuming these are in your project
-import { Typography } from "../typography"; // Assuming these are in your project
-import { AppBar } from "./index";
+import React, { useRef } from "react";
+import { useAppBar } from "../../hooks/useAppBar";
+import { ElasticScrollArea } from "../elastic-scroll-area";
+import { IconButton } from "../icon-button";
+import { Typography } from "../typography";
+import { AppBar, type AppBarProps } from "./index";
 
 const meta: Meta<typeof AppBar> = {
   title: "Components/AppBar",
@@ -20,7 +23,7 @@ const meta: Meta<typeof AppBar> = {
     docs: {
       description: {
         component:
-          "A versatile AppBar that can be sticky, hide on scroll, and expand to a large, collapsible header. It dynamically measures its own height from the DOM to ensure animations are always accurate.",
+          "A versatile AppBar that is decoupled from its scroll container. It uses a headless hook (`useAppBar`) to manage animations and behavior, allowing it to work with any scrollable element.",
       },
     },
   },
@@ -28,7 +31,6 @@ const meta: Meta<typeof AppBar> = {
     size: {
       control: "select",
       options: ["md", "lg"],
-      description: "Controls the size and collapsing behavior of the AppBar.",
     },
     appBarColor: {
       control: "select",
@@ -49,8 +51,6 @@ const meta: Meta<typeof AppBar> = {
     stickyHideTarget: {
       control: "select",
       options: [undefined, "main-row", "full-appbar"],
-      description:
-        "Overrides the default behavior for `conditionally-sticky`. Forces the hiding behavior to target either the main row or the full app bar height.",
     },
     children: { control: false },
     largeHeaderContent: { control: false },
@@ -58,6 +58,7 @@ const meta: Meta<typeof AppBar> = {
     startAdornment: { control: false },
     centerAdornment: { control: false },
     endAdornments: { control: false },
+    scrollContainerRef: { control: false },
   },
 };
 
@@ -70,29 +71,37 @@ const DummyContent = () => (
     <Typography variant="h3">Scroll Down to See The Effect</Typography>
     <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 30 }).map((_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: strict
         <div key={i} className="h-48 rounded-2xl bg-black/5" />
       ))}
     </div>
   </main>
 );
 
-// A smart render function to wrap stories and handle padding
-const render = (args: any) => {
-  let paddingTop = "pt-[64px]"; // Default for 'md'
+// A mock async function for the onRefresh prop
+const simulateRefresh = () => {
+  return new Promise((resolve) => setTimeout(resolve, 2000));
+};
+
+// A smart render function to wrap stories and demonstrate the headless pattern.
+const renderWithScrollContainer = (args: AppBarProps) => {
+  const scrollRef = useRef<HTMLElement | null>(null);
+
+  let paddingTop = "pt-[64px]";
   if (args.size === "lg" && args.largeHeaderContent) {
     paddingTop = "pt-[160px]";
   }
-  if (args.className?.includes("h-20")) {
-    paddingTop = "pt-20";
-  }
 
   return (
-    <AppBar.Provider mainContentColor="background">
-      <AppBar {...args} />
-      <div className={paddingTop}>
+    <div className="h-screen bg-graphite-background">
+      <AppBar {...args} scrollContainerRef={scrollRef} />
+      <div
+        ref={scrollRef as React.RefObject<HTMLDivElement>}
+        className={`h-full overflow-y-auto ${paddingTop}`}
+      >
         <DummyContent />
       </div>
-    </AppBar.Provider>
+    </div>
   );
 };
 
@@ -116,7 +125,7 @@ export const Default: Story = {
       </IconButton>,
     ],
   },
-  render,
+  render: renderWithScrollContainer,
 };
 
 export const ConditionallySticky: Story = {
@@ -126,15 +135,7 @@ export const ConditionallySticky: Story = {
     scrollBehavior: "conditionally-sticky",
     children: <Typography variant="h4">Hiding Header</Typography>,
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "With `scrollBehavior` set to `conditionally-sticky`, the AppBar scrolls out of view when scrolling down and reappears when scrolling up.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const AnimatedColor: Story = {
@@ -146,15 +147,7 @@ export const AnimatedColor: Story = {
     animatedColor: "card",
     children: <Typography variant="h4">Animated Header</Typography>,
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "With `animatedBehavior` including `appbar-color`, the AppBar transitions to the `animatedColor` when the user scrolls.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const FoldingOnScroll: Story = {
@@ -164,34 +157,18 @@ export const FoldingOnScroll: Story = {
     animatedBehavior: ["fold"],
     children: <Typography variant="h4">Folding Header</Typography>,
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "With `animatedBehavior` including `fold`, the AppBar's bottom corners become rounded as you scroll down, creating a neat 'folding' effect.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const ShadowOnScroll: Story = {
   name: "Medium, Shadow on Scroll",
   args: {
     ...Default.args,
-    animatedBehavior: ["shadow"], // Enable shadow effect
+    animatedBehavior: ["shadow"],
     appBarColor: "background",
     children: <Typography variant="h4">Shadow Header</Typography>,
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "With `animatedBehavior` including `shadow`, the AppBar gains a subtle shadow when the user scrolls, helping it stand out from the content.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const LargeCollapsing: Story = {
@@ -234,15 +211,7 @@ export const LargeCollapsing: Story = {
       </div>
     ),
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "**This is the primary `lg` use case.** When `size` is `lg` and *both* `largeHeaderContent` and `smallHeaderContent` are provided, the AppBar becomes fully collapsible. On scroll, it smoothly animates its height, fades out the large content, and cross-fades the titles. The `conditionally-sticky` behavior engages *after* the header has fully collapsed, hiding the remaining small header.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const LargeStatic: Story = {
@@ -256,15 +225,7 @@ export const LargeStatic: Story = {
       </Typography>
     ),
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "**This demonstrates the smart default behavior.** When `size` is `lg` but `smallHeaderContent` is omitted, the AppBar **does not collapse**. It remains in its large, expanded state. The `conditionally-sticky` behavior adapts and now hides the *entire visible AppBar* on scroll, since there is no smaller state to transition to.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const LargeStaticWithOverride: Story = {
@@ -273,15 +234,7 @@ export const LargeStaticWithOverride: Story = {
     ...LargeStatic.args,
     stickyHideTarget: "main-row",
   },
-  render,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "This builds on the 'Large, Static' story. Even though the AppBar is not collapsible, we can use the `stickyHideTarget='main-row'` prop to force the `conditionally-sticky` behavior to hide *only the main title row*, leaving the `largeHeaderContent` (the search bar) visible at the top.",
-      },
-    },
-  },
+  render: renderWithScrollContainer,
 };
 
 export const CombinedEffects: Story = {
@@ -291,13 +244,86 @@ export const CombinedEffects: Story = {
     animatedBehavior: ["appbar-color", "fold", "shadow"],
     animatedColor: "secondary",
   },
-  render,
+  render: renderWithScrollContainer,
+};
+
+// ============================= FIX IS HERE =============================
+// This new component calls the hook safely *after* its parent has mounted.
+const ElasticScrollContent = ({
+  scrollRef,
+  args,
+}: {
+  scrollRef: React.RefObject<HTMLElement | null>;
+  args: AppBarProps;
+}) => {
+  // Explicitly pick only the props that the `useAppBar` hook needs.
+  const {
+    size,
+    scrollBehavior,
+    animatedBehavior,
+    animatedColor,
+    largeHeaderContent,
+    smallHeaderContent,
+    stickyHideTarget,
+    appBarColor,
+  } = args;
+
+  // By the time this component renders, scrollRef.current is hydrated.
+  const { contentPaddingTop } = useAppBar({
+    size,
+    scrollBehavior,
+    animatedBehavior,
+    animatedColor,
+    largeHeaderContent,
+    smallHeaderContent,
+    stickyHideTarget,
+    // @ts-ignore
+    appBarColor,
+    scrollContainerRef: scrollRef,
+  });
+  console.log(contentPaddingTop);
+
+  return (
+    <div style={{ paddingTop: contentPaddingTop }}>
+      <DummyContent />
+    </div>
+  );
+};
+
+export const WithElasticScroll: Story = {
+  name: "With Elastic Scroll & Refresh",
+  args: {
+    ...LargeCollapsing.args,
+    animatedBehavior: ["shadow", "fold"],
+    scrollBehavior: "conditionally-sticky",
+  },
   parameters: {
     docs: {
       description: {
         story:
-          "A demonstration of all features working in harmony. This `lg` AppBar collapses, hides on scroll, animates its color, folds its corners, and gains a shadow simultaneously.",
+          "This story demonstrates composing the `AppBar` with `ElasticScrollArea`. We use a child component to safely call the `useAppBar` hook only after the scroll container's `ref` has been attached, preventing hydration errors.",
       },
     },
+  },
+  render: (args) => {
+    // This ref will be passed down and attached by ElasticScrollArea
+    const scrollRef = useRef<HTMLElement | null>(null);
+
+    return (
+      <div className="h-screen bg-graphite-background">
+        {/* AppBar receives the ref but doesn't trigger the hook directly from here */}
+        <AppBar {...args} scrollContainerRef={scrollRef} />
+
+        <ElasticScrollArea
+          ref={scrollRef as React.RefObject<HTMLDivElement>}
+          className="h-full"
+          pullToRefresh={true}
+          onRefresh={simulateRefresh}
+        >
+          {/* Render the child component that safely calls the hook */}
+          <ElasticScrollContent scrollRef={scrollRef} args={args} />
+        </ElasticScrollArea>
+      </div>
+    );
   },
 };

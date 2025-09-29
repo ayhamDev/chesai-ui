@@ -92,7 +92,9 @@ export const InteractiveAnimation: Story = {
         >
           {isExtended ? "Collapse FAB" : "Extend FAB"}
         </Button>
-        <FAB {...args} isExtended={isExtended} />
+        <div>
+          <FAB {...args} isExtended={isExtended} />
+        </div>
       </div>
     );
   },
