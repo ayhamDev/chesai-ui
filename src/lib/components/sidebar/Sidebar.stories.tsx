@@ -5,14 +5,18 @@ import {
   Inbox,
   Menu,
   Pencil,
+  Search,
   Send,
   Settings,
   Star,
   Trash2,
   User,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { AppBar } from "../appbar";
 import { Badge } from "../badge";
+import { ElasticScrollArea } from "../elastic-scroll-area";
+import { Input } from "../input";
 import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { Sidebar } from "./index";
@@ -283,7 +287,6 @@ export const ControlledState: Story = {
   },
 };
 
-// --- NEW STORY ---
 const shortNavItems = [
   { key: "inbox", label: "Inbox", icon: <Inbox size={20} /> },
   { key: "sent", label: "Sent", icon: <Send size={20} /> },
@@ -344,6 +347,114 @@ export const ItemVariants: Story = {
           </div>
         </Sidebar.Content>
       </Sidebar>
+    </ShallowRouter>
+  ),
+};
+
+// --- NEW STORY ---
+
+const AppLayoutContent = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { path } = useRouter();
+  const item =
+    [...navItems, ...labelItems].find((i) => i.key === path.substring(1)) ||
+    navItems[0];
+
+  const pageTitle = item?.label || "Inbox";
+
+  return (
+    <div className="flex h-full flex-col bg-graphite-background">
+      <AppBar
+        size="lg"
+        largeHeaderRowHeight={50}
+        scrollBehavior="conditionally-sticky"
+        appBarColor="background"
+        animatedBehavior={["shadow"]}
+        scrollContainerRef={scrollRef}
+        startAdornment={
+          <Sidebar.Trigger variant="ghost" aria-label="Open Menu">
+            <Menu />
+          </Sidebar.Trigger>
+        }
+        children={
+          <Typography variant="h4" className="truncate font-bold">
+            {pageTitle}
+          </Typography>
+        }
+        largeHeaderContent={
+          <Input
+            variant="secondary"
+            shape="full"
+            startAdornment={<Search className="h-5 w-5 text-gray-500" />}
+            placeholder="Search..."
+          />
+        }
+      />
+      <ElasticScrollArea ref={scrollRef} className="flex-1">
+        <main className="p-6 ">
+          <Typography variant="h3" className="mb-4 pt-[100px]">
+            Content for {pageTitle}
+          </Typography>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 30 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-48 rounded-2xl bg-black/5 flex items-center justify-center"
+              >
+                <Typography
+                  variant="small"
+                  className="text-graphite-foreground/50"
+                >
+                  Item {i + 1}
+                </Typography>
+              </div>
+            ))}
+          </div>
+        </main>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+// This is the new wrapper component that can safely call the useRouter hook.
+const FullAppLayoutRenderer = (args: any) => {
+  const { path, push } = useRouter();
+  const activeItem = path === "/" ? "inbox" : path.substring(1);
+
+  return (
+    <Sidebar
+      {...args}
+      activeItem={activeItem}
+      onItemPress={(key) => push(`/${key}`)}
+    >
+      <Sidebar.Container>
+        <SidebarContents />
+      </Sidebar.Container>
+      <Sidebar.Content>
+        <AppLayoutContent />
+      </Sidebar.Content>
+    </Sidebar>
+  );
+};
+
+export const FullAppLayout: Story = {
+  name: "8. Full App Layout",
+  args: {
+    ...DesktopPermanent.args,
+    mobileVariant: "push",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "This story demonstrates a complete application layout, integrating `Sidebar` with a large, collapsible `AppBar` and a scrollable content area powered by `ElasticScrollArea`. The key is passing the `scrollRef` from the scroll area to the `AppBar` to synchronize their behavior.",
+      },
+    },
+  },
+  // The render function now correctly wraps the logic component with the provider.
+  render: (args) => (
+    <ShallowRouter>
+      <FullAppLayoutRenderer {...args} />
     </ShallowRouter>
   ),
 };

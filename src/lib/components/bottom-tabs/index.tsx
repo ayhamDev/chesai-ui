@@ -214,7 +214,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
         )}
         {...props}
       >
-        <ul className="flex items-center justify-around gap-2">
+        <ul className="flex items-center justify-around gap-2 p-1">
           {screens.map((screen) => (
             <TabItem key={screen.name} screen={screen} />
           ))}
