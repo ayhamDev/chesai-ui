@@ -8,15 +8,18 @@ import {
 } from "framer-motion";
 import React from "react";
 import useRipple from "use-ripple-hook";
-import { BouncyBox } from "../bouncy-box";
 
 const fabVariants = cva(
-  // We ensure justify-start is the base, and will conditionally add justify-center
-  "font-semibold focus:outline-none flex items-center justify-start relative overflow-hidden group bg-graphite-primary text-graphite-primaryForeground shadow-lg hover:shadow-xl focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+  // Base styles: Removed specific color classes
+  "font-semibold focus:outline-none flex transition-shadow duration-200  items-center justify-start relative overflow-hidden group shadow-lg hover:shadow-xl focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
   {
     variants: {
+      // --- NEW: Variant property for color schemes ---
+      variant: {
+        primary: "bg-graphite-primary text-graphite-primaryForeground",
+        secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
+      },
       size: {
-        // We only need height here, as width and padding will be animated
         sm: "h-10",
         md: "h-14",
         lg: "h-16",
@@ -28,6 +31,7 @@ const fabVariants = cva(
       },
     },
     defaultVariants: {
+      variant: "primary", // Default to the primary style
       size: "md",
       shape: "full",
     },
@@ -42,7 +46,6 @@ export interface FABProps
   children?: React.ReactNode;
 }
 
-// A more refined spring transition for a smoother feel
 const transition = {
   type: "spring",
   stiffness: 500,
@@ -52,15 +55,30 @@ const transition = {
 
 export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
   (
-    { className, size, shape, children, disabled, icon, isExtended, ...props },
+    {
+      className,
+      variant, // Destructure the new variant prop
+      size,
+      shape,
+      children,
+      disabled,
+      icon,
+      isExtended,
+      ...props
+    },
     ref
   ) => {
     const localRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
     const rippleRef = localRef as React.RefObject<HTMLElement>;
+
+    // Adjust ripple color based on variant
+    const rippleColor =
+      variant === "primary" ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.1)";
+
     const [, event] = useRipple({
       ref: rippleRef,
-      color: "rgba(255, 255, 255, 0.3)",
+      color: rippleColor,
       duration: 400,
       disabled: disabled,
     });
@@ -69,21 +87,16 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
 
     return (
       <motion.button
-        // --- MODIFICATION START ---
-        // 1. Set the initial state before the component mounts
         initial={{ scale: 0, opacity: 0 }}
-        // 2. Animate to the final state, merging with existing animations
         animate={{
-          scale: 1, // Animate scale to 1
-          opacity: 1, // Animate opacity to 1
+          scale: 1,
+          opacity: 1,
           paddingLeft: isExtended ? fabSize / 2 : fabSize / 4,
           paddingRight: isExtended ? fabSize / 2 : fabSize / 4,
         }}
-        // --- MODIFICATION END ---
         transition={transition}
         className={clsx(
-          fabVariants({ size, shape, className }),
-          // Center the content ONLY when collapsed
+          fabVariants({ variant, size, shape, className }), // Pass variant to CVA
           !isExtended && "justify-center"
         )}
         ref={localRef}
@@ -91,7 +104,6 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
         disabled={disabled}
         {...props}
       >
-        {/* The Icon: Add the magic `layout` prop */}
         <motion.span layout="position" className="flex-shrink-0 z-10">
           {icon}
         </motion.span>
@@ -99,7 +111,6 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
         <AnimatePresence>
           {isExtended && (
             <motion.div
-              // Animate width from 0 to auto
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: "auto", opacity: 1, marginLeft: "0.75rem" }}
               exit={{ width: 0, opacity: 0, marginLeft: 0 }}

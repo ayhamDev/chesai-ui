@@ -15,7 +15,7 @@ import { Card } from "../card";
 import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
 import { Tabs } from "./index";
-
+import { ElasticScrollArea } from "../elastic-scroll-area/index";
 const meta: Meta<typeof Tabs> = {
   title: "Components/Navigators/Tabs",
   component: Tabs,
@@ -337,7 +337,7 @@ export const WithAppBar: Story = {
     );
 
     return (
-      <div className="h-screen bg-graphite-background">
+      <div className="h-screen bg-graphite-background overflow-hidden">
         <Tabs {...args}>
           <AppBar
             size="lg"
@@ -378,12 +378,11 @@ export const WithAppBar: Story = {
               </div>
             }
           />
-
-          <div
+          <ElasticScrollArea
             ref={scrollRef}
             className="h-full overflow-y-auto pt-[100px] bg-graphite-background"
           >
-            <Tabs.Content>
+            <Tabs.Content className="overflow-hidden">
               <Tabs.Panel value="flights">
                 <DummyScrollContent title="Search for Flights" />
               </Tabs.Panel>
@@ -397,7 +396,7 @@ export const WithAppBar: Story = {
                 <DummyScrollContent title="Vacation Packages" />
               </Tabs.Panel>
             </Tabs.Content>
-          </div>
+          </ElasticScrollArea>
         </Tabs>
       </div>
     );

@@ -314,7 +314,7 @@ const SheetGrabber = ({
     <div className="flex-shrink-0 p-4">
       <div
         className={clsx(
-          "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full bg-graphite-border",
+          "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full bg-graphite-foreground/40",
           className
         )}
         {...props}

@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Compass, Home, Library, Radio } from "lucide-react";
-import React from "react";
 import { ShallowRouter, useRouter } from "../shallow-router";
+import { Typography } from "../typography";
 import { BottomTabs } from "./index";
-
 const meta: Meta<typeof BottomTabs.Navigator> = {
   title: "Components/Navigators/BottomTabs",
   component: BottomTabs.Navigator,
@@ -19,14 +18,33 @@ const meta: Meta<typeof BottomTabs.Navigator> = {
     },
   },
   argTypes: {
-    variant: {
+    mode: {
       control: "select",
-      options: ["contained", "full-width"],
+      options: ["attached", "detached"],
+      description: "Controls the container style: full-width or floating.",
+    },
+    itemLayout: {
+      control: "select",
+      options: ["stacked", "inline"],
+      description: "Controls the layout animation of the active tab item.",
     },
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
-      if: { arg: "variant", eq: "contained" },
+      description: "Sets the border-radius for the `detached` mode.",
+      if: { arg: "mode", eq: "detached" },
+    },
+    // --- NEW: Shadow arg ---
+    shadow: {
+      control: "select",
+      options: ["none", "sm", "md", "lg"],
+      description: "Sets the shadow depth for the `detached` mode.",
+      if: { arg: "mode", eq: "detached" },
+    },
+    bordered: {
+      control: "boolean",
+      description: "Toggles the top border for the `attached` mode.",
+      if: { arg: "mode", eq: "attached" },
     },
     activeTab: { control: false },
     onTabPress: { action: "tabPressed" },
@@ -75,11 +93,12 @@ const RenderWithRouter = (args: any) => {
   );
 };
 
-export const Contained: Story = {
-  name: "1. Contained (Floating)",
+export const AttachedDefault: Story = {
+  name: "1. Attached (Default)",
   args: {
-    variant: "contained",
-    shape: "full",
+    mode: "attached",
+    itemLayout: "stacked",
+    bordered: true,
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
@@ -88,16 +107,18 @@ export const Contained: Story = {
   ),
 };
 
-export const FullWidth: Story = {
-  name: "2. Full Width (Animated Label)",
+export const AttachedWithInlineAnimation: Story = {
+  name: "2. Attached (Inline Item Layout)",
   args: {
-    variant: "full-width",
+    mode: "attached",
+    itemLayout: "inline",
+    bordered: true,
   },
   parameters: {
     docs: {
       description: {
         story:
-          "In the `full-width` variant, the active tab's label animates horizontally, creating a common native mobile pattern.",
+          "When `itemLayout` is `inline`, the active tab's label animates horizontally, creating a common native mobile pattern.",
       },
     },
   },
@@ -108,15 +129,50 @@ export const FullWidth: Story = {
   ),
 };
 
-export const ContainedMinimalShape: Story = {
-  name: "3. Contained (Minimal Shape)",
+export const Detached: Story = {
+  name: "3. Detached (Floating)",
   args: {
-    variant: "contained",
-    shape: "minimal",
+    mode: "detached",
+    shape: "full",
+    itemLayout: "stacked",
+    shadow: "lg",
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
       <RenderWithRouter {...args} />
     </ShallowRouter>
+  ),
+};
+
+// --- NEW STORY ---
+export const DetachedWithShadows: Story = {
+  name: "4. Detached (Shadow Variants)",
+  render: (args) => (
+    <div className="flex flex-col gap-12">
+      <div>
+        <Typography variant="small" className="font-bold mb-2 text-center">
+          Small Shadow (sm)
+        </Typography>
+        <ShallowRouter paramName="tab1">
+          <RenderWithRouter {...args} mode="detached" shadow="sm" />
+        </ShallowRouter>
+      </div>
+      <div>
+        <Typography variant="small" className="font-bold mb-2 text-center">
+          Medium Shadow (md)
+        </Typography>
+        <ShallowRouter paramName="tab2">
+          <RenderWithRouter {...args} mode="detached" shadow="md" />
+        </ShallowRouter>
+      </div>
+      <div>
+        <Typography variant="small" className="font-bold mb-2 text-center">
+          Large Shadow (lg)
+        </Typography>
+        <ShallowRouter paramName="tab3">
+          <RenderWithRouter {...args} mode="detached" shadow="lg" />
+        </ShallowRouter>
+      </div>
+    </div>
   ),
 };

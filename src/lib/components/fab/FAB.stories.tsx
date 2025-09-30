@@ -17,6 +17,11 @@ const meta: Meta<typeof FAB> = {
   component: FAB,
   tags: ["autodocs"],
   argTypes: {
+    // --- NEW: Added variant control ---
+    variant: {
+      control: "select",
+      options: ["primary", "secondary"],
+    },
     size: {
       control: "select",
       options: ["sm", "md", "lg"],
@@ -33,6 +38,7 @@ const meta: Meta<typeof FAB> = {
     icon: <Plus className="h-7 w-7" />,
     children: "Create New",
     "aria-label": "Create New Item",
+    variant: "primary", // Set default variant for controls
   },
 };
 
@@ -44,6 +50,25 @@ export const Default: Story = {
     isExtended: false,
     shape: "full",
   },
+};
+
+// --- NEW STORY to showcase variants ---
+export const AllVariants: Story = {
+  name: "All Variants",
+  render: (args) => (
+    <div className="flex flex-col items-start space-y-6">
+      <p className="font-semibold">Primary</p>
+      <div className="flex items-center gap-4">
+        <FAB {...args} variant="primary" isExtended={false} />
+        <FAB {...args} variant="primary" isExtended={true} />
+      </div>
+      <p className="font-semibold">Secondary</p>
+      <div className="flex items-center gap-4">
+        <FAB {...args} variant="secondary" isExtended={false} />
+        <FAB {...args} variant="secondary" isExtended={true} />
+      </div>
+    </div>
+  ),
 };
 
 export const AllShapes: Story = {
@@ -75,7 +100,7 @@ export const InteractiveAnimation: Story = {
     docs: {
       description: {
         story:
-          "This story uses a CSS Grid animation for a perfectly smooth transition. The text label's grid column animates from `0fr` to `1fr`.",
+          "This story uses Framer Motion's layout animations for a perfectly smooth transition between extended and collapsed states.",
       },
     },
   },
@@ -100,7 +125,6 @@ export const InteractiveAnimation: Story = {
   },
 };
 
-// New story showcasing FAB with a Dropdown Menu
 export const WithDropdownMenu: Story = {
   name: "With Dropdown Menu",
   parameters: {

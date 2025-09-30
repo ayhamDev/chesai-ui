@@ -27,7 +27,8 @@ export interface ScreenProps {
 interface BottomTabsContextProps {
   activeTab: string;
   onTabPress: (name: string) => void;
-  variant: "contained" | "full-width";
+  itemLayout: "stacked" | "inline";
+  mode: "attached" | "detached";
   indicatorId: string;
 }
 
@@ -42,30 +43,36 @@ const useBottomTabs = () => {
   return context;
 };
 
-// --- CVA VARIANTS ---
+// --- CVA VARIANTS (REFACTORED) ---
 
-const navigatorVariants = cva("w-full", {
+const navigatorVariants = cva("w-full bg-graphite-card", {
   variants: {
-    variant: {
-      contained: "bg-graphite-card shadow-lg",
-      "full-width": "bg-graphite-card border-t border-graphite-border",
+    mode: {
+      attached: "",
+      detached: "", // Removed hardcoded shadow
     },
     shape: {
       full: "rounded-full",
       minimal: "rounded-xl",
       sharp: "rounded-none",
     },
-  },
-  defaultVariants: {
-    variant: "contained",
-    shape: "full",
+    bordered: {
+      true: "border-t border-graphite-border",
+      false: "",
+    },
+    // --- NEW: Shadow variants ---
+    shadow: {
+      none: "shadow-none",
+      sm: "shadow-sm",
+      md: "shadow-md",
+      lg: "shadow-lg",
+    },
   },
 });
 
 // --- SCREEN COMPONENT (CONFIG ONLY) ---
 
 const BottomTabsScreen: React.FC<ScreenProps> = () => {
-  // This component is only for configuration and does not render anything itself.
   return null;
 };
 BottomTabsScreen.displayName = "BottomTabs.Screen";
@@ -78,7 +85,8 @@ interface TabItemProps {
 
 const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   const { name, label, icon } = screen;
-  const { activeTab, onTabPress, variant, indicatorId } = useBottomTabs();
+  const { activeTab, onTabPress, itemLayout, mode, indicatorId } =
+    useBottomTabs();
   const isActive = activeTab === name;
 
   const localRef = useRef<HTMLButtonElement>(null);
@@ -88,8 +96,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     duration: 400,
   });
 
-  // The layout changes for the 'full-width' variant when active
-  const isHorizontal = variant === "full-width" && isActive;
+  const isHorizontal = itemLayout === "inline" && isActive;
 
   return (
     <li className="flex-1">
@@ -102,15 +109,13 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
         onPointerDown={event}
         className={clsx(
           "relative z-10 flex h-16 w-full items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
-          // Layout and padding
           isHorizontal ? "flex-row gap-2 px-4 py-2" : "flex-col gap-1 p-2",
           isActive
             ? "text-graphite-primary font-semibold"
             : "text-graphite-foreground/70",
-          variant === "contained" ? "rounded-full" : "rounded-lg"
+          mode === "detached" ? "rounded-full" : "rounded-lg"
         )}
       >
-        {/* Active State Indicator Pill */}
         {isActive && (
           <motion.div
             layoutId={indicatorId}
@@ -119,11 +124,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
           />
         )}
-
-        {/* Icon */}
         <div className="relative z-10">{icon({ isActive })}</div>
-
-        {/* Label */}
         <AnimatePresence>
           {isHorizontal ? (
             <motion.div
@@ -156,7 +157,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   );
 };
 
-// --- NAVIGATOR COMPONENT ---
+// --- NAVIGATOR COMPONENT (REFACTORED) ---
 
 interface NavigatorProps
   extends React.HTMLAttributes<HTMLElement>,
@@ -164,18 +165,21 @@ interface NavigatorProps
   children: React.ReactElement<ScreenProps> | React.ReactElement<ScreenProps>[];
   activeTab: string;
   onTabPress: (name: string) => void;
+  itemLayout?: "stacked" | "inline";
 }
 
 const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   children,
   activeTab,
   onTabPress,
-  variant = "contained",
+  mode = "attached",
+  itemLayout = "stacked",
   shape = "full",
+  bordered = true,
+  shadow = "lg", // Default shadow for detached mode
   className,
   ...props
 }) => {
-  // Use a unique ID for the layout animation so multiple nav bars don't conflict
   const indicatorId = React.useId();
 
   const screens = useMemo(
@@ -190,16 +194,23 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   );
 
   const contextValue = useMemo(
-    () => ({ activeTab, onTabPress, variant, indicatorId }),
-    [activeTab, onTabPress, variant, indicatorId]
+    () => ({ activeTab, onTabPress, itemLayout, mode, indicatorId }),
+    [activeTab, onTabPress, itemLayout, mode, indicatorId]
   );
 
   return (
     <BottomTabsContext.Provider value={contextValue}>
       <nav
         className={clsx(
-          variant === "contained" && "p-2", // Add padding only for the contained variant
-          navigatorVariants({ variant, shape, className })
+          mode === "detached" && "p-2",
+          navigatorVariants({
+            mode,
+            shape: mode === "detached" ? shape : undefined,
+            bordered: mode === "attached" ? bordered : false,
+            // --- MODIFICATION: Conditionally apply shadow ---
+            shadow: mode === "detached" ? shadow : undefined,
+            className,
+          })
         )}
         {...props}
       >

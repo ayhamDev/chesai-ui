@@ -256,7 +256,7 @@ const ElasticScrollAreaRoot = forwardRef<
 
     return (
       <ScrollAreaPrimitive.Root
-        className={clsx("relative h-full w-full overflow-hidden", className)}
+        className={clsx("relative h-full w-full overflow-hidden!", className)}
         {...props}
       >
         {pullToRefresh && (
