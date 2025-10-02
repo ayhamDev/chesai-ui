@@ -13,7 +13,7 @@ import {
 import { FAB } from "./index";
 
 const meta: Meta<typeof FAB> = {
-  title: "Components/FAB",
+  title: "Components/Buttons/FAB",
   component: FAB,
   tags: ["autodocs"],
   argTypes: {

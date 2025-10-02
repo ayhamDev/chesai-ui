@@ -108,6 +108,100 @@
     }
   }
 
+  /* --- NEW: Radix Navigation Menu Animations --- */
+@keyframes enter-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(12.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes enter-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-12.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+/* Add to your theme.css or equivalent */
+@keyframes caret-blink {
+  0%, 70%, 100% { opacity: 1; }
+  20%, 50% { opacity: 0; }
+}
+
+@keyframes exit-to-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(12.5rem);
+  }
+}
+
+@keyframes exit-to-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-12.5rem);
+  }
+}
+
+@keyframes scale-in-content {
+  from {
+    opacity: 0;
+    transform: rotateX(-15deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(0deg) scale(1);
+  }
+}
+
+@keyframes scale-out-content {
+  from {
+    opacity: 1;
+    transform: rotateX(0deg) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: rotateX(-10deg) scale(0.95);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* --- END: Radix Navigation Menu Animations --- */
+
+
+
 
   /* 2. Create the `animate-*` utility classes from the keyframes */
   --animate-menu-enter: menu-enter 300ms cubic-bezier(0.2, 0, 0, 1) forwards;
@@ -117,13 +211,26 @@
   --animate-select-enter: select-enter-clip 200ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-select-exit: select-exit-clip 1500ms cubic-bezier(0.4, 0, 1, 1) forwards;
   /* --- END SELECT UTILITIES --- */
-
   --animate-submenu-enter-right: submenu-enter-right 250ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-submenu-enter-left: submenu-enter-left 250ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-submenu-exit-right: submenu-exit-right 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
   --animate-submenu-exit-left: submenu-exit-left 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
   
   --animate-check-in: check-in 200ms cubic-bezier(0.2, 0, 0, 1) forwards;
+  
+
+  --animate-nav-enter-from-right: enter-from-right 250ms ease;
+--animate-nav-enter-from-left: enter-from-left 250ms ease;
+--animate-nav-exit-to-right: exit-to-right 250ms ease;
+--animate-nav-exit-to-left: exit-to-left 250ms ease;
+--animate-nav-scale-in: scale-in-content 200ms ease;
+--animate-nav-scale-out: scale-out-content 200ms ease;
+--animate-nav-fade-in: fade-in 200ms ease;
+--animate-nav-fade-out: fade-out 200ms ease;
+
+  --animate-caret-blink: caret-blink 1.25s ease-out infinite;
+
+
 }
 
 @layer base {
@@ -193,4 +300,5 @@ input[type="number"] {
   textarea {
   resize: none;
 }
+
 

@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
 import { Radio } from "./index";
-import React, { useState } from "react";
 
 const meta: Meta<typeof Radio> = {
-  title: "Components/RadioGroup",
+  title: "Components/Forms & Inputs/RadioGroup",
   component: Radio,
   tags: ["autodocs"],
   argTypes: {

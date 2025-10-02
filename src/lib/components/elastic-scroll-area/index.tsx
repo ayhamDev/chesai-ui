@@ -119,7 +119,7 @@ const useElasticAndRefresh = (
       const isScrollingUp = event.deltaY < 0;
       const isScrollingDown = event.deltaY > 0;
       if ((isAtTop && isScrollingUp) || (isAtBottom && isScrollingDown)) {
-        event.preventDefault();
+        event?.preventDefault();
         const currentY = y.get();
         const resistance = Math.abs(currentY) / MAX_OVERSCROLL_DESKTOP;
         const adjustedDelta = event.deltaY * damping * (1 - resistance);
@@ -159,7 +159,6 @@ const useElasticAndRefresh = (
       const isPullingDown = deltaY > 0;
       const isPullingUp = deltaY < 0;
       if ((isAtTop && isPullingDown) || (isAtBottom && isPullingUp)) {
-        event.preventDefault();
         isOverscrolling.current = true;
         y.set(deltaY * damping);
       } else {
@@ -327,7 +326,7 @@ const ScrollBar = forwardRef<
       )}
       {...props}
     >
-      <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-graphite-border" />
+      <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-graphite-primary/40" />
     </ScrollAreaPrimitive.Scrollbar>
   )
 );

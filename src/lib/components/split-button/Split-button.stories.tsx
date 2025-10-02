@@ -5,7 +5,7 @@ import { IconButton } from "../icon-button";
 import { SplitButton } from "./index";
 
 const meta: Meta<typeof SplitButton> = {
-  title: "Components/SplitButton",
+  title: "Components/Buttons/SplitButton",
   component: SplitButton,
   tags: ["autodocs"],
   argTypes: {

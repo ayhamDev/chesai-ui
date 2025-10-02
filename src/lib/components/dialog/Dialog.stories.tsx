@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { X } from "lucide-react";
-import { useState } from "react";
-// Import the AppBar component
+import { useRef, useState } from "react";
 import { AppBar } from "../appbar";
 import { Button } from "../button";
 import { IconButton } from "../icon-button";
@@ -21,7 +20,6 @@ import {
   DialogTrigger,
 } from "./index";
 
-// Combined type for story controls
 type StoryComponentProps = DialogProps & Pick<DialogContentProps, "shape">;
 
 const meta: Meta<StoryComponentProps> = {
@@ -33,7 +31,7 @@ const meta: Meta<StoryComponentProps> = {
     docs: {
       description: {
         component:
-          "A fully accessible, custom-built dialog component with support for basic and fullscreen variants.",
+          "A fully accessible, custom-built dialog component with support for basic and fullscreen variants. The fullscreen variant's body is an `ElasticScrollArea`, enabling pull-to-refresh and other advanced scrolling effects.",
       },
     },
   },
@@ -41,13 +39,10 @@ const meta: Meta<StoryComponentProps> = {
     variant: {
       control: "select",
       options: ["basic", "fullscreen"],
-      description: "Determines the dialog's appearance and animation.",
     },
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
-      description: "Controls the border-radius of the basic dialog card.",
-      table: { category: "DialogContent Props" },
       if: { arg: "variant", eq: "basic" },
     },
   },
@@ -56,15 +51,16 @@ const meta: Meta<StoryComponentProps> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// Mock refresh function for the story
+const simulateRefresh = () => {
+  console.log("Refresh triggered!");
+  return new Promise((resolve) => setTimeout(resolve, 2000));
+};
+
 export const Basic: Story = {
   name: "Basic Dialog",
-  args: {
-    variant: "basic",
-    shape: "minimal",
-  },
-  parameters: {
-    layout: "centered",
-  },
+  args: { variant: "basic", shape: "minimal" },
+  parameters: { layout: "centered" },
   render: (args) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
@@ -98,22 +94,20 @@ export const Basic: Story = {
 
 export const FullScreen: Story = {
   name: "Full-Screen Dialog with AppBar",
-  args: {
-    variant: "fullscreen",
-  },
+  args: { variant: "fullscreen" },
   parameters: {
-    viewport: {
-      defaultViewport: "mobile1",
-    },
+    viewport: { defaultViewport: "mobile1" },
     docs: {
       description: {
         story:
-          "The fullscreen variant integrated with the collapsible AppBar. The `AppBar.Provider` wraps the content inside the `DialogContent` to manage the scroll state, enabling animations and sticky behavior.",
+          "The `DialogBody` in a fullscreen dialog is now an `ElasticScrollArea`. This allows for native-like scrolling and enables features like `pullToRefresh`. The `AppBar`'s `scrollContainerRef` points to the `DialogBody`'s ref to synchronize scroll animations.",
       },
     },
   },
   render: (args) => {
     const [isOpen, setIsOpen] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
     return (
       <div className="h-screen w-screen bg-gray-100 p-4">
         <Dialog open={isOpen} onOpenChange={setIsOpen} variant={args.variant}>
@@ -121,144 +115,50 @@ export const FullScreen: Story = {
             <Button>Open Full-Screen Dialog</Button>
           </DialogTrigger>
           <DialogContent>
-            {/*
-              1. The AppBar.Provider creates the scroll container for the Dialog.
-                 It tracks scroll events and provides them to the AppBar component.
-            */}
-            <AppBar.Provider>
-              {/*
-                2. The AppBar replaces the simple DialogHeader. It's configured
-                   to be large, collapsible, and conditionally sticky.
-              */}
-              <AppBar
-                size="md"
-                scrollBehavior="sticky"
-                startAdornment={
-                  <DialogClose asChild>
-                    <IconButton variant="ghost" shape="full">
-                      <X className="h-5 w-5" />
-                    </IconButton>
-                  </DialogClose>
-                }
-                animatedBehavior={["appbar-color"]}
-                animatedColor="background"
-                endAdornments={[
-                  <Button key="save" size={"sm"} variant="secondary">
-                    Save
-                  </Button>,
-                ]}
-              >
-                <Typography variant="h4" className="truncate ">
-                  Create New Event
+            <AppBar
+              size="md"
+              scrollBehavior="conditionally-sticky"
+              startAdornment={
+                <DialogClose asChild>
+                  <IconButton variant="ghost" size={"md"} shape="full">
+                    <X className="h-5 w-5" />
+                  </IconButton>
+                </DialogClose>
+              }
+              animatedBehavior={["shadow"]}
+              appBarColor="card"
+              endAdornments={[
+                <Button key="save" size={"sm"} variant="secondary">
+                  Save
+                </Button>,
+              ]}
+              scrollContainerRef={scrollRef}
+            >
+              <Typography variant="h4" className="truncate font-semibold">
+                Create New Event
+              </Typography>
+            </AppBar>
+
+            <DialogBody
+              ref={scrollRef}
+              className="px-4 pb-8"
+              pullToRefresh={false}
+              onRefresh={simulateRefresh}
+            >
+              <div className="grid gap-6 pt-[70px]">
+                <Input label="Event name" placeholder="Team Sync" />
+                <Input label="Location" placeholder="Conference Room 4" />
+                <Typography variant="p">
+                  Scroll down to see the AppBar animate. You can also pull down
+                  from the top to refresh.
                 </Typography>
-              </AppBar>
-
-              {/*
-                3. The DialogBody contains the main scrollable content.
-                   IMPORTANT: It needs top padding equal to the expanded height of the AppBar
-                   to prevent content from being hidden underneath it initially.
-                   Large row (96px) + Large header content (h2, ~52px) = ~148px.
-              */}
-              <DialogBody className="pt-[100px] px-4 pb-8">
-                <div className="grid gap-6">
-                  <Input label="Event name" placeholder="Team Sync" />
-                  <Input label="Location" placeholder="Conference Room 4" />
-                  <Typography variant="p">
-                    Scroll down to see the AppBar collapse and hide...
-                  </Typography>
-                  <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                  <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                  <Typography variant="p" className="text-center">
-                    End of content.
-                  </Typography>
-                </div>
-              </DialogBody>
-            </AppBar.Provider>
-          </DialogContent>
-        </Dialog>
-      </div>
-    );
-  },
-};
-
-export const Router: Story = {
-  name: "Full-Screen Dialog with AppBar",
-  args: {
-    variant: "fullscreen",
-  },
-  parameters: {
-    viewport: {
-      defaultViewport: "mobile1",
-    },
-    docs: {
-      description: {
-        story:
-          "The fullscreen variant integrated with the collapsible AppBar. The `AppBar.Provider` wraps the content inside the `DialogContent` to manage the scroll state, enabling animations and sticky behavior.",
-      },
-    },
-  },
-  render: (args) => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-      <div className="h-screen w-screen bg-gray-100 p-4">
-        <Dialog open={isOpen} onOpenChange={setIsOpen} variant={args.variant}>
-          <DialogTrigger asChild>
-            <Button>Open Full-Screen Dialog</Button>
-          </DialogTrigger>
-          <DialogContent>
-            {/*
-              1. The AppBar.Provider creates the scroll container for the Dialog.
-                 It tracks scroll events and provides them to the AppBar component.
-            */}
-            <AppBar.Provider>
-              {/*
-                2. The AppBar replaces the simple DialogHeader. It's configured
-                   to be large, collapsible, and conditionally sticky.
-              */}
-              <AppBar
-                size="md"
-                scrollBehavior="sticky"
-                startAdornment={
-                  <DialogClose asChild>
-                    <IconButton variant="ghost" shape="full">
-                      <X className="h-5 w-5" />
-                    </IconButton>
-                  </DialogClose>
-                }
-                animatedBehavior={["appbar-color"]}
-                animatedColor="background"
-                endAdornments={[
-                  <Button key="save" size={"sm"} variant="secondary">
-                    Save
-                  </Button>,
-                ]}
-              >
-                <Typography variant="h4" className="truncate ">
-                  Create New Event
+                <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
+                <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
+                <Typography variant="p" className="text-center">
+                  End of content.
                 </Typography>
-              </AppBar>
-
-              {/*
-                3. The DialogBody contains the main scrollable content.
-                   IMPORTANT: It needs top padding equal to the expanded height of the AppBar
-                   to prevent content from being hidden underneath it initially.
-                   Large row (96px) + Large header content (h2, ~52px) = ~148px.
-              */}
-              <DialogBody className="pt-[100px] px-4 pb-8">
-                <div className="grid gap-6">
-                  <Input label="Event name" placeholder="Team Sync" />
-                  <Input label="Location" placeholder="Conference Room 4" />
-                  <Typography variant="p">
-                    Scroll down to see the AppBar collapse and hide...
-                  </Typography>
-                  <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                  <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                  <Typography variant="p" className="text-center">
-                    End of content.
-                  </Typography>
-                </div>
-              </DialogBody>
-            </AppBar.Provider>
+              </div>
+            </DialogBody>
           </DialogContent>
         </Dialog>
       </div>

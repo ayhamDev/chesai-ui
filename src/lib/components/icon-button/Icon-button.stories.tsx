@@ -4,7 +4,7 @@ import { useState } from "react";
 import { IconButton } from "./index";
 
 const meta: Meta<typeof IconButton> = {
-  title: "Components/IconButton",
+  title: "Components/Buttons/IconButton",
   component: IconButton,
   tags: ["autodocs"],
   argTypes: {

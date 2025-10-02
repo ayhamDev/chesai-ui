@@ -1583,7 +1583,7 @@ import { useState } from "react";
 import { Button } from "./index";
 
 const meta: Meta<typeof Button> = {
-  title: "Components/Button",
+  title: "Components/Buttons/Button",
   component: Button,
   tags: ["autodocs"],
   argTypes: {
@@ -1821,7 +1821,7 @@ import { IconButton } from "../icon-button";
 import { ButtonGroup } from "./index";
 
 const meta: Meta<typeof ButtonGroup> = {
-  title: "Components/ButtonGroup",
+  title: "Components/Buttons/ButtonGroup",
   component: ButtonGroup,
   tags: ["autodocs"],
   argTypes: {
@@ -1982,7 +1982,7 @@ import type { DateRange } from "react-day-picker";
 import { PaginatedCalendar } from "../date-picker/paginated-calendar"; // Adjust the import path as needed
 import { Card } from "../card/index";
 const meta: Meta<typeof PaginatedCalendar> = {
-  title: "Components/PaginatedCalendar",
+  title: "Components/Date & Time/PaginatedCalendar",
   component: PaginatedCalendar,
   tags: ["autodocs"],
   parameters: {
@@ -2656,7 +2656,7 @@ import type { DateRange } from "react-day-picker";
 import { DatePicker } from "./index";
 
 const meta: Meta<typeof DatePicker> = {
-  title: "Components/DatePicker",
+  title: "Components/Date & Time/DatePicker",
   component: DatePicker,
   tags: ["autodocs"],
   parameters: {
@@ -5000,7 +5000,7 @@ import {
 import { FAB } from "./index";
 
 const meta: Meta<typeof FAB> = {
-  title: "Components/FAB",
+  title: "Components/Buttons/FAB",
   component: FAB,
   tags: ["autodocs"],
   argTypes: {
@@ -5302,7 +5302,7 @@ import { useState } from "react";
 import { IconButton } from "./index";
 
 const meta: Meta<typeof IconButton> = {
-  title: "Components/IconButton",
+  title: "Components/Buttons/IconButton",
   component: IconButton,
   tags: ["autodocs"],
   argTypes: {
@@ -5699,7 +5699,7 @@ import { useState } from "react";
 import { Input } from "./index";
 
 const meta: Meta<typeof Input> = {
-  title: "Components/Input",
+  title: "Components/Forms & Inputs/Input",
   component: Input,
   tags: ["autodocs"],
   argTypes: {
@@ -6376,6 +6376,1319 @@ export const WithBottomSheet: Story = {
       </Sheet>
     </div>
   ),
+};
+```
+
+
+### Component: `menubar`
+
+This section contains the source code for the `menubar` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\menubar\index.tsx`)**
+```tsx
+"use client";
+
+import * as RadixMenubar from "@radix-ui/react-menubar";
+import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
+import { Check, ChevronRight, Circle } from "lucide-react";
+import React, { createContext, useContext, useRef } from "react";
+import useRipple from "use-ripple-hook";
+
+type MenubarShape = "full" | "minimal" | "sharp";
+
+// --- Context to pass shape down the tree ---
+interface MenubarContextProps {
+  shape: MenubarShape;
+}
+
+const MenubarContext = createContext<MenubarContextProps>({
+  shape: "minimal",
+});
+
+const useMenubarContext = () => useContext(MenubarContext);
+
+// --- Root Component (Wrapped to provide context) ---
+interface MenubarProps extends RadixMenubar.MenubarProps {
+  shape?: MenubarShape;
+}
+
+const MenubarRoot: React.FC<MenubarProps> = ({
+  shape = "minimal",
+  className,
+  ...props
+}) => {
+  return (
+    <MenubarContext.Provider value={{ shape }}>
+      <RadixMenubar.Root
+        className={clsx(
+          "flex h-10 items-center space-x-1 rounded-lg bg-transparent p-1",
+          className
+        )}
+        {...props}
+      />
+    </MenubarContext.Provider>
+  );
+};
+
+// --- CVA for Content Components ---
+const contentVariants = cva(
+  [
+    "z-50 min-w-[12rem] max-h-[var(--radix-menubar-content-available-height)] overflow-y-auto overflow-x-hidden",
+    "border border-graphite-border bg-graphite-card p-1.5",
+    "shadow-md",
+  ],
+  {
+    variants: {
+      shape: {
+        full: "rounded-3xl",
+        minimal: "rounded-xl",
+        sharp: "rounded-none",
+      },
+    },
+    defaultVariants: {
+      shape: "minimal",
+    },
+  }
+);
+
+// --- Re-exported Primitives ---
+const MenubarMenu = RadixMenubar.Menu;
+const MenubarGroup = RadixMenubar.Group;
+const MenubarPortal = RadixMenubar.Portal;
+const MenubarSub = RadixMenubar.Sub;
+const MenubarRadioGroup = RadixMenubar.RadioGroup;
+
+// --- Styled Trigger ---
+const MenubarTrigger = React.forwardRef<
+  React.ElementRef<typeof RadixMenubar.Trigger>,
+  React.ComponentPropsWithoutRef<typeof RadixMenubar.Trigger>
+>((props, ref) => (
+  <RadixMenubar.Trigger
+    ref={ref}
+    className={clsx(
+      "flex cursor-pointer select-none items-center rounded-md px-3 py-1.5 text-sm font-semibold outline-none",
+      "transition-colors duration-150 ease-in-out",
+      "hover:bg-graphite-secondary focus:bg-graphite-secondary",
+      "data-[state=open]:bg-graphite-secondary"
+    )}
+    {...props}
+  />
+));
+MenubarTrigger.displayName = RadixMenubar.Trigger.displayName;
+
+// --- Animated Content Container ---
+const MenubarContent = React.forwardRef<
+  React.ElementRef<typeof RadixMenubar.Content>,
+  React.ComponentPropsWithoutRef<typeof RadixMenubar.Content>
+>(
+  (
+    { className, align = "start", alignOffset = -4, sideOffset = 8, ...props },
+    ref
+  ) => {
+    const { shape } = useMenubarContext();
+    return (
+      <MenubarPortal>
+        <RadixMenubar.Content
+          ref={ref}
+          align={align}
+          alignOffset={alignOffset}
+          sideOffset={sideOffset}
+          className={clsx(
+            contentVariants({ shape }),
+            "data-[state=open]:animate-menu-enter",
+            "data-[state=closed]:animate-menu-exit",
+            "data-[side=top]:origin-bottom",
+            "data-[side=bottom]:origin-top",
+            "data-[side=left]:origin-right",
+            "data-[side=right]:origin-left",
+            className
+          )}
+          {...props}
+        />
+      </MenubarPortal>
+    );
+  }
+);
+MenubarContent.displayName = RadixMenubar.Content.displayName;
+
+// --- Enhanced Menu Item ---
+const MenubarItem = React.forwardRef<
+  React.ElementRef<typeof RadixMenubar.Item>,
+  React.ComponentPropsWithoutRef<typeof RadixMenubar.Item> & {
+    inset?: boolean;
+  }
+>(({ className, inset, ...props }, ref) => {
+  const { shape } = useMenubarContext();
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(128, 128, 128, 0.1)",
+    duration: 400,
+  });
+  React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
+
+  return (
+    <RadixMenubar.Item
+      ref={localRef}
+      onPointerDown={event}
+      className={clsx(
+        "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden",
+        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
+        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
+        "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+        inset && "pl-8",
+        shape === "sharp" && "!rounded-none",
+        className
+      )}
+      {...props}
+    />
+  );
+});
+MenubarItem.displayName = RadixMenubar.Item.displayName;
+
+// --- Enhanced Checkbox Item ---
+const MenubarCheckboxItem = React.forwardRef<
+  React.ElementRef<typeof RadixMenubar.CheckboxItem>,
+  React.ComponentPropsWithoutRef<typeof RadixMenubar.CheckboxItem>
+>(({ className, children, ...props }, ref) => {
+  const { shape } = useMenubarContext();
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(128, 128, 128, 0.1)",
+    duration: 400,
+  });
+  React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
+
+  return (
+    <RadixMenubar.CheckboxItem
+      ref={localRef}
+      onPointerDown={event}
+      className={clsx(
+        "relative flex cursor-pointer select-none items-center rounded-lg py-2.5 pl-8 pr-3 text-sm outline-none overflow-hidden",
+        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
+        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
+        shape === "sharp" && "!rounded-none",
+        className
+      )}
+      {...props}
+    >
+      <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+        <RadixMenubar.ItemIndicator>
+          <Check className="h-4 w-4 animate-check-in" />
+        </RadixMenubar.ItemIndicator>
+      </span>
+      {children}
+    </RadixMenubar.CheckboxItem>
+  );
+});
+MenubarCheckboxItem.displayName = RadixMenubar.CheckboxItem.displayName;
+
+// --- Enhanced Radio Item ---
+const MenubarRadioItem = React.forwardRef<
+  React.ElementRef<typeof RadixMenubar.RadioItem>,
+  React.ComponentPropsWithoutRef<typeof RadixMenubar.RadioItem>
+>(({ className, children, ...props }, ref) => {
+  const { shape } = useMenubarContext();
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(128, 128, 128, 0.1)",
+    duration: 400,
+  });
+  React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
+
+  return (
+    <RadixMenubar.RadioItem
+      ref={localRef}
+      onPointerDown={event}
+      className={clsx(
+        "relative flex cursor-pointer select-none items-center rounded-lg py-2.5 pl-8 pr-3 text-sm outline-none overflow-hidden",
+        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
+        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
+        shape === "sharp" && "!rounded-none",
+        className
+      )}
+      {...props}
+    >
+      <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+        <RadixMenubar.ItemIndicator>
+          <Circle className="h-2 w-2 fill-current animate-check-in" />
+        </RadixMenubar.ItemIndicator>
+      </span>
+      {children}
+    </RadixMenubar.RadioItem>
+  );
+});
+MenubarRadioItem.displayName = RadixMenubar.RadioItem.displayName;
+
+// --- Enhanced Sub-Menu Trigger ---
+const MenubarSubTrigger = React.forwardRef<
+  React.ElementRef<typeof RadixMenubar.SubTrigger>,
+  React.ComponentPropsWithoutRef<typeof RadixMenubar.SubTrigger> & {
+    inset?: boolean;
+  }
+>(({ className, children, inset, ...props }, ref) => {
+  const { shape } = useMenubarContext();
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(128, 128, 128, 0.1)",
+    duration: 400,
+  });
+  React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
+
+  return (
+    <RadixMenubar.SubTrigger
+      ref={localRef}
+      onPointerDown={event}
+      className={clsx(
+        "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden",
+        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary",
+        "data-[state=open]:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
+        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
+        "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+        inset && "pl-8",
+        shape === "sharp" && "!rounded-none",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronRight className="ml-auto h-4 w-4" />
+    </RadixMenubar.SubTrigger>
+  );
+});
+MenubarSubTrigger.displayName = RadixMenubar.SubTrigger.displayName;
+
+// --- Enhanced Sub-Menu Content ---
+const MenubarSubContent = React.forwardRef<
+  React.ElementRef<typeof RadixMenubar.SubContent>,
+  React.ComponentPropsWithoutRef<typeof RadixMenubar.SubContent>
+>(({ className, ...props }, ref) => {
+  const { shape } = useMenubarContext();
+  return (
+    <RadixMenubar.SubContent
+      ref={ref}
+      className={clsx(
+        contentVariants({ shape }),
+        "data-[state=open]:data-[side=right]:animate-submenu-enter-right",
+        "data-[state=closed]:data-[side=right]:animate-submenu-exit-right",
+        "data-[state=open]:data-[side=left]:animate-submenu-enter-left",
+        "data-[state=closed]:data-[side=left]:animate-submenu-exit-left",
+        className
+      )}
+      {...props}
+    />
+  );
+});
+MenubarSubContent.displayName = RadixMenubar.SubContent.displayName;
+
+// --- Other Components (Unchanged) ---
+const MenubarLabel = React.forwardRef<
+  React.ElementRef<typeof RadixMenubar.Label>,
+  React.ComponentPropsWithoutRef<typeof RadixMenubar.Label> & {
+    inset?: boolean;
+  }
+>(({ className, inset, ...props }, ref) => (
+  <RadixMenubar.Label
+    ref={ref}
+    className={clsx(
+      "px-3 py-2 text-xs font-medium text-graphite-foreground/70 tracking-wide",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  />
+));
+MenubarLabel.displayName = RadixMenubar.Label.displayName;
+
+const MenubarSeparator = React.forwardRef<
+  React.ElementRef<typeof RadixMenubar.Separator>,
+  React.ComponentPropsWithoutRef<typeof RadixMenubar.Separator>
+>(({ className, ...props }, ref) => (
+  <RadixMenubar.Separator
+    ref={ref}
+    className={clsx("-mx-1 my-1.5 h-px bg-graphite-border/60", className)}
+    {...props}
+  />
+));
+MenubarSeparator.displayName = RadixMenubar.Separator.displayName;
+
+const MenubarShortcut = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement>) => {
+  return (
+    <span
+      className={clsx(
+        "ml-auto text-xs font-mono tracking-wider text-graphite-foreground/50",
+        className
+      )}
+      {...props}
+    />
+  );
+};
+MenubarShortcut.displayName = "MenubarShortcut";
+
+export const Menubar = Object.assign(MenubarRoot, {
+  Menu: MenubarMenu,
+  Trigger: MenubarTrigger,
+  Content: MenubarContent,
+  Item: MenubarItem,
+  Separator: MenubarSeparator,
+  Label: MenubarLabel,
+  CheckboxItem: MenubarCheckboxItem,
+  RadioGroup: MenubarRadioGroup,
+  RadioItem: MenubarRadioItem,
+  Portal: MenubarPortal,
+  Group: MenubarGroup,
+  Sub: MenubarSub,
+  SubContent: MenubarSubContent,
+  SubTrigger: MenubarSubTrigger,
+  Shortcut: MenubarShortcut,
+});
+```
+
+**Storybook Stories (`Menubar.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import {
+  Cloud,
+  CreditCard,
+  Github,
+  LifeBuoy,
+  LogOut,
+  Mail,
+  MessageSquare,
+  Plus,
+  PlusCircle,
+  Settings,
+  User,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import { useState } from "react";
+import { Menubar } from "./index";
+
+const meta: Meta<typeof Menubar> = {
+  title: "Components/Navigators/Menubar",
+  component: Menubar,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A horizontal menu bar, similar to those found in native desktop applications. Built on Radix UI for accessibility and keyboard navigation.",
+      },
+    },
+  },
+  argTypes: {
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+      description: "Controls the border-radius of the content popovers.",
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof Menubar>;
+
+const FakeWindow = ({ children }: { children: React.ReactNode }) => (
+  <div className="w-[720px] h-[480px] flex flex-col shadow-2xl overflow-hidden bg-graphite-background ring-1 ring-black/5 rounded-xl">
+    <div className="bg-graphite-card border-b border-graphite-border">
+      {children}
+    </div>
+    <div className="flex-1 p-6 bg-graphite-background">
+      <p>App Content Area</p>
+    </div>
+  </div>
+);
+
+export const Default: Story = {
+  name: "1. Default Menubar",
+  args: {
+    shape: "minimal",
+  },
+  render: (args) => (
+    <FakeWindow>
+      <Menubar {...args}>
+        <Menubar.Menu>
+          <Menubar.Trigger>File</Menubar.Trigger>
+          <Menubar.Content>
+            <Menubar.Item>
+              New Tab <Menubar.Shortcut>⌘T</Menubar.Shortcut>
+            </Menubar.Item>
+            <Menubar.Item>
+              New Window <Menubar.Shortcut>⌘N</Menubar.Shortcut>
+            </Menubar.Item>
+            <Menubar.Item disabled>New Incognito Window</Menubar.Item>
+            <Menubar.Separator />
+            <Menubar.Item>
+              Print... <Menubar.Shortcut>⌘P</Menubar.Shortcut>
+            </Menubar.Item>
+          </Menubar.Content>
+        </Menubar.Menu>
+        <Menubar.Menu>
+          <Menubar.Trigger>Edit</Menubar.Trigger>
+          <Menubar.Content>
+            <Menubar.Item>
+              Undo <Menubar.Shortcut>⌘Z</Menubar.Shortcut>
+            </Menubar.Item>
+            <Menubar.Item>
+              Redo <Menubar.Shortcut>⇧⌘Z</Menubar.Shortcut>
+            </Menubar.Item>
+            <Menubar.Separator />
+            <Menubar.Item>Cut</Menubar.Item>
+            <Menubar.Item>Copy</Menubar.Item>
+            <Menubar.Item>Paste</Menubar.Item>
+          </Menubar.Content>
+        </Menubar.Menu>
+        <Menubar.Menu>
+          <Menubar.Trigger>View</Menubar.Trigger>
+          <Menubar.Content>
+            <Menubar.Item>Reload</Menubar.Item>
+            <Menubar.Item>Force Reload</Menubar.Item>
+            <Menubar.Separator />
+            <Menubar.Item>Toggle Fullscreen</Menubar.Item>
+          </Menubar.Content>
+        </Menubar.Menu>
+      </Menubar>
+    </FakeWindow>
+  ),
+};
+
+export const KitchenSink: Story = {
+  name: "2. Kitchen Sink",
+  args: {
+    shape: "minimal",
+  },
+  render: (args) => {
+    const [showStatusBar, setShowStatusBar] = useState(true);
+    const [person, setPerson] = useState("benoit");
+
+    return (
+      <FakeWindow>
+        <Menubar {...args}>
+          <Menubar.Menu>
+            <Menubar.Trigger>Account</Menubar.Trigger>
+            <Menubar.Content>
+              <Menubar.Item>
+                <User className="mr-2" /> Profile{" "}
+                <Menubar.Shortcut>⇧⌘P</Menubar.Shortcut>
+              </Menubar.Item>
+              <Menubar.Item>
+                <CreditCard className="mr-2" /> Billing
+              </Menubar.Item>
+              <Menubar.Item>
+                <Settings className="mr-2" /> Settings{" "}
+                <Menubar.Shortcut>⌘,</Menubar.Shortcut>
+              </Menubar.Item>
+              <Menubar.Separator />
+              <Menubar.Sub>
+                <Menubar.SubTrigger>
+                  <UserPlus className="mr-2" /> Invite users...
+                </Menubar.SubTrigger>
+                {/* --- THIS IS THE FIX --- */}
+                <Menubar.Portal>
+                  <Menubar.SubContent>
+                    <Menubar.Item>
+                      <Mail className="mr-2" /> Email
+                    </Menubar.Item>
+                    <Menubar.Item>
+                      <MessageSquare className="mr-2" /> Message
+                    </Menubar.Item>
+                    <Menubar.Separator />
+                    <Menubar.Item>
+                      <PlusCircle className="mr-2" /> More...
+                    </Menubar.Item>
+                  </Menubar.SubContent>
+                </Menubar.Portal>
+                {/* --- END OF FIX --- */}
+              </Menubar.Sub>
+              <Menubar.Separator />
+              <Menubar.Item>
+                <LogOut className="mr-2" /> Log out
+              </Menubar.Item>
+            </Menubar.Content>
+          </Menubar.Menu>
+          <Menubar.Menu>
+            <Menubar.Trigger>View</Menubar.Trigger>
+            <Menubar.Content>
+              <Menubar.CheckboxItem
+                checked={showStatusBar}
+                onCheckedChange={setShowStatusBar}
+              >
+                Show Status Bar
+              </Menubar.CheckboxItem>
+              <Menubar.Separator />
+              <Menubar.RadioGroup value={person} onValueChange={setPerson}>
+                <Menubar.Label>Panel Position</Menubar.Label>
+                <Menubar.RadioItem value="pedro">Pedro</Menubar.RadioItem>
+                <Menubar.RadioItem value="benoit">Benoit</Menubar.RadioItem>
+                <Menubar.RadioItem value="colm">Colm</Menubar.RadioItem>
+              </Menubar.RadioGroup>
+            </Menubar.Content>
+          </Menubar.Menu>
+        </Menubar>
+      </FakeWindow>
+    );
+  },
+};
+
+export const AllShapes: Story = {
+  name: "3. All Shapes",
+  render: () => (
+    <div className="flex flex-col gap-8">
+      <FakeWindow>
+        <Menubar shape="full">
+          <Menubar.Menu>
+            <Menubar.Trigger>Full</Menubar.Trigger>
+            <Menubar.Content>
+              <Menubar.Item>Item 1</Menubar.Item>
+              <Menubar.Item>Item 2</Menubar.Item>
+            </Menubar.Content>
+          </Menubar.Menu>
+        </Menubar>
+      </FakeWindow>
+      <FakeWindow>
+        <Menubar shape="minimal">
+          <Menubar.Menu>
+            <Menubar.Trigger>Minimal</Menubar.Trigger>
+            <Menubar.Content>
+              <Menubar.Item>Item 1</Menubar.Item>
+              <Menubar.Item>Item 2</Menubar.Item>
+            </Menubar.Content>
+          </Menubar.Menu>
+        </Menubar>
+      </FakeWindow>
+      <FakeWindow>
+        <Menubar shape="sharp">
+          <Menubar.Menu>
+            <Menubar.Trigger>Sharp</Menubar.Trigger>
+            <Menubar.Content>
+              <Menubar.Item>Item 1</Menubar.Item>
+              <Menubar.Item>Item 2</Menubar.Item>
+            </Menubar.Content>
+          </Menubar.Menu>
+        </Menubar>
+      </FakeWindow>
+    </div>
+  ),
+};
+```
+
+
+### Component: `navigation-menu`
+
+This section contains the source code for the `navigation-menu` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\navigation-menu\index.tsx`)**
+```tsx
+"use client";
+
+import * as RadixNavigationMenu from "@radix-ui/react-navigation-menu";
+import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
+import { ChevronDown } from "lucide-react";
+import React, { useImperativeHandle, useRef } from "react";
+import useRipple from "use-ripple-hook";
+import { Typography } from "../typography";
+
+// --- CVA Variants ---
+export const navigationMenuTriggerStyle = cva(
+  "group inline-flex h-10 w-max items-center justify-center rounded-lg bg-transparent px-4 py-2 text-sm font-semibold transition-colors hover:bg-graphite-secondary focus:bg-graphite-secondary focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-graphite-secondary/50 data-[state=open]:bg-graphite-secondary/50"
+);
+
+// --- NEW: CVA for ContentItem ---
+// FIX #1: Wrapped the base classes in an array to fix the cva argument error.
+const contentItemVariants = cva([
+  "relative block w-full select-none space-y-1 rounded-lg p-3 text-left leading-none no-underline outline-none transition-colors duration-150 ease-in-out overflow-hidden",
+  "hover:bg-graphite-secondary focus:bg-graphite-secondary",
+  "focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-card",
+]);
+
+// --- Core Components (Unchanged) ---
+const NavigationMenuRoot = React.forwardRef<
+  React.ElementRef<typeof RadixNavigationMenu.Root>,
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Root>
+>(({ className, children, ...props }, ref) => (
+  <RadixNavigationMenu.Root
+    ref={ref}
+    className={clsx(
+      "relative z-10 flex max-w-max flex-1 items-center justify-center",
+      className
+    )}
+    {...props}
+  >
+    {children}
+    <NavigationMenuViewport />
+  </RadixNavigationMenu.Root>
+));
+NavigationMenuRoot.displayName = RadixNavigationMenu.Root.displayName;
+
+const NavigationMenuList = React.forwardRef<
+  React.ElementRef<typeof RadixNavigationMenu.List>,
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.List>
+>(({ className, ...props }, ref) => (
+  <RadixNavigationMenu.List
+    ref={ref}
+    className={clsx(
+      "group flex flex-1 list-none items-center justify-center space-x-1",
+      className
+    )}
+    {...props}
+  />
+));
+NavigationMenuList.displayName = RadixNavigationMenu.List.displayName;
+
+const NavigationMenuItem = RadixNavigationMenu.Item;
+
+// --- Trigger (Unchanged) ---
+const NavigationMenuTrigger = React.forwardRef<
+  React.ElementRef<typeof RadixNavigationMenu.Trigger>,
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Trigger>
+>(({ className, children, ...props }, ref) => (
+  <RadixNavigationMenu.Trigger
+    ref={ref}
+    className={clsx(navigationMenuTriggerStyle(), "group", className)}
+    {...props}
+  >
+    {children}
+    <ChevronDown
+      className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
+      aria-hidden="true"
+    />
+  </RadixNavigationMenu.Trigger>
+));
+NavigationMenuTrigger.displayName = RadixNavigationMenu.Trigger.displayName;
+
+// --- Content (Unchanged) ---
+const NavigationMenuContent = React.forwardRef<
+  React.ElementRef<typeof RadixNavigationMenu.Content>,
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Content>
+>(({ className, ...props }, ref) => (
+  <RadixNavigationMenu.Content
+    ref={ref}
+    className={clsx(
+      "left-0 top-0 w-full data-[motion^=from-]:animate-nav-enter-from data-[motion^=to-]:animate-nav-exit-to data-[motion=from-end]:animate-nav-enter-from-right data-[motion=from-start]:animate-nav-enter-from-left data-[motion=to-end]:animate-nav-exit-to-right data-[motion=to-start]:animate-nav-exit-to-left md:absolute md:w-auto",
+      className
+    )}
+    {...props}
+  />
+));
+NavigationMenuContent.displayName = RadixNavigationMenu.Content.displayName;
+
+const NavigationMenuLink = RadixNavigationMenu.Link;
+
+// --- NEW: ContentList Component ---
+const NavigationMenuContentList = React.forwardRef<
+  HTMLUListElement,
+  React.HTMLAttributes<HTMLUListElement> & {
+    grid?: "cols-1" | "cols-2" | "cols-3";
+  }
+>(({ className, grid = "cols-1", ...props }, ref) => {
+  const gridClasses = {
+    "cols-1": "md:grid-cols-1",
+    "cols-2": "md:grid-cols-2",
+    "cols-3": "md:grid-cols-3",
+  };
+  return (
+    <ul
+      ref={ref}
+      className={clsx(
+        "grid gap-3 p-4",
+        "w-[400px]",
+        gridClasses[grid],
+        className
+      )}
+      {...props}
+    />
+  );
+});
+NavigationMenuContentList.displayName = "NavigationMenu.ContentList";
+
+// --- NEW: ContentItem Component ---
+// FIX #2: Omitted the conflicting 'title' prop from the base Radix props.
+interface ContentItemProps
+  extends Omit<
+    React.ComponentPropsWithoutRef<typeof NavigationMenuLink>,
+    "title"
+  > {
+  title: React.ReactNode;
+  startIcon?: React.ReactNode;
+  endAdornment?: React.ReactNode;
+}
+
+const NavigationMenuContentItem = React.forwardRef<
+  React.ElementRef<typeof NavigationMenuLink>,
+  ContentItemProps
+>(
+  (
+    {
+      className,
+      title,
+      children,
+      startIcon,
+      endAdornment,
+      onPointerDown,
+      ...props
+    },
+    ref
+  ) => {
+    const localRef = useRef<HTMLAnchorElement>(null);
+    // FIX #3: Replaced the non-null assertion with a type assertion.
+    useImperativeHandle(ref, () => localRef.current as HTMLAnchorElement);
+    const [, event] = useRipple({
+      ref: localRef,
+      color: "rgba(0, 0, 0, 0.1)",
+      duration: 400,
+    });
+
+    return (
+      <li>
+        <NavigationMenuLink
+          ref={localRef}
+          onPointerDown={(e) => {
+            event(e);
+            onPointerDown?.(e);
+          }}
+          className={contentItemVariants({ className })}
+          {...props}
+        >
+          <div className="flex items-start gap-4">
+            {startIcon && (
+              <div className="mt-0.5 text-graphite-primary flex-shrink-0">
+                {startIcon}
+              </div>
+            )}
+            <div className="flex-1">
+              <div className="flex justify-between items-center">
+                <Typography
+                  variant="small"
+                  className="font-semibold !leading-none"
+                >
+                  {title}
+                </Typography>
+                {endAdornment}
+              </div>
+              {children && (
+                <Typography
+                  variant="muted"
+                  className="!text-sm !leading-snug line-clamp-2"
+                >
+                  {children}
+                </Typography>
+              )}
+            </div>
+          </div>
+        </NavigationMenuLink>
+      </li>
+    );
+  }
+);
+NavigationMenuContentItem.displayName = "NavigationMenu.ContentItem";
+
+// --- Viewport & Indicator (Unchanged) ---
+const NavigationMenuViewport = React.forwardRef<
+  React.ElementRef<typeof RadixNavigationMenu.Viewport>,
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Viewport>
+>(({ className, ...props }, ref) => (
+  <div className={clsx("absolute left-0 top-full flex justify-center")}>
+    <RadixNavigationMenu.Viewport
+      className={clsx(
+        "origin-top-center relative mt-2 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-lg data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out md:w-[var(--radix-navigation-menu-viewport-width)]",
+        className
+      )}
+      ref={ref}
+      {...props}
+    />
+  </div>
+));
+NavigationMenuViewport.displayName = RadixNavigationMenu.Viewport.displayName;
+
+const NavigationMenuIndicator = React.forwardRef<
+  React.ElementRef<typeof RadixNavigationMenu.Indicator>,
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Indicator>
+>(({ className, ...props }, ref) => (
+  <RadixNavigationMenu.Indicator
+    ref={ref}
+    className={clsx(
+      "top-full z-[1] flex h-2.5 items-end justify-center overflow-hidden data-[state=visible]:animate-nav-fade-in data-[state=hidden]:animate-nav-fade-out",
+      className
+    )}
+    {...props}
+  >
+    <div className="relative top-[60%] h-3 w-3 rotate-45 rounded-tl-sm bg-graphite-border" />
+  </RadixNavigationMenu.Indicator>
+));
+NavigationMenuIndicator.displayName = RadixNavigationMenu.Indicator.displayName;
+
+// --- Compound Export ---
+export const NavigationMenu = Object.assign(NavigationMenuRoot, {
+  List: NavigationMenuList,
+  Item: NavigationMenuItem,
+  Content: NavigationMenuContent,
+  Trigger: NavigationMenuTrigger,
+  Link: NavigationMenuLink,
+  Indicator: NavigationMenuIndicator,
+  Viewport: NavigationMenuViewport,
+  ContentList: NavigationMenuContentList,
+  ContentItem: NavigationMenuContentItem,
+});
+```
+
+**Storybook Stories (`navigation-menu.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import {
+  Code,
+  Component,
+  GitCommit,
+  Github,
+  LifeBuoy,
+  LogOut,
+  Settings,
+  User,
+} from "lucide-react";
+import React from "react";
+import { Badge } from "../badge";
+import { Typography } from "../typography";
+import { NavigationMenu, navigationMenuTriggerStyle } from "./index";
+
+const meta: Meta<typeof NavigationMenu> = {
+  title: "Components/Navigators/NavigationMenu",
+  component: NavigationMenu,
+  subcomponents: {
+    "NavigationMenu.ContentList": NavigationMenu.ContentList,
+    "NavigationMenu.ContentItem": NavigationMenu.ContentItem,
+  },
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A modern, accessible navigation menu with smooth, animated transitions for dropdowns. Built on Radix UI. Now includes `ContentList` and `ContentItem` for building rich dropdown layouts.",
+      },
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof NavigationMenu>;
+
+export const Default: Story = {
+  name: "1. Default Menu",
+  render: () => (
+    <div className="flex h-96 w-full items-start justify-center pt-12">
+      <NavigationMenu>
+        <NavigationMenu.List>
+          <NavigationMenu.Item>
+            <NavigationMenu.Trigger>Getting started</NavigationMenu.Trigger>
+            <NavigationMenu.Content>
+              <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+                <li className="row-span-3">
+                  <NavigationMenu.Link asChild>
+                    <a
+                      className="flex h-full w-full select-none flex-col justify-end rounded-lg bg-gradient-to-b from-graphite-secondary to-graphite-border p-6 no-underline outline-none focus:shadow-md"
+                      href="#"
+                    >
+                      <Component className="h-6 w-6" />
+                      <div className="mb-2 mt-4 text-lg font-bold">
+                        chesai-ui
+                      </div>
+                      <p className="text-sm leading-tight text-gray-500">
+                        A modern, accessible component library for React.
+                      </p>
+                    </a>
+                  </NavigationMenu.Link>
+                </li>
+                {/* Replaced old ListItem with new ContentItem */}
+                <NavigationMenu.ContentItem href="#" title="Introduction">
+                  Learn the basics of the library and its design principles.
+                </NavigationMenu.ContentItem>
+                <NavigationMenu.ContentItem href="#" title="Installation">
+                  How to get started and integrate with your project.
+                </NavigationMenu.ContentItem>
+                <NavigationMenu.ContentItem href="#" title="Theming">
+                  Customize colors, fonts, and more to match your brand.
+                </NavigationMenu.ContentItem>
+              </ul>
+            </NavigationMenu.Content>
+          </NavigationMenu.Item>
+          <NavigationMenu.Item>
+            <NavigationMenu.Link
+              href="#"
+              className={navigationMenuTriggerStyle()}
+            >
+              <Typography variant="small" className="font-semibold">
+                Changelog
+              </Typography>
+            </NavigationMenu.Link>
+          </NavigationMenu.Item>
+        </NavigationMenu.List>
+      </NavigationMenu>
+    </div>
+  ),
+};
+
+// --- NEW STORY ---
+export const WithIconsAndAdornments: Story = {
+  name: "2. With Icons and Adornments",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The new `ContentList` and `ContentItem` components make it easy to build rich, descriptive navigation menus with icons and other adornments like badges.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex h-96 w-full items-start justify-center pt-12">
+      <NavigationMenu>
+        <NavigationMenu.List>
+          <NavigationMenu.Item>
+            <NavigationMenu.Trigger>Product</NavigationMenu.Trigger>
+            <NavigationMenu.Content>
+              {/* Use ContentList for consistent styling */}
+              <NavigationMenu.ContentList
+                grid="cols-2"
+                className="md:w-[500px]"
+              >
+                <NavigationMenu.ContentItem
+                  title="API Documentation"
+                  startIcon={<Code size={20} />}
+                  href="#"
+                >
+                  Access our full suite of REST and GraphQL APIs.
+                </NavigationMenu.ContentItem>
+                <NavigationMenu.ContentItem
+                  title="Contribution Guide"
+                  startIcon={<GitCommit size={20} />}
+                  href="#"
+                >
+                  Help us improve the library by contributing.
+                </NavigationMenu.ContentItem>
+                <NavigationMenu.ContentItem
+                  title="GitHub Repository"
+                  startIcon={<Github size={20} />}
+                  href="#"
+                >
+                  View the source code and report issues.
+                </NavigationMenu.ContentItem>
+                <NavigationMenu.ContentItem
+                  title="Support"
+                  startIcon={<LifeBuoy size={20} />}
+                  href="#"
+                  endAdornment={
+                    <Badge variant="secondary" shape="full">
+                      New
+                    </Badge>
+                  }
+                >
+                  Get help from our dedicated support team.
+                </NavigationMenu.ContentItem>
+              </NavigationMenu.ContentList>
+            </NavigationMenu.Content>
+          </NavigationMenu.Item>
+
+          <NavigationMenu.Item>
+            <NavigationMenu.Trigger>Account</NavigationMenu.Trigger>
+            <NavigationMenu.Content>
+              {/* A single-column list */}
+              <NavigationMenu.ContentList grid="cols-1" className="w-[300px]">
+                <NavigationMenu.ContentItem
+                  title="Profile"
+                  startIcon={<User size={16} />}
+                  href="#"
+                />
+                <NavigationMenu.ContentItem
+                  title="Settings"
+                  startIcon={<Settings size={16} />}
+                  href="#"
+                />
+                <NavigationMenu.ContentItem
+                  title="Log out"
+                  startIcon={<LogOut size={16} />}
+                  href="#"
+                />
+              </NavigationMenu.ContentList>
+            </NavigationMenu.Content>
+          </NavigationMenu.Item>
+        </NavigationMenu.List>
+      </NavigationMenu>
+    </div>
+  ),
+};
+```
+
+
+### Component: `otp-field`
+
+This section contains the source code for the `otp-field` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\otp-field\index.tsx`)**
+```tsx
+"use client";
+
+import clsx from "clsx";
+import { OTPInput, OTPInputContext } from "input-otp";
+import { Dot } from "lucide-react";
+import * as React from "react";
+
+const InputOTP = React.forwardRef<
+  React.ElementRef<typeof OTPInput>,
+  React.ComponentPropsWithoutRef<typeof OTPInput>
+>(({ className, containerClassName, ...props }, ref) => (
+  <OTPInput
+    ref={ref}
+    containerClassName={clsx(
+      "flex items-center gap-2 has-[:disabled]:opacity-50",
+      containerClassName
+    )}
+    className={clsx("disabled:cursor-not-allowed", className)}
+    {...props}
+  />
+));
+InputOTP.displayName = "InputOTP";
+
+const InputOTPGroup = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div">
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={clsx("flex items-center", className)} {...props} />
+));
+InputOTPGroup.displayName = "InputOTPGroup";
+
+const InputOTPSlot = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div"> & { index: number }
+>(({ index, className, ...props }, ref) => {
+  const inputOTPContext = React.useContext(OTPInputContext);
+  const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index];
+
+  return (
+    <div
+      ref={ref}
+      className={clsx(
+        // --- THEME ALIGNED STYLES ---
+        "relative flex h-12 w-12 items-center justify-center border-y border-r border-graphite-border text-base font-semibold transition-all",
+        "first:rounded-l-2xl first:border-l last:rounded-r-2xl", // Matches 'minimal' shape
+        isActive &&
+          "z-10 border-graphite-border ring-2 ring-graphite-ring ring-offset-2 ring-offset-graphite-background",
+        // --- END OF THEME ALIGNED STYLES ---
+        className
+      )}
+      {...props}
+    >
+      {char}
+      {hasFakeCaret && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          {/* Use theme's primary color for the caret */}
+          <div className="h-4 w-px animate-caret-blink bg-graphite-primary duration-1000" />
+        </div>
+      )}
+    </div>
+  );
+});
+InputOTPSlot.displayName = "InputOTPSlot";
+
+const InputOTPSeparator = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div">
+>(({ ...props }, ref) => (
+  <div ref={ref} role="separator" {...props}>
+    {/* Use theme's foreground color for the separator */}
+    <Dot className="text-graphite-foreground" />
+  </div>
+));
+InputOTPSeparator.displayName = "InputOTPSeparator";
+
+export { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot };
+```
+
+**Storybook Stories (`otp-field.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
+import { Button } from "../button";
+import { Typography } from "../typography";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "./index";
+
+const meta: Meta<typeof InputOTP> = {
+  title: "Components/Forms & Inputs/InputOTP",
+  component: InputOTP,
+  subcomponents: { InputOTPGroup, InputOTPSlot, InputOTPSeparator },
+  tags: ["autodocs"],
+  argTypes: {
+    maxLength: {
+      control: "number",
+      description: "The total number of characters in the OTP input.",
+    },
+    onComplete: {
+      action: "completed",
+      description: "Callback fired when all slots are filled.",
+    },
+    disabled: {
+      control: "boolean",
+    },
+  },
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A flexible and accessible One-Time Password (OTP) input component, built on `input-otp` and styled for the chesai-ui theme.",
+      },
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof InputOTP>;
+
+export const Default: Story = {
+  name: "1. Default (6-Digit)",
+  args: {
+    maxLength: 6,
+  },
+  render: (args) => {
+    const [value, setValue] = useState("");
+    return (
+      <div className="flex flex-col items-center gap-4">
+        <Typography variant="h4">Enter Verification Code</Typography>
+        {/* --- FIX: Explicitly pass props instead of spreading args --- */}
+        <InputOTP
+          maxLength={args.maxLength}
+          disabled={args.disabled}
+          value={value}
+          onChange={setValue}
+          onComplete={args.onComplete}
+        >
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+            <InputOTPSlot index={3} />
+            <InputOTPSlot index={4} />
+            <InputOTPSlot index={5} />
+          </InputOTPGroup>
+        </InputOTP>
+        <Typography variant="muted">Current value: {value}</Typography>
+      </div>
+    );
+  },
+};
+
+export const WithSeparator: Story = {
+  name: "2. With Separator",
+  args: {
+    maxLength: 6,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Use the `InputOTPSeparator` component to visually group digits.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex flex-col items-center gap-4">
+      <Typography variant="h4">Enter Access Code</Typography>
+      {/* --- FIX: Explicitly pass props instead of spreading args --- */}
+      <InputOTP
+        maxLength={args.maxLength}
+        disabled={args.disabled}
+        onComplete={args.onComplete}
+      >
+        <InputOTPGroup>
+          <InputOTPSlot index={0} />
+          <InputOTPSlot index={1} />
+          <InputOTPSlot index={2} />
+        </InputOTPGroup>
+        <InputOTPSeparator />
+        <InputOTPGroup>
+          <InputOTPSlot index={3} />
+          <InputOTPSlot index={4} />
+          <InputOTPSlot index={5} />
+        </InputOTPGroup>
+      </InputOTP>
+    </div>
+  ),
+};
+
+export const ControlledWithOnComplete: Story = {
+  name: "3. Controlled with onComplete",
+  args: {
+    maxLength: 4,
+  },
+  render: function Render(args) {
+    const [value, setValue] = useState("");
+    const [isComplete, setIsComplete] = useState(false);
+
+    const handleComplete = (completedValue: string) => {
+      // Simulate an API call
+      console.log("OTP Completed:", completedValue);
+      setIsComplete(true);
+      // Forward the action to Storybook's actions panel
+      args.onComplete?.(completedValue);
+    };
+
+    const handleReset = () => {
+      setValue("");
+      setIsComplete(false);
+    };
+
+    return (
+      <div className="flex flex-col items-center gap-4 w-80">
+        <Typography variant="h4">Enter 4-Digit PIN</Typography>
+        {/* --- FIX: Explicitly pass props instead of spreading args --- */}
+        <InputOTP
+          maxLength={args.maxLength}
+          disabled={args.disabled}
+          value={value}
+          onChange={setValue}
+          onComplete={handleComplete}
+        >
+          <InputOTPGroup>
+            <InputOTPSlot index={0} />
+            <InputOTPSlot index={1} />
+            <InputOTPSlot index={2} />
+            <InputOTPSlot index={3} />
+          </InputOTPGroup>
+        </InputOTP>
+        {isComplete ? (
+          <Typography variant="p" className="text-green-600">
+            Verification successful!
+          </Typography>
+        ) : (
+          <Typography variant="muted">
+            The onComplete event will fire when all digits are entered.
+          </Typography>
+        )}
+        <Button variant="secondary" size="sm" onClick={handleReset}>
+          Reset
+        </Button>
+      </div>
+    );
+  },
 };
 ```
 
@@ -8828,6 +10141,7 @@ interface SidebarContextProps {
   side: SidebarSide;
   collapsible: boolean;
   indicatorId: string;
+  variant: "primary" | "secondary";
   // For Gestures
   sidebarX: MotionValue<number>; // Now used ONLY for PUSH variant
   expandedWidth: number;
@@ -8850,7 +10164,31 @@ export const useSidebar = () => {
   return context;
 };
 
-// --- 2. CVA VARIANTS (Unchanged) ---
+// NEW: Context for Nav item styling
+interface SidebarNavContextProps {
+  size: "sm" | "md" | "lg";
+  shape: "full" | "minimal" | "sharp";
+}
+
+const SidebarNavContext = createContext<SidebarNavContextProps>({
+  size: "md",
+  shape: "full",
+});
+
+// --- 2. CVA VARIANTS ---
+// NEW: CVA for the container background
+const containerVariants = cva("flex h-full flex-col", {
+  variants: {
+    variant: {
+      primary: "bg-graphite-primary text-graphite-primaryForeground",
+      secondary: "bg-graphite-secondary text-graphite-foreground",
+    },
+  },
+  defaultVariants: {
+    variant: "secondary",
+  },
+});
+
 const primaryActionVariants = cva(
   "flex items-center justify-center font-semibold transition-all duration-300 ease-in-out overflow-hidden relative group shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
   {
@@ -8871,7 +10209,7 @@ const primaryActionVariants = cva(
 );
 
 const navItemVariants = cva(
-  "relative flex items-center w-full h-14 px-5 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+  "relative flex items-center w-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
   {
     variants: {
       isActive: {
@@ -8880,9 +10218,27 @@ const navItemVariants = cva(
           "text-graphite-foreground/70 hover:text-graphite-foreground/90 hover:bg-black/5",
       },
       isCollapsed: {
-        true: "justify-center",
-        false: "justify-start",
+        true: "justify-center px-0",
+        false: "justify-start px-5",
       },
+      // ADD: Size variants
+      size: {
+        sm: "h-10 text-sm",
+        md: "h-14 text-base",
+        lg: "h-16 text-lg",
+      },
+      // ADD: Shape variants
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-lg",
+        sharp: "rounded-none",
+      },
+    },
+    defaultVariants: {
+      isActive: false,
+      isCollapsed: false,
+      size: "md",
+      shape: "full",
     },
   }
 );
@@ -8916,7 +10272,12 @@ const SidebarRoot: React.FC<SidebarProps> = ({
   defaultCollapsed = false,
   collapsible = true,
 }) => {
-  const [sidebarContainer, mainContent] = React.Children.toArray(children);
+  const [sidebarContainer, mainContent] = React.Children.toArray(children) as [
+    React.ReactElement<SidebarContainerProps>,
+    React.ReactElement<SidebarContentProps>
+  ];
+  const containerVariant = sidebarContainer.props.variant || "secondary";
+
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const indicatorId = useId();
 
@@ -8988,6 +10349,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
       indicatorId,
       sidebarX,
       expandedWidth,
+      variant: containerVariant,
       toggleCollapse,
       setIsOpenOnMobile,
       handleItemPress,
@@ -9004,6 +10366,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
       indicatorId,
       sidebarX,
       expandedWidth,
+      containerVariant,
       toggleCollapse,
       handleItemPress,
     ]
@@ -9075,10 +10438,11 @@ SidebarRoot.displayName = "Sidebar";
 interface SidebarContainerProps {
   children: React.ReactNode;
   className?: string;
+  variant?: "primary" | "secondary";
 }
 const SidebarContainer = React.memo(
   React.forwardRef<HTMLElement, SidebarContainerProps>(
-    ({ children, className }, ref) => {
+    ({ children, className, variant = "secondary" }, ref) => {
       const {
         side,
         isDesktop,
@@ -9092,10 +10456,7 @@ const SidebarContainer = React.memo(
         return (
           <aside
             ref={ref}
-            className={clsx(
-              "flex h-full flex-col bg-graphite-secondary",
-              className
-            )}
+            className={clsx(containerVariants({ variant }), className)}
           >
             {children}
           </aside>
@@ -9147,7 +10508,8 @@ const SidebarContainer = React.memo(
             exit={{ x: side === "left" ? "-100%" : "100%" }}
             transition={{ type: "spring", stiffness: 500, damping: 50 }}
             className={clsx(
-              "fixed top-0 bottom-0 z-50 flex h-full flex-col bg-graphite-secondary shadow-lg",
+              containerVariants({ variant }),
+              "fixed top-0 bottom-0 z-50 flex h-full flex-col shadow-lg",
               "w-[280px]",
               side === "left" ? "left-0" : "right-0",
               className
@@ -9196,7 +10558,8 @@ const SidebarContainer = React.memo(
           dragElastic={{ left: 0.1, right: 0.1 }}
           style={{ x: sidebarX, transform: "translateZ(0)" }} // OPTIMIZATION
           className={clsx(
-            "fixed top-0 bottom-0 z-50 flex h-full flex-col bg-graphite-secondary",
+            containerVariants({ variant }),
+            "fixed top-0 bottom-0 z-50 flex h-full flex-col",
             "w-[280px]",
             side === "left" ? "left-0" : "right-0",
             className
@@ -9283,38 +10646,88 @@ const SidebarPrimaryAction = React.memo(
 );
 SidebarPrimaryAction.displayName = "Sidebar.PrimaryAction";
 
-const SidebarNav = React.memo((props: React.HTMLAttributes<HTMLElement>) => (
-  <nav
-    className={clsx("flex-1 space-y-1 px-3 py-2", props.className)}
-    {...props}
-  />
-));
+interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
+}
+
+const SidebarNav = React.memo(
+  ({
+    children,
+    className,
+    size = "md",
+    shape = "full",
+    ...props
+  }: SidebarNavProps) => {
+    return (
+      <SidebarNavContext.Provider value={{ size, shape }}>
+        <nav
+          className={clsx("flex-1 space-y-1 px-3 py-2", className)}
+          {...props}
+        >
+          {children}
+        </nav>
+      </SidebarNavContext.Provider>
+    );
+  }
+);
 SidebarNav.displayName = "Sidebar.Nav";
 
 interface NavItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   itemKey: string;
   icon: React.ReactNode;
   endAdornment?: React.ReactNode;
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
 }
 const SidebarItem = React.memo(
   React.forwardRef<HTMLButtonElement, NavItemProps>(
-    ({ itemKey, icon, children, endAdornment, className, ...props }, ref) => {
-      const { activeItem, handleItemPress, isCollapsed, indicatorId } =
+    (
+      {
+        itemKey,
+        icon,
+        children,
+        endAdornment,
+        className,
+        size: propSize,
+        shape: propShape,
+        ...props
+      },
+      ref
+    ) => {
+      const { activeItem, handleItemPress, isCollapsed, indicatorId, variant } =
         useSidebar();
+      const { size: contextSize, shape: contextShape } =
+        useContext(SidebarNavContext);
+
       const isActive = activeItem === itemKey;
+      const size = propSize || contextSize;
+      const shape = propShape || contextShape;
+
+      // --- THIS IS THE FIX ---
+      const shapeToBorderRadius = {
+        full: 9999,
+        minimal: "0.5rem", // Corresponds to rounded-lg
+        sharp: 0,
+      };
+      // --- END FIX ---
+
       const localRef = React.useRef<HTMLButtonElement>(null);
       React.useImperativeHandle(
         ref,
         () => localRef.current as HTMLButtonElement
       );
-      const rippleColor = "rgba(0, 0, 0, 0.1)";
+
+      const rippleColor =
+        variant === "primary"
+          ? "rgba(255, 255, 255, 0.1)"
+          : "rgba(0, 0, 0, 0.1)";
 
       const rippleRef = localRef as React.RefObject<HTMLElement>;
       const [, event] = useRipple({
         ref: rippleRef,
         color: rippleColor,
         duration: 400,
-        // disabled: disabled || isLoading,
       });
 
       return (
@@ -9322,14 +10735,20 @@ const SidebarItem = React.memo(
           ref={localRef}
           onPointerDown={event}
           onClick={() => handleItemPress(itemKey)}
-          className={navItemVariants({ isActive, isCollapsed, className })}
+          className={navItemVariants({
+            isActive,
+            isCollapsed,
+            size,
+            shape,
+            className,
+          })}
           {...props}
         >
           {isActive && (
             <motion.div
               layoutId={indicatorId}
               className="absolute inset-0 z-0 bg-graphite-primary/10"
-              style={{ borderRadius: 9999 }}
+              style={{ borderRadius: shapeToBorderRadius[shape] }}
               transition={{ type: "spring", stiffness: 500, damping: 40 }}
             />
           )}
@@ -9525,6 +10944,9 @@ const SidebarDragHandle = React.memo(() => {
 });
 SidebarDragHandle.displayName = "Sidebar.DragHandle";
 
+// --- MODIFIED: Ensure SidebarContentProps is defined ---
+interface SidebarContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+
 const SidebarContent = React.memo(
   React.forwardRef<HTMLDivElement, SidebarContentProps>((props, ref) => {
     return (
@@ -9564,14 +10986,18 @@ import {
   Inbox,
   Menu,
   Pencil,
+  Search,
   Send,
   Settings,
   Star,
   Trash2,
   User,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { AppBar } from "../appbar";
 import { Badge } from "../badge";
+import { ElasticScrollArea } from "../elastic-scroll-area";
+import { Input } from "../input";
 import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { Sidebar } from "./index";
@@ -9842,7 +11268,6 @@ export const ControlledState: Story = {
   },
 };
 
-// --- NEW STORY ---
 const shortNavItems = [
   { key: "inbox", label: "Inbox", icon: <Inbox size={20} /> },
   { key: "sent", label: "Sent", icon: <Send size={20} /> },
@@ -9903,6 +11328,114 @@ export const ItemVariants: Story = {
           </div>
         </Sidebar.Content>
       </Sidebar>
+    </ShallowRouter>
+  ),
+};
+
+// --- NEW STORY ---
+
+const AppLayoutContent = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { path } = useRouter();
+  const item =
+    [...navItems, ...labelItems].find((i) => i.key === path.substring(1)) ||
+    navItems[0];
+
+  const pageTitle = item?.label || "Inbox";
+
+  return (
+    <div className="flex h-full flex-col bg-graphite-background">
+      <AppBar
+        size="lg"
+        largeHeaderRowHeight={50}
+        scrollBehavior="conditionally-sticky"
+        appBarColor="background"
+        animatedBehavior={["shadow"]}
+        scrollContainerRef={scrollRef}
+        startAdornment={
+          <Sidebar.Trigger variant="ghost" aria-label="Open Menu">
+            <Menu />
+          </Sidebar.Trigger>
+        }
+        children={
+          <Typography variant="h4" className="truncate font-bold">
+            {pageTitle}
+          </Typography>
+        }
+        largeHeaderContent={
+          <Input
+            variant="secondary"
+            shape="full"
+            startAdornment={<Search className="h-5 w-5 text-gray-500" />}
+            placeholder="Search..."
+          />
+        }
+      />
+      <ElasticScrollArea ref={scrollRef} className="flex-1">
+        <main className="p-6 ">
+          <Typography variant="h3" className="mb-4 pt-[100px]">
+            Content for {pageTitle}
+          </Typography>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 30 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-48 rounded-2xl bg-black/5 flex items-center justify-center"
+              >
+                <Typography
+                  variant="small"
+                  className="text-graphite-foreground/50"
+                >
+                  Item {i + 1}
+                </Typography>
+              </div>
+            ))}
+          </div>
+        </main>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+// This is the new wrapper component that can safely call the useRouter hook.
+const FullAppLayoutRenderer = (args: any) => {
+  const { path, push } = useRouter();
+  const activeItem = path === "/" ? "inbox" : path.substring(1);
+
+  return (
+    <Sidebar
+      {...args}
+      activeItem={activeItem}
+      onItemPress={(key) => push(`/${key}`)}
+    >
+      <Sidebar.Container>
+        <SidebarContents />
+      </Sidebar.Container>
+      <Sidebar.Content>
+        <AppLayoutContent />
+      </Sidebar.Content>
+    </Sidebar>
+  );
+};
+
+export const FullAppLayout: Story = {
+  name: "8. Full App Layout",
+  args: {
+    ...DesktopPermanent.args,
+    mobileVariant: "push",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "This story demonstrates a complete application layout, integrating `Sidebar` with a large, collapsible `AppBar` and a scrollable content area powered by `ElasticScrollArea`. The key is passing the `scrollRef` from the scroll area to the `AppBar` to synchronize their behavior.",
+      },
+    },
+  },
+  // The render function now correctly wraps the logic component with the provider.
+  render: (args) => (
+    <ShallowRouter>
+      <FullAppLayoutRenderer {...args} />
     </ShallowRouter>
   ),
 };
@@ -9992,7 +11525,7 @@ import { IconButton } from "../icon-button";
 import { SplitButton } from "./index";
 
 const meta: Meta<typeof SplitButton> = {
-  title: "Components/SplitButton",
+  title: "Components/Buttons/SplitButton",
   component: SplitButton,
   tags: ["autodocs"],
   argTypes: {
@@ -11114,6 +12647,498 @@ export const WithAppBar: Story = {
 ```
 
 
+### Component: `taskbar`
+
+This section contains the source code for the `taskbar` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\taskbar\index.tsx`)**
+```tsx
+import { cva, type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import { Copy, Minus, Square, X } from "lucide-react";
+import React, { useRef } from "react";
+import useRipple from "use-ripple-hook";
+
+// --- CVA Variants ---
+const taskbarVariants = cva(
+  "flex items-center text-graphite-foreground select-none",
+  {
+    variants: {
+      variant: {
+        transparent: "bg-transparent",
+        card: "bg-graphite-card",
+        secondary: "bg-graphite-secondary",
+      },
+      bordered: {
+        true: "border-b border-graphite-border",
+        false: "border-b border-transparent",
+      },
+      size: {
+        sm: "h-8",
+        md: "h-10",
+        lg: "h-12",
+      },
+    },
+    defaultVariants: {
+      variant: "transparent",
+      bordered: false,
+      size: "md",
+    },
+  }
+);
+
+const windowControlVariants = cva(
+  "flex items-center justify-center transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring relative overflow-hidden group ",
+  {
+    variants: {
+      variant: {
+        minimize: "hover:bg-black/10",
+        maximize: "hover:bg-black/10",
+        close: "hover:bg-red-500 hover:text-white",
+      },
+      size: {
+        sm: "h-8 w-10",
+        md: "h-10 w-12",
+        lg: "h-12 w-14",
+      },
+    },
+    defaultVariants: {
+      size: "md",
+    },
+  }
+);
+
+// --- Internal Window Control Button ---
+interface WindowButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant: "minimize" | "maximize" | "close";
+  size: "sm" | "md" | "lg";
+}
+
+const WindowButton = React.forwardRef<HTMLButtonElement, WindowButtonProps>(
+  ({ children, variant, size, onClick, ...props }, ref) => {
+    const localRef = useRef<HTMLButtonElement>(null);
+    const rippleColor =
+      variant === "close" ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.1)";
+    const [, event] = useRipple({
+      ref: localRef,
+      color: rippleColor,
+      duration: 300,
+    });
+
+    const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+
+    return (
+      <button
+        ref={localRef}
+        data-tauri-drag-region={false}
+        onMouseDown={(e) => {
+          stopPropagation(e);
+          event(e);
+        }}
+        onClick={(e) => {
+          stopPropagation(e);
+          onClick?.(e);
+        }}
+        className={windowControlVariants({ variant, size })}
+        {...props}
+      >
+        {children}
+      </button>
+    );
+  }
+);
+WindowButton.displayName = "WindowButton";
+
+// --- Component Props ---
+export interface TaskbarProps
+  extends React.HTMLAttributes<HTMLElement>,
+    VariantProps<typeof taskbarVariants> {
+  /** Content to render at the start of the taskbar (e.g., app icon, title). */
+  startAdornment?: React.ReactNode;
+  /** Content to render in the center (e.g., navigation menu). */
+  centerAdornment?: React.ReactNode;
+  /** Determines if the maximize icon should show the 'restore' state. */
+  isMaximized?: boolean;
+  /** Callback fired when the minimize button is clicked. */
+  onMinimize?: () => void;
+  /** Callback fired when the maximize/restore button is clicked. */
+  onMaximize?: () => void;
+  /** Callback fired when the close button is clicked. */
+  onClose?: () => void;
+}
+
+// --- Main Component ---
+export const Taskbar = React.forwardRef<HTMLElement, TaskbarProps>(
+  (
+    {
+      className,
+      variant,
+      bordered,
+      size = "md",
+      startAdornment,
+      centerAdornment,
+      isMaximized = false,
+      onMinimize,
+      onMaximize,
+      onClose,
+      ...props
+    },
+    ref
+  ) => {
+    const iconSizeMap = {
+      sm: 14,
+      md: 16,
+      lg: 18,
+    };
+    const currentIconSize = iconSizeMap[size];
+
+    return (
+      <header
+        ref={ref}
+        data-tauri-drag-region
+        className={clsx(
+          taskbarVariants({ variant, bordered, size, className })
+        )}
+        {...props}
+      >
+        {/* Start Slot */}
+        <div className="flex-shrink-0 px-2">{startAdornment}</div>
+
+        {/* Center Slot (Draggable) */}
+        <div
+          data-tauri-drag-region
+          className="flex-1 flex items-center justify-center h-full min-w-0"
+        >
+          {centerAdornment}
+        </div>
+
+        {/* End Slot (Window Controls) */}
+        <div className="flex items-center justify-end flex-shrink-0">
+          <WindowButton
+            variant="minimize"
+            size={size}
+            onClick={onMinimize}
+            aria-label="Minimize"
+          >
+            <Minus size={currentIconSize} />
+          </WindowButton>
+          <WindowButton
+            variant="maximize"
+            size={size}
+            onClick={onMaximize}
+            aria-label={isMaximized ? "Restore" : "Maximize"}
+          >
+            {isMaximized ? (
+              <Copy size={currentIconSize} />
+            ) : (
+              <Square size={currentIconSize} />
+            )}
+          </WindowButton>
+          <WindowButton
+            variant="close"
+            size={size}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={currentIconSize} />
+          </WindowButton>
+        </div>
+      </header>
+    );
+  }
+);
+
+Taskbar.displayName = "Taskbar";
+```
+
+**Storybook Stories (`Taskbar.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { Mountain } from "lucide-react";
+import React, { useState } from "react";
+import { NavigationMenu } from "../navigation-menu";
+import { Typography } from "../typography";
+import { Taskbar } from "./index";
+
+const meta: Meta<typeof Taskbar> = {
+  title: "Components/Navigators/Taskbar",
+  component: Taskbar,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A draggable taskbar component designed for desktop applications (Electron, Tauri). It provides window controls and slots for custom content like menus and titles.",
+      },
+    },
+  },
+  argTypes: {
+    variant: {
+      control: "select",
+      options: ["transparent", "card", "secondary"],
+      description: "The background color variant of the taskbar.",
+    },
+    bordered: {
+      control: "boolean",
+      description: "Adds a bottom border to the taskbar.",
+    },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+      description: "Controls the height of the taskbar and its controls.",
+    },
+    isMaximized: { control: "boolean" },
+    onMinimize: { action: "minimized" },
+    onMaximize: { action: "maximized" },
+    onClose: { action: "closed" },
+    startAdornment: { control: false },
+    centerAdornment: { control: false },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof Taskbar>;
+
+// Helper component to simulate a desktop window
+const FakeWindow = ({
+  children,
+  title = "My App",
+}: {
+  children: React.ReactNode;
+  title?: string;
+}) => (
+  <div>
+    <Typography variant="small" className="text-center mb-2 font-semibold">
+      {title}
+    </Typography>
+    <div className="w-[720px] h-[480px] flex flex-col shadow-2xl overflow-hidden bg-graphite-background ring-1 ring-black/5 rounded-xl">
+      {children}
+    </div>
+  </div>
+);
+
+// Helper for the menu bar example
+const MenuBar = () => (
+  <NavigationMenu>
+    <NavigationMenu.List>
+      <NavigationMenu.Item>
+        <NavigationMenu.Trigger>File</NavigationMenu.Trigger>
+        <NavigationMenu.Content>
+          <ul className="grid w-[200px] gap-2 p-3">
+            <li>New</li>
+            <li>Open</li>
+            <li>Save</li>
+          </ul>
+        </NavigationMenu.Content>
+      </NavigationMenu.Item>
+      <NavigationMenu.Item>
+        <NavigationMenu.Trigger>Edit</NavigationMenu.Trigger>
+        <NavigationMenu.Content>
+          <ul className="grid w-[200px] gap-2 p-3">
+            <li>Undo</li>
+            <li>Redo</li>
+            <li>Cut</li>
+          </ul>
+        </NavigationMenu.Content>
+      </NavigationMenu.Item>
+      <NavigationMenu.Item>
+        <NavigationMenu.Trigger>View</NavigationMenu.Trigger>
+        <NavigationMenu.Content>
+          <ul className="grid w-[200px] gap-2 p-3">
+            <li>Zoom In</li>
+            <li>Zoom Out</li>
+          </ul>
+        </NavigationMenu.Content>
+      </NavigationMenu.Item>
+    </NavigationMenu.List>
+  </NavigationMenu>
+);
+
+export const Default: Story = {
+  name: "1. Default",
+  args: {
+    variant: "transparent",
+    bordered: false,
+    size: "md",
+  },
+  render: (args) => {
+    const [isMaximized, setIsMaximized] = useState(args.isMaximized || false);
+    return (
+      <FakeWindow title="Default Taskbar">
+        <Taskbar
+          {...args}
+          isMaximized={isMaximized}
+          onMaximize={() => setIsMaximized(!isMaximized)}
+          startAdornment={
+            <div className="flex items-center gap-2 pl-2">
+              <Mountain size={16} />
+              <Typography variant="small" className="font-semibold">
+                App Title
+              </Typography>
+            </div>
+          }
+        />
+        <div className="flex-1 p-6">
+          <Typography variant="p">
+            This is the default taskbar with a transparent background and no
+            border.
+          </Typography>
+        </div>
+      </FakeWindow>
+    );
+  },
+};
+
+export const AllSizes: Story = {
+  name: "2. Sizing",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `size` prop controls the overall height of the taskbar, as well as the dimensions of the window control buttons.",
+      },
+    },
+  },
+  render: (args) => {
+    const [isMaximized, setIsMaximized] = useState(false);
+    return (
+      <div className="flex flex-col gap-8">
+        <FakeWindow title="Small (sm)">
+          <Taskbar
+            {...args}
+            size="sm"
+            isMaximized={isMaximized}
+            onMaximize={() => setIsMaximized(!isMaximized)}
+            startAdornment={
+              <div className="flex items-center gap-2 pl-2">
+                <Mountain size={14} />
+                <Typography variant="small" className="font-semibold">
+                  App
+                </Typography>
+              </div>
+            }
+          />
+          <div className="flex-1 p-6" />
+        </FakeWindow>
+        <FakeWindow title="Medium (md - default)">
+          <Taskbar
+            {...args}
+            size="md"
+            isMaximized={isMaximized}
+            onMaximize={() => setIsMaximized(!isMaximized)}
+            startAdornment={
+              <div className="flex items-center gap-2 pl-2">
+                <Mountain size={16} />
+                <Typography variant="small" className="font-semibold">
+                  App
+                </Typography>
+              </div>
+            }
+          />
+          <div className="flex-1 p-6" />
+        </FakeWindow>
+        <FakeWindow title="Large (lg)">
+          <Taskbar
+            {...args}
+            size="lg"
+            isMaximized={isMaximized}
+            onMaximize={() => setIsMaximized(!isMaximized)}
+            startAdornment={
+              <div className="flex items-center gap-2 pl-2">
+                <Mountain size={18} />
+                <Typography variant="small" className="font-semibold">
+                  App
+                </Typography>
+              </div>
+            }
+          />
+          <div className="flex-1 p-6" />
+        </FakeWindow>
+      </div>
+    );
+  },
+};
+
+export const ColorVariants: Story = {
+  name: "3. Color Variants",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `variant` prop changes the background color to match different parts of the UI theme.",
+      },
+    },
+  },
+  render: (args) => {
+    const [isMaximized, setIsMaximized] = useState(false);
+    return (
+      <div className="flex flex-col gap-8">
+        <FakeWindow title="Variant: Card">
+          <Taskbar
+            {...args}
+            variant="card"
+            isMaximized={isMaximized}
+            onMaximize={() => setIsMaximized(!isMaximized)}
+          />
+          <div className="flex-1 p-6" />
+        </FakeWindow>
+        <FakeWindow title="Variant: Secondary">
+          <Taskbar
+            {...args}
+            variant="secondary"
+            isMaximized={isMaximized}
+            onMaximize={() => setIsMaximized(!isMaximized)}
+          />
+          <div className="flex-1 p-6" />
+        </FakeWindow>
+      </div>
+    );
+  },
+};
+
+export const Bordered: Story = {
+  name: "4. Bordered vs. Borderless",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `bordered` prop adds a subtle bottom border, useful for separating the taskbar from the content below.",
+      },
+    },
+  },
+  render: (args) => {
+    const [isMaximized, setIsMaximized] = useState(false);
+    return (
+      <div className="flex flex-col gap-8">
+        <FakeWindow title="Bordered (variant: card)">
+          <Taskbar
+            {...args}
+            variant="card"
+            bordered={true}
+            isMaximized={isMaximized}
+            onMaximize={() => setIsMaximized(!isMaximized)}
+          />
+          <div className="flex-1 p-6" />
+        </FakeWindow>
+        <FakeWindow title="Borderless (variant: card)">
+          <Taskbar
+            {...args}
+            variant="card"
+            bordered={false}
+            isMaximized={isMaximized}
+            onMaximize={() => setIsMaximized(!isMaximized)}
+          />
+          <div className="flex-1 p-6" />
+        </FakeWindow>
+      </div>
+    );
+  },
+};
+```
+
+
 ### Component: `textarea`
 
 This section contains the source code for the `textarea` component and its corresponding Storybook stories.
@@ -11334,7 +13359,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { TextArea } from "./index";
 
 const meta: Meta<typeof TextArea> = {
-  title: "Components/TextArea",
+  title: "Components/Forms & Inputs/TextArea",
   component: TextArea,
   tags: ["autodocs"],
   argTypes: {
@@ -12871,6 +14896,100 @@ export default useShallowRouter;
     }
   }
 
+  /* --- NEW: Radix Navigation Menu Animations --- */
+@keyframes enter-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(12.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes enter-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-12.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+/* Add to your theme.css or equivalent */
+@keyframes caret-blink {
+  0%, 70%, 100% { opacity: 1; }
+  20%, 50% { opacity: 0; }
+}
+
+@keyframes exit-to-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(12.5rem);
+  }
+}
+
+@keyframes exit-to-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-12.5rem);
+  }
+}
+
+@keyframes scale-in-content {
+  from {
+    opacity: 0;
+    transform: rotateX(-15deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(0deg) scale(1);
+  }
+}
+
+@keyframes scale-out-content {
+  from {
+    opacity: 1;
+    transform: rotateX(0deg) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: rotateX(-10deg) scale(0.95);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* --- END: Radix Navigation Menu Animations --- */
+
+
+
 
   /* 2. Create the `animate-*` utility classes from the keyframes */
   --animate-menu-enter: menu-enter 300ms cubic-bezier(0.2, 0, 0, 1) forwards;
@@ -12880,13 +14999,26 @@ export default useShallowRouter;
   --animate-select-enter: select-enter-clip 200ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-select-exit: select-exit-clip 1500ms cubic-bezier(0.4, 0, 1, 1) forwards;
   /* --- END SELECT UTILITIES --- */
-
   --animate-submenu-enter-right: submenu-enter-right 250ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-submenu-enter-left: submenu-enter-left 250ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-submenu-exit-right: submenu-exit-right 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
   --animate-submenu-exit-left: submenu-exit-left 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
   
   --animate-check-in: check-in 200ms cubic-bezier(0.2, 0, 0, 1) forwards;
+  
+
+  --animate-nav-enter-from-right: enter-from-right 250ms ease;
+--animate-nav-enter-from-left: enter-from-left 250ms ease;
+--animate-nav-exit-to-right: exit-to-right 250ms ease;
+--animate-nav-exit-to-left: exit-to-left 250ms ease;
+--animate-nav-scale-in: scale-in-content 200ms ease;
+--animate-nav-scale-out: scale-out-content 200ms ease;
+--animate-nav-fade-in: fade-in 200ms ease;
+--animate-nav-fade-out: fade-out 200ms ease;
+
+  --animate-caret-blink: caret-blink 1.25s ease-out infinite;
+
+
 }
 
 @layer base {

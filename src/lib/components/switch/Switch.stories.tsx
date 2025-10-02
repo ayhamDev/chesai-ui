@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Switch } from "./index";
 
 const meta: Meta<typeof Switch> = {
-  title: "Components/Switch",
+  title: "Components/Forms & Inputs/Switch",
   component: Switch,
   tags: ["autodocs"],
   argTypes: {

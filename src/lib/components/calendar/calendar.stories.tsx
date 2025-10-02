@@ -5,7 +5,7 @@ import type { DateRange } from "react-day-picker";
 import { PaginatedCalendar } from "../date-picker/paginated-calendar"; // Adjust the import path as needed
 import { Card } from "../card/index";
 const meta: Meta<typeof PaginatedCalendar> = {
-  title: "Components/PaginatedCalendar",
+  title: "Components/Date & Time/PaginatedCalendar",
   component: PaginatedCalendar,
   tags: ["autodocs"],
   parameters: {
