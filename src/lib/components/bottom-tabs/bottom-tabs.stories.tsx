@@ -31,10 +31,9 @@ const meta: Meta<typeof BottomTabs.Navigator> = {
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
-      description: "Sets the border-radius for the `detached` mode.",
-      if: { arg: "mode", eq: "detached" },
+      description:
+        "Sets the border-radius for the container and the active item indicator.",
     },
-    // --- NEW: Shadow arg ---
     shadow: {
       control: "select",
       options: ["none", "sm", "md", "lg"],
@@ -99,6 +98,7 @@ export const AttachedDefault: Story = {
     mode: "attached",
     itemLayout: "stacked",
     bordered: true,
+    shape: "full",
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
@@ -113,6 +113,7 @@ export const AttachedWithInlineAnimation: Story = {
     mode: "attached",
     itemLayout: "inline",
     bordered: true,
+    shape: "full",
   },
   parameters: {
     docs: {
@@ -129,8 +130,104 @@ export const AttachedWithInlineAnimation: Story = {
   ),
 };
 
+export const AttachedWithShapes: Story = {
+  name: "3. Attached (Shape Variants)",
+  render: (args) => (
+    <div className="flex flex-col gap-12">
+      <div>
+        <Typography variant="small" className="font-bold mb-2 text-center">
+          Full Shape
+        </Typography>
+        <ShallowRouter paramName="tab1">
+          <RenderWithRouter {...args} mode="attached" shape="full" />
+        </ShallowRouter>
+      </div>
+      <div>
+        <Typography variant="small" className="font-bold mb-2 text-center">
+          Minimal Shape
+        </Typography>
+        <ShallowRouter paramName="tab2">
+          <RenderWithRouter {...args} mode="attached" shape="minimal" />
+        </ShallowRouter>
+      </div>
+      <div>
+        <Typography variant="small" className="font-bold mb-2 text-center">
+          Sharp Shape
+        </Typography>
+        <ShallowRouter paramName="tab3">
+          <RenderWithRouter {...args} mode="attached" shape="sharp" />
+        </ShallowRouter>
+      </div>
+    </div>
+  ),
+};
+
+// Helper for the new story
+const RenderWithRouterForMixedShapes = (args: any) => {
+  const { path: activeTab, push: onTabPress } = useRouter();
+  const iconSize = 24;
+  const initialTab = "home";
+
+  return (
+    <div className="w-96">
+      <BottomTabs.Navigator
+        {...args}
+        activeTab={activeTab === "/" ? initialTab : activeTab.substring(1)}
+        onTabPress={(tab) => onTabPress(`/${tab}`)}
+      >
+        <BottomTabs.Screen
+          name="home"
+          label="Home"
+          icon={() => <Home size={iconSize} />}
+          shape="full" // Override: This item will be a circle
+        />
+        <BottomTabs.Screen
+          name="browse"
+          label="Browse"
+          icon={() => <Compass size={iconSize} />}
+          // No shape prop: This item will inherit "minimal" from the navigator
+        />
+        <BottomTabs.Screen
+          name="radio"
+          label="Radio"
+          icon={() => <Radio size={iconSize} />}
+          shape="sharp" // Override: This item will be a square
+        />
+        <BottomTabs.Screen
+          name="library"
+          label="Library"
+          icon={() => <Library size={iconSize} />}
+          shape="full" // Override: This item will be a circle
+        />
+      </BottomTabs.Navigator>
+    </div>
+  );
+};
+
+export const MixedItemShapes: Story = {
+  name: "4. Mixed Item Shapes",
+  args: {
+    mode: "attached",
+    shape: "minimal", // The bar itself is minimal
+    bordered: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "You can override the shape for individual tab items by setting the `shape` prop on the `<BottomTabs.Screen>` component. If an item doesn't have a shape, it inherits from the parent `<BottomTabs.Navigator>`.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab4">
+      <RenderWithRouterForMixedShapes {...args} />
+    </ShallowRouter>
+  ),
+};
+
 export const Detached: Story = {
-  name: "3. Detached (Floating)",
+  name: "5. Detached (Floating)",
   args: {
     mode: "detached",
     shape: "full",
@@ -144,9 +241,8 @@ export const Detached: Story = {
   ),
 };
 
-// --- NEW STORY ---
 export const DetachedWithShadows: Story = {
-  name: "4. Detached (Shadow Variants)",
+  name: "6. Detached (Shadow Variants)",
   render: (args) => (
     <div className="flex flex-col gap-12">
       <div>

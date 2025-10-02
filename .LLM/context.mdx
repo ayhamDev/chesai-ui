@@ -908,6 +908,8 @@ export interface ScreenProps {
   label: React.ReactNode;
   /** A function that returns the icon element, receiving active state. */
   icon: (props: { isActive: boolean }) => React.ReactNode;
+  /** Overrides the shape of this specific tab item, indicator, and ripple effect. */
+  shape?: "full" | "minimal" | "sharp";
 }
 
 interface BottomTabsContextProps {
@@ -915,6 +917,8 @@ interface BottomTabsContextProps {
   onTabPress: (name: string) => void;
   itemLayout: "stacked" | "inline";
   mode: "attached" | "detached";
+  /** The shape inherited from the parent navigator, used as a fallback. */
+  navigatorShape: "full" | "minimal" | "sharp";
   indicatorId: string;
 }
 
@@ -935,18 +939,17 @@ const navigatorVariants = cva("w-full bg-graphite-card", {
   variants: {
     mode: {
       attached: "",
-      detached: "", // Removed hardcoded shadow
+      detached: "p-2",
     },
     shape: {
-      full: "rounded-full",
-      minimal: "rounded-xl",
+      full: "",
+      minimal: "",
       sharp: "rounded-none",
     },
     bordered: {
       true: "border-t border-graphite-border",
       false: "",
     },
-    // --- NEW: Shadow variants ---
     shadow: {
       none: "shadow-none",
       sm: "shadow-sm",
@@ -954,6 +957,12 @@ const navigatorVariants = cva("w-full bg-graphite-card", {
       lg: "shadow-lg",
     },
   },
+  compoundVariants: [
+    { mode: "detached", shape: "full", className: "rounded-full" },
+    { mode: "detached", shape: "minimal", className: "rounded-xl" },
+    { mode: "attached", shape: "full", className: "rounded-t-3xl" },
+    { mode: "attached", shape: "minimal", className: "rounded-t-xl" },
+  ],
 });
 
 // --- SCREEN COMPONENT (CONFIG ONLY) ---
@@ -970,10 +979,13 @@ interface TabItemProps {
 }
 
 const TabItem: React.FC<TabItemProps> = ({ screen }) => {
-  const { name, label, icon } = screen;
-  const { activeTab, onTabPress, itemLayout, mode, indicatorId } =
+  const { name, label, icon, shape: itemShape } = screen;
+  const { activeTab, onTabPress, itemLayout, indicatorId, navigatorShape } =
     useBottomTabs();
   const isActive = activeTab === name;
+
+  // If the item has its own shape, use it; otherwise, fall back to the navigator's shape.
+  const finalShape = itemShape || navigatorShape;
 
   const localRef = useRef<HTMLButtonElement>(null);
   const [, event] = useRipple({
@@ -983,6 +995,18 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   });
 
   const isHorizontal = itemLayout === "inline" && isActive;
+
+  const shapeToBorderRadius = {
+    full: 9999,
+    minimal: 12, // Corresponds to rounded-xl
+    sharp: 0,
+  };
+
+  const shapeToClassName = {
+    full: "rounded-full",
+    minimal: "rounded-lg",
+    sharp: "rounded-none",
+  };
 
   return (
     <li className="flex-1">
@@ -999,14 +1023,15 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
           isActive
             ? "text-graphite-primary font-semibold"
             : "text-graphite-foreground/70",
-          mode === "detached" ? "rounded-full" : "rounded-lg"
+          shapeToClassName[finalShape] // Apply dynamic shape class for ripple
         )}
       >
         {isActive && (
           <motion.div
             layoutId={indicatorId}
             className="absolute inset-0 z-0 bg-graphite-secondary"
-            style={{ borderRadius: 9999 }}
+            // Apply dynamic border radius for indicator
+            style={{ borderRadius: shapeToBorderRadius[finalShape] }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
           />
         )}
@@ -1062,7 +1087,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   itemLayout = "stacked",
   shape = "full",
   bordered = true,
-  shadow = "lg", // Default shadow for detached mode
+  shadow = "lg",
   className,
   ...props
 }) => {
@@ -1080,20 +1105,25 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   );
 
   const contextValue = useMemo(
-    () => ({ activeTab, onTabPress, itemLayout, mode, indicatorId }),
-    [activeTab, onTabPress, itemLayout, mode, indicatorId]
+    () => ({
+      activeTab,
+      onTabPress,
+      itemLayout,
+      mode,
+      navigatorShape: shape,
+      indicatorId,
+    }),
+    [activeTab, onTabPress, itemLayout, mode, shape, indicatorId]
   );
 
   return (
     <BottomTabsContext.Provider value={contextValue}>
       <nav
         className={clsx(
-          mode === "detached" && "p-2",
           navigatorVariants({
             mode,
-            shape: mode === "detached" ? shape : undefined,
+            shape,
             bordered: mode === "attached" ? bordered : false,
-            // --- MODIFICATION: Conditionally apply shadow ---
             shadow: mode === "detached" ? shadow : undefined,
             className,
           })
@@ -1154,10 +1184,9 @@ const meta: Meta<typeof BottomTabs.Navigator> = {
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
-      description: "Sets the border-radius for the `detached` mode.",
-      if: { arg: "mode", eq: "detached" },
+      description:
+        "Sets the border-radius for the container and the active item indicator.",
     },
-    // --- NEW: Shadow arg ---
     shadow: {
       control: "select",
       options: ["none", "sm", "md", "lg"],
@@ -1222,6 +1251,7 @@ export const AttachedDefault: Story = {
     mode: "attached",
     itemLayout: "stacked",
     bordered: true,
+    shape: "full",
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
@@ -1236,6 +1266,7 @@ export const AttachedWithInlineAnimation: Story = {
     mode: "attached",
     itemLayout: "inline",
     bordered: true,
+    shape: "full",
   },
   parameters: {
     docs: {
@@ -1252,8 +1283,104 @@ export const AttachedWithInlineAnimation: Story = {
   ),
 };
 
+export const AttachedWithShapes: Story = {
+  name: "3. Attached (Shape Variants)",
+  render: (args) => (
+    <div className="flex flex-col gap-12">
+      <div>
+        <Typography variant="small" className="font-bold mb-2 text-center">
+          Full Shape
+        </Typography>
+        <ShallowRouter paramName="tab1">
+          <RenderWithRouter {...args} mode="attached" shape="full" />
+        </ShallowRouter>
+      </div>
+      <div>
+        <Typography variant="small" className="font-bold mb-2 text-center">
+          Minimal Shape
+        </Typography>
+        <ShallowRouter paramName="tab2">
+          <RenderWithRouter {...args} mode="attached" shape="minimal" />
+        </ShallowRouter>
+      </div>
+      <div>
+        <Typography variant="small" className="font-bold mb-2 text-center">
+          Sharp Shape
+        </Typography>
+        <ShallowRouter paramName="tab3">
+          <RenderWithRouter {...args} mode="attached" shape="sharp" />
+        </ShallowRouter>
+      </div>
+    </div>
+  ),
+};
+
+// Helper for the new story
+const RenderWithRouterForMixedShapes = (args: any) => {
+  const { path: activeTab, push: onTabPress } = useRouter();
+  const iconSize = 24;
+  const initialTab = "home";
+
+  return (
+    <div className="w-96">
+      <BottomTabs.Navigator
+        {...args}
+        activeTab={activeTab === "/" ? initialTab : activeTab.substring(1)}
+        onTabPress={(tab) => onTabPress(`/${tab}`)}
+      >
+        <BottomTabs.Screen
+          name="home"
+          label="Home"
+          icon={() => <Home size={iconSize} />}
+          shape="full" // Override: This item will be a circle
+        />
+        <BottomTabs.Screen
+          name="browse"
+          label="Browse"
+          icon={() => <Compass size={iconSize} />}
+          // No shape prop: This item will inherit "minimal" from the navigator
+        />
+        <BottomTabs.Screen
+          name="radio"
+          label="Radio"
+          icon={() => <Radio size={iconSize} />}
+          shape="sharp" // Override: This item will be a square
+        />
+        <BottomTabs.Screen
+          name="library"
+          label="Library"
+          icon={() => <Library size={iconSize} />}
+          shape="full" // Override: This item will be a circle
+        />
+      </BottomTabs.Navigator>
+    </div>
+  );
+};
+
+export const MixedItemShapes: Story = {
+  name: "4. Mixed Item Shapes",
+  args: {
+    mode: "attached",
+    shape: "minimal", // The bar itself is minimal
+    bordered: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "You can override the shape for individual tab items by setting the `shape` prop on the `<BottomTabs.Screen>` component. If an item doesn't have a shape, it inherits from the parent `<BottomTabs.Navigator>`.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab4">
+      <RenderWithRouterForMixedShapes {...args} />
+    </ShallowRouter>
+  ),
+};
+
 export const Detached: Story = {
-  name: "3. Detached (Floating)",
+  name: "5. Detached (Floating)",
   args: {
     mode: "detached",
     shape: "full",
@@ -1267,9 +1394,8 @@ export const Detached: Story = {
   ),
 };
 
-// --- NEW STORY ---
 export const DetachedWithShadows: Story = {
-  name: "4. Detached (Shadow Variants)",
+  name: "6. Detached (Shadow Variants)",
   render: (args) => (
     <div className="flex flex-col gap-12">
       <div>
@@ -2351,7 +2477,7 @@ import { useState } from "react";
 import { Checkbox } from "./index";
 
 const meta: Meta<typeof Checkbox> = {
-  title: "Components/Checkbox",
+  title: "Components/Forms & Inputs/Checkbox",
   component: Checkbox,
   tags: ["autodocs"],
   argTypes: {
@@ -2575,6 +2701,463 @@ export const Disabled: Story = {
       </Chip>
     </div>
   ),
+};
+```
+
+
+### Component: `command`
+
+This section contains the source code for the `command` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\command\index.tsx`)**
+```tsx
+"use client";
+
+import { type DialogProps } from "@radix-ui/react-dialog";
+import { useMediaQuery } from "@uidotdev/usehooks";
+import { clsx } from "clsx";
+import { Command as CommandPrimitive } from "cmdk";
+import { Search } from "lucide-react";
+import * as React from "react";
+import useRipple from "use-ripple-hook";
+import { Dialog, DialogContent } from "../dialog";
+
+const Command = React.forwardRef<
+  React.ElementRef<typeof CommandPrimitive>,
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive> & {
+    shouldFilter?: boolean;
+  }
+>(({ className, shouldFilter = true, ...props }, ref) => (
+  <CommandPrimitive
+    ref={ref}
+    shouldFilter={shouldFilter}
+    className={clsx(
+      "flex h-full w-full flex-col overflow-hidden rounded-xl bg-graphite-card text-graphite-foreground",
+      className
+    )}
+    {...props}
+  />
+));
+Command.displayName = CommandPrimitive.displayName;
+
+interface CommandDialogProps extends DialogProps {}
+
+const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  return (
+    <Dialog {...props} variant={isMobile ? "fullscreen" : "basic"}>
+      <DialogContent className="flex flex-col overflow-hidden p-0! shadow-lg max-w-xl">
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const CommandInput = React.forwardRef<
+  React.ElementRef<typeof CommandPrimitive.Input>,
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
+>(({ className, ...props }, ref) => (
+  <div className="flex items-center  flex-1" cmdk-input-wrapper="">
+    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+    <CommandPrimitive.Input
+      autoFocus={true}
+      ref={ref}
+      className={clsx(
+        "flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-graphite-foreground/60 disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  </div>
+));
+CommandInput.displayName = CommandPrimitive.Input.displayName;
+
+const CommandList = React.forwardRef<
+  React.ElementRef<typeof CommandPrimitive.List>,
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
+>(({ className, ...props }, ref) => (
+  <CommandPrimitive.List
+    ref={ref}
+    className={clsx(
+      "overflow-y-auto overflow-x-hidden flex-1",
+      "max-h-[450px] sm:max-h-[300px]",
+      className
+    )}
+    {...props}
+  />
+));
+CommandList.displayName = CommandPrimitive.List.displayName;
+
+const CommandEmpty = React.forwardRef<
+  React.ElementRef<typeof CommandPrimitive.Empty>,
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>
+>((props, ref) => (
+  <CommandPrimitive.Empty
+    ref={ref}
+    className="py-6 text-center text-sm text-graphite-foreground/70"
+    {...props}
+  />
+));
+CommandEmpty.displayName = CommandPrimitive.Empty.displayName;
+
+const CommandGroup = React.forwardRef<
+  React.ElementRef<typeof CommandPrimitive.Group>,
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
+>(({ className, ...props }, ref) => (
+  <CommandPrimitive.Group
+    ref={ref}
+    className={clsx(
+      "overflow-hidden p-1 text-graphite-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-graphite-foreground/70",
+      className
+    )}
+    {...props}
+  />
+));
+CommandGroup.displayName = CommandPrimitive.Group.displayName;
+
+const CommandSeparator = React.forwardRef<
+  React.ElementRef<typeof CommandPrimitive.Separator>,
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Separator>
+>(({ className, ...props }, ref) => (
+  <CommandPrimitive.Separator
+    ref={ref}
+    className={clsx("-mx-1 my-1 h-px bg-graphite-border", className)}
+    {...props}
+  />
+));
+CommandSeparator.displayName = CommandPrimitive.Separator.displayName;
+
+const CommandItem = React.forwardRef<
+  React.ElementRef<typeof CommandPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
+>(({ className, onPointerDown, ...props }, ref) => {
+  const localRef = React.useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(0, 0, 0, 0.1)",
+    duration: 400,
+    disabled: props.disabled,
+  });
+
+  React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
+
+  return (
+    <CommandPrimitive.Item
+      ref={localRef}
+      onPointerDown={(e) => {
+        event(e);
+        onPointerDown?.(e);
+      }}
+      className={clsx(
+        "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden transition-colors duration-150",
+        "hover:bg-graphite-secondary/80",
+        "aria-selected:bg-graphite-secondary",
+        "focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+        "aria-disabled:pointer-events-none aria-disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  );
+});
+CommandItem.displayName = CommandPrimitive.Item.displayName;
+
+const CommandShortcut = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement>) => {
+  return (
+    <span
+      className={clsx(
+        "ml-auto text-xs tracking-widest text-graphite-foreground/60",
+        className
+      )}
+      {...props}
+    />
+  );
+};
+CommandShortcut.displayName = "CommandShortcut";
+
+export {
+  Command,
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandShortcut,
+  CommandSeparator,
+};
+```
+
+**Storybook Stories (`Command.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import {
+  ArrowLeft,
+  Calculator,
+  Calendar,
+  CreditCard,
+  Settings,
+  Smile,
+  User,
+} from "lucide-react";
+import * as React from "react";
+import { Button } from "../button";
+import { DialogClose } from "../dialog";
+import { IconButton } from "../icon-button";
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from "./index";
+
+const meta: Meta<typeof Command> = {
+  title: "Components/Command",
+  component: Command,
+  subcomponents: {
+    CommandDialog,
+    CommandInput,
+    CommandList,
+    CommandEmpty,
+    CommandGroup,
+    CommandItem,
+    CommandShortcut,
+    CommandSeparator,
+  },
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A fast, composable command menu. Built on `cmdk` and styled for the chesai-ui theme. Can be used inline or within a dialog.",
+      },
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof Command>;
+
+interface CommandItemType {
+  value: string;
+  label: string;
+  icon: React.ReactNode;
+  disabled?: boolean;
+  shortcut?: string;
+}
+
+interface CommandGroupType {
+  group: string;
+  items: CommandItemType[];
+}
+
+const commandItems: CommandGroupType[] = [
+  {
+    group: "Suggestions",
+    items: [
+      {
+        value: "calendar",
+        label: "Calendar",
+        icon: <Calendar className="mr-2 h-4 w-4" />,
+      },
+      {
+        value: "emoji",
+        label: "Search Emoji",
+        icon: <Smile className="mr-2 h-4 w-4" />,
+      },
+      {
+        value: "calculator",
+        label: "Calculator",
+        icon: <Calculator className="mr-2 h-4 w-4" />,
+        disabled: true,
+      },
+    ],
+  },
+  {
+    group: "Settings",
+    items: [
+      {
+        value: "profile",
+        label: "Profile",
+        icon: <User className="mr-2 h-4 w-4" />,
+        shortcut: "⌘P",
+      },
+      {
+        value: "billing",
+        label: "Billing",
+        icon: <CreditCard className="mr-2 h-4 w-4" />,
+        shortcut: "⌘B",
+      },
+      {
+        value: "settings",
+        label: "Settings",
+        icon: <Settings className="mr-2 h-4 w-4" />,
+        shortcut: "⌘S",
+      },
+    ],
+  },
+];
+
+export const Default: Story = {
+  name: "1. Inline Usage",
+  render: (args) => (
+    <Command
+      {...args}
+      className="max-w-lg rounded-lg border border-graphite-border shadow-md"
+    >
+      <CommandInput placeholder="Type a command or search..." />
+      <CommandList>
+        <CommandEmpty>No results found.</CommandEmpty>
+        {commandItems.map((group) => (
+          <CommandGroup key={group.group} heading={group.group}>
+            {group.items.map((item) => (
+              <CommandItem
+                key={item.value}
+                value={item.value}
+                disabled={item.disabled}
+                onSelect={() => alert(`Selected: ${item.label}`)}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+                {item.shortcut && (
+                  <CommandShortcut>{item.shortcut}</CommandShortcut>
+                )}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        ))}
+      </CommandList>
+    </Command>
+  ),
+};
+
+export const DialogDesktop: Story = {
+  name: "2. Dialog (Desktop)",
+  parameters: {
+    layout: "fullscreen",
+  },
+  render: () => {
+    const [open, setOpen] = React.useState(false);
+
+    React.useEffect(() => {
+      const down = (e: KeyboardEvent) => {
+        if (e.key === "f" && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          setOpen((open) => !open);
+        }
+      };
+      document.addEventListener("keydown", down);
+      return () => document.removeEventListener("keydown", down);
+    }, []);
+
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-graphite-background p-0">
+        <p className="text-sm text-graphite-foreground/70">
+          Press{" "}
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-graphite-card px-1.5 font-mono text-[10px] font-medium opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>{" "}
+          to open.
+        </p>
+        <CommandDialog open={open} onOpenChange={setOpen}>
+          {/* --- FIX: Keep CommandInput and CommandList as direct children of Command --- */}
+          <Command>
+            <div className="flex items-center border-b border-graphite-border">
+              <DialogClose asChild>
+                <IconButton variant="ghost" className="m-1">
+                  <ArrowLeft />
+                </IconButton>
+              </DialogClose>
+              <CommandInput placeholder="Type a command or search..." />
+            </div>
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              {commandItems.map((group) => (
+                <CommandGroup key={group.group} heading={group.group}>
+                  {group.items.map((item) => (
+                    <CommandItem
+                      key={item.value}
+                      value={item.value}
+                      disabled={item.disabled}
+                      onSelect={() => setOpen(false)}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                      {item.shortcut && (
+                        <CommandShortcut>{item.shortcut}</CommandShortcut>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ))}
+            </CommandList>
+          </Command>
+          {/* --- END FIX --- */}
+        </CommandDialog>
+      </div>
+    );
+  },
+};
+
+export const DialogMobile: Story = {
+  name: "3. Dialog (Mobile)",
+  parameters: {
+    ...DialogDesktop.parameters,
+    viewport: { defaultViewport: "mobile1" },
+  },
+  render: () => {
+    const [open, setOpen] = React.useState(false);
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-graphite-background p-0">
+        <Button onClick={() => setOpen(true)}>Open Command Menu</Button>
+        <CommandDialog open={open} onOpenChange={setOpen}>
+          {/* --- FIX: Keep CommandInput and CommandList as direct children of Command --- */}
+          <Command>
+            <div className="flex items-center border-b border-graphite-border">
+              <DialogClose asChild>
+                <IconButton variant="ghost" className="m-1">
+                  <ArrowLeft />
+                </IconButton>
+              </DialogClose>
+              <CommandInput placeholder="Type a command or search..." />
+            </div>
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              {commandItems.map((group) => (
+                <CommandGroup key={group.group} heading={group.group}>
+                  {group.items.map((item) => (
+                    <CommandItem
+                      key={item.value}
+                      value={item.value}
+                      disabled={item.disabled}
+                      onSelect={() => setOpen(false)}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                      {item.shortcut && (
+                        <CommandShortcut>{item.shortcut}</CommandShortcut>
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ))}
+            </CommandList>
+          </Command>
+          {/* --- END FIX --- */}
+        </CommandDialog>
+      </div>
+    );
+  },
 };
 ```
 
@@ -2834,6 +3417,10 @@ import React, {
 } from "react";
 import ReactDOM from "react-dom";
 import { Card, type CardProps } from "../card";
+import {
+  ElasticScrollArea,
+  type ElasticScrollAreaProps,
+} from "../elastic-scroll-area";
 import { Typography } from "../typography";
 
 // --- CONTEXT and PORTAL (No Changes) ---
@@ -2921,112 +3508,62 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
 );
 DialogTrigger.displayName = "DialogTrigger";
 
-// --- NATIVE iOS-STYLE ANIMATION VARIANTS ---
-// iOS modal presentation uses a subtle scale with spring physics
+// --- ANIMATION VARIANTS (No Changes) ---
 const basicDialogVariants: Variants = {
-  hidden: {
-    opacity: 0,
-    scale: 0.92,
-  },
+  hidden: { opacity: 0, scale: 0.92 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: {
-      duration: 0.3,
-      ease: [0.2, 0, 0, 1.1], // Material Design "Emphasized" curve
-    },
+    transition: { duration: 0.3, ease: [0.2, 0, 0, 1.1] },
   },
   exit: {
     opacity: 0,
     scale: 0.95,
-    transition: {
-      duration: 0.2,
-      ease: [0.4, 0, 1, 1], // Material Design "Accelerate" curve
-    },
+    transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
   },
 };
-
-// Material You fullscreen dialog - slides up from bottom with deceleration
 const fullscreenDialogVariants: Variants = {
-  hidden: {
-    y: "100%", // Start completely off-screen
-    opacity: 0, // Material You doesn't fade the dialog itself
-  },
+  hidden: { y: "100%", opacity: 0 },
   visible: {
     y: "0%",
     opacity: 1,
-
-    transition: {
-      duration: 0.35, // Material You standard duration
-      ease: [0.2, 0.7, 0.1, 1], // Material You emphasized decelerate
-    },
+    transition: { duration: 0.35, ease: [0.2, 0.7, 0.1, 1] },
   },
   exit: {
-    y: "100%",
-    opacity: 0.2, // Keep opaque during exit
-    transition: {
-      duration: 0.2, // Slightly faster exit
-      ease: [0.2, 0.2, 0.5, 1], // Material You emphasized decelerate
-    },
+    y: "50%",
+    opacity: 0,
+    transition: { duration: 0.2, ease: [0.2, 0.2, 0.5, 1] },
   },
 };
-
-// iOS backdrop - quick fade
 const iosBackdropVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      duration: 0.25,
-      ease: [0.25, 0.46, 0.45, 0.94], // iOS ease curve
-    },
+    transition: { duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] },
   },
   exit: {
     opacity: 0,
-    transition: {
-      duration: 0.2,
-      ease: [0.25, 0.46, 0.45, 0.94],
-    },
+    transition: { duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] },
   },
 };
-
-// Material You backdrop - slower, more pronounced fade
 const materialBackdropVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      duration: 0.25,
-      ease: [0.4, 0, 0.2, 1], // Material You standard
-    },
+    transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] },
   },
-  exit: {
-    opacity: 0,
-    transition: {
-      duration: 0.2,
-      ease: [0.4, 0, 1, 1],
-    },
-  },
+  exit: { opacity: 0, transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } },
 };
-
-// Content animation for fullscreen - delayed appearance
 const materialContentVariants: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 8, // Slight upward movement
-  },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      duration: 0.25,
-      delay: 0.1, // Delay for staggered effect
-      ease: [0.4, 0, 0.2, 1],
-    },
+    transition: { duration: 0.25, delay: 0.1, ease: [0.4, 0, 0.2, 1] },
   },
 };
 
-// --- CONTENT (ENHANCED WITH NATIVE TRANSITIONS) ---
+// --- CONTENT (No Changes) ---
 export interface DialogContentProps
   extends React.HTMLAttributes<HTMLDivElement> {
   shape?: CardProps["shape"];
@@ -3038,20 +3575,14 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
     useEffect(() => {
       if (open) {
-        if (variant === "basic") {
-          document.body.style.overflow = "hidden";
-        }
+        document.body.style.overflow = "hidden";
         if (variant === "fullscreen") {
-          document.body.style.overflow = "hidden";
           document.body.style.overscrollBehavior = "none";
-          // Material You doesn't fix position, just prevents scroll
         }
       }
       return () => {
         document.body.style.overflow = "";
         document.body.style.overscrollBehavior = "";
-        document.body.style.position = "";
-        document.body.style.width = "";
       };
     }, [open, variant]);
 
@@ -3078,11 +3609,10 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                   "fixed inset-0 z-50 flex",
                   !isFullscreen && "items-center justify-center p-4 sm:p-8",
                   isFullscreen &&
-                    "items-end sm:items-center sm:justify-center sm:p-8"
+                    "items-end sm:items-center sm:justify-center  sm:p-8"
                 )}
                 {...props}
               >
-                {/* Backdrop */}
                 <motion.div
                   initial="hidden"
                   animate="visible"
@@ -3090,14 +3620,11 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                   variants={backdropVariants}
                   className={clsx(
                     "absolute inset-0",
-                    // Material You uses lighter scrim
                     isFullscreen ? "bg-black/32" : "bg-black/50"
                   )}
                   onClick={() => onOpenChange(false)}
                   style={{ willChange: "opacity" }}
                 />
-
-                {/* Dialog */}
                 <motion.div
                   role="dialog"
                   aria-modal="true"
@@ -3116,9 +3643,8 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                     isFullscreen
                       ? [
                           "w-full bg-white shadow-2xl",
-                          // Material You fullscreen on mobile, dialog on desktop
-                          "h-full sm:h-auto sm:max-h-[90vh] sm:w-full sm:max-w-2xl",
-                          "sm:rounded-3xl", // Material You large corner radius
+                          "h-full sm:max-h-[90vh] sm:w-full sm:max-w-2xl",
+                          "sm:rounded-3xl",
                           "overflow-hidden",
                         ]
                       : "w-full max-w-lg",
@@ -3132,7 +3658,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                 >
                   {isFullscreen ? (
                     <motion.div
-                      className="flex h-full flex-col sm:h-auto"
+                      className="flex h-full flex-col"
                       initial="hidden"
                       animate="visible"
                       variants={materialContentVariants}
@@ -3141,49 +3667,10 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                         transform: "translate3d(0, 0, 0)",
                       }}
                     >
-                      {React.Children.map(children, (child, index) => {
-                        const isLastChild =
-                          index === React.Children.count(children) - 1;
-                        const isHeader =
-                          React.isValidElement(child) &&
-                          child.type === DialogHeader;
-                        const isFooter =
-                          React.isValidElement(child) &&
-                          child.type === DialogFooter;
-
-                        return (
-                          <div
-                            key={index}
-                            className={clsx(
-                              "flex-shrink-0",
-                              !isHeader &&
-                                !isFooter &&
-                                isLastChild &&
-                                "flex-1 overflow-y-auto",
-                              !isHeader &&
-                                !isFooter &&
-                                !isLastChild &&
-                                "flex-1 flex flex-col"
-                            )}
-                            style={{
-                              ...(!isHeader &&
-                                !isFooter &&
-                                isLastChild && {
-                                  WebkitOverflowScrolling: "touch",
-                                  overscrollBehavior: "contain",
-                                }),
-                            }}
-                          >
-                            {child}
-                          </div>
-                        );
-                      })}
+                      {children}
                     </motion.div>
                   ) : (
-                    <Card
-                      shape={shape}
-                      className="relative w-full p-8 shadow-2xl"
-                    >
+                    <Card shape={shape} className="relative w-full shadow-2xl">
                       {children}
                     </Card>
                   )}
@@ -3198,7 +3685,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 );
 DialogContent.displayName = "DialogContent";
 
-// --- CLOSE and HELPER Components (Enhanced Material You styling) ---
+// --- HELPER COMPONENTS (DialogBody is REFACTORED) ---
 interface DialogCloseProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
@@ -3231,7 +3718,6 @@ const DialogHeader = (props: React.HTMLAttributes<HTMLDivElement>) => {
           "flex flex-col space-y-1.5 text-center sm:text-left",
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row items-center justify-between",
-          // Material You header styling
           "px-6 py-4 sm:px-8 sm:py-6",
           "bg-white",
           "border-b border-gray-200/60",
@@ -3258,7 +3744,6 @@ const DialogFooter = (props: React.HTMLAttributes<HTMLDivElement>) => {
         variant === "basic" && "mt-6 flex gap-2 sm:justify-end",
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row justify-end gap-3",
-          // Material You footer styling
           "px-6 py-4 sm:px-8 sm:py-6",
           "bg-white",
           "border-t border-gray-200/60",
@@ -3288,7 +3773,6 @@ const DialogTitle = React.forwardRef<
       id={titleId}
       className={clsx(
         "font-semibold tracking-tight",
-        // Material You uses larger titles in fullscreen
         variant === "fullscreen" ? "text-2xl sm:text-3xl" : "text-xl"
       )}
       {...props}
@@ -3306,33 +3790,55 @@ const DialogDescription = React.forwardRef<
 });
 DialogDescription.displayName = "DialogDescription";
 
-// --- Enhanced Scrollable Content Area ---
-const DialogBody = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->((props, ref) => {
-  const { variant } = useDialogContext();
-  return (
-    <div
-      ref={ref}
-      className={clsx(
-        variant === "fullscreen" &&
-          "flex-1 overflow-y-auto px-6 py-4 sm:px-8 sm:py-6",
-        variant === "basic" && "flex-1",
-        props.className
-      )}
-      style={{
-        ...(variant === "fullscreen" && {
-          WebkitOverflowScrolling: "touch",
-          overscrollBehavior: "contain",
-          willChange: "scroll-position",
-          transform: "translate3d(0, 0, 0)",
-        }),
-      }}
-      {...props}
-    />
-  );
-});
+// --- MODIFIED: DialogBody now integrates ElasticScrollArea ---
+export interface DialogBodyProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    // Expose ElasticScrollArea props, omitting ones we handle
+    Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {}
+
+const DialogBody = React.forwardRef<HTMLDivElement, DialogBodyProps>(
+  (
+    {
+      className,
+      children,
+      // Destructure ElasticScrollArea props to pass them down
+      elasticity = true,
+      pullToRefresh,
+      onRefresh,
+      ...props
+    },
+    ref
+  ) => {
+    const { variant } = useDialogContext();
+
+    // For fullscreen dialogs, render the enhanced scroll area
+    if (variant === "fullscreen") {
+      return (
+        <ElasticScrollArea
+          ref={ref}
+          className={clsx(
+            "flex-1 pt-0!", // This makes the scroll area fill the available space
+            "px-6 py-4 sm:px-8 sm:py-6", // Default padding
+            className
+          )}
+          elasticity={elasticity}
+          pullToRefresh={pullToRefresh}
+          onRefresh={onRefresh}
+          {...props}
+        >
+          {children}
+        </ElasticScrollArea>
+      );
+    }
+
+    // For basic dialogs, render a simple div as before
+    return (
+      <div ref={ref} className={clsx("flex-1", className)} {...props}>
+        {children}
+      </div>
+    );
+  }
+);
 DialogBody.displayName = "DialogBody";
 
 // --- EXPORTS ---
@@ -3353,8 +3859,7 @@ export {
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import { X } from "lucide-react";
-import { useState } from "react";
-// Import the AppBar component
+import { useRef, useState } from "react";
 import { AppBar } from "../appbar";
 import { Button } from "../button";
 import { IconButton } from "../icon-button";
@@ -3374,7 +3879,6 @@ import {
   DialogTrigger,
 } from "./index";
 
-// Combined type for story controls
 type StoryComponentProps = DialogProps & Pick<DialogContentProps, "shape">;
 
 const meta: Meta<StoryComponentProps> = {
@@ -3386,7 +3890,7 @@ const meta: Meta<StoryComponentProps> = {
     docs: {
       description: {
         component:
-          "A fully accessible, custom-built dialog component with support for basic and fullscreen variants.",
+          "A fully accessible, custom-built dialog component with support for basic and fullscreen variants. The fullscreen variant's body is an `ElasticScrollArea`, enabling pull-to-refresh and other advanced scrolling effects.",
       },
     },
   },
@@ -3394,13 +3898,10 @@ const meta: Meta<StoryComponentProps> = {
     variant: {
       control: "select",
       options: ["basic", "fullscreen"],
-      description: "Determines the dialog's appearance and animation.",
     },
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
-      description: "Controls the border-radius of the basic dialog card.",
-      table: { category: "DialogContent Props" },
       if: { arg: "variant", eq: "basic" },
     },
   },
@@ -3409,15 +3910,16 @@ const meta: Meta<StoryComponentProps> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+// Mock refresh function for the story
+const simulateRefresh = () => {
+  console.log("Refresh triggered!");
+  return new Promise((resolve) => setTimeout(resolve, 2000));
+};
+
 export const Basic: Story = {
   name: "Basic Dialog",
-  args: {
-    variant: "basic",
-    shape: "minimal",
-  },
-  parameters: {
-    layout: "centered",
-  },
+  args: { variant: "basic", shape: "minimal" },
+  parameters: { layout: "centered" },
   render: (args) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
@@ -3451,22 +3953,20 @@ export const Basic: Story = {
 
 export const FullScreen: Story = {
   name: "Full-Screen Dialog with AppBar",
-  args: {
-    variant: "fullscreen",
-  },
+  args: { variant: "fullscreen" },
   parameters: {
-    viewport: {
-      defaultViewport: "mobile1",
-    },
+    viewport: { defaultViewport: "mobile1" },
     docs: {
       description: {
         story:
-          "The fullscreen variant integrated with the collapsible AppBar. The `AppBar.Provider` wraps the content inside the `DialogContent` to manage the scroll state, enabling animations and sticky behavior.",
+          "The `DialogBody` in a fullscreen dialog is now an `ElasticScrollArea`. This allows for native-like scrolling and enables features like `pullToRefresh`. The `AppBar`'s `scrollContainerRef` points to the `DialogBody`'s ref to synchronize scroll animations.",
       },
     },
   },
   render: (args) => {
     const [isOpen, setIsOpen] = useState(false);
+    const scrollRef = useRef<HTMLDivElement>(null);
+
     return (
       <div className="h-screen w-screen bg-gray-100 p-4">
         <Dialog open={isOpen} onOpenChange={setIsOpen} variant={args.variant}>
@@ -3474,144 +3974,50 @@ export const FullScreen: Story = {
             <Button>Open Full-Screen Dialog</Button>
           </DialogTrigger>
           <DialogContent>
-            {/*
-              1. The AppBar.Provider creates the scroll container for the Dialog.
-                 It tracks scroll events and provides them to the AppBar component.
-            */}
-            <AppBar.Provider>
-              {/*
-                2. The AppBar replaces the simple DialogHeader. It's configured
-                   to be large, collapsible, and conditionally sticky.
-              */}
-              <AppBar
-                size="md"
-                scrollBehavior="sticky"
-                startAdornment={
-                  <DialogClose asChild>
-                    <IconButton variant="ghost" shape="full">
-                      <X className="h-5 w-5" />
-                    </IconButton>
-                  </DialogClose>
-                }
-                animatedBehavior={["appbar-color"]}
-                animatedColor="background"
-                endAdornments={[
-                  <Button key="save" size={"sm"} variant="secondary">
-                    Save
-                  </Button>,
-                ]}
-              >
-                <Typography variant="h4" className="truncate ">
-                  Create New Event
+            <AppBar
+              size="md"
+              scrollBehavior="conditionally-sticky"
+              startAdornment={
+                <DialogClose asChild>
+                  <IconButton variant="ghost" size={"md"} shape="full">
+                    <X className="h-5 w-5" />
+                  </IconButton>
+                </DialogClose>
+              }
+              animatedBehavior={["shadow"]}
+              appBarColor="card"
+              endAdornments={[
+                <Button key="save" size={"sm"} variant="secondary">
+                  Save
+                </Button>,
+              ]}
+              scrollContainerRef={scrollRef}
+            >
+              <Typography variant="h4" className="truncate font-semibold">
+                Create New Event
+              </Typography>
+            </AppBar>
+
+            <DialogBody
+              ref={scrollRef}
+              className="px-4 pb-8"
+              pullToRefresh={false}
+              onRefresh={simulateRefresh}
+            >
+              <div className="grid gap-6 pt-[70px]">
+                <Input label="Event name" placeholder="Team Sync" />
+                <Input label="Location" placeholder="Conference Room 4" />
+                <Typography variant="p">
+                  Scroll down to see the AppBar animate. You can also pull down
+                  from the top to refresh.
                 </Typography>
-              </AppBar>
-
-              {/*
-                3. The DialogBody contains the main scrollable content.
-                   IMPORTANT: It needs top padding equal to the expanded height of the AppBar
-                   to prevent content from being hidden underneath it initially.
-                   Large row (96px) + Large header content (h2, ~52px) = ~148px.
-              */}
-              <DialogBody className="pt-[100px] px-4 pb-8">
-                <div className="grid gap-6">
-                  <Input label="Event name" placeholder="Team Sync" />
-                  <Input label="Location" placeholder="Conference Room 4" />
-                  <Typography variant="p">
-                    Scroll down to see the AppBar collapse and hide...
-                  </Typography>
-                  <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                  <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                  <Typography variant="p" className="text-center">
-                    End of content.
-                  </Typography>
-                </div>
-              </DialogBody>
-            </AppBar.Provider>
-          </DialogContent>
-        </Dialog>
-      </div>
-    );
-  },
-};
-
-export const Router: Story = {
-  name: "Full-Screen Dialog with AppBar",
-  args: {
-    variant: "fullscreen",
-  },
-  parameters: {
-    viewport: {
-      defaultViewport: "mobile1",
-    },
-    docs: {
-      description: {
-        story:
-          "The fullscreen variant integrated with the collapsible AppBar. The `AppBar.Provider` wraps the content inside the `DialogContent` to manage the scroll state, enabling animations and sticky behavior.",
-      },
-    },
-  },
-  render: (args) => {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-      <div className="h-screen w-screen bg-gray-100 p-4">
-        <Dialog open={isOpen} onOpenChange={setIsOpen} variant={args.variant}>
-          <DialogTrigger asChild>
-            <Button>Open Full-Screen Dialog</Button>
-          </DialogTrigger>
-          <DialogContent>
-            {/*
-              1. The AppBar.Provider creates the scroll container for the Dialog.
-                 It tracks scroll events and provides them to the AppBar component.
-            */}
-            <AppBar.Provider>
-              {/*
-                2. The AppBar replaces the simple DialogHeader. It's configured
-                   to be large, collapsible, and conditionally sticky.
-              */}
-              <AppBar
-                size="md"
-                scrollBehavior="sticky"
-                startAdornment={
-                  <DialogClose asChild>
-                    <IconButton variant="ghost" shape="full">
-                      <X className="h-5 w-5" />
-                    </IconButton>
-                  </DialogClose>
-                }
-                animatedBehavior={["appbar-color"]}
-                animatedColor="background"
-                endAdornments={[
-                  <Button key="save" size={"sm"} variant="secondary">
-                    Save
-                  </Button>,
-                ]}
-              >
-                <Typography variant="h4" className="truncate ">
-                  Create New Event
+                <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
+                <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
+                <Typography variant="p" className="text-center">
+                  End of content.
                 </Typography>
-              </AppBar>
-
-              {/*
-                3. The DialogBody contains the main scrollable content.
-                   IMPORTANT: It needs top padding equal to the expanded height of the AppBar
-                   to prevent content from being hidden underneath it initially.
-                   Large row (96px) + Large header content (h2, ~52px) = ~148px.
-              */}
-              <DialogBody className="pt-[100px] px-4 pb-8">
-                <div className="grid gap-6">
-                  <Input label="Event name" placeholder="Team Sync" />
-                  <Input label="Location" placeholder="Conference Room 4" />
-                  <Typography variant="p">
-                    Scroll down to see the AppBar collapse and hide...
-                  </Typography>
-                  <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                  <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                  <Typography variant="p" className="text-center">
-                    End of content.
-                  </Typography>
-                </div>
-              </DialogBody>
-            </AppBar.Provider>
+              </div>
+            </DialogBody>
           </DialogContent>
         </Dialog>
       </div>
@@ -4396,7 +4802,7 @@ const useElasticAndRefresh = (
       const isScrollingUp = event.deltaY < 0;
       const isScrollingDown = event.deltaY > 0;
       if ((isAtTop && isScrollingUp) || (isAtBottom && isScrollingDown)) {
-        event.preventDefault();
+        event?.preventDefault();
         const currentY = y.get();
         const resistance = Math.abs(currentY) / MAX_OVERSCROLL_DESKTOP;
         const adjustedDelta = event.deltaY * damping * (1 - resistance);
@@ -4436,7 +4842,6 @@ const useElasticAndRefresh = (
       const isPullingDown = deltaY > 0;
       const isPullingUp = deltaY < 0;
       if ((isAtTop && isPullingDown) || (isAtBottom && isPullingUp)) {
-        event.preventDefault();
         isOverscrolling.current = true;
         y.set(deltaY * damping);
       } else {
@@ -4604,7 +5009,7 @@ const ScrollBar = forwardRef<
       )}
       {...props}
     >
-      <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-graphite-border" />
+      <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-graphite-primary/40" />
     </ScrollAreaPrimitive.Scrollbar>
   )
 );
@@ -8222,11 +8627,11 @@ export { Radio, RadioGroup, RadioGroupItem };
 **Storybook Stories (`Radio-group.stories.tsx`)**
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
 import { Radio } from "./index";
-import React, { useState } from "react";
 
 const meta: Meta<typeof Radio> = {
-  title: "Components/RadioGroup",
+  title: "Components/Forms & Inputs/RadioGroup",
   component: Radio,
   tags: ["autodocs"],
   argTypes: {
@@ -10123,7 +10528,7 @@ import useRipple from "use-ripple-hook";
 import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
 
-// --- 1. TYPE DEFINITIONS & CONTEXT ---
+// --- 1. TYPE DEFINITIONS & CONTEXT (UNIFIED) ---
 
 type DesktopVariant = "permanent" | "modal";
 type MobileVariant = "modal" | "push";
@@ -10132,8 +10537,8 @@ type SidebarSide = "left" | "right";
 interface SidebarContextProps {
   // State
   isDesktop: boolean;
-  isCollapsed: boolean;
-  isOpenOnMobile: boolean;
+  isExpanded: boolean;
+  isOpen: boolean;
   activeItem: string;
   // Configuration
   desktopVariant: DesktopVariant;
@@ -10143,11 +10548,11 @@ interface SidebarContextProps {
   indicatorId: string;
   variant: "primary" | "secondary";
   // For Gestures
-  sidebarX: MotionValue<number>; // Now used ONLY for PUSH variant
+  sidebarX: MotionValue<number>;
   expandedWidth: number;
   // Actions
-  toggleCollapse: () => void;
-  setIsOpenOnMobile: (isOpen: boolean) => void;
+  toggle: () => void;
+  onOpenChange: (isOpen: boolean) => void;
   handleItemPress: (itemKey: string) => void;
 }
 
@@ -10164,7 +10569,6 @@ export const useSidebar = () => {
   return context;
 };
 
-// NEW: Context for Nav item styling
 interface SidebarNavContextProps {
   size: "sm" | "md" | "lg";
   shape: "full" | "minimal" | "sharp";
@@ -10176,7 +10580,6 @@ const SidebarNavContext = createContext<SidebarNavContextProps>({
 });
 
 // --- 2. CVA VARIANTS ---
-// NEW: CVA for the container background
 const containerVariants = cva("flex h-full flex-col", {
   variants: {
     variant: {
@@ -10197,9 +10600,9 @@ const primaryActionVariants = cva(
         primary: "bg-graphite-primary text-graphite-primaryForeground",
         secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
       },
-      isCollapsed: {
-        true: "rounded-2xl h-14 w-14",
-        false: "rounded-2xl h-14 px-5",
+      isExpanded: {
+        true: "rounded-2xl h-14 px-5",
+        false: "rounded-2xl h-14 w-14",
       },
     },
     defaultVariants: {
@@ -10217,17 +10620,15 @@ const navItemVariants = cva(
         false:
           "text-graphite-foreground/70 hover:text-graphite-foreground/90 hover:bg-black/5",
       },
-      isCollapsed: {
-        true: "justify-center px-0",
-        false: "justify-start px-5",
+      isExpanded: {
+        true: "justify-start px-5",
+        false: "justify-center px-0",
       },
-      // ADD: Size variants
       size: {
         sm: "h-10 text-sm",
         md: "h-14 text-base",
         lg: "h-16 text-lg",
       },
-      // ADD: Shape variants
       shape: {
         full: "rounded-full",
         minimal: "rounded-lg",
@@ -10236,13 +10637,13 @@ const navItemVariants = cva(
     },
     defaultVariants: {
       isActive: false,
-      isCollapsed: false,
+      isExpanded: false,
       size: "md",
       shape: "full",
     },
   }
 );
-// --- 3. ROOT COMPONENT (LAYOUT & STATE MANAGER) ---
+// --- 3. ROOT COMPONENT (UNIFIED STATE) ---
 
 interface SidebarProps {
   children: [
@@ -10251,12 +10652,12 @@ interface SidebarProps {
   ];
   activeItem: string;
   onItemPress: (itemKey: string) => void;
+  isOpen?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
+  defaultOpen?: boolean;
   desktopVariant?: DesktopVariant;
   mobileVariant?: MobileVariant;
   side?: SidebarSide;
-  isCollapsed?: boolean;
-  onCollapseChange?: (isCollapsed: boolean) => void;
-  defaultCollapsed?: boolean;
   collapsible?: boolean;
 }
 
@@ -10264,12 +10665,12 @@ const SidebarRoot: React.FC<SidebarProps> = ({
   children,
   activeItem,
   onItemPress,
+  isOpen: controlledOpen,
+  onOpenChange,
+  defaultOpen = false, // MODIFIED: Default to closed on mobile
   desktopVariant = "permanent",
   mobileVariant = "modal",
   side = "left",
-  isCollapsed: controlledCollapsed,
-  onCollapseChange,
-  defaultCollapsed = false,
   collapsible = true,
 }) => {
   const [sidebarContainer, mainContent] = React.Children.toArray(children) as [
@@ -10281,23 +10682,19 @@ const SidebarRoot: React.FC<SidebarProps> = ({
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const indicatorId = useId();
 
-  const [uncontrolledCollapsed, setUncontrolledCollapsed] =
-    useState(defaultCollapsed);
-  const isCollapsed =
-    controlledCollapsed !== undefined
-      ? controlledCollapsed
-      : uncontrolledCollapsed;
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const isControlled = controlledOpen !== undefined && onOpenChange;
+  const isOpen = isControlled ? controlledOpen : uncontrolledOpen;
 
-  const [isOpenOnMobile, setIsOpenOnMobile] = useState(false);
+  const handleOpenChange = isControlled ? onOpenChange : setUncontrolledOpen;
 
-  // Motion Values for PUSH variant ONLY
   const expandedWidth = 280;
   const closedX = side === "left" ? -expandedWidth : expandedWidth;
   const sidebarX = useMotionValue(closedX);
 
   useEffect(() => {
-    if (mobileVariant === "push") {
-      const targetX = isOpenOnMobile ? 0 : closedX;
+    if (!isDesktop && mobileVariant === "push") {
+      const targetX = isOpen ? 0 : closedX;
       animate(sidebarX, targetX, {
         type: "spring",
         stiffness: 500,
@@ -10305,42 +10702,37 @@ const SidebarRoot: React.FC<SidebarProps> = ({
         mass: 1,
       });
     }
-  }, [isOpenOnMobile, closedX, sidebarX, mobileVariant]);
+  }, [isOpen, isDesktop, closedX, sidebarX, mobileVariant]);
 
   const pushX = useTransform(sidebarX, (latestX) => {
-    if (mobileVariant !== "push") return 0;
+    if (isDesktop || mobileVariant !== "push") return 0;
     if (side === "left") return latestX + expandedWidth;
     return latestX - expandedWidth;
   });
 
-  const toggleCollapse = useCallback(() => {
-    if (!collapsible) return;
-    const nextCollapsed = !isCollapsed;
-    if (onCollapseChange) {
-      onCollapseChange(nextCollapsed);
-    } else {
-      setUncontrolledCollapsed(nextCollapsed);
+  const toggle = useCallback(() => {
+    if (collapsible) {
+      handleOpenChange(!isOpen);
     }
-  }, [collapsible, isCollapsed, onCollapseChange]);
+  }, [collapsible, isOpen, handleOpenChange]);
 
-  // OPTIMIZATION: Memoize handler to prevent re-renders in children
   const handleItemPress = useCallback(
     (itemKey: string) => {
       onItemPress(itemKey);
       if (!isDesktop) {
         setTimeout(() => {
-          setIsOpenOnMobile(false);
+          handleOpenChange(false);
         }, 100);
       }
     },
-    [isDesktop, onItemPress]
+    [isDesktop, onItemPress, handleOpenChange]
   );
 
   const contextValue = useMemo(
     () => ({
       isDesktop,
-      isCollapsed: isDesktop ? isCollapsed : false,
-      isOpenOnMobile,
+      isExpanded: isDesktop ? isOpen : true,
+      isOpen,
       activeItem,
       desktopVariant,
       mobileVariant,
@@ -10350,14 +10742,13 @@ const SidebarRoot: React.FC<SidebarProps> = ({
       sidebarX,
       expandedWidth,
       variant: containerVariant,
-      toggleCollapse,
-      setIsOpenOnMobile,
+      toggle,
+      onOpenChange: handleOpenChange,
       handleItemPress,
     }),
     [
       isDesktop,
-      isCollapsed,
-      isOpenOnMobile,
+      isOpen,
       activeItem,
       desktopVariant,
       mobileVariant,
@@ -10367,19 +10758,19 @@ const SidebarRoot: React.FC<SidebarProps> = ({
       sidebarX,
       expandedWidth,
       containerVariant,
-      toggleCollapse,
+      toggle,
+      handleOpenChange,
       handleItemPress,
     ]
   );
 
   const collapsedWidth = 80;
-  const sidebarWidth = isCollapsed ? collapsedWidth : expandedWidth;
+  const sidebarWidth = isOpen ? expandedWidth : collapsedWidth;
 
   return (
     <SidebarContext.Provider value={contextValue}>
       <div className="relative h-screen w-full bg-graphite-background overflow-hidden">
         {isDesktop ? (
-          // --- Desktop Layout ---
           <div
             className={clsx(
               "flex h-full",
@@ -10388,7 +10779,6 @@ const SidebarRoot: React.FC<SidebarProps> = ({
           >
             {desktopVariant === "permanent" && (
               <motion.div
-                // OPTIMIZATION: Promote to its own layer for smoother width animation
                 style={{ transform: "translateZ(0)" }}
                 animate={{ width: sidebarWidth }}
                 transition={{ type: "spring", stiffness: 400, damping: 40 }}
@@ -10399,27 +10789,25 @@ const SidebarRoot: React.FC<SidebarProps> = ({
             {mainContent}
           </div>
         ) : (
-          // --- Mobile Layout ---
           <>
             <AnimatePresence>
-              {isOpenOnMobile && mobileVariant === "modal" && (
+              {isOpen && mobileVariant === "modal" && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
                   className="fixed inset-0 z-40 bg-black/40"
-                  onClick={() => setIsOpenOnMobile(false)}
+                  onClick={() => handleOpenChange(false)}
                 />
               )}
             </AnimatePresence>
             <AnimatePresence>
-              {isOpenOnMobile && mobileVariant === "modal" && sidebarContainer}
+              {isOpen && mobileVariant === "modal" && sidebarContainer}
             </AnimatePresence>
             {mobileVariant === "push" && sidebarContainer}
             <motion.div
               className="h-full"
-              // OPTIMIZATION: Promote to its own layer for smoother push animation
               style={{ x: pushX, transform: "translateZ(0)" }}
             >
               {mainContent}
@@ -10434,7 +10822,6 @@ SidebarRoot.displayName = "Sidebar";
 
 // --- 4. SUB-COMPONENTS ---
 
-// --- SidebarContainer ---
 interface SidebarContainerProps {
   children: React.ReactNode;
   className?: string;
@@ -10447,7 +10834,7 @@ const SidebarContainer = React.memo(
         side,
         isDesktop,
         mobileVariant,
-        setIsOpenOnMobile,
+        onOpenChange,
         sidebarX,
         expandedWidth,
       } = useSidebar();
@@ -10480,7 +10867,7 @@ const SidebarContainer = React.memo(
               type: "spring",
               stiffness: 500,
               damping: 50,
-              onComplete: () => setIsOpenOnMobile(false),
+              onComplete: () => onOpenChange(false),
             });
           } else {
             animate(modalDragX, 0, {
@@ -10497,7 +10884,7 @@ const SidebarContainer = React.memo(
             key="sidebar-modal"
             drag="x"
             onDragEnd={handleModalDragEnd}
-            style={{ x: modalDragX, transform: "translateZ(0)" }} // OPTIMIZATION
+            style={{ x: modalDragX, transform: "translateZ(0)" }}
             dragConstraints={{
               left: side === "left" ? -expandedWidth : 0,
               right: side === "left" ? 0 : expandedWidth,
@@ -10520,7 +10907,6 @@ const SidebarContainer = React.memo(
         );
       }
 
-      // --- RENDER LOGIC FOR 'PUSH' VARIANT ---
       const handlePushDragEnd = (e: MouseEvent | TouchEvent, info: PanInfo) => {
         const closedX = side === "left" ? -expandedWidth : expandedWidth;
         const isClosing =
@@ -10533,14 +10919,14 @@ const SidebarContainer = React.memo(
             type: "spring",
             stiffness: 500,
             damping: 50,
-            onComplete: () => setIsOpenOnMobile(false),
+            onComplete: () => onOpenChange(false),
           });
         } else {
           animate(sidebarX, 0, {
             type: "spring",
             stiffness: 500,
             damping: 50,
-            onComplete: () => setIsOpenOnMobile(true),
+            onComplete: () => onOpenChange(true),
           });
         }
       };
@@ -10556,7 +10942,7 @@ const SidebarContainer = React.memo(
             right: side === "left" ? 0 : expandedWidth,
           }}
           dragElastic={{ left: 0.1, right: 0.1 }}
-          style={{ x: sidebarX, transform: "translateZ(0)" }} // OPTIMIZATION
+          style={{ x: sidebarX, transform: "translateZ(0)" }}
           className={clsx(
             containerVariants({ variant }),
             "fixed top-0 bottom-0 z-50 flex h-full flex-col",
@@ -10573,26 +10959,17 @@ const SidebarContainer = React.memo(
 );
 SidebarContainer.displayName = "Sidebar.Container";
 
+// MODIFIED: SidebarHeader is now a simple slot
 const SidebarHeader = React.memo(
-  (props: React.HTMLAttributes<HTMLDivElement>) => {
-    const { isDesktop, collapsible, toggleCollapse, side } = useSidebar();
-    return (
-      <div
-        className={clsx(
-          "flex h-16 flex-shrink-0 items-center px-4",
-          side === "right" && "flex-row-reverse",
-          props.className
-        )}
-        {...props}
-      >
-        {isDesktop && collapsible && (
-          <IconButton variant="ghost" size="sm" onClick={toggleCollapse}>
-            <Menu />
-          </IconButton>
-        )}
-      </div>
-    );
-  }
+  (props: React.HTMLAttributes<HTMLDivElement>) => (
+    <div
+      className={clsx(
+        "flex h-16 flex-shrink-0 items-center px-4",
+        props.className
+      )}
+      {...props}
+    />
+  )
 );
 SidebarHeader.displayName = "Sidebar.Header";
 
@@ -10604,7 +10981,7 @@ interface PrimaryActionProps
 const SidebarPrimaryAction = React.memo(
   React.forwardRef<HTMLButtonElement, PrimaryActionProps>(
     ({ children, icon, variant = "secondary", className, ...props }, ref) => {
-      const { isCollapsed } = useSidebar();
+      const { isExpanded } = useSidebar();
       return (
         <div className="px-3 py-2">
           <motion.button
@@ -10613,7 +10990,7 @@ const SidebarPrimaryAction = React.memo(
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
             className={primaryActionVariants({
               variant,
-              isCollapsed,
+              isExpanded,
               className,
             })}
             {...props}
@@ -10622,7 +10999,7 @@ const SidebarPrimaryAction = React.memo(
               {icon}
             </motion.span>
             <AnimatePresence>
-              {!isCollapsed && (
+              {isExpanded && (
                 <motion.div
                   initial={{ opacity: 0, width: 0 }}
                   animate={{
@@ -10695,7 +11072,7 @@ const SidebarItem = React.memo(
       },
       ref
     ) => {
-      const { activeItem, handleItemPress, isCollapsed, indicatorId, variant } =
+      const { activeItem, handleItemPress, isExpanded, indicatorId, variant } =
         useSidebar();
       const { size: contextSize, shape: contextShape } =
         useContext(SidebarNavContext);
@@ -10704,13 +11081,11 @@ const SidebarItem = React.memo(
       const size = propSize || contextSize;
       const shape = propShape || contextShape;
 
-      // --- THIS IS THE FIX ---
       const shapeToBorderRadius = {
         full: 9999,
-        minimal: "0.5rem", // Corresponds to rounded-lg
+        minimal: "0.5rem",
         sharp: 0,
       };
-      // --- END FIX ---
 
       const localRef = React.useRef<HTMLButtonElement>(null);
       React.useImperativeHandle(
@@ -10737,7 +11112,7 @@ const SidebarItem = React.memo(
           onClick={() => handleItemPress(itemKey)}
           className={navItemVariants({
             isActive,
-            isCollapsed,
+            isExpanded,
             size,
             shape,
             className,
@@ -10754,7 +11129,7 @@ const SidebarItem = React.memo(
           )}
           <div className="relative z-10 flex-shrink-0">{icon}</div>
           <AnimatePresence initial={false}>
-            {!isCollapsed && (
+            {isExpanded && (
               <motion.div
                 initial={{ opacity: 0, width: 0 }}
                 animate={{
@@ -10775,7 +11150,7 @@ const SidebarItem = React.memo(
               </motion.div>
             )}
           </AnimatePresence>
-          {!isCollapsed && endAdornment && (
+          {isExpanded && endAdornment && (
             <div className="relative z-10 ml-auto flex-shrink-0">
               {endAdornment}
             </div>
@@ -10809,10 +11184,10 @@ SidebarSeparator.displayName = "Sidebar.Separator";
 
 const SidebarSectionHeader = React.memo(
   (props: React.HTMLAttributes<HTMLDivElement>) => {
-    const { isCollapsed } = useSidebar();
+    const { isExpanded } = useSidebar();
     return (
       <AnimatePresence>
-        {!isCollapsed && (
+        {isExpanded && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -10835,37 +11210,19 @@ const SidebarSectionHeader = React.memo(
 );
 SidebarSectionHeader.displayName = "Sidebar.SectionHeader";
 
-const SidebarTrigger = React.memo(
-  React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof IconButton>>(
-    (props, ref) => {
-      const { isDesktop, setIsOpenOnMobile } = useSidebar();
-      if (isDesktop) return null;
-      return (
-        <IconButton
-          ref={ref}
-          onClick={() => setIsOpenOnMobile(true)}
-          {...props}
-        />
-      );
-    }
-  )
-);
-SidebarTrigger.displayName = "Sidebar.Trigger";
-
 const SidebarDragHandle = React.memo(() => {
   const {
     isDesktop,
-    isOpenOnMobile,
-    setIsOpenOnMobile,
+    isOpen,
+    onOpenChange,
     side,
     sidebarX,
     expandedWidth,
     mobileVariant,
   } = useSidebar();
 
-  if (isDesktop || isOpenOnMobile) return null;
+  if (isDesktop || isOpen) return null;
 
-  // --- RENDER LOGIC FOR 'MODAL' VARIANT ---
   if (mobileVariant === "modal") {
     const handleModalDragEnd = (
       event: MouseEvent | TouchEvent,
@@ -10876,13 +11233,13 @@ const SidebarDragHandle = React.memo(() => {
         (side === "right" && (info.offset.x < -50 || info.velocity.x < -500));
 
       if (isOpening) {
-        setIsOpenOnMobile(true);
+        onOpenChange(true);
       }
     };
     return (
       <motion.div
         className={clsx(
-          "fixed top-0 bottom-0 z-30 w-8",
+          "fixed top-0 bottom-0 z-[1000] w-8",
           side === "left" ? "left-0" : "right-0"
         )}
         drag="x"
@@ -10893,7 +11250,6 @@ const SidebarDragHandle = React.memo(() => {
     );
   }
 
-  // --- RENDER LOGIC FOR 'PUSH' VARIANT ---
   const handlePushDragEnd = (event: MouseEvent | TouchEvent, info: PanInfo) => {
     const isOpening =
       (side === "left" && (info.offset.x > 50 || info.velocity.x > 500)) ||
@@ -10904,7 +11260,7 @@ const SidebarDragHandle = React.memo(() => {
         type: "spring",
         stiffness: 500,
         damping: 50,
-        onComplete: () => setIsOpenOnMobile(true),
+        onComplete: () => onOpenChange(true),
       });
     } else {
       const closedX = side === "left" ? -expandedWidth : expandedWidth;
@@ -10912,7 +11268,7 @@ const SidebarDragHandle = React.memo(() => {
         type: "spring",
         stiffness: 500,
         damping: 50,
-        onComplete: () => setIsOpenOnMobile(false),
+        onComplete: () => onOpenChange(false),
       });
     }
   };
@@ -10920,7 +11276,7 @@ const SidebarDragHandle = React.memo(() => {
   return (
     <motion.div
       className={clsx(
-        "fixed top-0 bottom-0 z-30 w-8",
+        "fixed top-0 bottom-0 z-30 w-12",
         side === "left" ? "left-0" : "right-0"
       )}
       drag="x"
@@ -10944,7 +11300,6 @@ const SidebarDragHandle = React.memo(() => {
 });
 SidebarDragHandle.displayName = "Sidebar.DragHandle";
 
-// --- MODIFIED: Ensure SidebarContentProps is defined ---
 interface SidebarContentProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 const SidebarContent = React.memo(
@@ -10971,7 +11326,6 @@ export const Sidebar = Object.assign(SidebarRoot, {
   Footer: SidebarFooter,
   Separator: SidebarSeparator,
   SectionHeader: SidebarSectionHeader,
-  Trigger: SidebarTrigger,
   DragHandle: SidebarDragHandle,
   Content: SidebarContent,
 });
@@ -10997,10 +11351,11 @@ import React, { useRef, useState } from "react";
 import { AppBar } from "../appbar";
 import { Badge } from "../badge";
 import { ElasticScrollArea } from "../elastic-scroll-area";
+import { IconButton } from "../icon-button";
 import { Input } from "../input";
 import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
-import { Sidebar } from "./index";
+import { Sidebar, useSidebar } from "./index";
 
 const meta: Meta<typeof Sidebar> = {
   title: "Components/Navigators/Sidebar",
@@ -11035,12 +11390,14 @@ const meta: Meta<typeof Sidebar> = {
       control: "boolean",
       description: "Whether the sidebar can be collapsed on desktop.",
     },
-    defaultCollapsed: {
+    defaultOpen: {
       control: "boolean",
-      description: "Initial collapsed state (uncontrolled).",
+      description: "Initial open state for uncontrolled components.",
     },
     activeItem: { control: false },
     onItemPress: { action: "itemPressed" },
+    isOpen: { control: false },
+    onOpenChange: { action: "openChange" },
   },
 };
 
@@ -11064,9 +11421,23 @@ const labelItems = [
   { key: "urgent", label: "Urgent" },
 ];
 
+const CustomSidebarHeader = () => {
+  const { isDesktop, collapsible, toggle, side } = useSidebar();
+  return (
+    <Sidebar.Header className={side === "right" ? "flex-row-reverse" : ""}>
+      {isDesktop && collapsible && (
+        <IconButton variant="ghost" size="sm" onClick={toggle}>
+          <Menu />
+        </IconButton>
+      )}
+      {/* You can add a logo or title here */}
+    </Sidebar.Header>
+  );
+};
+
 const SidebarContents = () => (
   <>
-    <Sidebar.Header />
+    <CustomSidebarHeader />
     <Sidebar.PrimaryAction icon={<Pencil size={24} />}>
       Compose
     </Sidebar.PrimaryAction>
@@ -11110,8 +11481,9 @@ const SidebarContents = () => (
   </>
 );
 
-const MainContent = () => {
+const MainContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { path } = useRouter();
+  const { isDesktop } = useSidebar();
   const item =
     [...navItems, ...labelItems].find((i) => i.key === path.substring(1)) ||
     navItems[0];
@@ -11119,9 +11491,15 @@ const MainContent = () => {
   return (
     <div className="p-6">
       <Sidebar.DragHandle />
-      <Sidebar.Trigger variant="primary" aria-label="Open Menu">
-        <Menu />
-      </Sidebar.Trigger>
+      {!isDesktop && (
+        <IconButton
+          variant="primary"
+          aria-label="Open Menu"
+          onClick={onMenuClick}
+        >
+          <Menu />
+        </IconButton>
+      )}
       <Typography variant="h1" className="mt-4 capitalize">
         {item?.label || "Inbox"}
       </Typography>
@@ -11135,18 +11513,21 @@ const MainContent = () => {
 const RenderWithRouter = (args: any) => {
   const { path, push } = useRouter();
   const activeItem = path === "/" ? "inbox" : path.substring(1);
+  const [isOpen, setIsOpen] = useState(args.defaultOpen);
 
   return (
     <Sidebar
       {...args}
       activeItem={activeItem}
       onItemPress={(key) => push(`/${key}`)}
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
     >
       <Sidebar.Container>
         <SidebarContents />
       </Sidebar.Container>
       <Sidebar.Content>
-        <MainContent />
+        <MainContent onMenuClick={() => setIsOpen(!isOpen)} />
       </Sidebar.Content>
     </Sidebar>
   );
@@ -11154,12 +11535,12 @@ const RenderWithRouter = (args: any) => {
 
 // --- STORIES ---
 
-export const DesktopPermanent: Story = {
-  name: "1. Desktop (Permanent & Collapsible)",
+export const DesktopExpanded: Story = {
+  name: "1. Desktop (Expanded & Collapsible)",
   args: {
     desktopVariant: "permanent",
     collapsible: true,
-    defaultCollapsed: false,
+    defaultOpen: true,
   },
   render: (args) => (
     <ShallowRouter>
@@ -11171,8 +11552,8 @@ export const DesktopPermanent: Story = {
 export const DesktopCollapsed: Story = {
   name: "2. Desktop (Collapsed by Default)",
   args: {
-    ...DesktopPermanent.args,
-    defaultCollapsed: true,
+    ...DesktopExpanded.args,
+    defaultOpen: false,
   },
   render: (args) => (
     <ShallowRouter>
@@ -11186,6 +11567,7 @@ export const MobileModal: Story = {
   args: {
     mobileVariant: "modal",
     side: "left",
+    defaultOpen: false,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
@@ -11202,6 +11584,7 @@ export const MobilePush: Story = {
   args: {
     mobileVariant: "push",
     side: "left",
+    defaultOpen: false,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
@@ -11222,7 +11605,7 @@ export const MobilePush: Story = {
 export const RightSide: Story = {
   name: "5. Right Side Variant",
   args: {
-    ...DesktopPermanent.args,
+    ...DesktopExpanded.args,
     side: "right",
   },
   parameters: {
@@ -11241,28 +11624,24 @@ export const RightSide: Story = {
 };
 
 export const ControlledState: Story = {
-  name: "6. Controlled Collapse State",
+  name: "6. Controlled State",
   args: {
-    ...DesktopPermanent.args,
+    ...DesktopExpanded.args,
   },
   render: function Render(args) {
-    const [isCollapsed, setIsCollapsed] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     return (
       <ShallowRouter>
         <div className="absolute top-4 right-4 z-10">
           <button
             type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => setIsOpen(!isOpen)}
             className="px-4 py-2 bg-blue-500 text-white rounded-full"
           >
-            Toggle Collapse
+            Toggle Sidebar
           </button>
         </div>
-        <RenderWithRouter
-          {...args}
-          isCollapsed={isCollapsed}
-          onCollapseChange={setIsCollapsed}
-        />
+        <RenderWithRouter {...args} isOpen={isOpen} onOpenChange={setIsOpen} />
       </ShallowRouter>
     );
   },
@@ -11277,8 +11656,8 @@ const shortNavItems = [
 export const ItemVariants: Story = {
   name: "7. Item Variants (Size & Shape)",
   args: {
-    ...DesktopPermanent.args,
-    defaultCollapsed: false,
+    ...DesktopExpanded.args,
+    defaultOpen: true,
   },
   parameters: {
     docs: {
@@ -11290,9 +11669,15 @@ export const ItemVariants: Story = {
   },
   render: (args) => (
     <ShallowRouter>
-      <Sidebar {...args} activeItem="inbox" onItemPress={() => {}}>
+      <Sidebar
+        {...args}
+        activeItem="inbox"
+        onItemPress={() => {}}
+        isOpen={args.isOpen}
+        onOpenChange={args.onOpenChange}
+      >
         <Sidebar.Container>
-          <Sidebar.Header />
+          <CustomSidebarHeader />
           <Sidebar.SectionHeader>Small, Minimal</Sidebar.SectionHeader>
           <Sidebar.Nav size="sm" shape="minimal">
             {shortNavItems.map((item) => (
@@ -11312,7 +11697,7 @@ export const ItemVariants: Story = {
             <Sidebar.Item
               itemKey="override"
               icon={<Archive size={20} />}
-              shape="full" // This overrides the parent Nav's "sharp" shape
+              shape="full"
             >
               Override
             </Sidebar.Item>
@@ -11332,9 +11717,7 @@ export const ItemVariants: Story = {
   ),
 };
 
-// --- NEW STORY ---
-
-const AppLayoutContent = () => {
+const AppLayoutContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { path } = useRouter();
   const item =
@@ -11353,9 +11736,13 @@ const AppLayoutContent = () => {
         animatedBehavior={["shadow"]}
         scrollContainerRef={scrollRef}
         startAdornment={
-          <Sidebar.Trigger variant="ghost" aria-label="Open Menu">
+          <IconButton
+            variant="ghost"
+            aria-label="Toggle Menu"
+            onClick={onMenuClick}
+          >
             <Menu />
-          </Sidebar.Trigger>
+          </IconButton>
         }
         children={
           <Typography variant="h4" className="truncate font-bold">
@@ -11371,6 +11758,8 @@ const AppLayoutContent = () => {
           />
         }
       />
+      <Sidebar.DragHandle />
+
       <ElasticScrollArea ref={scrollRef} className="flex-1">
         <main className="p-6 ">
           <Typography variant="h3" className="mb-4 pt-[100px]">
@@ -11397,22 +11786,24 @@ const AppLayoutContent = () => {
   );
 };
 
-// This is the new wrapper component that can safely call the useRouter hook.
 const FullAppLayoutRenderer = (args: any) => {
   const { path, push } = useRouter();
   const activeItem = path === "/" ? "inbox" : path.substring(1);
+  const [isOpen, setIsOpen] = useState(args.defaultOpen ?? true);
 
   return (
     <Sidebar
       {...args}
       activeItem={activeItem}
       onItemPress={(key) => push(`/${key}`)}
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
     >
       <Sidebar.Container>
         <SidebarContents />
       </Sidebar.Container>
       <Sidebar.Content>
-        <AppLayoutContent />
+        <AppLayoutContent onMenuClick={() => setIsOpen(!isOpen)} />
       </Sidebar.Content>
     </Sidebar>
   );
@@ -11421,7 +11812,7 @@ const FullAppLayoutRenderer = (args: any) => {
 export const FullAppLayout: Story = {
   name: "8. Full App Layout",
   args: {
-    ...DesktopPermanent.args,
+    ...DesktopExpanded.args,
     mobileVariant: "push",
   },
   parameters: {
@@ -11432,7 +11823,6 @@ export const FullAppLayout: Story = {
       },
     },
   },
-  // The render function now correctly wraps the logic component with the provider.
   render: (args) => (
     <ShallowRouter>
       <FullAppLayoutRenderer {...args} />
@@ -11689,7 +12079,7 @@ import { useState } from "react";
 import { Switch } from "./index";
 
 const meta: Meta<typeof Switch> = {
-  title: "Components/Switch",
+  title: "Components/Forms & Inputs/Switch",
   component: Switch,
   tags: ["autodocs"],
   argTypes: {

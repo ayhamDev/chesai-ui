@@ -22,6 +22,8 @@ export interface ScreenProps {
   label: React.ReactNode;
   /** A function that returns the icon element, receiving active state. */
   icon: (props: { isActive: boolean }) => React.ReactNode;
+  /** Overrides the shape of this specific tab item, indicator, and ripple effect. */
+  shape?: "full" | "minimal" | "sharp";
 }
 
 interface BottomTabsContextProps {
@@ -29,6 +31,8 @@ interface BottomTabsContextProps {
   onTabPress: (name: string) => void;
   itemLayout: "stacked" | "inline";
   mode: "attached" | "detached";
+  /** The shape inherited from the parent navigator, used as a fallback. */
+  navigatorShape: "full" | "minimal" | "sharp";
   indicatorId: string;
 }
 
@@ -49,18 +53,17 @@ const navigatorVariants = cva("w-full bg-graphite-card", {
   variants: {
     mode: {
       attached: "",
-      detached: "", // Removed hardcoded shadow
+      detached: "p-2",
     },
     shape: {
-      full: "rounded-full",
-      minimal: "rounded-xl",
+      full: "",
+      minimal: "",
       sharp: "rounded-none",
     },
     bordered: {
       true: "border-t border-graphite-border",
       false: "",
     },
-    // --- NEW: Shadow variants ---
     shadow: {
       none: "shadow-none",
       sm: "shadow-sm",
@@ -68,6 +71,12 @@ const navigatorVariants = cva("w-full bg-graphite-card", {
       lg: "shadow-lg",
     },
   },
+  compoundVariants: [
+    { mode: "detached", shape: "full", className: "rounded-full" },
+    { mode: "detached", shape: "minimal", className: "rounded-xl" },
+    { mode: "attached", shape: "full", className: "rounded-t-3xl" },
+    { mode: "attached", shape: "minimal", className: "rounded-t-xl" },
+  ],
 });
 
 // --- SCREEN COMPONENT (CONFIG ONLY) ---
@@ -84,10 +93,13 @@ interface TabItemProps {
 }
 
 const TabItem: React.FC<TabItemProps> = ({ screen }) => {
-  const { name, label, icon } = screen;
-  const { activeTab, onTabPress, itemLayout, mode, indicatorId } =
+  const { name, label, icon, shape: itemShape } = screen;
+  const { activeTab, onTabPress, itemLayout, indicatorId, navigatorShape } =
     useBottomTabs();
   const isActive = activeTab === name;
+
+  // If the item has its own shape, use it; otherwise, fall back to the navigator's shape.
+  const finalShape = itemShape || navigatorShape;
 
   const localRef = useRef<HTMLButtonElement>(null);
   const [, event] = useRipple({
@@ -97,6 +109,18 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   });
 
   const isHorizontal = itemLayout === "inline" && isActive;
+
+  const shapeToBorderRadius = {
+    full: 9999,
+    minimal: 12, // Corresponds to rounded-xl
+    sharp: 0,
+  };
+
+  const shapeToClassName = {
+    full: "rounded-full",
+    minimal: "rounded-lg",
+    sharp: "rounded-none",
+  };
 
   return (
     <li className="flex-1">
@@ -113,14 +137,15 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
           isActive
             ? "text-graphite-primary font-semibold"
             : "text-graphite-foreground/70",
-          mode === "detached" ? "rounded-full" : "rounded-lg"
+          shapeToClassName[finalShape] // Apply dynamic shape class for ripple
         )}
       >
         {isActive && (
           <motion.div
             layoutId={indicatorId}
             className="absolute inset-0 z-0 bg-graphite-secondary"
-            style={{ borderRadius: 9999 }}
+            // Apply dynamic border radius for indicator
+            style={{ borderRadius: shapeToBorderRadius[finalShape] }}
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
           />
         )}
@@ -176,7 +201,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   itemLayout = "stacked",
   shape = "full",
   bordered = true,
-  shadow = "lg", // Default shadow for detached mode
+  shadow = "lg",
   className,
   ...props
 }) => {
@@ -194,20 +219,25 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   );
 
   const contextValue = useMemo(
-    () => ({ activeTab, onTabPress, itemLayout, mode, indicatorId }),
-    [activeTab, onTabPress, itemLayout, mode, indicatorId]
+    () => ({
+      activeTab,
+      onTabPress,
+      itemLayout,
+      mode,
+      navigatorShape: shape,
+      indicatorId,
+    }),
+    [activeTab, onTabPress, itemLayout, mode, shape, indicatorId]
   );
 
   return (
     <BottomTabsContext.Provider value={contextValue}>
       <nav
         className={clsx(
-          mode === "detached" && "p-2",
           navigatorVariants({
             mode,
-            shape: mode === "detached" ? shape : undefined,
+            shape,
             bordered: mode === "attached" ? bordered : false,
-            // --- MODIFICATION: Conditionally apply shadow ---
             shadow: mode === "detached" ? shadow : undefined,
             className,
           })

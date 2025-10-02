@@ -16,10 +16,11 @@ import React, { useRef, useState } from "react";
 import { AppBar } from "../appbar";
 import { Badge } from "../badge";
 import { ElasticScrollArea } from "../elastic-scroll-area";
+import { IconButton } from "../icon-button";
 import { Input } from "../input";
 import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
-import { Sidebar } from "./index";
+import { Sidebar, useSidebar } from "./index";
 
 const meta: Meta<typeof Sidebar> = {
   title: "Components/Navigators/Sidebar",
@@ -54,12 +55,14 @@ const meta: Meta<typeof Sidebar> = {
       control: "boolean",
       description: "Whether the sidebar can be collapsed on desktop.",
     },
-    defaultCollapsed: {
+    defaultOpen: {
       control: "boolean",
-      description: "Initial collapsed state (uncontrolled).",
+      description: "Initial open state for uncontrolled components.",
     },
     activeItem: { control: false },
     onItemPress: { action: "itemPressed" },
+    isOpen: { control: false },
+    onOpenChange: { action: "openChange" },
   },
 };
 
@@ -83,9 +86,23 @@ const labelItems = [
   { key: "urgent", label: "Urgent" },
 ];
 
+const CustomSidebarHeader = () => {
+  const { isDesktop, collapsible, toggle, side } = useSidebar();
+  return (
+    <Sidebar.Header className={side === "right" ? "flex-row-reverse" : ""}>
+      {isDesktop && collapsible && (
+        <IconButton variant="ghost" size="sm" onClick={toggle}>
+          <Menu />
+        </IconButton>
+      )}
+      {/* You can add a logo or title here */}
+    </Sidebar.Header>
+  );
+};
+
 const SidebarContents = () => (
   <>
-    <Sidebar.Header />
+    <CustomSidebarHeader />
     <Sidebar.PrimaryAction icon={<Pencil size={24} />}>
       Compose
     </Sidebar.PrimaryAction>
@@ -129,8 +146,9 @@ const SidebarContents = () => (
   </>
 );
 
-const MainContent = () => {
+const MainContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const { path } = useRouter();
+  const { isDesktop } = useSidebar();
   const item =
     [...navItems, ...labelItems].find((i) => i.key === path.substring(1)) ||
     navItems[0];
@@ -138,9 +156,15 @@ const MainContent = () => {
   return (
     <div className="p-6">
       <Sidebar.DragHandle />
-      <Sidebar.Trigger variant="primary" aria-label="Open Menu">
-        <Menu />
-      </Sidebar.Trigger>
+      {!isDesktop && (
+        <IconButton
+          variant="primary"
+          aria-label="Open Menu"
+          onClick={onMenuClick}
+        >
+          <Menu />
+        </IconButton>
+      )}
       <Typography variant="h1" className="mt-4 capitalize">
         {item?.label || "Inbox"}
       </Typography>
@@ -154,18 +178,21 @@ const MainContent = () => {
 const RenderWithRouter = (args: any) => {
   const { path, push } = useRouter();
   const activeItem = path === "/" ? "inbox" : path.substring(1);
+  const [isOpen, setIsOpen] = useState(args.defaultOpen);
 
   return (
     <Sidebar
       {...args}
       activeItem={activeItem}
       onItemPress={(key) => push(`/${key}`)}
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
     >
       <Sidebar.Container>
         <SidebarContents />
       </Sidebar.Container>
       <Sidebar.Content>
-        <MainContent />
+        <MainContent onMenuClick={() => setIsOpen(!isOpen)} />
       </Sidebar.Content>
     </Sidebar>
   );
@@ -173,12 +200,12 @@ const RenderWithRouter = (args: any) => {
 
 // --- STORIES ---
 
-export const DesktopPermanent: Story = {
-  name: "1. Desktop (Permanent & Collapsible)",
+export const DesktopExpanded: Story = {
+  name: "1. Desktop (Expanded & Collapsible)",
   args: {
     desktopVariant: "permanent",
     collapsible: true,
-    defaultCollapsed: false,
+    defaultOpen: true,
   },
   render: (args) => (
     <ShallowRouter>
@@ -190,8 +217,8 @@ export const DesktopPermanent: Story = {
 export const DesktopCollapsed: Story = {
   name: "2. Desktop (Collapsed by Default)",
   args: {
-    ...DesktopPermanent.args,
-    defaultCollapsed: true,
+    ...DesktopExpanded.args,
+    defaultOpen: false,
   },
   render: (args) => (
     <ShallowRouter>
@@ -205,6 +232,7 @@ export const MobileModal: Story = {
   args: {
     mobileVariant: "modal",
     side: "left",
+    defaultOpen: false,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
@@ -221,6 +249,7 @@ export const MobilePush: Story = {
   args: {
     mobileVariant: "push",
     side: "left",
+    defaultOpen: false,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
@@ -241,7 +270,7 @@ export const MobilePush: Story = {
 export const RightSide: Story = {
   name: "5. Right Side Variant",
   args: {
-    ...DesktopPermanent.args,
+    ...DesktopExpanded.args,
     side: "right",
   },
   parameters: {
@@ -260,28 +289,24 @@ export const RightSide: Story = {
 };
 
 export const ControlledState: Story = {
-  name: "6. Controlled Collapse State",
+  name: "6. Controlled State",
   args: {
-    ...DesktopPermanent.args,
+    ...DesktopExpanded.args,
   },
   render: function Render(args) {
-    const [isCollapsed, setIsCollapsed] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     return (
       <ShallowRouter>
         <div className="absolute top-4 right-4 z-10">
           <button
             type="button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => setIsOpen(!isOpen)}
             className="px-4 py-2 bg-blue-500 text-white rounded-full"
           >
-            Toggle Collapse
+            Toggle Sidebar
           </button>
         </div>
-        <RenderWithRouter
-          {...args}
-          isCollapsed={isCollapsed}
-          onCollapseChange={setIsCollapsed}
-        />
+        <RenderWithRouter {...args} isOpen={isOpen} onOpenChange={setIsOpen} />
       </ShallowRouter>
     );
   },
@@ -296,8 +321,8 @@ const shortNavItems = [
 export const ItemVariants: Story = {
   name: "7. Item Variants (Size & Shape)",
   args: {
-    ...DesktopPermanent.args,
-    defaultCollapsed: false,
+    ...DesktopExpanded.args,
+    defaultOpen: true,
   },
   parameters: {
     docs: {
@@ -309,9 +334,15 @@ export const ItemVariants: Story = {
   },
   render: (args) => (
     <ShallowRouter>
-      <Sidebar {...args} activeItem="inbox" onItemPress={() => {}}>
+      <Sidebar
+        {...args}
+        activeItem="inbox"
+        onItemPress={() => {}}
+        isOpen={args.isOpen}
+        onOpenChange={args.onOpenChange}
+      >
         <Sidebar.Container>
-          <Sidebar.Header />
+          <CustomSidebarHeader />
           <Sidebar.SectionHeader>Small, Minimal</Sidebar.SectionHeader>
           <Sidebar.Nav size="sm" shape="minimal">
             {shortNavItems.map((item) => (
@@ -331,7 +362,7 @@ export const ItemVariants: Story = {
             <Sidebar.Item
               itemKey="override"
               icon={<Archive size={20} />}
-              shape="full" // This overrides the parent Nav's "sharp" shape
+              shape="full"
             >
               Override
             </Sidebar.Item>
@@ -351,9 +382,7 @@ export const ItemVariants: Story = {
   ),
 };
 
-// --- NEW STORY ---
-
-const AppLayoutContent = () => {
+const AppLayoutContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { path } = useRouter();
   const item =
@@ -372,9 +401,13 @@ const AppLayoutContent = () => {
         animatedBehavior={["shadow"]}
         scrollContainerRef={scrollRef}
         startAdornment={
-          <Sidebar.Trigger variant="ghost" aria-label="Open Menu">
+          <IconButton
+            variant="ghost"
+            aria-label="Toggle Menu"
+            onClick={onMenuClick}
+          >
             <Menu />
-          </Sidebar.Trigger>
+          </IconButton>
         }
         children={
           <Typography variant="h4" className="truncate font-bold">
@@ -390,6 +423,8 @@ const AppLayoutContent = () => {
           />
         }
       />
+      <Sidebar.DragHandle />
+
       <ElasticScrollArea ref={scrollRef} className="flex-1">
         <main className="p-6 ">
           <Typography variant="h3" className="mb-4 pt-[100px]">
@@ -416,22 +451,24 @@ const AppLayoutContent = () => {
   );
 };
 
-// This is the new wrapper component that can safely call the useRouter hook.
 const FullAppLayoutRenderer = (args: any) => {
   const { path, push } = useRouter();
   const activeItem = path === "/" ? "inbox" : path.substring(1);
+  const [isOpen, setIsOpen] = useState(args.defaultOpen ?? true);
 
   return (
     <Sidebar
       {...args}
       activeItem={activeItem}
       onItemPress={(key) => push(`/${key}`)}
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
     >
       <Sidebar.Container>
         <SidebarContents />
       </Sidebar.Container>
       <Sidebar.Content>
-        <AppLayoutContent />
+        <AppLayoutContent onMenuClick={() => setIsOpen(!isOpen)} />
       </Sidebar.Content>
     </Sidebar>
   );
@@ -440,7 +477,7 @@ const FullAppLayoutRenderer = (args: any) => {
 export const FullAppLayout: Story = {
   name: "8. Full App Layout",
   args: {
-    ...DesktopPermanent.args,
+    ...DesktopExpanded.args,
     mobileVariant: "push",
   },
   parameters: {
@@ -451,7 +488,6 @@ export const FullAppLayout: Story = {
       },
     },
   },
-  // The render function now correctly wraps the logic component with the provider.
   render: (args) => (
     <ShallowRouter>
       <FullAppLayoutRenderer {...args} />

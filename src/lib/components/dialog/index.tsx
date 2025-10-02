@@ -124,8 +124,8 @@ const fullscreenDialogVariants: Variants = {
     transition: { duration: 0.35, ease: [0.2, 0.7, 0.1, 1] },
   },
   exit: {
-    y: "100%",
-    opacity: 0.2,
+    y: "50%",
+    opacity: 0,
     transition: { duration: 0.2, ease: [0.2, 0.2, 0.5, 1] },
   },
 };
@@ -264,10 +264,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
                       {children}
                     </motion.div>
                   ) : (
-                    <Card
-                      shape={shape}
-                      className="relative w-full p-8 shadow-2xl"
-                    >
+                    <Card shape={shape} className="relative w-full shadow-2xl">
                       {children}
                     </Card>
                   )}
