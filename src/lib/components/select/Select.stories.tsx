@@ -3,7 +3,7 @@ import { useState } from "react";
 import { SelectInput } from "./index";
 
 const meta: Meta<typeof SelectInput> = {
-  title: "Components/Select",
+  title: "Components/Forms & Inputs/Select",
   component: SelectInput,
   tags: ["autodocs"],
   argTypes: {

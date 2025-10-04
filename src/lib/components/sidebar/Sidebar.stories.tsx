@@ -12,7 +12,7 @@ import {
   Trash2,
   User,
 } from "lucide-react";
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AppBar } from "../appbar";
 import { Badge } from "../badge";
 import { ElasticScrollArea } from "../elastic-scroll-area";

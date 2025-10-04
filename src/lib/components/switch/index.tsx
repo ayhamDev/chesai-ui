@@ -24,29 +24,34 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
             className="sr-only peer"
             {...props}
           />
-          {/* The Track (w-10 = 40px, h-6 = 24px) */}
+          {/* The Track (w-12 = 48px, h-8 = 32px) - UPDATED */}
           <div
             className={clsx(
-              "w-10 h-6 rounded-full transition-colors",
+              "w-13 h-8 rounded-full transition-colors border border-graphite-primary/10", // w-12 h-8 applied
               "bg-graphite-border",
               "peer-checked:bg-graphite-primary",
               "peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-graphite-ring peer-focus:ring-offset-2",
               "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
             )}
           />
-          {/* The Thumb (the circle) */}
+          {/* The Thumb (the circle) - UPDATED */}
           <div
             className={clsx(
               "absolute bg-white rounded-full transition-transform duration-200 ease-in-out shadow-lg",
-              // ============================ THIS IS THE FIX ============================
+              // ============================ UPDATED FIX ============================
+              // New Track Dimensions: w-12 (48px), h-8 (32px)
+
+              // 1. Thumb Size: Make the thumb slightly smaller than the track height (e.g., 28px for 32px track)
               // Using arbitrary values for exact pixel dimensions
-              "h-[17.5px] w-[17.5px]",
-              // Recalculated positioning to perfectly center the 17.5px thumb in the 24px track
-              // (24px - 17.5px) / 2 = 3.25px
-              "top-[3.25px] left-[3.25px]",
-              // Recalculated travel distance:
-              // 40px (track) - 17.5px (thumb) - 6.5px (offsets) = 16px (translate-x-4)
-              "peer-checked:translate-x-4"
+              "h-[26.5px] w-[26.5px]", // 28px x 28px (h-7/w-7 is 1.75rem which is 28px)
+
+              // 2. Initial Position: Center the 28px thumb in the 32px track
+              // (32px (track height) - 28px (thumb size)) / 2 = 2px
+              "top-[2.5px] left-[3px]", // top-0.5/left-0.5 is 2px
+
+              // 3. Travel Distance: Track width (48px) - Thumb size (28px) - 2 * offset (4px) = 16px
+              // 16px is translate-x-4
+              "peer-checked:translate-x-5" // 16px
               // =======================================================================
             )}
           />
