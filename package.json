@@ -18,9 +18,7 @@
     },
     "./styles.css": "./dist/chesai-ui.css"
   },
-  "engines": {
-    "node": ">=22"
-  },
+
   "scripts": {
     "dev": "storybook dev -p 8000",
     "build": "storybook build",

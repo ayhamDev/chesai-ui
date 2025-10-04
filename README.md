@@ -1,46 +1,18 @@
-# ⚛️⚡ Vite + React + Typescript Component Library Template
+# chesai-ui
+
+`chesai-ui` is a modern, accessible, and highly customizable React component library. It is built on a foundation of industry-standard tools including Radix UI for accessibility, Framer Motion for fluid animations, and Tailwind CSS with CVA for flexible styling.
+
+---
 
 ## Features
 
-- ♥️ [Node 22](https://nodejs.org/en/download)
-- ⚛️ [React 19](https://reactjs.org/)
-- 📚 [Storybook 9](https://storybook.js.org/) - Components preview
-- 🖌️ [Tailwind CSS 4](https://tailwindcss.com/)
-- ⏩ [Vite](https://vitejs.dev/) - Run and build the project blazingly fast!
-- ⚡ [Vitest](https://vitest.dev/) - Components Unit Testing
-- 📐 [Biome](https://biomejs.dev/) - Formatting and Linting
-- 🌟 [Typescript](https://www.typescriptlang.org/)
-- 🐶 [Husky](https://typicode.github.io/husky) & [Lint Staged](https://www.npmjs.com/package/lint-staged) - Pre-commit Hooks
-- ⏰ [Release Please](https://github.com/googleapis/release-please) — Generate the changelog with the release-please workflow
-- 👷 [Github Actions](https://github.com/features/actions) — Releasing versions to NPM
-- Initial components setup using [Atomic Design](https://bradfrost.com/blog/post/atomic-web-design/)
+- **Accessible by Default**: Leverages Radix UI primitives to ensure components are accessible out-of-the-box, following WAI-ARIA standards.
+- **Beautifully Animated**: Utilizes Framer Motion to provide smooth, physics-based animations that enhance user experience.
+- **Highly Customizable**: Built with Tailwind CSS and Class Variance Authority (CVA), allowing for deep customization and easy integration with your existing design system.
+- **Comprehensive Component Set**: Includes a wide range of components, from basic buttons and inputs to complex, responsive navigation elements like `Sidebar` and `AppBar`.
+- **TypeScript Support**: Fully typed to provide a great developer experience with autocompletion and type safety.
+- **Developer-Friendly**: Components are designed to be composable and easy to use, with a consistent and predictable API.
 
-## Getting Started
+## Live Demo
 
-1. Create a new repository using this one as template
-2. Clone your repo
-3. Install dependencies with `pnpm i` (first run `corepack enable` to enable pnpm)
-
-## Main Scripts
-
-Always prepending pnpm:
-
-- `dev`: Bootstrap the Storybook preview with Hot Reload.
-- `build`: Builds the static storybook project.
-- `build:lib`: Builds the component library into the **dist** folder.
-- `lint`: Applies linting based on the rules defined in **biome.json**.
-- `format`: Formats files using the biome rules defined in **biome.json**.
-- `test`: Runs testing using watch mode.
-- `test:cov`: Runs testing displaying a coverage report.
-
-## Blog Post
-
-I created a post explaning how to set up this library and publish it to a package registry! You can read it [here](https://igna.hashnode.dev/vite-react-typescript-component-library-template-setup-explanation).
-
-## Author
-
-[Ignacio Miranda Figueroa](https://www.linkedin.com/in/ignacio-miranda-figueroa/)
-
-## License
-
-[MIT](LICENSE)
+[Chesai UI Demo](https://chesai-ui.pages.dev/)
