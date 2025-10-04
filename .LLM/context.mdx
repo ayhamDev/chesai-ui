@@ -4717,6 +4717,8 @@ interface RefreshIndicatorProps {
 
 export interface ElasticScrollAreaProps
   extends React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
+  /** The primary scrolling direction of the content. @default "vertical" */
+  orientation?: "vertical" | "horizontal";
   elasticity?: boolean;
   dampingFactor?: number;
   scrollbarVisibility?: "auto" | "always" | "scroll";
@@ -4748,8 +4750,9 @@ const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
 // --- OVERSCROLL & PULL-TO-REFRESH LOGIC HOOK ---
 const useElasticAndRefresh = (
   viewportRef: React.RefObject<HTMLDivElement>,
-  y: MotionValue<number>,
+  motionValue: MotionValue<number>,
   options: {
+    orientation: "vertical" | "horizontal";
     isEnabled: boolean;
     damping: number;
     isRefreshEnabled: boolean;
@@ -4757,25 +4760,32 @@ const useElasticAndRefresh = (
     pullThreshold: number;
   }
 ) => {
-  const { isEnabled, damping, isRefreshEnabled, onRefresh, pullThreshold } =
-    options;
+  const {
+    orientation,
+    isEnabled,
+    damping,
+    isRefreshEnabled,
+    onRefresh,
+    pullThreshold,
+  } = options;
+  const isVertical = orientation === "vertical";
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isTouching = useRef(false);
-  const startY = useRef(0);
+  const startPos = useRef(0);
   const isOverscrolling = useRef(false);
   const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const springToZero = useCallback(() => {
-    animate(y, 0, {
+    animate(motionValue, 0, {
       type: "spring",
       stiffness: SNAP_BACK_STIFFNESS,
       damping: SNAP_BACK_DAMPING,
     });
-  }, [y]);
+  }, [motionValue]);
 
   const triggerRefresh = useCallback(async () => {
-    if (!onRefresh) {
+    if (!onRefresh || !isVertical) {
       springToZero();
       return;
     }
@@ -4786,36 +4796,52 @@ const useElasticAndRefresh = (
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh, springToZero]);
+  }, [onRefresh, springToZero, isVertical]);
 
   useEffect(() => {
-    // FIX: Add a guard clause to prevent running before the ref is hydrated.
     const viewport = viewportRef.current;
     if (!viewport || !isEnabled) return;
 
     const handleWheel = (event: WheelEvent) => {
-      // ... (rest of the function is unchanged)
       if (isRefreshing) return;
-      const { scrollTop, scrollHeight, clientHeight } = viewport;
-      const isAtTop = scrollTop <= 0;
-      const isAtBottom = scrollTop >= scrollHeight - clientHeight;
-      const isScrollingUp = event.deltaY < 0;
-      const isScrollingDown = event.deltaY > 0;
-      if ((isAtTop && isScrollingUp) || (isAtBottom && isScrollingDown)) {
-        event?.preventDefault();
-        const currentY = y.get();
-        const resistance = Math.abs(currentY) / MAX_OVERSCROLL_DESKTOP;
-        const adjustedDelta = event.deltaY * damping * (1 - resistance);
-        const newY = Math.max(
+      const {
+        scrollTop,
+        scrollLeft,
+        scrollHeight,
+        scrollWidth,
+        clientHeight,
+        clientWidth,
+      } = viewport;
+
+      const scrollPos = isVertical ? scrollTop : scrollLeft;
+      const scrollDim = isVertical ? scrollHeight : scrollWidth;
+      const clientDim = isVertical ? clientHeight : clientWidth;
+      const delta = isVertical ? event.deltaY : event.deltaX;
+
+      const isAtStart = scrollPos <= 0;
+      const isAtEnd = scrollPos >= scrollDim - clientDim;
+      const isScrollingTowardsStart = delta < 0;
+      const isScrollingTowardsEnd = delta > 0;
+
+      if (
+        (isAtStart && isScrollingTowardsStart) ||
+        (isAtEnd && isScrollingTowardsEnd)
+      ) {
+        event.preventDefault();
+        const currentVal = motionValue.get();
+        const resistance = Math.abs(currentVal) / MAX_OVERSCROLL_DESKTOP;
+        const adjustedDelta = delta * damping * (1 - resistance);
+        const newVal = Math.max(
           -MAX_OVERSCROLL_DESKTOP,
-          Math.min(MAX_OVERSCROLL_DESKTOP, currentY - adjustedDelta)
+          Math.min(MAX_OVERSCROLL_DESKTOP, currentVal - adjustedDelta)
         );
-        y.set(newY);
+        motionValue.set(newVal);
+
         if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
         wheelTimeoutRef.current = setTimeout(() => {
-          const finalY = y.get();
-          if (Math.abs(finalY) > 0) {
-            if (isRefreshEnabled && finalY >= pullThreshold) {
+          const finalVal = motionValue.get();
+          if (Math.abs(finalVal) > 0) {
+            if (isRefreshEnabled && finalVal >= pullThreshold) {
               triggerRefresh();
             } else {
               springToZero();
@@ -4828,27 +4854,48 @@ const useElasticAndRefresh = (
     const handleTouchStart = (event: TouchEvent) => {
       if (isRefreshing || event.touches.length !== 1) return;
       isTouching.current = true;
-      startY.current = event.touches[0].clientY;
+      startPos.current = isVertical
+        ? event.touches[0].clientY
+        : event.touches[0].clientX;
     };
 
     const handleTouchMove = (event: TouchEvent) => {
       if (!isTouching.current || isRefreshing || event.touches.length !== 1)
         return;
-      const { scrollTop, scrollHeight, clientHeight } = viewport;
-      const currentY = event.touches[0].clientY;
-      const deltaY = currentY - startY.current;
-      const isAtTop = scrollTop <= 0;
-      const isAtBottom = scrollTop >= scrollHeight - clientHeight;
-      const isPullingDown = deltaY > 0;
-      const isPullingUp = deltaY < 0;
-      if ((isAtTop && isPullingDown) || (isAtBottom && isPullingUp)) {
+
+      const {
+        scrollTop,
+        scrollLeft,
+        scrollHeight,
+        scrollWidth,
+        clientHeight,
+        clientWidth,
+      } = viewport;
+
+      const scrollPos = isVertical ? scrollTop : scrollLeft;
+      const scrollDim = isVertical ? scrollHeight : scrollWidth;
+      const clientDim = isVertical ? clientHeight : clientWidth;
+      const currentPosVal = isVertical
+        ? event.touches[0].clientY
+        : event.touches[0].clientX;
+
+      const delta = currentPosVal - startPos.current;
+      const isAtStart = scrollPos <= 0;
+      const isAtEnd = scrollPos >= scrollDim - clientDim;
+      const isPullingTowardsEnd = delta < 0;
+      const isPullingTowardsStart = delta > 0;
+
+      if (
+        (isAtStart && isPullingTowardsStart) ||
+        (isAtEnd && isPullingTowardsEnd)
+      ) {
         isOverscrolling.current = true;
-        y.set(deltaY * damping);
+        motionValue.set(delta * damping);
       } else {
         if (isOverscrolling.current) {
           isOverscrolling.current = false;
-          y.set(0);
-          startY.current = currentY;
+          motionValue.set(0);
+          startPos.current = currentPosVal;
         }
       }
     };
@@ -4857,7 +4904,7 @@ const useElasticAndRefresh = (
       if (!isTouching.current) return;
       isTouching.current = false;
       if (isOverscrolling.current) {
-        if (isRefreshEnabled && y.get() >= pullThreshold) {
+        if (isRefreshEnabled && motionValue.get() >= pullThreshold) {
           triggerRefresh();
         } else {
           springToZero();
@@ -4886,18 +4933,21 @@ const useElasticAndRefresh = (
     };
   }, [
     viewportRef,
+    orientation,
     isEnabled,
     damping,
-    y,
+    motionValue,
     springToZero,
     isRefreshEnabled,
     pullThreshold,
     triggerRefresh,
     isRefreshing,
+    isVertical,
   ]);
 
   return { isRefreshing };
 };
+
 // --- MAIN COMPONENT ---
 const ElasticScrollAreaRoot = forwardRef<
   HTMLDivElement,
@@ -4907,6 +4957,7 @@ const ElasticScrollAreaRoot = forwardRef<
     {
       className,
       children,
+      orientation = "vertical",
       elasticity = true,
       dampingFactor = OVERSCROLL_DAMPING,
       scrollbarVisibility = "auto",
@@ -4921,15 +4972,23 @@ const ElasticScrollAreaRoot = forwardRef<
     const localViewportRef = useRef<HTMLDivElement>(null);
     useImperativeHandle(ref, () => localViewportRef.current!);
 
-    const y = useMotionValue(0);
-    const { isRefreshing } = useElasticAndRefresh(localViewportRef, y, {
-      isEnabled: elasticity || pullToRefresh,
-      damping: dampingFactor,
-      isRefreshEnabled: pullToRefresh,
-      onRefresh,
-      pullThreshold,
-    });
-    const pullProgress = useTransform(y, (v) => (v > 0 ? v : 0));
+    const motionValue = useMotionValue(0);
+    const isVertical = orientation === "vertical";
+
+    const { isRefreshing } = useElasticAndRefresh(
+      localViewportRef,
+      motionValue,
+      {
+        orientation,
+        isEnabled: elasticity || pullToRefresh,
+        damping: dampingFactor,
+        isRefreshEnabled: pullToRefresh,
+        onRefresh,
+        pullThreshold,
+      }
+    );
+
+    const pullProgress = useTransform(motionValue, (v) => (v > 0 ? v : 0));
     const indicatorOpacity = useTransform(
       pullProgress,
       [0, pullThreshold * 0.5],
@@ -4941,7 +5000,7 @@ const ElasticScrollAreaRoot = forwardRef<
         className={clsx("relative h-full w-full overflow-hidden!", className)}
         {...props}
       >
-        {pullToRefresh && (
+        {pullToRefresh && isVertical && (
           <motion.div
             className="pointer-events-none absolute inset-x-0 top-[-40px] z-50 flex justify-center"
             style={{
@@ -4958,15 +5017,26 @@ const ElasticScrollAreaRoot = forwardRef<
             </div>
           </motion.div>
         )}
-        <motion.div style={{ y }} className="h-full w-full">
+        <motion.div
+          style={{ [isVertical ? "y" : "x"]: motionValue }}
+          className="h-full w-full"
+        >
           <ScrollAreaPrimitive.Viewport
             ref={localViewportRef}
             className="h-full w-full rounded-[inherit]"
+            style={{ touchAction: isVertical ? "pan-y" : "pan-x" }}
           >
             {children}
           </ScrollAreaPrimitive.Viewport>
         </motion.div>
-        <ScrollBar scrollbarVisibility={scrollbarVisibility} />
+        <ScrollBar
+          scrollbarVisibility={scrollbarVisibility}
+          orientation="vertical"
+        />
+        <ScrollBar
+          scrollbarVisibility={scrollbarVisibility}
+          orientation="horizontal"
+        />
         <ScrollAreaPrimitive.Corner />
       </ScrollAreaPrimitive.Root>
     );
@@ -4994,7 +5064,7 @@ const ScrollBar = forwardRef<
       ref={ref}
       orientation={orientation}
       className={clsx(
-        "flex touch-none select-none transition-opacity duration-200",
+        "flex touch-none select-none transition-opacity duration-200 z-[100]",
         orientation === "vertical" &&
           "h-full w-2.5 border-l border-l-transparent p-[1px]",
         orientation === "horizontal" &&
@@ -5009,7 +5079,7 @@ const ScrollBar = forwardRef<
       )}
       {...props}
     >
-      <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-graphite-primary/40" />
+      <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-graphite-primary/30" />
     </ScrollAreaPrimitive.Scrollbar>
   )
 );
@@ -5042,6 +5112,11 @@ const meta: Meta<typeof ElasticScrollArea> = {
     },
   },
   argTypes: {
+    orientation: {
+      control: "select",
+      options: ["vertical", "horizontal"],
+      description: "The primary scrolling direction.",
+    },
     elasticity: {
       control: "boolean",
       description: "Toggles the elastic overscroll effect.",
@@ -5058,7 +5133,7 @@ const meta: Meta<typeof ElasticScrollArea> = {
     },
     pullToRefresh: {
       control: "boolean",
-      description: "Enables the pull-to-refresh functionality.",
+      description: "Enables the pull-to-refresh functionality (vertical only).",
     },
     pullThreshold: {
       control: { type: "number", min: 40, max: 200, step: 10 },
@@ -5073,7 +5148,7 @@ const meta: Meta<typeof ElasticScrollArea> = {
 export default meta;
 type Story = StoryObj<typeof ElasticScrollArea>;
 
-// Helper component to generate scrollable content
+// Helper component to generate vertical scrollable content
 const DummyContent = ({ itemCount = 30 }: { itemCount?: number }) => (
   <main className="p-6">
     <Typography variant="h3">Scroll Me</Typography>
@@ -5096,35 +5171,77 @@ const DummyContent = ({ itemCount = 30 }: { itemCount?: number }) => (
   </main>
 );
 
+// Helper component to generate horizontal scrollable content
+const DummyHorizontalContent = ({ itemCount = 20 }: { itemCount?: number }) => (
+  <div className="p-6 h-full">
+    <Typography variant="h3">Scroll Me Horizontally</Typography>
+    <Typography variant="muted">
+      Use Shift + Mouse Wheel, or swipe horizontally.
+    </Typography>
+    <div className="mt-4 flex gap-4 h-full">
+      {Array.from({ length: itemCount }).map((_, i) => (
+        <div
+          key={i}
+          className="h-32 w-32 flex-shrink-0 rounded-2xl bg-graphite-secondary flex items-center justify-center"
+        >
+          <Typography variant="small" className="text-graphite-foreground/50">
+            Item {i + 1}
+          </Typography>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 // A mock async function for the onRefresh prop
 const simulateRefresh = () => {
   return new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
 // A smart render function to wrap stories in a sized container
-const render = (args: any) => (
+const renderVertical = (args: any) => (
   <div className="w-96 h-[600px] rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
-    <ElasticScrollArea {...args} />
+    <ElasticScrollArea {...args}>
+      <DummyContent />
+    </ElasticScrollArea>
   </div>
 );
 
 // --- STORIES ---
 
 export const Default: Story = {
-  name: "1. Default Elasticity",
+  name: "1. Vertical (Default)",
   args: {
+    orientation: "vertical",
     elasticity: true,
     dampingFactor: 0.25,
     scrollbarVisibility: "auto",
-    children: <DummyContent />,
   },
-  render,
+  render: renderVertical,
+};
+
+export const Horizontal: Story = {
+  name: "2. Horizontal",
+  args: {
+    orientation: "horizontal",
+    elasticity: true,
+    dampingFactor: 0.25,
+    scrollbarVisibility: "auto",
+  },
+  render: (args) => (
+    <div className="w-[700px] h-72 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+      <ElasticScrollArea {...args}>
+        <DummyHorizontalContent />
+      </ElasticScrollArea>
+    </div>
+  ),
 };
 
 export const PullToRefresh: Story = {
-  name: "2. With Pull to Refresh",
+  name: "3. With Pull to Refresh (Vertical Only)",
   args: {
-    ...Default.args,
+    orientation: "vertical",
+    elasticity: true,
     pullToRefresh: true,
     onRefresh: simulateRefresh,
     pullThreshold: 80,
@@ -5133,11 +5250,11 @@ export const PullToRefresh: Story = {
     docs: {
       description: {
         story:
-          "**This demonstrates the new behavior.** Set `pullToRefresh={true}` and provide an `onRefresh` async function. When you pull and release, the content will immediately snap back into place while the indicator remains visible during the loading state.",
+          "Pull-to-refresh is only enabled when `orientation` is `vertical`. When you pull and release, the content snaps back while the indicator remains visible during the loading state.",
       },
     },
   },
-  render,
+  render: renderVertical,
 };
 
 // --- Custom Indicator Example ---
@@ -5163,7 +5280,7 @@ const CustomWeatherIndicator = ({
 };
 
 export const CustomRefreshIndicator: Story = {
-  name: "3. Custom Refresh Indicator",
+  name: "4. Custom Refresh Indicator",
   args: {
     ...PullToRefresh.args,
     pullThreshold: 100,
@@ -5177,11 +5294,11 @@ export const CustomRefreshIndicator: Story = {
       },
     },
   },
-  render,
+  render: renderVertical,
 };
 
 export const ScrollbarVisibility: Story = {
-  name: "4. Scrollbar Visibility",
+  name: "5. Scrollbar Visibility",
   parameters: {
     docs: {
       description: {
@@ -5224,23 +5341,6 @@ export const ScrollbarVisibility: Story = {
       </div>
     </div>
   ),
-};
-
-export const DisabledElasticity: Story = {
-  name: "5. Elasticity Disabled",
-  args: {
-    ...Default.args,
-    elasticity: false,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "When `elasticity` is set to `false`, the component behaves as a standard scroll area with no overscroll effect.",
-      },
-    },
-  },
-  render,
 };
 ```
 
@@ -9234,7 +9334,7 @@ import { useState } from "react";
 import { SelectInput } from "./index";
 
 const meta: Meta<typeof SelectInput> = {
-  title: "Components/Select",
+  title: "Components/Forms & Inputs/Select",
   component: SelectInput,
   tags: ["autodocs"],
   argTypes: {
@@ -10507,25 +10607,21 @@ import {
   animate,
   AnimatePresence,
   motion,
-  type PanInfo,
   useMotionValue,
   useTransform,
   type MotionValue,
+  type PanInfo,
 } from "framer-motion";
-import { Menu } from "lucide-react";
 import React, {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useId,
-  useImperativeHandle,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import useRipple from "use-ripple-hook";
-import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
 
 // --- 1. TYPE DEFINITIONS & CONTEXT (UNIFIED) ---
@@ -10667,7 +10763,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
   onItemPress,
   isOpen: controlledOpen,
   onOpenChange,
-  defaultOpen = false, // MODIFIED: Default to closed on mobile
+  defaultOpen = false,
   desktopVariant = "permanent",
   mobileVariant = "modal",
   side = "left",
@@ -10690,10 +10786,10 @@ const SidebarRoot: React.FC<SidebarProps> = ({
 
   const expandedWidth = 280;
   const closedX = side === "left" ? -expandedWidth : expandedWidth;
-  const sidebarX = useMotionValue(closedX);
+  const sidebarX = useMotionValue(isOpen ? 0 : closedX);
 
   useEffect(() => {
-    if (!isDesktop && mobileVariant === "push") {
+    if (!isDesktop) {
       const targetX = isOpen ? 0 : closedX;
       animate(sidebarX, targetX, {
         type: "spring",
@@ -10702,13 +10798,19 @@ const SidebarRoot: React.FC<SidebarProps> = ({
         mass: 1,
       });
     }
-  }, [isOpen, isDesktop, closedX, sidebarX, mobileVariant]);
+  }, [isOpen, isDesktop, closedX, sidebarX]);
 
   const pushX = useTransform(sidebarX, (latestX) => {
     if (isDesktop || mobileVariant !== "push") return 0;
     if (side === "left") return latestX + expandedWidth;
     return latestX - expandedWidth;
   });
+
+  const overlayOpacity = useTransform(
+    sidebarX,
+    side === "left" ? [-expandedWidth, 0] : [expandedWidth, 0],
+    [0, 1]
+  );
 
   const toggle = useCallback(() => {
     if (collapsible) {
@@ -10790,25 +10892,24 @@ const SidebarRoot: React.FC<SidebarProps> = ({
           </div>
         ) : (
           <>
-            <AnimatePresence>
-              {isOpen && mobileVariant === "modal" && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="fixed inset-0 z-40 bg-black/40"
-                  onClick={() => handleOpenChange(false)}
-                />
-              )}
-            </AnimatePresence>
-            <AnimatePresence>
-              {isOpen && mobileVariant === "modal" && sidebarContainer}
-            </AnimatePresence>
-            {mobileVariant === "push" && sidebarContainer}
+            {!isDesktop && mobileVariant === "modal" && (
+              <motion.div
+                className="fixed inset-0 z-40 bg-black/40"
+                style={{ opacity: overlayOpacity }}
+                onClick={() => handleOpenChange(false)}
+                initial={{ pointerEvents: "none" }}
+                animate={{ pointerEvents: isOpen ? "auto" : "none" }}
+              />
+            )}
+            {sidebarContainer}
             <motion.div
               className="h-full"
-              style={{ x: pushX, transform: "translateZ(0)" }}
+              style={{
+                x: pushX,
+                transform: "translateZ(0)",
+                // NEW: Add touchAction style to prevent conflicts
+                touchAction: isOpen ? "none" : "pan-y",
+              }}
             >
               {mainContent}
             </motion.div>
@@ -10850,64 +10951,7 @@ const SidebarContainer = React.memo(
         );
       }
 
-      if (mobileVariant === "modal") {
-        const modalDragX = useMotionValue(0);
-        const handleModalDragEnd = (
-          e: MouseEvent | TouchEvent,
-          info: PanInfo
-        ) => {
-          const isClosing =
-            (side === "left" &&
-              (info.offset.x < -50 || info.velocity.x < -500)) ||
-            (side === "right" && (info.offset.x > 50 || info.velocity.x > 500));
-
-          if (isClosing) {
-            const exitX = side === "left" ? -expandedWidth : expandedWidth;
-            animate(modalDragX, exitX, {
-              type: "spring",
-              stiffness: 500,
-              damping: 50,
-              onComplete: () => onOpenChange(false),
-            });
-          } else {
-            animate(modalDragX, 0, {
-              type: "spring",
-              stiffness: 500,
-              damping: 50,
-            });
-          }
-        };
-
-        return (
-          <motion.aside
-            ref={ref}
-            key="sidebar-modal"
-            drag="x"
-            onDragEnd={handleModalDragEnd}
-            style={{ x: modalDragX, transform: "translateZ(0)" }}
-            dragConstraints={{
-              left: side === "left" ? -expandedWidth : 0,
-              right: side === "left" ? 0 : expandedWidth,
-            }}
-            dragElastic={{ left: 0.1, right: 0.1 }}
-            initial={{ x: side === "left" ? "-100%" : "100%" }}
-            animate={{ x: "0%" }}
-            exit={{ x: side === "left" ? "-100%" : "100%" }}
-            transition={{ type: "spring", stiffness: 500, damping: 50 }}
-            className={clsx(
-              containerVariants({ variant }),
-              "fixed top-0 bottom-0 z-50 flex h-full flex-col shadow-lg",
-              "w-[280px]",
-              side === "left" ? "left-0" : "right-0",
-              className
-            )}
-          >
-            {children}
-          </motion.aside>
-        );
-      }
-
-      const handlePushDragEnd = (e: MouseEvent | TouchEvent, info: PanInfo) => {
+      const handleDragEnd = (e: MouseEvent | TouchEvent, info: PanInfo) => {
         const closedX = side === "left" ? -expandedWidth : expandedWidth;
         const isClosing =
           (side === "left" &&
@@ -10934,18 +10978,18 @@ const SidebarContainer = React.memo(
       return (
         <motion.aside
           ref={ref}
-          key="sidebar-push"
+          key={`sidebar-${mobileVariant}`}
           drag="x"
-          onDragEnd={handlePushDragEnd}
+          onDragEnd={handleDragEnd}
+          style={{ x: sidebarX, transform: "translateZ(0)" }}
           dragConstraints={{
             left: side === "left" ? -expandedWidth : 0,
             right: side === "left" ? 0 : expandedWidth,
           }}
           dragElastic={{ left: 0.1, right: 0.1 }}
-          style={{ x: sidebarX, transform: "translateZ(0)" }}
           className={clsx(
             containerVariants({ variant }),
-            "fixed top-0 bottom-0 z-50 flex h-full flex-col",
+            "fixed top-0 bottom-0 z-[100] flex h-screen flex-col",
             "w-[280px]",
             side === "left" ? "left-0" : "right-0",
             className
@@ -10959,7 +11003,6 @@ const SidebarContainer = React.memo(
 );
 SidebarContainer.displayName = "Sidebar.Container";
 
-// MODIFIED: SidebarHeader is now a simple slot
 const SidebarHeader = React.memo(
   (props: React.HTMLAttributes<HTMLDivElement>) => (
     <div
@@ -11211,46 +11254,12 @@ const SidebarSectionHeader = React.memo(
 SidebarSectionHeader.displayName = "Sidebar.SectionHeader";
 
 const SidebarDragHandle = React.memo(() => {
-  const {
-    isDesktop,
-    isOpen,
-    onOpenChange,
-    side,
-    sidebarX,
-    expandedWidth,
-    mobileVariant,
-  } = useSidebar();
+  const { isDesktop, isOpen, onOpenChange, side, sidebarX, expandedWidth } =
+    useSidebar();
 
   if (isDesktop || isOpen) return null;
 
-  if (mobileVariant === "modal") {
-    const handleModalDragEnd = (
-      event: MouseEvent | TouchEvent,
-      info: PanInfo
-    ) => {
-      const isOpening =
-        (side === "left" && (info.offset.x > 50 || info.velocity.x > 500)) ||
-        (side === "right" && (info.offset.x < -50 || info.velocity.x < -500));
-
-      if (isOpening) {
-        onOpenChange(true);
-      }
-    };
-    return (
-      <motion.div
-        className={clsx(
-          "fixed top-0 bottom-0 z-[1000] w-8",
-          side === "left" ? "left-0" : "right-0"
-        )}
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={{ left: 0.1, right: 0.1 }}
-        onDragEnd={handleModalDragEnd}
-      />
-    );
-  }
-
-  const handlePushDragEnd = (event: MouseEvent | TouchEvent, info: PanInfo) => {
+  const handleDragEnd = (event: MouseEvent | TouchEvent, info: PanInfo) => {
     const isOpening =
       (side === "left" && (info.offset.x > 50 || info.velocity.x > 500)) ||
       (side === "right" && (info.offset.x < -50 || info.velocity.x < -500));
@@ -11268,7 +11277,6 @@ const SidebarDragHandle = React.memo(() => {
         type: "spring",
         stiffness: 500,
         damping: 50,
-        onComplete: () => onOpenChange(false),
       });
     }
   };
@@ -11276,17 +11284,18 @@ const SidebarDragHandle = React.memo(() => {
   return (
     <motion.div
       className={clsx(
-        "fixed top-0 bottom-0 z-30 w-12",
+        "fixed top-0 bottom-0 z-[1000] w-12",
         side === "left" ? "left-0" : "right-0"
       )}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={{ left: 0.1, right: 0.1 }}
-      onDragEnd={handlePushDragEnd}
+      onDragEnd={handleDragEnd}
       onDrag={(e, info) => {
         const isDraggingCorrectly =
           (side === "left" && info.offset.x > 0) ||
           (side === "right" && info.offset.x < 0);
+
         if (isDraggingCorrectly) {
           sidebarX.set(
             side === "left"
@@ -11347,7 +11356,7 @@ import {
   Trash2,
   User,
 } from "lucide-react";
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AppBar } from "../appbar";
 import { Badge } from "../badge";
 import { ElasticScrollArea } from "../elastic-scroll-area";
@@ -11425,11 +11434,14 @@ const CustomSidebarHeader = () => {
   const { isDesktop, collapsible, toggle, side } = useSidebar();
   return (
     <Sidebar.Header className={side === "right" ? "flex-row-reverse" : ""}>
-      {isDesktop && collapsible && (
-        <IconButton variant="ghost" size="sm" onClick={toggle}>
-          <Menu />
-        </IconButton>
-      )}
+      <div className="flex justify-center items-center pt-4">
+        {isDesktop && collapsible && (
+          <IconButton variant="ghost" size="sm" onClick={toggle}>
+            <Menu />
+          </IconButton>
+        )}
+      </div>
+
       {/* You can add a logo or title here */}
     </Sidebar.Header>
   );
@@ -11442,33 +11454,35 @@ const SidebarContents = () => (
       Compose
     </Sidebar.PrimaryAction>
     <Sidebar.Nav>
-      {navItems.map((item) => (
-        <Sidebar.Item
-          key={item.key}
-          itemKey={item.key}
-          icon={item.icon}
-          endAdornment={
-            item.count ? (
-              <Badge shape="full" variant="secondary">
-                {item.count}
-              </Badge>
-            ) : null
-          }
-        >
-          {item.label}
-        </Sidebar.Item>
-      ))}
-      <Sidebar.Separator />
-      <Sidebar.SectionHeader>Labels</Sidebar.SectionHeader>
-      {labelItems.map((item) => (
-        <Sidebar.Item
-          key={item.key}
-          itemKey={item.key}
-          icon={<File size={20} />}
-        >
-          {item.label}
-        </Sidebar.Item>
-      ))}
+      <ElasticScrollArea>
+        {navItems.map((item) => (
+          <Sidebar.Item
+            key={item.key}
+            itemKey={item.key}
+            icon={item.icon}
+            endAdornment={
+              item.count ? (
+                <Badge shape="full" variant="secondary">
+                  {item.count}
+                </Badge>
+              ) : null
+            }
+          >
+            {item.label}
+          </Sidebar.Item>
+        ))}
+        <Sidebar.Separator />
+        <Sidebar.SectionHeader>Labels</Sidebar.SectionHeader>
+        {labelItems.map((item) => (
+          <Sidebar.Item
+            key={item.key}
+            itemKey={item.key}
+            icon={<File size={20} />}
+          >
+            {item.label}
+          </Sidebar.Item>
+        ))}
+      </ElasticScrollArea>
     </Sidebar.Nav>
     <Sidebar.Footer>
       <Sidebar.Item itemKey="profile" icon={<User size={20} />}>
@@ -12032,29 +12046,34 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
             className="sr-only peer"
             {...props}
           />
-          {/* The Track (w-10 = 40px, h-6 = 24px) */}
+          {/* The Track (w-12 = 48px, h-8 = 32px) - UPDATED */}
           <div
             className={clsx(
-              "w-10 h-6 rounded-full transition-colors",
+              "w-13 h-8 rounded-full transition-colors border border-graphite-primary/10", // w-12 h-8 applied
               "bg-graphite-border",
               "peer-checked:bg-graphite-primary",
               "peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-graphite-ring peer-focus:ring-offset-2",
               "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
             )}
           />
-          {/* The Thumb (the circle) */}
+          {/* The Thumb (the circle) - UPDATED */}
           <div
             className={clsx(
               "absolute bg-white rounded-full transition-transform duration-200 ease-in-out shadow-lg",
-              // ============================ THIS IS THE FIX ============================
+              // ============================ UPDATED FIX ============================
+              // New Track Dimensions: w-12 (48px), h-8 (32px)
+
+              // 1. Thumb Size: Make the thumb slightly smaller than the track height (e.g., 28px for 32px track)
               // Using arbitrary values for exact pixel dimensions
-              "h-[17.5px] w-[17.5px]",
-              // Recalculated positioning to perfectly center the 17.5px thumb in the 24px track
-              // (24px - 17.5px) / 2 = 3.25px
-              "top-[3.25px] left-[3.25px]",
-              // Recalculated travel distance:
-              // 40px (track) - 17.5px (thumb) - 6.5px (offsets) = 16px (translate-x-4)
-              "peer-checked:translate-x-4"
+              "h-[26.5px] w-[26.5px]", // 28px x 28px (h-7/w-7 is 1.75rem which is 28px)
+
+              // 2. Initial Position: Center the 28px thumb in the 32px track
+              // (32px (track height) - 28px (thumb size)) / 2 = 2px
+              "top-[2.5px] left-[3px]", // top-0.5/left-0.5 is 2px
+
+              // 3. Travel Distance: Track width (48px) - Thumb size (28px) - 2 * offset (4px) = 16px
+              // 16px is translate-x-4
+              "peer-checked:translate-x-5" // 16px
               // =======================================================================
             )}
           />

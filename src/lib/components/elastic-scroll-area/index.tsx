@@ -34,6 +34,8 @@ interface RefreshIndicatorProps {
 
 export interface ElasticScrollAreaProps
   extends React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
+  /** The primary scrolling direction of the content. @default "vertical" */
+  orientation?: "vertical" | "horizontal";
   elasticity?: boolean;
   dampingFactor?: number;
   scrollbarVisibility?: "auto" | "always" | "scroll";
@@ -65,8 +67,9 @@ const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
 // --- OVERSCROLL & PULL-TO-REFRESH LOGIC HOOK ---
 const useElasticAndRefresh = (
   viewportRef: React.RefObject<HTMLDivElement>,
-  y: MotionValue<number>,
+  motionValue: MotionValue<number>,
   options: {
+    orientation: "vertical" | "horizontal";
     isEnabled: boolean;
     damping: number;
     isRefreshEnabled: boolean;
@@ -74,25 +77,32 @@ const useElasticAndRefresh = (
     pullThreshold: number;
   }
 ) => {
-  const { isEnabled, damping, isRefreshEnabled, onRefresh, pullThreshold } =
-    options;
+  const {
+    orientation,
+    isEnabled,
+    damping,
+    isRefreshEnabled,
+    onRefresh,
+    pullThreshold,
+  } = options;
+  const isVertical = orientation === "vertical";
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isTouching = useRef(false);
-  const startY = useRef(0);
+  const startPos = useRef(0);
   const isOverscrolling = useRef(false);
   const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const springToZero = useCallback(() => {
-    animate(y, 0, {
+    animate(motionValue, 0, {
       type: "spring",
       stiffness: SNAP_BACK_STIFFNESS,
       damping: SNAP_BACK_DAMPING,
     });
-  }, [y]);
+  }, [motionValue]);
 
   const triggerRefresh = useCallback(async () => {
-    if (!onRefresh) {
+    if (!onRefresh || !isVertical) {
       springToZero();
       return;
     }
@@ -103,36 +113,52 @@ const useElasticAndRefresh = (
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh, springToZero]);
+  }, [onRefresh, springToZero, isVertical]);
 
   useEffect(() => {
-    // FIX: Add a guard clause to prevent running before the ref is hydrated.
     const viewport = viewportRef.current;
     if (!viewport || !isEnabled) return;
 
     const handleWheel = (event: WheelEvent) => {
-      // ... (rest of the function is unchanged)
       if (isRefreshing) return;
-      const { scrollTop, scrollHeight, clientHeight } = viewport;
-      const isAtTop = scrollTop <= 0;
-      const isAtBottom = scrollTop >= scrollHeight - clientHeight;
-      const isScrollingUp = event.deltaY < 0;
-      const isScrollingDown = event.deltaY > 0;
-      if ((isAtTop && isScrollingUp) || (isAtBottom && isScrollingDown)) {
-        event?.preventDefault();
-        const currentY = y.get();
-        const resistance = Math.abs(currentY) / MAX_OVERSCROLL_DESKTOP;
-        const adjustedDelta = event.deltaY * damping * (1 - resistance);
-        const newY = Math.max(
+      const {
+        scrollTop,
+        scrollLeft,
+        scrollHeight,
+        scrollWidth,
+        clientHeight,
+        clientWidth,
+      } = viewport;
+
+      const scrollPos = isVertical ? scrollTop : scrollLeft;
+      const scrollDim = isVertical ? scrollHeight : scrollWidth;
+      const clientDim = isVertical ? clientHeight : clientWidth;
+      const delta = isVertical ? event.deltaY : event.deltaX;
+
+      const isAtStart = scrollPos <= 0;
+      const isAtEnd = scrollPos >= scrollDim - clientDim;
+      const isScrollingTowardsStart = delta < 0;
+      const isScrollingTowardsEnd = delta > 0;
+
+      if (
+        (isAtStart && isScrollingTowardsStart) ||
+        (isAtEnd && isScrollingTowardsEnd)
+      ) {
+        event.preventDefault();
+        const currentVal = motionValue.get();
+        const resistance = Math.abs(currentVal) / MAX_OVERSCROLL_DESKTOP;
+        const adjustedDelta = delta * damping * (1 - resistance);
+        const newVal = Math.max(
           -MAX_OVERSCROLL_DESKTOP,
-          Math.min(MAX_OVERSCROLL_DESKTOP, currentY - adjustedDelta)
+          Math.min(MAX_OVERSCROLL_DESKTOP, currentVal - adjustedDelta)
         );
-        y.set(newY);
+        motionValue.set(newVal);
+
         if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
         wheelTimeoutRef.current = setTimeout(() => {
-          const finalY = y.get();
-          if (Math.abs(finalY) > 0) {
-            if (isRefreshEnabled && finalY >= pullThreshold) {
+          const finalVal = motionValue.get();
+          if (Math.abs(finalVal) > 0) {
+            if (isRefreshEnabled && finalVal >= pullThreshold) {
               triggerRefresh();
             } else {
               springToZero();
@@ -145,27 +171,48 @@ const useElasticAndRefresh = (
     const handleTouchStart = (event: TouchEvent) => {
       if (isRefreshing || event.touches.length !== 1) return;
       isTouching.current = true;
-      startY.current = event.touches[0].clientY;
+      startPos.current = isVertical
+        ? event.touches[0].clientY
+        : event.touches[0].clientX;
     };
 
     const handleTouchMove = (event: TouchEvent) => {
       if (!isTouching.current || isRefreshing || event.touches.length !== 1)
         return;
-      const { scrollTop, scrollHeight, clientHeight } = viewport;
-      const currentY = event.touches[0].clientY;
-      const deltaY = currentY - startY.current;
-      const isAtTop = scrollTop <= 0;
-      const isAtBottom = scrollTop >= scrollHeight - clientHeight;
-      const isPullingDown = deltaY > 0;
-      const isPullingUp = deltaY < 0;
-      if ((isAtTop && isPullingDown) || (isAtBottom && isPullingUp)) {
+
+      const {
+        scrollTop,
+        scrollLeft,
+        scrollHeight,
+        scrollWidth,
+        clientHeight,
+        clientWidth,
+      } = viewport;
+
+      const scrollPos = isVertical ? scrollTop : scrollLeft;
+      const scrollDim = isVertical ? scrollHeight : scrollWidth;
+      const clientDim = isVertical ? clientHeight : clientWidth;
+      const currentPosVal = isVertical
+        ? event.touches[0].clientY
+        : event.touches[0].clientX;
+
+      const delta = currentPosVal - startPos.current;
+      const isAtStart = scrollPos <= 0;
+      const isAtEnd = scrollPos >= scrollDim - clientDim;
+      const isPullingTowardsEnd = delta < 0;
+      const isPullingTowardsStart = delta > 0;
+
+      if (
+        (isAtStart && isPullingTowardsStart) ||
+        (isAtEnd && isPullingTowardsEnd)
+      ) {
         isOverscrolling.current = true;
-        y.set(deltaY * damping);
+        motionValue.set(delta * damping);
       } else {
         if (isOverscrolling.current) {
           isOverscrolling.current = false;
-          y.set(0);
-          startY.current = currentY;
+          motionValue.set(0);
+          startPos.current = currentPosVal;
         }
       }
     };
@@ -174,7 +221,7 @@ const useElasticAndRefresh = (
       if (!isTouching.current) return;
       isTouching.current = false;
       if (isOverscrolling.current) {
-        if (isRefreshEnabled && y.get() >= pullThreshold) {
+        if (isRefreshEnabled && motionValue.get() >= pullThreshold) {
           triggerRefresh();
         } else {
           springToZero();
@@ -203,18 +250,21 @@ const useElasticAndRefresh = (
     };
   }, [
     viewportRef,
+    orientation,
     isEnabled,
     damping,
-    y,
+    motionValue,
     springToZero,
     isRefreshEnabled,
     pullThreshold,
     triggerRefresh,
     isRefreshing,
+    isVertical,
   ]);
 
   return { isRefreshing };
 };
+
 // --- MAIN COMPONENT ---
 const ElasticScrollAreaRoot = forwardRef<
   HTMLDivElement,
@@ -224,6 +274,7 @@ const ElasticScrollAreaRoot = forwardRef<
     {
       className,
       children,
+      orientation = "vertical",
       elasticity = true,
       dampingFactor = OVERSCROLL_DAMPING,
       scrollbarVisibility = "auto",
@@ -238,15 +289,23 @@ const ElasticScrollAreaRoot = forwardRef<
     const localViewportRef = useRef<HTMLDivElement>(null);
     useImperativeHandle(ref, () => localViewportRef.current!);
 
-    const y = useMotionValue(0);
-    const { isRefreshing } = useElasticAndRefresh(localViewportRef, y, {
-      isEnabled: elasticity || pullToRefresh,
-      damping: dampingFactor,
-      isRefreshEnabled: pullToRefresh,
-      onRefresh,
-      pullThreshold,
-    });
-    const pullProgress = useTransform(y, (v) => (v > 0 ? v : 0));
+    const motionValue = useMotionValue(0);
+    const isVertical = orientation === "vertical";
+
+    const { isRefreshing } = useElasticAndRefresh(
+      localViewportRef,
+      motionValue,
+      {
+        orientation,
+        isEnabled: elasticity || pullToRefresh,
+        damping: dampingFactor,
+        isRefreshEnabled: pullToRefresh,
+        onRefresh,
+        pullThreshold,
+      }
+    );
+
+    const pullProgress = useTransform(motionValue, (v) => (v > 0 ? v : 0));
     const indicatorOpacity = useTransform(
       pullProgress,
       [0, pullThreshold * 0.5],
@@ -258,7 +317,7 @@ const ElasticScrollAreaRoot = forwardRef<
         className={clsx("relative h-full w-full overflow-hidden!", className)}
         {...props}
       >
-        {pullToRefresh && (
+        {pullToRefresh && isVertical && (
           <motion.div
             className="pointer-events-none absolute inset-x-0 top-[-40px] z-50 flex justify-center"
             style={{
@@ -275,15 +334,26 @@ const ElasticScrollAreaRoot = forwardRef<
             </div>
           </motion.div>
         )}
-        <motion.div style={{ y }} className="h-full w-full">
+        <motion.div
+          style={{ [isVertical ? "y" : "x"]: motionValue }}
+          className="h-full w-full"
+        >
           <ScrollAreaPrimitive.Viewport
             ref={localViewportRef}
             className="h-full w-full rounded-[inherit]"
+            style={{ touchAction: isVertical ? "pan-y" : "pan-x" }}
           >
             {children}
           </ScrollAreaPrimitive.Viewport>
         </motion.div>
-        <ScrollBar scrollbarVisibility={scrollbarVisibility} />
+        <ScrollBar
+          scrollbarVisibility={scrollbarVisibility}
+          orientation="vertical"
+        />
+        <ScrollBar
+          scrollbarVisibility={scrollbarVisibility}
+          orientation="horizontal"
+        />
         <ScrollAreaPrimitive.Corner />
       </ScrollAreaPrimitive.Root>
     );
@@ -311,7 +381,7 @@ const ScrollBar = forwardRef<
       ref={ref}
       orientation={orientation}
       className={clsx(
-        "flex touch-none select-none transition-opacity duration-200",
+        "flex touch-none select-none transition-opacity duration-200 z-[100]",
         orientation === "vertical" &&
           "h-full w-2.5 border-l border-l-transparent p-[1px]",
         orientation === "horizontal" &&
@@ -326,7 +396,7 @@ const ScrollBar = forwardRef<
       )}
       {...props}
     >
-      <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-graphite-primary/40" />
+      <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-graphite-primary/30" />
     </ScrollAreaPrimitive.Scrollbar>
   )
 );

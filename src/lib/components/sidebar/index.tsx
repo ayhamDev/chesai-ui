@@ -7,25 +7,21 @@ import {
   animate,
   AnimatePresence,
   motion,
-  type PanInfo,
   useMotionValue,
   useTransform,
   type MotionValue,
+  type PanInfo,
 } from "framer-motion";
-import { Menu } from "lucide-react";
 import React, {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useId,
-  useImperativeHandle,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import useRipple from "use-ripple-hook";
-import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
 
 // --- 1. TYPE DEFINITIONS & CONTEXT (UNIFIED) ---
@@ -210,14 +206,11 @@ const SidebarRoot: React.FC<SidebarProps> = ({
     return latestX - expandedWidth;
   });
 
-  // --- NEW: Create a motion value for the overlay's opacity ---
   const overlayOpacity = useTransform(
     sidebarX,
-    // Map the sidebar's position to an opacity value
     side === "left" ? [-expandedWidth, 0] : [expandedWidth, 0],
     [0, 1]
   );
-  // --- END NEW ---
 
   const toggle = useCallback(() => {
     if (collapsible) {
@@ -299,22 +292,24 @@ const SidebarRoot: React.FC<SidebarProps> = ({
           </div>
         ) : (
           <>
-            {/* --- MODIFIED: Replaced AnimatePresence with a progressive overlay --- */}
             {!isDesktop && mobileVariant === "modal" && (
               <motion.div
                 className="fixed inset-0 z-40 bg-black/40"
                 style={{ opacity: overlayOpacity }}
                 onClick={() => handleOpenChange(false)}
-                // Make it non-interactive when the sidebar is closed
                 initial={{ pointerEvents: "none" }}
                 animate={{ pointerEvents: isOpen ? "auto" : "none" }}
               />
             )}
-            {/* --- END MODIFICATION --- */}
             {sidebarContainer}
             <motion.div
               className="h-full"
-              style={{ x: pushX, transform: "translateZ(0)" }}
+              style={{
+                x: pushX,
+                transform: "translateZ(0)",
+                // NEW: Add touchAction style to prevent conflicts
+                touchAction: isOpen ? "none" : "pan-y",
+              }}
             >
               {mainContent}
             </motion.div>
@@ -394,7 +389,7 @@ const SidebarContainer = React.memo(
           dragElastic={{ left: 0.1, right: 0.1 }}
           className={clsx(
             containerVariants({ variant }),
-            "fixed top-0 bottom-0 z-50 flex h-full flex-col",
+            "fixed top-0 bottom-0 z-[100] flex h-screen flex-col",
             "w-[280px]",
             side === "left" ? "left-0" : "right-0",
             className

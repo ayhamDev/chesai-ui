@@ -90,11 +90,14 @@ const CustomSidebarHeader = () => {
   const { isDesktop, collapsible, toggle, side } = useSidebar();
   return (
     <Sidebar.Header className={side === "right" ? "flex-row-reverse" : ""}>
-      {isDesktop && collapsible && (
-        <IconButton variant="ghost" size="sm" onClick={toggle}>
-          <Menu />
-        </IconButton>
-      )}
+      <div className="flex justify-center items-center pt-4">
+        {isDesktop && collapsible && (
+          <IconButton variant="ghost" size="sm" onClick={toggle}>
+            <Menu />
+          </IconButton>
+        )}
+      </div>
+
       {/* You can add a logo or title here */}
     </Sidebar.Header>
   );
@@ -107,33 +110,35 @@ const SidebarContents = () => (
       Compose
     </Sidebar.PrimaryAction>
     <Sidebar.Nav>
-      {navItems.map((item) => (
-        <Sidebar.Item
-          key={item.key}
-          itemKey={item.key}
-          icon={item.icon}
-          endAdornment={
-            item.count ? (
-              <Badge shape="full" variant="secondary">
-                {item.count}
-              </Badge>
-            ) : null
-          }
-        >
-          {item.label}
-        </Sidebar.Item>
-      ))}
-      <Sidebar.Separator />
-      <Sidebar.SectionHeader>Labels</Sidebar.SectionHeader>
-      {labelItems.map((item) => (
-        <Sidebar.Item
-          key={item.key}
-          itemKey={item.key}
-          icon={<File size={20} />}
-        >
-          {item.label}
-        </Sidebar.Item>
-      ))}
+      <ElasticScrollArea>
+        {navItems.map((item) => (
+          <Sidebar.Item
+            key={item.key}
+            itemKey={item.key}
+            icon={item.icon}
+            endAdornment={
+              item.count ? (
+                <Badge shape="full" variant="secondary">
+                  {item.count}
+                </Badge>
+              ) : null
+            }
+          >
+            {item.label}
+          </Sidebar.Item>
+        ))}
+        <Sidebar.Separator />
+        <Sidebar.SectionHeader>Labels</Sidebar.SectionHeader>
+        {labelItems.map((item) => (
+          <Sidebar.Item
+            key={item.key}
+            itemKey={item.key}
+            icon={<File size={20} />}
+          >
+            {item.label}
+          </Sidebar.Item>
+        ))}
+      </ElasticScrollArea>
     </Sidebar.Nav>
     <Sidebar.Footer>
       <Sidebar.Item itemKey="profile" icon={<User size={20} />}>

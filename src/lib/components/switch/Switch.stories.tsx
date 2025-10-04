@@ -10,6 +10,14 @@ const meta: Meta<typeof Switch> = {
     label: { control: "text" },
     checked: { control: "boolean" },
     disabled: { control: "boolean" },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+    },
   },
 };
 
@@ -64,4 +72,26 @@ export const WithoutLabel: Story = {
   args: {
     "aria-label": "A switch without a visible label",
   },
+};
+
+export const AllSizes: Story = {
+  name: "All Sizes",
+  render: () => (
+    <div className="flex flex-col items-start gap-6">
+      <Switch size="sm" label="Small" defaultChecked />
+      <Switch size="md" label="Medium (Default)" defaultChecked />
+      <Switch size="lg" label="Large" defaultChecked />
+    </div>
+  ),
+};
+
+export const AllShapes: Story = {
+  name: "All Shapes",
+  render: () => (
+    <div className="flex flex-col items-start gap-6">
+      <Switch shape="full" label="Full (Default)" defaultChecked />
+      <Switch shape="minimal" label="Minimal" defaultChecked />
+      <Switch shape="sharp" label="Sharp" defaultChecked />
+    </div>
+  ),
 };

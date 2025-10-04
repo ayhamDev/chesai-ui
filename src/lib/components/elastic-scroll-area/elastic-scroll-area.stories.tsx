@@ -18,6 +18,11 @@ const meta: Meta<typeof ElasticScrollArea> = {
     },
   },
   argTypes: {
+    orientation: {
+      control: "select",
+      options: ["vertical", "horizontal"],
+      description: "The primary scrolling direction.",
+    },
     elasticity: {
       control: "boolean",
       description: "Toggles the elastic overscroll effect.",
@@ -34,7 +39,7 @@ const meta: Meta<typeof ElasticScrollArea> = {
     },
     pullToRefresh: {
       control: "boolean",
-      description: "Enables the pull-to-refresh functionality.",
+      description: "Enables the pull-to-refresh functionality (vertical only).",
     },
     pullThreshold: {
       control: { type: "number", min: 40, max: 200, step: 10 },
@@ -49,7 +54,7 @@ const meta: Meta<typeof ElasticScrollArea> = {
 export default meta;
 type Story = StoryObj<typeof ElasticScrollArea>;
 
-// Helper component to generate scrollable content
+// Helper component to generate vertical scrollable content
 const DummyContent = ({ itemCount = 30 }: { itemCount?: number }) => (
   <main className="p-6">
     <Typography variant="h3">Scroll Me</Typography>
@@ -72,35 +77,77 @@ const DummyContent = ({ itemCount = 30 }: { itemCount?: number }) => (
   </main>
 );
 
+// Helper component to generate horizontal scrollable content
+const DummyHorizontalContent = ({ itemCount = 20 }: { itemCount?: number }) => (
+  <div className="p-6 h-full">
+    <Typography variant="h3">Scroll Me Horizontally</Typography>
+    <Typography variant="muted">
+      Use Shift + Mouse Wheel, or swipe horizontally.
+    </Typography>
+    <div className="mt-4 flex gap-4 h-full">
+      {Array.from({ length: itemCount }).map((_, i) => (
+        <div
+          key={i}
+          className="h-32 w-32 flex-shrink-0 rounded-2xl bg-graphite-secondary flex items-center justify-center"
+        >
+          <Typography variant="small" className="text-graphite-foreground/50">
+            Item {i + 1}
+          </Typography>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 // A mock async function for the onRefresh prop
 const simulateRefresh = () => {
   return new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
 // A smart render function to wrap stories in a sized container
-const render = (args: any) => (
+const renderVertical = (args: any) => (
   <div className="w-96 h-[600px] rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
-    <ElasticScrollArea {...args} />
+    <ElasticScrollArea {...args}>
+      <DummyContent />
+    </ElasticScrollArea>
   </div>
 );
 
 // --- STORIES ---
 
 export const Default: Story = {
-  name: "1. Default Elasticity",
+  name: "1. Vertical (Default)",
   args: {
+    orientation: "vertical",
     elasticity: true,
     dampingFactor: 0.25,
     scrollbarVisibility: "auto",
-    children: <DummyContent />,
   },
-  render,
+  render: renderVertical,
+};
+
+export const Horizontal: Story = {
+  name: "2. Horizontal",
+  args: {
+    orientation: "horizontal",
+    elasticity: true,
+    dampingFactor: 0.25,
+    scrollbarVisibility: "auto",
+  },
+  render: (args) => (
+    <div className="w-[700px] h-72 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+      <ElasticScrollArea {...args}>
+        <DummyHorizontalContent />
+      </ElasticScrollArea>
+    </div>
+  ),
 };
 
 export const PullToRefresh: Story = {
-  name: "2. With Pull to Refresh",
+  name: "3. With Pull to Refresh (Vertical Only)",
   args: {
-    ...Default.args,
+    orientation: "vertical",
+    elasticity: true,
     pullToRefresh: true,
     onRefresh: simulateRefresh,
     pullThreshold: 80,
@@ -109,11 +156,11 @@ export const PullToRefresh: Story = {
     docs: {
       description: {
         story:
-          "**This demonstrates the new behavior.** Set `pullToRefresh={true}` and provide an `onRefresh` async function. When you pull and release, the content will immediately snap back into place while the indicator remains visible during the loading state.",
+          "Pull-to-refresh is only enabled when `orientation` is `vertical`. When you pull and release, the content snaps back while the indicator remains visible during the loading state.",
       },
     },
   },
-  render,
+  render: renderVertical,
 };
 
 // --- Custom Indicator Example ---
@@ -139,7 +186,7 @@ const CustomWeatherIndicator = ({
 };
 
 export const CustomRefreshIndicator: Story = {
-  name: "3. Custom Refresh Indicator",
+  name: "4. Custom Refresh Indicator",
   args: {
     ...PullToRefresh.args,
     pullThreshold: 100,
@@ -153,11 +200,11 @@ export const CustomRefreshIndicator: Story = {
       },
     },
   },
-  render,
+  render: renderVertical,
 };
 
 export const ScrollbarVisibility: Story = {
-  name: "4. Scrollbar Visibility",
+  name: "5. Scrollbar Visibility",
   parameters: {
     docs: {
       description: {
@@ -200,21 +247,4 @@ export const ScrollbarVisibility: Story = {
       </div>
     </div>
   ),
-};
-
-export const DisabledElasticity: Story = {
-  name: "5. Elasticity Disabled",
-  args: {
-    ...Default.args,
-    elasticity: false,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "When `elasticity` is set to `false`, the component behaves as a standard scroll area with no overscroll effect.",
-      },
-    },
-  },
-  render,
 };

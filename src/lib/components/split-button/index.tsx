@@ -40,7 +40,7 @@ export const SplitButton = ({
     className: clsx(
       mainAction.props.className, // No more error here
       shapeClasses[shape].left,
-      "!rounded-r-none"
+      shape === "sharp" ? "!rounded-r-none" : "!rounded-r-xs"
     ),
   });
 
@@ -48,7 +48,7 @@ export const SplitButton = ({
     className: clsx(
       dropdownTrigger.props.className, // No more error here
       shapeClasses[shape].right,
-      "!rounded-l-none"
+      shape === "sharp" ? "!rounded-l-none" : "!rounded-l-xs"
     ),
   });
 
