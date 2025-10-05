@@ -1,9 +1,10 @@
 import { cva, type VariantProps } from "class-variance-authority";
+import clsx from "clsx";
 import React from "react";
 
 const cardVariants = cva(
-  // Base classes: Added transition for smooth color/border changes
-  "p-5 shadow-xs transition-colors duration-200",
+  // Base classes: Removed hardcoded padding, as it's now a variant.
+  "shadow-xs transition-colors duration-200",
   {
     variants: {
       variant: {
@@ -17,11 +18,19 @@ const cardVariants = cva(
         minimal: "rounded-xl",
         sharp: "rounded-none",
       },
+      // New variant for controlling padding
+      padding: {
+        none: "p-0",
+        sm: "p-2",
+        md: "p-5", // This was the original hardcoded value
+        lg: "p-8",
+      },
     },
-    // Set default variant to primary
+    // Set default variants, including the new padding
     defaultVariants: {
       variant: "primary",
       shape: "minimal",
+      padding: "md", // Sets the default padding to p-5
     },
   }
 );
@@ -31,10 +40,12 @@ export interface CardProps
     VariantProps<typeof cardVariants> {}
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, shape, variant, ...props }, ref) => {
+  // Destructure the new 'padding' prop
+  ({ className, shape, variant, padding, ...props }, ref) => {
     return (
       <div
-        className={cardVariants({ shape, variant, className })}
+        // Pass the 'padding' prop to the cva function
+        className={clsx(cardVariants({ shape, variant, padding }), className)}
         ref={ref}
         {...props}
       />

@@ -2231,11 +2231,12 @@ This section contains the source code for the `card` component and its correspon
 **Component Source (`src\lib\components\card\index.tsx`)**
 ```tsx
 import { cva, type VariantProps } from "class-variance-authority";
+import clsx from "clsx";
 import React from "react";
 
 const cardVariants = cva(
-  // Base classes: Added transition for smooth color/border changes
-  "p-5 shadow-xs transition-colors duration-200",
+  // Base classes: Removed hardcoded padding, as it's now a variant.
+  "shadow-xs transition-colors duration-200",
   {
     variants: {
       variant: {
@@ -2249,11 +2250,19 @@ const cardVariants = cva(
         minimal: "rounded-xl",
         sharp: "rounded-none",
       },
+      // New variant for controlling padding
+      padding: {
+        none: "p-0",
+        sm: "p-2",
+        md: "p-5", // This was the original hardcoded value
+        lg: "p-8",
+      },
     },
-    // Set default variant to primary
+    // Set default variants, including the new padding
     defaultVariants: {
       variant: "primary",
       shape: "minimal",
+      padding: "md", // Sets the default padding to p-5
     },
   }
 );
@@ -2263,10 +2272,12 @@ export interface CardProps
     VariantProps<typeof cardVariants> {}
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, shape, variant, ...props }, ref) => {
+  // Destructure the new 'padding' prop
+  ({ className, shape, variant, padding, ...props }, ref) => {
     return (
       <div
-        className={cardVariants({ shape, variant, className })}
+        // Pass the 'padding' prop to the cva function
+        className={clsx(cardVariants({ shape, variant, padding }), className)}
         ref={ref}
         {...props}
       />
@@ -3156,6 +3167,548 @@ export const DialogMobile: Story = {
           {/* --- END FIX --- */}
         </CommandDialog>
       </div>
+    );
+  },
+};
+```
+
+
+### Component: `context-menu`
+
+This section contains the source code for the `context-menu` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\context-menu\index.tsx`)**
+```tsx
+"use client";
+
+import * as RadixContextMenu from "@radix-ui/react-context-menu";
+import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
+import { Check, ChevronRight, Circle } from "lucide-react";
+import React, { createContext, useContext, useRef } from "react";
+import useRipple from "use-ripple-hook";
+
+// --- TYPES & CONTEXT ---
+type ContextMenuShape = "full" | "minimal" | "sharp";
+type ContextMenuSize = "sm" | "md" | "lg";
+
+interface ContextMenuContextProps {
+  shape: ContextMenuShape;
+  size: ContextMenuSize;
+}
+
+const ContextMenuContext = createContext<ContextMenuContextProps>({
+  shape: "minimal",
+  size: "md",
+});
+
+const useContextMenuContext = () => useContext(ContextMenuContext);
+
+// --- CVA VARIANTS ---
+const contentVariants = cva(
+  [
+    "z-50 min-w-[12rem] max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
+    "border border-graphite-border bg-graphite-card p-1.5",
+    "shadow-md",
+  ],
+  {
+    variants: {
+      shape: {
+        full: "rounded-3xl",
+        minimal: "rounded-xl",
+        sharp: "rounded-none",
+      },
+    },
+    defaultVariants: {
+      shape: "minimal",
+    },
+  }
+);
+
+const itemVariants = cva(
+  [
+    "relative flex cursor-pointer select-none items-center gap-2 rounded-lg outline-none overflow-hidden",
+    "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+    "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
+    "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
+    "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
+    "[&_svg]:pointer-events-none [&_svg]:shrink-0",
+  ],
+  {
+    variants: {
+      size: {
+        sm: "px-2 py-1.5 text-xs",
+        md: "px-3 py-2.5 text-sm",
+        lg: "px-4 py-3 text-base",
+      },
+      shape: {
+        full: "",
+        minimal: "",
+        sharp: "!rounded-none",
+      },
+    },
+    defaultVariants: {
+      size: "md",
+    },
+  }
+);
+
+// --- ROOT COMPONENT ---
+interface ContextMenuProps extends RadixContextMenu.ContextMenuProps {
+  shape?: ContextMenuShape;
+  size?: ContextMenuSize;
+}
+
+const ContextMenuRoot: React.FC<ContextMenuProps> = ({
+  shape = "minimal",
+  size = "md",
+  ...props
+}) => {
+  return (
+    <ContextMenuContext.Provider value={{ shape, size }}>
+      <RadixContextMenu.Root {...props} />
+    </ContextMenuContext.Provider>
+  );
+};
+
+// --- RE-EXPORTED PRIMITIVES ---
+const ContextMenuTrigger = RadixContextMenu.Trigger;
+const ContextMenuGroup = RadixContextMenu.Group;
+const ContextMenuPortal = RadixContextMenu.Portal;
+const ContextMenuSub = RadixContextMenu.Sub;
+const ContextMenuRadioGroup = RadixContextMenu.RadioGroup;
+
+// --- ANIMATED CONTENT ---
+const ContextMenuContent = React.forwardRef<
+  React.ElementRef<typeof RadixContextMenu.Content>,
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Content>
+>(({ className, ...props }, ref) => {
+  const { shape } = useContextMenuContext();
+  return (
+    <RadixContextMenu.Portal>
+      <RadixContextMenu.Content
+        ref={ref}
+        className={clsx(
+          contentVariants({ shape }),
+          "data-[state=open]:animate-menu-enter",
+          "data-[state=closed]:animate-menu-exit",
+          "data-[side=top]:origin-bottom",
+          "data-[side=bottom]:origin-top",
+          "data-[side=left]:origin-right",
+          "data-[side=right]:origin-left",
+          className
+        )}
+        {...props}
+      />
+    </RadixContextMenu.Portal>
+  );
+});
+ContextMenuContent.displayName = RadixContextMenu.Content.displayName;
+
+// --- ENHANCED ITEM COMPONENTS ---
+const ContextMenuItem = React.forwardRef<
+  React.ElementRef<typeof RadixContextMenu.Item>,
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Item> & {
+    inset?: boolean;
+  }
+>(({ className, inset, ...props }, ref) => {
+  const { shape, size } = useContextMenuContext();
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(128, 128, 128, 0.1)",
+    duration: 400,
+  });
+  React.useImperativeHandle(ref, () => localRef.current!);
+
+  return (
+    <RadixContextMenu.Item
+      ref={localRef}
+      onPointerDown={event}
+      className={clsx(
+        itemVariants({ size, shape }),
+        inset && "pl-8",
+        className
+      )}
+      {...props}
+    />
+  );
+});
+ContextMenuItem.displayName = RadixContextMenu.Item.displayName;
+
+const ContextMenuCheckboxItem = React.forwardRef<
+  React.ElementRef<typeof RadixContextMenu.CheckboxItem>,
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.CheckboxItem>
+>(({ className, children, ...props }, ref) => {
+  const { shape, size } = useContextMenuContext();
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(128, 128, 128, 0.1)",
+    duration: 400,
+  });
+  React.useImperativeHandle(ref, () => localRef.current!);
+
+  return (
+    <RadixContextMenu.CheckboxItem
+      ref={localRef}
+      onPointerDown={event}
+      className={clsx(itemVariants({ size, shape }), "pl-8", className)}
+      {...props}
+    >
+      <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+        <RadixContextMenu.ItemIndicator>
+          <Check className="h-4 w-4 animate-check-in" />
+        </RadixContextMenu.ItemIndicator>
+      </span>
+      {children}
+    </RadixContextMenu.CheckboxItem>
+  );
+});
+ContextMenuCheckboxItem.displayName = RadixContextMenu.CheckboxItem.displayName;
+
+const ContextMenuRadioItem = React.forwardRef<
+  React.ElementRef<typeof RadixContextMenu.RadioItem>,
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.RadioItem>
+>(({ className, children, ...props }, ref) => {
+  const { shape, size } = useContextMenuContext();
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(128, 128, 128, 0.1)",
+    duration: 400,
+  });
+  React.useImperativeHandle(ref, () => localRef.current!);
+
+  return (
+    <RadixContextMenu.RadioItem
+      ref={localRef}
+      onPointerDown={event}
+      className={clsx(itemVariants({ size, shape }), "pl-8", className)}
+      {...props}
+    >
+      <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+        <RadixContextMenu.ItemIndicator>
+          <Circle className="h-2 w-2 fill-current animate-check-in" />
+        </RadixContextMenu.ItemIndicator>
+      </span>
+      {children}
+    </RadixContextMenu.RadioItem>
+  );
+});
+ContextMenuRadioItem.displayName = RadixContextMenu.RadioItem.displayName;
+
+const ContextMenuSubTrigger = React.forwardRef<
+  React.ElementRef<typeof RadixContextMenu.SubTrigger>,
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.SubTrigger> & {
+    inset?: boolean;
+  }
+>(({ className, children, inset, ...props }, ref) => {
+  const { shape, size } = useContextMenuContext();
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(128, 128, 128, 0.1)",
+    duration: 400,
+  });
+  React.useImperativeHandle(ref, () => localRef.current!);
+
+  return (
+    <RadixContextMenu.SubTrigger
+      ref={localRef}
+      onPointerDown={event}
+      className={clsx(
+        itemVariants({ size, shape }),
+        inset && "pl-8",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronRight className="ml-auto h-4 w-4" />
+    </RadixContextMenu.SubTrigger>
+  );
+});
+ContextMenuSubTrigger.displayName = RadixContextMenu.SubTrigger.displayName;
+
+const ContextMenuSubContent = React.forwardRef<
+  React.ElementRef<typeof RadixContextMenu.SubContent>,
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.SubContent>
+>(({ className, ...props }, ref) => {
+  const { shape } = useContextMenuContext();
+  return (
+    <RadixContextMenu.SubContent
+      ref={ref}
+      className={clsx(
+        contentVariants({ shape }),
+        "data-[state=open]:data-[side=right]:animate-submenu-enter-right",
+        "data-[state=closed]:data-[side=right]:animate-submenu-exit-right",
+        "data-[state=open]:data-[side=left]:animate-submenu-enter-left",
+        "data-[state=closed]:data-[side=left]:animate-submenu-exit-left",
+        className
+      )}
+      {...props}
+    />
+  );
+});
+ContextMenuSubContent.displayName = RadixContextMenu.SubContent.displayName;
+
+// --- OTHER COMPONENTS ---
+const ContextMenuLabel = React.forwardRef<
+  React.ElementRef<typeof RadixContextMenu.Label>,
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Label> & {
+    inset?: boolean;
+  }
+>(({ className, inset, ...props }, ref) => (
+  <RadixContextMenu.Label
+    ref={ref}
+    className={clsx(
+      "px-3 py-2 text-xs font-medium text-graphite-foreground/70 tracking-wide",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  />
+));
+ContextMenuLabel.displayName = RadixContextMenu.Label.displayName;
+
+const ContextMenuSeparator = React.forwardRef<
+  React.ElementRef<typeof RadixContextMenu.Separator>,
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Separator>
+>(({ className, ...props }, ref) => (
+  <RadixContextMenu.Separator
+    ref={ref}
+    className={clsx("-mx-1 my-1.5 h-px bg-graphite-border/60", className)}
+    {...props}
+  />
+));
+ContextMenuSeparator.displayName = RadixContextMenu.Separator.displayName;
+
+const ContextMenuShortcut = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement>) => {
+  return (
+    <span
+      className={clsx(
+        "ml-auto text-xs font-mono tracking-wider text-graphite-foreground/50",
+        className
+      )}
+      {...props}
+    />
+  );
+};
+ContextMenuShortcut.displayName = "ContextMenuShortcut";
+
+// --- COMPOUND EXPORT ---
+export const ContextMenu = Object.assign(ContextMenuRoot, {
+  Trigger: ContextMenuTrigger,
+  Content: ContextMenuContent,
+  Item: ContextMenuItem,
+  CheckboxItem: ContextMenuCheckboxItem,
+  RadioGroup: ContextMenuRadioGroup,
+  RadioItem: ContextMenuRadioItem,
+  Label: ContextMenuLabel,
+  Separator: ContextMenuSeparator,
+  Shortcut: ContextMenuShortcut,
+  Group: ContextMenuGroup,
+  Portal: ContextMenuPortal,
+  Sub: ContextMenuSub,
+  SubContent: ContextMenuSubContent,
+  SubTrigger: ContextMenuSubTrigger,
+});
+```
+
+**Storybook Stories (`context-menu.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import {
+  Copy,
+  ExternalLink,
+  Pen,
+  Share2,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
+import { useState } from "react";
+import { Card } from "../card";
+import { Typography } from "../typography";
+import { ContextMenu } from "./index";
+
+const meta: Meta<typeof ContextMenu> = {
+  title: "Components/ContextMenu",
+  component: ContextMenu,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A menu that appears on right-click (desktop) or long-press (mobile). It is built on Radix UI for accessibility.",
+      },
+    },
+  },
+  argTypes: {
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+    },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof ContextMenu>;
+
+const MenuContent = () => (
+  <>
+    <ContextMenu.Item>
+      <Pen className="mr-2 h-4 w-4" />
+      <span>Edit</span>
+      <ContextMenu.Shortcut>⌘E</ContextMenu.Shortcut>
+    </ContextMenu.Item>
+    <ContextMenu.Item>
+      <Copy className="mr-2 h-4 w-4" />
+      <span>Copy</span>
+      <ContextMenu.Shortcut>⌘C</ContextMenu.Shortcut>
+    </ContextMenu.Item>
+    <ContextMenu.Separator />
+    <ContextMenu.Item>
+      <Share2 className="mr-2 h-4 w-4" />
+      <span>Share</span>
+    </ContextMenu.Item>
+    <ContextMenu.Separator />
+    <ContextMenu.Item className="text-red-500 hover:!bg-red-500/10">
+      <Trash2 className="mr-2 h-4 w-4" />
+      <span>Delete</span>
+      <ContextMenu.Shortcut>⌘⌫</ContextMenu.Shortcut>
+    </ContextMenu.Item>
+  </>
+);
+
+export const Default: Story = {
+  name: "1. Basic Usage",
+  args: {
+    shape: "minimal",
+    size: "md",
+  },
+  render: (args) => (
+    <ContextMenu {...args}>
+      <ContextMenu.Trigger asChild>
+        <Card className="flex h-48 w-80 cursor-default items-center justify-center border-2 border-dashed">
+          <Typography variant="muted">
+            Right-click or long-press here
+          </Typography>
+        </Card>
+      </ContextMenu.Trigger>
+      <ContextMenu.Content>
+        <MenuContent />
+      </ContextMenu.Content>
+    </ContextMenu>
+  ),
+};
+
+export const AllSizes: Story = {
+  name: "2. All Sizes",
+  render: () => (
+    <div className="flex items-start gap-8">
+      <ContextMenu size="sm">
+        <ContextMenu.Trigger asChild>
+          <Card className="flex h-32 w-48 cursor-default items-center justify-center border-2 border-dashed">
+            <Typography variant="small">Small Menu</Typography>
+          </Card>
+        </ContextMenu.Trigger>
+        <ContextMenu.Content>
+          <MenuContent />
+        </ContextMenu.Content>
+      </ContextMenu>
+      <ContextMenu size="md">
+        <ContextMenu.Trigger asChild>
+          <Card className="flex h-32 w-48 cursor-default items-center justify-center border-2 border-dashed">
+            <Typography variant="small">Medium Menu</Typography>
+          </Card>
+        </ContextMenu.Trigger>
+        <ContextMenu.Content>
+          <MenuContent />
+        </ContextMenu.Content>
+      </ContextMenu>
+      <ContextMenu size="lg">
+        <ContextMenu.Trigger asChild>
+          <Card className="flex h-32 w-48 cursor-default items-center justify-center border-2 border-dashed">
+            <Typography variant="small">Large Menu</Typography>
+          </Card>
+        </ContextMenu.Trigger>
+        <ContextMenu.Content>
+          <MenuContent />
+        </ContextMenu.Content>
+      </ContextMenu>
+    </div>
+  ),
+};
+
+export const KitchenSink: Story = {
+  name: "3. Kitchen Sink",
+  args: {
+    size: "md",
+    shape: "minimal",
+  },
+  render: function Render(args) {
+    const [showGrid, setShowGrid] = useState(true);
+    const [theme, setTheme] = useState("dark");
+    return (
+      <ContextMenu {...args}>
+        <ContextMenu.Trigger asChild>
+          <Card className="flex h-48 w-80 cursor-default items-center justify-center border-2 border-dashed">
+            <Typography variant="muted">
+              Right-click or long-press here
+            </Typography>
+          </Card>
+        </ContextMenu.Trigger>
+        <ContextMenu.Content>
+          <ContextMenu.Item>
+            Open in New Tab <ContextMenu.Shortcut>⌘T</ContextMenu.Shortcut>
+          </ContextMenu.Item>
+          <ContextMenu.Item disabled>
+            Print... <ContextMenu.Shortcut>⌘P</ContextMenu.Shortcut>
+          </ContextMenu.Item>
+          <ContextMenu.Separator />
+          <ContextMenu.CheckboxItem
+            checked={showGrid}
+            onCheckedChange={setShowGrid}
+          >
+            Show Grid Lines
+          </ContextMenu.CheckboxItem>
+          <ContextMenu.Separator />
+          <ContextMenu.Label>Theme</ContextMenu.Label>
+          <ContextMenu.RadioGroup value={theme} onValueChange={setTheme}>
+            <ContextMenu.RadioItem value="light">Light</ContextMenu.RadioItem>
+            <ContextMenu.RadioItem value="dark">Dark</ContextMenu.RadioItem>
+            <ContextMenu.RadioItem value="system">System</ContextMenu.RadioItem>
+          </ContextMenu.RadioGroup>
+          <ContextMenu.Separator />
+          <ContextMenu.Sub>
+            <ContextMenu.SubTrigger>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Share with...
+            </ContextMenu.SubTrigger>
+            <ContextMenu.Portal>
+              <ContextMenu.SubContent>
+                <ContextMenu.Item>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Email Link
+                </ContextMenu.Item>
+                <ContextMenu.Item>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy Link
+                </ContextMenu.Item>
+              </ContextMenu.SubContent>
+            </ContextMenu.Portal>
+          </ContextMenu.Sub>
+        </ContextMenu.Content>
+      </ContextMenu>
     );
   },
 };
@@ -11894,7 +12447,7 @@ export const SplitButton = ({
     className: clsx(
       mainAction.props.className, // No more error here
       shapeClasses[shape].left,
-      "!rounded-r-none"
+      shape === "sharp" ? "!rounded-r-none" : "!rounded-r-xs"
     ),
   });
 
@@ -11902,7 +12455,7 @@ export const SplitButton = ({
     className: clsx(
       dropdownTrigger.props.className, // No more error here
       shapeClasses[shape].right,
-      "!rounded-l-none"
+      shape === "sharp" ? "!rounded-l-none" : "!rounded-l-xs"
     ),
   });
 
@@ -12020,23 +12573,81 @@ This section contains the source code for the `switch` component and its corresp
 
 **Component Source (`src\lib\components\switch\index.tsx`)**
 ```tsx
-import React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
+import React from "react";
+
+// CVA for the track (the background)
+const switchTrackVariants = cva(
+  "transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-graphite-ring peer-focus:ring-offset-2 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed bg-graphite-border peer-checked:bg-graphite-primary",
+  {
+    variants: {
+      size: {
+        sm: "w-10 h-6",
+        md: "w-12 h-7",
+        lg: "w-14 h-8",
+      },
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-xl",
+        sharp: "rounded-none",
+      },
+    },
+    defaultVariants: {
+      size: "md",
+      shape: "full",
+    },
+  }
+);
+
+// CVA for the thumb (the moving circle)
+const switchThumbVariants = cva(
+  "absolute bg-white transition-transform duration-200 ease-in-out shadow-lg",
+  {
+    variants: {
+      size: {
+        sm: "h-5 w-5 top-[2px] left-[2px]",
+        md: "h-6 w-6 top-[2px] left-[2px]",
+        lg: "h-7 w-7 top-[2px] left-[2px]",
+      },
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-lg",
+        sharp: "rounded-none",
+      },
+    },
+    defaultVariants: {
+      size: "md",
+      shape: "full",
+    },
+  }
+);
+
+// Helper map for the translation distance based on size
+const translateMap: Record<"sm" | "md" | "lg", string> = {
+  sm: "peer-checked:translate-x-4",
+  md: "peer-checked:translate-x-5",
+  lg: "peer-checked:translate-x-6",
+};
 
 export interface SwitchProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">, // Omit the conflicting 'size' prop
+    VariantProps<typeof switchTrackVariants> {
   label?: string;
 }
 
 export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
-  ({ className, id, label, ...props }, ref) => {
+  ({ className, id, label, size = "md", shape = "full", ...props }, ref) => {
     const uniqueId = React.useId();
     const switchId = id || uniqueId;
 
     return (
       <label
         htmlFor={switchId}
-        className="inline-flex items-center cursor-pointer"
+        className={clsx(
+          "inline-flex items-center cursor-pointer",
+          className // Pass down className to the top-level label
+        )}
       >
         <div className="relative">
           <input
@@ -12046,35 +12657,13 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
             className="sr-only peer"
             {...props}
           />
-          {/* The Track (w-12 = 48px, h-8 = 32px) - UPDATED */}
+          {/* The Track */}
+          <div className={clsx(switchTrackVariants({ size, shape }))} />
+          {/* The Thumb */}
           <div
             className={clsx(
-              "w-13 h-8 rounded-full transition-colors border border-graphite-primary/10", // w-12 h-8 applied
-              "bg-graphite-border",
-              "peer-checked:bg-graphite-primary",
-              "peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-graphite-ring peer-focus:ring-offset-2",
-              "peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"
-            )}
-          />
-          {/* The Thumb (the circle) - UPDATED */}
-          <div
-            className={clsx(
-              "absolute bg-white rounded-full transition-transform duration-200 ease-in-out shadow-lg",
-              // ============================ UPDATED FIX ============================
-              // New Track Dimensions: w-12 (48px), h-8 (32px)
-
-              // 1. Thumb Size: Make the thumb slightly smaller than the track height (e.g., 28px for 32px track)
-              // Using arbitrary values for exact pixel dimensions
-              "h-[26.5px] w-[26.5px]", // 28px x 28px (h-7/w-7 is 1.75rem which is 28px)
-
-              // 2. Initial Position: Center the 28px thumb in the 32px track
-              // (32px (track height) - 28px (thumb size)) / 2 = 2px
-              "top-[2.5px] left-[3px]", // top-0.5/left-0.5 is 2px
-
-              // 3. Travel Distance: Track width (48px) - Thumb size (28px) - 2 * offset (4px) = 16px
-              // 16px is translate-x-4
-              "peer-checked:translate-x-5" // 16px
-              // =======================================================================
+              switchThumbVariants({ size, shape }),
+              translateMap[size]
             )}
           />
         </div>
@@ -12105,6 +12694,14 @@ const meta: Meta<typeof Switch> = {
     label: { control: "text" },
     checked: { control: "boolean" },
     disabled: { control: "boolean" },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+    },
   },
 };
 
@@ -12159,6 +12756,772 @@ export const WithoutLabel: Story = {
   args: {
     "aria-label": "A switch without a visible label",
   },
+};
+
+export const AllSizes: Story = {
+  name: "All Sizes",
+  render: () => (
+    <div className="flex flex-col items-start gap-6">
+      <Switch size="sm" label="Small" defaultChecked />
+      <Switch size="md" label="Medium (Default)" defaultChecked />
+      <Switch size="lg" label="Large" defaultChecked />
+    </div>
+  ),
+};
+
+export const AllShapes: Story = {
+  name: "All Shapes",
+  render: () => (
+    <div className="flex flex-col items-start gap-6">
+      <Switch shape="full" label="Full (Default)" defaultChecked />
+      <Switch shape="minimal" label="Minimal" defaultChecked />
+      <Switch shape="sharp" label="Sharp" defaultChecked />
+    </div>
+  ),
+};
+```
+
+
+### Component: `table`
+
+This section contains the source code for the `table` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\table\index.tsx`)**
+```tsx
+"use client";
+
+import { useMediaQuery } from "@uidotdev/usehooks";
+import { cva, type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
+import React, { createContext, useContext, useMemo, useState } from "react";
+import { Card, type CardProps } from "../card";
+import { Typography } from "../typography";
+
+// --- 1. TYPES & CONTEXT (Unchanged) ---
+
+export interface ColumnDef<TData> {
+  accessorKey: keyof TData;
+  header: React.ReactNode;
+  cell?: (row: TData) => React.ReactNode;
+  /** Show this column in the accordion header on mobile */
+  isAccordionHeader?: boolean;
+}
+
+type ResponsiveLayout = "card" | "accordion" | "scroll";
+
+interface TableContextProps<TData> {
+  columns: ColumnDef<TData>[];
+  responsiveLayout: ResponsiveLayout;
+  isMobile: boolean;
+}
+
+const TableContext = createContext<TableContextProps<any> | null>(null);
+
+const useTableContext = <TData,>() => {
+  const context = useContext(
+    TableContext as React.Context<TableContextProps<TData> | null>
+  );
+  if (!context) {
+    throw new Error("Table components must be used within a <Table.Root>");
+  }
+  return context;
+};
+
+// --- 2. CVA VARIANTS (MODIFIED) ---
+
+const tableVariants = cva("w-full text-sm", {
+  variants: {
+    layout: {
+      desktop: "table-auto border-collapse",
+      scroll: "table-auto border-collapse",
+      card: "flex flex-col gap-3",
+      accordion: "flex flex-col gap-2",
+    },
+  },
+});
+
+const thVariants = cva(
+  "p-4 font-semibold text-left border-b border-graphite-border",
+  {
+    variants: {
+      isFirstSticky: {
+        true: "sticky left-0 z-10",
+      },
+      stickyCellVariant: {
+        card: "",
+        secondary: "",
+      },
+    },
+    compoundVariants: [
+      {
+        isFirstSticky: true,
+        stickyCellVariant: "card",
+        className: "bg-graphite-card",
+      },
+      {
+        isFirstSticky: true,
+        stickyCellVariant: "secondary",
+        className: "bg-graphite-secondary",
+      },
+    ],
+  }
+);
+
+const tdVariants = cva("p-4 border-b border-graphite-border align-top", {
+  variants: {
+    isFirstSticky: {
+      true: "sticky left-0 z-10",
+    },
+    stickyCellVariant: {
+      card: "",
+      secondary: "",
+    },
+  },
+  compoundVariants: [
+    {
+      isFirstSticky: true,
+      stickyCellVariant: "card",
+      className: "bg-graphite-card",
+    },
+    {
+      isFirstSticky: true,
+      stickyCellVariant: "secondary",
+      className: "bg-graphite-secondary",
+    },
+  ],
+});
+
+// --- 3. SUB-COMPONENTS (MODIFIED) ---
+
+const TableHead = React.forwardRef<
+  HTMLTableCellElement,
+  React.ThHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
+>(({ children, className, colIndex, ...props }, ref) => {
+  const { responsiveLayout } = useTableContext();
+  const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
+  // This component now needs access to the root props for stickyCellVariant
+  const { stickyCellVariant } = useContext(TableRootContext);
+  return (
+    <th
+      ref={ref}
+      className={thVariants({ isFirstSticky, stickyCellVariant, className })}
+      {...props}
+    >
+      {children}
+    </th>
+  );
+});
+TableHead.displayName = "Table.Head";
+
+const TableCell = React.forwardRef<
+  HTMLTableCellElement,
+  React.TdHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
+>(({ children, className, colIndex, ...props }, ref) => {
+  const { responsiveLayout } = useTableContext();
+  const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
+  // This component now needs access to the root props for stickyCellVariant
+  const { stickyCellVariant } = useContext(TableRootContext);
+  return (
+    <td
+      ref={ref}
+      className={tdVariants({ isFirstSticky, stickyCellVariant, className })}
+      {...props}
+    >
+      {children}
+    </td>
+  );
+});
+TableCell.displayName = "Table.Cell";
+
+// --- Row Components (Responsive Logic - REFACTORED) ---
+
+interface TableRowProps<TData> extends Omit<CardProps, "children"> {
+  rowData: TData;
+}
+
+const CardRow = <TData extends {}>({
+  rowData,
+  ...cardProps
+}: TableRowProps<TData>) => {
+  const { columns } = useTableContext<TData>();
+  return (
+    <Card shape="minimal" variant="secondary" {...cardProps} padding="lg">
+      <div className="flex justify-between items-center flex-wrap gap-8">
+        {columns.map((col) => {
+          const value = rowData[col.accessorKey];
+          const renderedCell = col.cell ? col.cell(rowData) : String(value);
+          return (
+            <div key={String(col.accessorKey)}>
+              <Typography variant="muted" className="!mt-0 !text-xs">
+                {col.header}
+              </Typography>
+              <Typography
+                variant="small"
+                className="!mt-0 font-semibold truncate"
+              >
+                {renderedCell}
+              </Typography>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+};
+
+const AccordionRow = <TData extends {}>({
+  rowData,
+  ...cardProps
+}: TableRowProps<TData>) => {
+  const { columns } = useTableContext<TData>();
+  const { accordionDetailsProps } = useContext(TableRootContext);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const accordionHeaderCols = columns.filter((c) => c.isAccordionHeader);
+  const accordionBodyCols = columns.filter((c) => !c.isAccordionHeader);
+
+  return (
+    <Card
+      shape="minimal"
+      variant="secondary"
+      {...cardProps}
+      padding="none"
+      className={clsx("overflow-hidden", cardProps.className)}
+    >
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full p-5 text-left"
+      >
+        <div className="flex justify-between items-center gap-8 flex-1 min-w-0 space-y-1">
+          {accordionHeaderCols.map((col) => {
+            const value = rowData[col.accessorKey];
+            const renderedCell = col.cell ? col.cell(rowData) : String(value);
+            return (
+              <div key={col.accessorKey?.toString()}>
+                <Typography
+                  variant="muted"
+                  className="!mt-0 font-semibold truncate"
+                >
+                  {col.header}
+                </Typography>
+                <Typography
+                  variant="p"
+                  className="!mt-0 font-semibold truncate"
+                >
+                  {renderedCell}
+                </Typography>
+              </div>
+            );
+          })}
+        </div>
+        <ChevronDown
+          className={clsx(
+            "ml-4 h-5 w-5 transition-transform flex-shrink-0",
+            isOpen && "rotate-180"
+          )}
+        />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: "spring", duration: 0.4, bounce: 0 }}
+            className="overflow-hidden"
+          >
+            <div
+              {...accordionDetailsProps}
+              className={clsx(
+                "flex justify-between items-center flex-wrap gap-8 gap-y-4 p-4 border-t border-graphite-border",
+                accordionDetailsProps?.className
+              )}
+            >
+              {accordionBodyCols.map((col) => {
+                const value = rowData[col.accessorKey];
+                const renderedCell = col.cell
+                  ? col.cell(rowData)
+                  : String(value);
+                return (
+                  <div key={String(col.accessorKey)}>
+                    <Typography variant="muted" className="!mt-0 !text-xs">
+                      {col.header}
+                    </Typography>
+                    <Typography
+                      variant="small"
+                      className="!mt-0 font-semibold truncate"
+                    >
+                      {renderedCell}
+                    </Typography>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Card>
+  );
+};
+
+const TableRow = <TData extends {}>({
+  rowData,
+  ...rest
+}: TableRowProps<TData>) => {
+  const { isMobile, responsiveLayout, columns } = useTableContext<TData>();
+
+  if (isMobile) {
+    if (responsiveLayout === "card") {
+      return <CardRow rowData={rowData} {...rest} />;
+    }
+    if (responsiveLayout === "accordion") {
+      return <AccordionRow rowData={rowData} {...rest} />;
+    }
+  }
+
+  return (
+    <tr
+      className={clsx("hover:bg-graphite-secondary/50", rest.className)}
+      {...rest}
+    >
+      {columns.map((col, colIndex) => {
+        const value = rowData[col.accessorKey];
+        return (
+          <TableCell key={String(col.accessorKey)} colIndex={colIndex}>
+            {col.cell ? col.cell(rowData) : String(value)}
+          </TableCell>
+        );
+      })}
+    </tr>
+  );
+};
+TableRow.displayName = "Table.Row";
+
+// --- 4. ROOT COMPONENT (REFACTORED) ---
+
+export interface TableRootProps<TData>
+  extends React.HTMLAttributes<HTMLTableElement>,
+    VariantProps<typeof tableVariants> {
+  data: TData[];
+  columns: ColumnDef<TData>[];
+  responsiveLayout?: ResponsiveLayout;
+  breakpoint?: "sm" | "md" | "lg";
+  rowProps?: (row: TData) => Omit<CardProps, "children">;
+  stickyCellVariant?: "card" | "secondary";
+  accordionDetailsProps?: React.HTMLAttributes<HTMLDivElement>;
+}
+
+// Create a new context to pass root-level props down to deeply nested children
+const TableRootContext = createContext<
+  Pick<TableRootProps<any>, "stickyCellVariant" | "accordionDetailsProps">
+>({
+  stickyCellVariant: "card",
+});
+
+const TableRoot = <TData extends {}>({
+  className,
+  data,
+  columns,
+  responsiveLayout = "scroll",
+  breakpoint = "md",
+  rowProps,
+  stickyCellVariant = "card",
+  accordionDetailsProps,
+  ...props
+}: TableRootProps<TData>) => {
+  const breakpointMap = { sm: 640, md: 768, lg: 1024 };
+  const isMobile = useMediaQuery(`(max-width: ${breakpointMap[breakpoint]}px)`);
+
+  const contextValue = useMemo(
+    () => ({ columns, responsiveLayout, isMobile }),
+    [columns, responsiveLayout, isMobile]
+  );
+
+  const rootContextValue = useMemo(
+    () => ({ stickyCellVariant, accordionDetailsProps }),
+    [stickyCellVariant, accordionDetailsProps]
+  );
+
+  const layout = isMobile ? responsiveLayout : "desktop";
+
+  return (
+    <TableRootContext.Provider value={rootContextValue}>
+      <TableContext.Provider value={contextValue}>
+        {layout === "card" || layout === "accordion" ? (
+          <div className={tableVariants({ layout, className })} {...props}>
+            {data.map((row, index) => (
+              <TableRow
+                key={index}
+                rowData={row}
+                {...(rowProps ? rowProps(row) : {})}
+              />
+            ))}
+          </div>
+        ) : (
+          <div
+            className={clsx(
+              isMobile &&
+                responsiveLayout === "scroll" &&
+                "w-full overflow-x-auto"
+            )}
+          >
+            <table className={tableVariants({ layout, className })} {...props}>
+              <thead>
+                <tr>
+                  {columns.map((col, index) => (
+                    <TableHead key={String(col.accessorKey)} colIndex={index}>
+                      {col.header}
+                    </TableHead>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row, index) => (
+                  <TableRow
+                    key={index}
+                    rowData={row}
+                    {...(rowProps ? rowProps(row) : {})}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </TableContext.Provider>
+    </TableRootContext.Provider>
+  );
+};
+TableRoot.displayName = "Table";
+
+export const Table = Object.assign(TableRoot, {
+  Row: TableRow,
+  Head: TableHead,
+  Cell: TableCell,
+});
+```
+
+**Storybook Stories (`Table.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { Badge } from "../badge";
+import { Button } from "../button";
+import { Card } from "../card";
+import { Table, type ColumnDef, type TableRootProps } from "./index";
+
+const meta: Meta<TableRootProps<Payment>> = {
+  title: "Components/Data/Table",
+  component: Table,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A versatile and responsive data table. It displays data in a standard tabular format on desktop and transforms into a specified layout (cards, accordion, or scrollable) on mobile viewports.",
+      },
+    },
+  },
+  argTypes: {
+    responsiveLayout: {
+      control: "select",
+      options: ["card", "accordion", "scroll"],
+      description: "Determines the table's layout on mobile viewports.",
+    },
+    breakpoint: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+      description: "The viewport width at which the layout becomes responsive.",
+    },
+    stickyCellVariant: {
+      control: "select",
+      options: ["card", "secondary"],
+      description: "Background color for the sticky column in 'scroll' mode.",
+    },
+    data: { control: false },
+    columns: { control: false },
+    rowProps: { control: false },
+    accordionDetailsProps: { control: false },
+  },
+  // We remove the global render function to apply custom wrappers per story
+};
+
+export default meta;
+type Story = StoryObj<TableRootProps<Payment>>;
+
+// --- Sample Data and Columns ---
+
+interface Payment {
+  id: string;
+  account: string;
+  amount: number;
+  dueDate: string;
+  period: string;
+  status: "Paid" | "Pending" | "Overdue";
+}
+
+const sampleData: Payment[] = [
+  {
+    id: "1",
+    account: "Visa - 3412",
+    amount: 1190,
+    dueDate: "04/01/2016",
+    period: "03/01/2016 - 03/31/2016",
+    status: "Paid",
+  },
+  {
+    id: "2",
+    account: "Visa - 6067",
+    amount: 2443,
+    dueDate: "03/01/2016",
+    period: "02/01/2016 - 02/29/2016",
+    status: "Paid",
+  },
+  {
+    id: "3",
+    account: "Corporate AMEX",
+    amount: 1181,
+    dueDate: "03/01/2016",
+    period: "02/01/2016 - 02/29/2016",
+    status: "Overdue",
+  },
+  {
+    id: "4",
+    account: "Visa - 3412",
+    amount: 842,
+    dueDate: "02/01/2016",
+    period: "01/01/2016 - 01/31/2016",
+    status: "Pending",
+  },
+];
+
+const basicColumns: ColumnDef<Payment>[] = [
+  {
+    accessorKey: "account",
+    header: "Account",
+    isAccordionHeader: true,
+  },
+  {
+    accessorKey: "amount",
+    header: "Amount",
+    isAccordionHeader: true,
+    cell: (row) => `$${row.amount.toLocaleString()}`,
+  },
+  {
+    accessorKey: "dueDate",
+    header: "Due Date",
+  },
+  {
+    accessorKey: "period",
+    header: "Period",
+  },
+];
+
+// --- STORIES ---
+
+export const DesktopView: Story = {
+  name: "1. Desktop View",
+  args: {
+    data: sampleData,
+    columns: basicColumns,
+  },
+  parameters: {
+    viewport: { defaultViewport: "responsive" },
+    docs: {
+      description: {
+        story:
+          "This is the default table layout on viewports wider than the specified `breakpoint` (md by default).",
+      },
+    },
+  },
+  render: (args) => (
+    <Card className="w-full overflow-hidden">
+      <Table<Payment> {...args} />
+    </Card>
+  ),
+};
+
+export const CardLayout: Story = {
+  name: "2. Responsive: Card Layout",
+  args: {
+    ...DesktopView.args,
+    responsiveLayout: "card",
+  },
+  parameters: {
+    viewport: { defaultViewport: "mobile1" },
+    docs: {
+      description: {
+        story:
+          "Set `responsiveLayout='card'`. On mobile viewports, each row transforms into a distinct `Card`.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card>
+      <Table<Payment> {...args} />
+    </Card>
+  ),
+};
+
+export const AccordionLayout: Story = {
+  name: "3. Responsive: Accordion Layout",
+  args: {
+    ...DesktopView.args,
+    responsiveLayout: "accordion",
+  },
+  parameters: {
+    viewport: { defaultViewport: "mobile1" },
+    docs: {
+      description: {
+        story:
+          "Set `responsiveLayout='accordion'`. Each row becomes a collapsible item. Columns with `isAccordionHeader: true` will be visible in the collapsed state.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card>
+      <Table<Payment> {...args} />
+    </Card>
+  ),
+};
+
+export const ScrollLayout: Story = {
+  name: "4. Responsive: Scroll Layout (Default)",
+  args: {
+    ...DesktopView.args,
+    responsiveLayout: "scroll",
+  },
+  parameters: {
+    viewport: { defaultViewport: "mobile1" },
+    docs: {
+      description: {
+        story:
+          "Set `responsiveLayout='scroll'`. The table container becomes horizontally scrollable, with the first column remaining sticky for context.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card>
+      <Table<Payment> {...args} />
+    </Card>
+  ),
+};
+
+const columnsWithCustomCells: ColumnDef<Payment>[] = [
+  {
+    accessorKey: "account",
+    header: "Account",
+    isAccordionHeader: true,
+  },
+  {
+    accessorKey: "amount",
+    header: "Amount",
+    isAccordionHeader: true,
+    cell: (row) => `$${row.amount.toLocaleString()}`,
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: (row) => {
+      const variant = {
+        Paid: "primary",
+        Pending: "secondary",
+        Overdue: "destructive",
+      }[row.status] as "primary" | "secondary" | "destructive";
+      return (
+        <Badge variant={variant} shape="full">
+          {row.status}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "id",
+    header: "Actions",
+    cell: () => (
+      <Button size="xs" variant="ghost" shape="minimal">
+        View Details
+      </Button>
+    ),
+  },
+];
+
+export const CustomCells: Story = {
+  name: "5. With Custom Cells",
+  args: {
+    data: sampleData,
+    columns: columnsWithCustomCells,
+    responsiveLayout: "accordion",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `cell` property in the `columns` definition allows you to render custom components, like Badges or Buttons, within a cell.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card>
+      <Table<Payment> {...args} />
+    </Card>
+  ),
+};
+
+export const CustomizedRow: Story = {
+  name: "6. Customized Row",
+  args: {
+    data: sampleData,
+    columns: basicColumns,
+    responsiveLayout: "card",
+    rowProps: (row) => ({
+      variant: row.status === "Overdue" ? "selected" : "secondary",
+      onClick: () => alert(`Clicked on account: ${row.account}`),
+      className: "cursor-pointer",
+    }),
+  },
+  parameters: {
+    viewport: { defaultViewport: "mobile1" },
+    docs: {
+      description: {
+        story:
+          "You can pass `Card` props to each row using the `rowProps` function. This allows for conditional styling, click handlers, and more.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card>
+      <Table<Payment> {...args} />
+    </Card>
+  ),
+};
+
+export const AdvancedCustomization: Story = {
+  name: "7. Advanced Customization",
+  args: {
+    data: sampleData,
+    columns: basicColumns,
+    responsiveLayout: "accordion",
+    stickyCellVariant: "secondary",
+    accordionDetailsProps: {
+      className: "bg-graphite-background",
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Use `stickyCellVariant` to change the sticky column's background in scroll mode. Use `accordionDetailsProps` to style the expanded content area in accordion mode.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card>
+      <Table<Payment> {...args} />
+    </Card>
+  ),
 };
 ```
 
