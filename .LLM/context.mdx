@@ -3787,7 +3787,7 @@ export const DatePickerHeader = ({
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import { addDays } from "date-fns";
-import React, { useState } from "react";
+import { useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { DatePicker } from "./index";
 
@@ -3895,33 +3895,8 @@ export const ModalRange: Story = {
   },
 };
 
-export const Fullscreen: Story = {
-  name: "4. Fullscreen (Mobile Default)",
-  args: {
-    variant: "fullscreen",
-    label: "Booking",
-    mode: "range",
-  },
-  parameters: { viewport: { defaultViewport: "mobile1" } },
-  render: function Render(args) {
-    const [range, setRange] = useState<DateRange | undefined>({
-      from: new Date(),
-      to: addDays(new Date(), 5),
-    });
-    return (
-      <div className="w-80">
-        <DatePicker
-          {...args}
-          value={range}
-          onChange={(val) => setRange(val as DateRange)}
-        />
-      </div>
-    );
-  },
-};
-
 export const InputMode: Story = {
-  name: "5. Manual Input Mode",
+  name: "4. Manual Input Mode",
   args: {
     variant: "modal",
     label: "Date of Birth",
@@ -6995,443 +6970,745 @@ export const PasswordInput: Story = {
 ```
 
 
-### Component: `list`
+### Component: `item`
 
-This section contains the source code for the `list` component and its corresponding Storybook stories.
+This section contains the source code for the `item` component and its corresponding Storybook stories.
 
-**Component Source (`src\lib\components\list\index.tsx`)**
+**Component Source (`src\lib\components\item\index.tsx`)**
 ```tsx
 "use client";
 
+import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import React, { useState } from "react";
-import { ListContext } from "../../context/List.context";
-import { Typography } from "../typography";
-import { ListItem, type ListItemProps } from "./ListItem"; // Import ListItemProps
+import * as React from "react";
+import useRipple from "use-ripple-hook";
 
-// Export the type so it can be used elsewhere
-export type { ListItemProps };
-
-const listVariants = cva("flex w-full flex-col overflow-hidden", {
-  variants: {
-    variant: {
-      primary: "",
-      secondary: "",
-    },
-    shape: {
-      full: "rounded-2xl",
-      minimal: "rounded-lg",
-      sharp: "rounded-none",
-    },
-  },
-  defaultVariants: {
-    variant: "primary",
-    shape: "minimal",
-  },
-});
-
-const Divider = () => <div className="h-px bg-graphite-border ml-4" />;
-
-interface ListProps
-  extends React.HTMLAttributes<HTMLUListElement>,
-    VariantProps<typeof listVariants> {
-  children: React.ReactNode;
-  dividers?: boolean;
-  header?: React.ReactNode;
-  selectable?: boolean;
-  reorderable?: boolean;
+// --- Context for Item Configuration ---
+interface ItemContextProps {
+  variant: "primary" | "secondary" | "ghost";
+  size: "sm" | "md" | "lg";
 }
 
-const ListRoot = ({
-  className,
-  children,
-  dividers = false,
-  header,
-  variant,
-  shape,
-  selectable = false,
-  reorderable = false,
-  ...props
-}: ListProps) => {
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedItems, setSelectedItems] = useState<Set<string | number>>(
-    new Set()
-  );
-
-  const toggleSelection = (id: string | number) => {
-    setSelectedItems((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-
-      if (newSet.size === 0) {
-        setIsSelectionMode(false);
-      }
-
-      return newSet;
-    });
-  };
-
-  const childArray = React.Children.toArray(children);
-
-  return (
-    <ListContext.Provider
-      value={{
-        isSelectable: selectable,
-        isSelectionMode,
-        setIsSelectionMode,
-        selectedItems,
-        toggleSelection,
-        isReorderable: reorderable,
-      }}
-    >
-      <div className="flex flex-col">
-        {header && (
-          <div className="px-4 py-2">
-            <Typography
-              variant="small"
-              className="font-bold text-graphite-primary"
-            >
-              {header}
-            </Typography>
-          </div>
-        )}
-        <ul
-          className={clsx(listVariants({ variant, shape, className }), "py-2")}
-          {...props}
-        >
-          {childArray.map((child, index) => {
-            if (!React.isValidElement(child)) return child;
-            const isLast = index === childArray.length - 1;
-            return (
-              <React.Fragment key={child.key}>
-                {child}
-                {dividers && !isLast && <Divider />}
-              </React.Fragment>
-            );
-          })}
-        </ul>
-      </div>
-    </ListContext.Provider>
-  );
-};
-
-export const List = Object.assign(ListRoot, {
-  Item: ListItem,
+const ItemContext = React.createContext<ItemContextProps>({
+  variant: "primary",
+  size: "md",
 });
+
+const useItemContext = () => React.useContext(ItemContext);
+
+// --- CVA Variants ---
+const itemVariants = cva(
+  // MODIFIED: Added overflow-hidden for ripple effect clipping
+  "group/item relative flex flex-wrap items-center border text-sm outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 overflow-hidden",
+  {
+    variants: {
+      variant: {
+        primary: "bg-graphite-card border-graphite-border",
+        secondary: "bg-graphite-secondary border-transparent",
+        ghost:
+          "bg-transparent border-transparent hover:bg-graphite-secondary/60",
+      },
+      size: {
+        sm: "gap-3 p-3",
+        md: "gap-4 p-4",
+        lg: "gap-4 p-5",
+      },
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-xl",
+        sharp: "rounded-none",
+      },
+    },
+    defaultVariants: {
+      variant: "primary",
+      size: "md",
+      shape: "minimal",
+    },
+  }
+);
+
+const itemMediaVariants = cva(
+  "flex shrink-0 items-center mb-auto justify-center gap-2 [&_svg]:pointer-events-none",
+  {
+    variants: {
+      variant: {
+        default: "",
+        icon: "bg-graphite-secondary border border-graphite-border [&_svg:not([class*='size-'])]:text-graphite-foreground/80",
+        avatar: "overflow-hidden",
+      },
+      size: {
+        sm: "size-8 rounded-lg [&_svg:not([class*='size-'])]:size-4",
+        md: "size-10 rounded-lg [&_svg:not([class*='size-'])]:size-5",
+        lg: "size-12 rounded-xl [&_svg:not([class*='size-'])]:size-6",
+      },
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-lg",
+        sharp: "rounded-none",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "md",
+      shape: "minimal",
+    },
+  }
+);
+
+// --- Compound Components ---
+
+const ItemGroup = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    role="list"
+    data-slot="item-group"
+    className={clsx("group/item-group flex flex-col gap-2", className)}
+    {...props}
+  />
+));
+ItemGroup.displayName = "ItemGroup";
+
+const ItemSeparator = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="item-separator"
+    className={clsx("h-px w-full bg-graphite-border", className)}
+    {...props}
+  />
+));
+ItemSeparator.displayName = "ItemSeparator";
+
+const Item = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> &
+    VariantProps<typeof itemVariants> & {
+      asChild?: boolean;
+      disabled?: boolean;
+    }
+>(
+  (
+    {
+      className,
+      variant = "primary",
+      size = "md",
+      shape = "minimal",
+      asChild = false,
+      disabled, // MODIFIED: Destructure disabled prop
+      onPointerDown, // MODIFIED: Destructure onPointerDown
+      ...props
+    },
+    ref
+  ) => {
+    const Comp = asChild ? Slot : "div";
+
+    // --- MODIFIED: Added ripple effect logic ---
+    const localRef = React.useRef<HTMLDivElement>(null);
+    React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
+
+    const [, event] = useRipple({
+      ref: localRef,
+      color: "rgba(0, 0, 0, 0.1)",
+      duration: 300, // Faster ripple duration
+      disabled,
+    });
+    // --- END MODIFICATION ---
+
+    return (
+      <ItemContext.Provider value={{ variant, size }}>
+        <Comp
+          ref={localRef}
+          data-slot="item"
+          disabled={disabled}
+          className={clsx(
+            itemVariants({ variant, size, shape, className }),
+            disabled && "opacity-50 cursor-not-allowed"
+          )}
+          // --- MODIFIED: Added onPointerDown handler ---
+          onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
+            event(e);
+            onPointerDown?.(e);
+          }}
+          // --- END MODIFICATION ---
+          {...props}
+        />
+      </ItemContext.Provider>
+    );
+  }
+);
+Item.displayName = "Item";
+
+const ItemMedia = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof itemMediaVariants>
+>(({ className, variant, shape = "minimal", ...props }, ref) => {
+  const { size: contextSize } = useItemContext();
+  return (
+    <div
+      ref={ref}
+      data-slot="item-media"
+      className={clsx(
+        itemMediaVariants({
+          variant,
+          size: contextSize,
+          shape,
+          className,
+        })
+      )}
+      {...props}
+    />
+  );
+});
+ItemMedia.displayName = "ItemMedia";
+
+const ItemContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="item-content"
+    className={clsx("flex flex-1 flex-col gap-0.5 min-w-0", className)}
+    {...props}
+  />
+));
+ItemContent.displayName = "ItemContent";
+
+const ItemTitle = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="item-title"
+    className={clsx(
+      "flex w-fit items-center gap-2 text-base font-semibold leading-snug truncate",
+      className
+    )}
+    {...props}
+  />
+));
+ItemTitle.displayName = "ItemTitle";
+
+const ItemDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    data-slot="item-description"
+    className={clsx(
+      "text-graphite-foreground/70 line-clamp-2 text-sm font-normal leading-normal",
+      className
+    )}
+    {...props}
+  />
+));
+ItemDescription.displayName = "ItemDescription";
+
+const ItemActions = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="item-actions"
+    className={clsx("flex items-center gap-2 ml-auto pl-4", className)}
+    {...props}
+  />
+));
+ItemActions.displayName = "ItemActions";
+
+const ItemHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="item-header"
+    className={clsx(
+      "flex basis-full items-center justify-between gap-2",
+      className
+    )}
+    {...props}
+  />
+));
+ItemHeader.displayName = "ItemHeader";
+
+const ItemFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-slot="item-footer"
+    className={clsx(
+      "flex basis-full items-center justify-between gap-2 mt-2",
+      className
+    )}
+    {...props}
+  />
+));
+ItemFooter.displayName = "ItemFooter";
+
+export {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemFooter,
+  ItemGroup,
+  ItemHeader,
+  ItemMedia,
+  ItemSeparator,
+  ItemTitle,
+};
 ```
 
-**Storybook Stories (`List.stories.tsx`)**
+**Storybook Stories (`Item.stories.tsx`)**
 ```tsx
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Archive, MoreVertical, Share2, Trash2, User } from "lucide-react";
+import {
+  Bell,
+  ChevronRight,
+  File,
+  Lock,
+  MoreVertical,
+  Palette,
+  Star,
+} from "lucide-react";
 import React, { useState } from "react";
 import { Avatar } from "../avatar";
-import { Button } from "../button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../dropdown-menu";
+import { Badge } from "../badge";
+import { Checkbox } from "../checkbox";
 import { IconButton } from "../icon-button";
-import { Sheet } from "../sheet";
-import { List } from "./index";
+import { Switch } from "../switch";
+import { Typography } from "../typography";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemFooter,
+  ItemGroup,
+  ItemHeader,
+  ItemMedia,
+  ItemSeparator,
+  ItemTitle,
+} from "./index";
 
-const meta: Meta<typeof List> = {
-  title: "Components/List",
-  component: List,
-  subcomponents: { "List.Item": List.Item },
+const meta: Meta<typeof Item> = {
+  title: "Components/Data/Item",
+  component: Item,
+  subcomponents: {
+    ItemGroup,
+    ItemSeparator,
+    ItemMedia,
+    ItemContent,
+    ItemTitle,
+    ItemDescription,
+    ItemActions,
+    ItemHeader,
+    ItemFooter,
+  },
   tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A versatile compound component for building list items, profiles, notifications, and more complex layouts. Items now have a subtle, fast ripple effect on click.",
+      },
+    },
+  },
   argTypes: {
-    header: { control: "text" },
-    dividers: { control: "boolean" },
-    variant: { control: "select", options: ["primary", "secondary"] },
-    shape: { control: "select", options: ["full", "minimal", "sharp"] },
-    selectable: { control: "boolean" },
-    reorderable: { control: "boolean" },
+    variant: {
+      control: "select",
+      options: ["primary", "secondary", "ghost"],
+    },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+    },
+    asChild: { control: "boolean" },
+    disabled: { control: "boolean" },
   },
 };
 
 export default meta;
-type Story = StoryObj<typeof List>;
-
-const sampleItems = [
-  { id: "1", name: "Alisa Hester", status: "Online", avatar: "a" },
-  { id: "2", name: "Barrera Ramsey", status: "Last seen 5m ago", avatar: "b" },
-  { id: "3", name: "Carroll Buchanan", status: "Typing...", avatar: "c" },
-  { id: "4", name: "Decker Mckenzie", status: "Away", avatar: "d" },
-];
+type Story = StoryObj<typeof Item>;
 
 export const Default: Story = {
-  name: "1. Default List",
+  name: "1. Default",
   args: {
-    header: "Contacts",
-    dividers: true,
+    variant: "primary",
+    size: "md",
+    shape: "minimal",
   },
   render: (args) => (
     <div className="w-96">
-      <List {...args}>
-        {sampleItems.map((item) => (
-          <List.Item
-            key={item.id}
-            id={item.id}
-            headline={item.name}
-            supportingText={item.status}
-            startAdornment={<Avatar fallback={item.name} />}
-          />
-        ))}
-      </List>
+      <Item {...args}>
+        <ItemMedia variant="icon">
+          <File />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle>Annual Report</ItemTitle>
+          <ItemDescription>
+            Finalized version of the 2023 report.
+          </ItemDescription>
+        </ItemContent>
+        <ItemActions>
+          <IconButton variant="ghost" size="sm" aria-label="More options">
+            <MoreVertical size={16} />
+          </IconButton>
+        </ItemActions>
+      </Item>
     </div>
   ),
 };
 
-export const SelectionMode: Story = {
-  name: "2. Selection Mode (Long Press)",
-  args: { ...Default.args, selectable: true },
-  render: (args) => <Default.render {...args} />,
-};
-
-export const SwipeToReveal: Story = {
-  name: "3. Swipe to Reveal Actions",
-  args: { ...Default.args },
-  render: (args) => (
+export const AllVariants: Story = {
+  name: "2. All Variants",
+  render: () => (
     <div className="w-96">
-      <List {...args}>
-        {sampleItems.map((item) => (
-          <List.Item
-            key={item.id}
-            id={item.id}
-            headline={item.name}
-            supportingText={item.status}
-            startAdornment={<Avatar fallback={item.name} />}
-            swipeActions={
-              <div className="flex h-full">
-                <Button
-                  shape="full"
-                  variant={"secondary"}
-                  className="h-full !rounded-none"
-                  onClick={() => alert(`Archived ${item.name}`)}
-                >
-                  <Archive />
-                </Button>
-                <Button
-                  shape="sharp"
-                  className="h-full !rounded-none bg-red-500 hover:bg-red-600"
-                  onClick={() => alert(`Deleted ${item.name}`)}
-                >
-                  <Trash2 />
-                </Button>
-              </div>
-            }
-          />
-        ))}
-      </List>
+      <ItemGroup>
+        <Item variant="primary" onClick={() => {}}>
+          <ItemContent>
+            <ItemTitle>Primary (Click for Ripple)</ItemTitle>
+          </ItemContent>
+        </Item>
+        <Item variant="secondary" onClick={() => {}}>
+          <ItemContent>
+            <ItemTitle>Secondary</ItemTitle>
+          </ItemContent>
+        </Item>
+        <Item variant="ghost" onClick={() => {}}>
+          <ItemContent>
+            <ItemTitle>Ghost</ItemTitle>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
     </div>
   ),
 };
 
-// Helper component for the DND story
-const SortableItem = (props: any) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: props.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <List.Item
-      ref={setNodeRef}
-      style={style}
-      dndAttributes={attributes}
-      dndListeners={listeners}
-      {...props}
-    />
-  );
+export const AllSizes: Story = {
+  name: "3. All Sizes",
+  render: () => (
+    <div className="w-96">
+      <ItemGroup>
+        <Item size="sm">
+          <ItemMedia variant="icon">
+            <Star />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Small Item</ItemTitle>
+          </ItemContent>
+        </Item>
+        <Item size="md">
+          <ItemMedia variant="icon">
+            <Star />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Medium Item (Default)</ItemTitle>
+          </ItemContent>
+        </Item>
+        <Item size="lg">
+          <ItemMedia variant="icon">
+            <Star />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Large Item</ItemTitle>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
+    </div>
+  ),
 };
 
-export const DragToReorder: Story = {
-  name: "4. Drag to Reorder (with @dnd-kit)",
-  args: { ...Default.args, reorderable: true, dividers: true },
-  render: function Render(args) {
-    const [items, setItems] = useState(sampleItems);
-    const sensors = useSensors(
-      useSensor(PointerSensor),
-      useSensor(KeyboardSensor, {
-        coordinateGetter: sortableKeyboardCoordinates,
-      })
-    );
+export const AsLink: Story = {
+  name: "4. Polymorphic (as link)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Using `asChild` prop, the `Item` component can wrap an anchor tag to become a fully clickable link, while maintaining all styling and layout.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-96">
+      <Item asChild variant="ghost" className="cursor-pointer">
+        <a href="#" onClick={(e) => e.preventDefault()}>
+          <ItemMedia variant="icon">
+            <File />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Project Proposal</ItemTitle>
+            <ItemDescription>Click to view the document.</ItemDescription>
+          </ItemContent>
+          <ItemActions>
+            <ChevronRight size={20} className="text-graphite-foreground/50" />
+          </ItemActions>
+        </a>
+      </Item>
+    </div>
+  ),
+};
 
-    function handleDragEnd(event: DragEndEvent) {
-      const { active, over } = event;
-      if (over && active.id !== over.id) {
-        setItems((currentItems) => {
-          const oldIndex = currentItems.findIndex((i) => i.id === active.id);
-          const newIndex = currentItems.findIndex((i) => i.id === over.id);
-          return arrayMove(currentItems, oldIndex, newIndex);
-        });
-      }
-    }
+export const TeamMembersList: Story = {
+  name: "5. Use Case: Interactive Team List",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Clicking anywhere on the Item toggles the checkbox. Clicking the checkbox itself is handled separately to prevent the event from firing twice.",
+      },
+    },
+  },
+  render: () => {
+    const members = [
+      {
+        id: "1",
+        name: "Alisa Hester",
+        role: "Frontend Developer",
+        avatar: "https://i.pravatar.cc/150?img=1",
+        badge: "Admin",
+        active: null,
+      },
+      {
+        id: "2",
+        name: "Barry Cuda",
+        role: "Backend Developer",
+        avatar: "https://i.pravatar.cc/150?img=2",
+        badge: null,
+        active: null,
+      },
+      {
+        id: "3",
+        name: "Charlie Enderson",
+        role: "Product Designer",
+        avatar: "https://i.pravatar.cc/150?img=3",
+        badge: null,
+        active: "Last active: 2 hours ago",
+      },
+    ];
+
+    const [selected, setSelected] = useState(new Set(["1"]));
+
+    const toggleSelection = (id: string) => {
+      setSelected((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(id)) {
+          newSet.delete(id);
+        } else {
+          newSet.add(id);
+        }
+        return newSet;
+      });
+    };
 
     return (
-      <div className="w-96">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={items} strategy={verticalListSortingStrategy}>
-            <List {...args}>
-              {items.map((item) => (
-                <SortableItem
-                  key={item.id}
-                  id={item.id}
-                  headline={item.name}
-                  supportingText={item.status}
-                  startAdornment={<Avatar fallback={item.name} />}
-                />
-              ))}
-            </List>
-          </SortableContext>
-        </DndContext>
+      <div className="max-w-4xl w-full">
+        <Typography variant="h4" className="mb-4">
+          Team Members
+        </Typography>
+        <ItemGroup>
+          {members.map((member, index) => (
+            <React.Fragment key={member.id}>
+              <Item
+                size="lg"
+                shape="minimal"
+                variant={member.badge ? "primary" : "secondary"}
+                className="cursor-pointer"
+                onClick={() => toggleSelection(member.id)}
+              >
+                <ItemMedia variant="avatar">
+                  <Avatar
+                    src={member.avatar}
+                    fallback={member.name.slice(0, 2)}
+                  />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemHeader>
+                    <ItemTitle>{member.name}</ItemTitle>
+                    {member.badge && (
+                      <Badge shape="full" variant="secondary">
+                        {member.badge}
+                      </Badge>
+                    )}
+                  </ItemHeader>
+                  <ItemDescription>{member.role}</ItemDescription>
+                  {member.active && (
+                    <ItemFooter>
+                      <Typography variant="muted" className="!text-xs">
+                        {member.active}
+                      </Typography>
+                    </ItemFooter>
+                  )}
+                </ItemContent>
+                <ItemActions onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selected.has(member.id)}
+                    onChange={() => toggleSelection(member.id)}
+                    aria-label={`Select ${member.name}`}
+                  />
+                </ItemActions>
+              </Item>
+              {index < members.length - 1 && <ItemSeparator />}
+            </React.Fragment>
+          ))}
+        </ItemGroup>
       </div>
     );
   },
 };
 
-export const WithDropdownMenu: Story = {
-  name: "5. Integration: Dropdown Menu",
-  args: { ...Default.args },
-  render: (args) => (
-    <div className="w-96">
-      <List {...args}>
-        {sampleItems.map((item) => (
-          <List.Item
-            key={item.id}
-            id={item.id}
-            headline={item.name}
-            supportingText={item.status}
-            startAdornment={<Avatar fallback={item.name} />}
-            endAdornment={
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  asChild
-                  onPointerDown={(e) => e.stopPropagation()}
-                >
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    onPointerDown={(e) => e.stopPropagation()}
-                  >
-                    <MoreVertical />
-                  </IconButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  onPointerDown={(e) => e.stopPropagation()}
-                >
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" /> View Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            }
-          />
-        ))}
-      </List>
-    </div>
-  ),
+export const SettingsList: Story = {
+  name: "6. Use Case: Interactive Settings List",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A common pattern for settings pages. Clicking the entire item toggles the switch, providing a larger touch target.",
+      },
+    },
+  },
+  render: () => {
+    const [notifications, setNotifications] = useState(true);
+    const [darkMode, setDarkMode] = useState(false);
+    return (
+      <div className="w-96">
+        <Typography variant="h4" className="mb-4">
+          Settings
+        </Typography>
+        <ItemGroup>
+          <Item
+            variant="ghost"
+            size="md"
+            className="cursor-pointer"
+            onClick={() => setNotifications((prev) => !prev)}
+          >
+            <ItemMedia variant="icon" shape="full">
+              <Bell />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>Push Notifications</ItemTitle>
+              <ItemDescription>
+                Receive updates on new messages.
+              </ItemDescription>
+            </ItemContent>
+            <ItemActions onClick={(e) => e.stopPropagation()}>
+              <Switch
+                checked={notifications}
+                onChange={(e) => setNotifications(e.target.checked)}
+                aria-label="Toggle push notifications"
+              />
+            </ItemActions>
+          </Item>
+          <Item
+            variant="ghost"
+            size="md"
+            className="cursor-pointer"
+            onClick={() => setDarkMode((prev) => !prev)}
+          >
+            <ItemMedia variant="icon" shape="full">
+              <Palette />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>Dark Mode</ItemTitle>
+              <ItemDescription>
+                Toggle between light and dark themes.
+              </ItemDescription>
+            </ItemContent>
+            <ItemActions onClick={(e) => e.stopPropagation()}>
+              <Switch
+                checked={darkMode}
+                onChange={(e) => setDarkMode(e.target.checked)}
+                aria-label="Toggle dark mode"
+              />
+            </ItemActions>
+          </Item>
+          <Item asChild variant="ghost" size="md" className="cursor-pointer">
+            <a href="#" onClick={(e) => e.preventDefault()}>
+              <ItemMedia variant="icon" shape="full">
+                <Lock />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>Account & Security</ItemTitle>
+              </ItemContent>
+              <ItemActions>
+                <ChevronRight
+                  size={20}
+                  className="text-graphite-foreground/50"
+                />
+              </ItemActions>
+            </a>
+          </Item>
+        </ItemGroup>
+      </div>
+    );
+  },
 };
 
-export const WithBottomSheet: Story = {
-  name: "6. Integration: Bottom Sheet",
-  args: { ...Default.args },
-  render: (args) => (
-    <div className="w-96">
-      <Sheet forceBottomSheet mode="detached">
-        <List {...args}>
-          {sampleItems.map((item) => (
-            <Sheet.Trigger asChild key={item.id}>
-              <List.Item
-                id={item.id}
-                headline={item.name}
-                supportingText={item.status}
-                startAdornment={<Avatar fallback={item.name} />}
-              />
-            </Sheet.Trigger>
-          ))}
-        </List>
-
-        <Sheet.Content>
-          <Sheet.Grabber />
-          <div className="p-2">
-            <List>
-              <List.Item
-                id="header"
-                lines="two-line"
-                headline="Alisa Hester"
-                supportingText="Online"
-                startAdornment={<Avatar size="lg" fallback="A" />}
-                className="hover:bg-transparent" // Disable hover for header
-              />
-            </List>
-
-            {/* --- THIS IS THE MODIFIED PART --- */}
-            <div className="mt-2">
-              <List shape="minimal" variant="secondary">
-                {/** biome-ignore lint/nursery/useUniqueElementIds: strict */}
-                <List.Item
-                  id="share"
-                  headline="Share"
-                  startAdornment={<Share2 className="h-5 w-5" />}
-                  onClick={() => alert("Shared!")}
-                />
-                {/** biome-ignore lint/nursery/useUniqueElementIds: strict */}
-                <List.Item
-                  id="archive"
-                  headline="Archive"
-                  startAdornment={<Archive className="h-5 w-5" />}
-                  onClick={() => alert("Archived!")}
-                />
-                {/** biome-ignore lint/nursery/useUniqueElementIds: strict */}
-                <List.Item
-                  id="delete"
-                  headline={<span className="text-red-500">Delete</span>}
-                  startAdornment={<Trash2 className="h-5 w-5 text-red-500" />}
-                  onClick={() => alert("Deleted!")}
-                />
-              </List>
-            </div>
-            {/* --- END OF MODIFICATION --- */}
-          </div>
-        </Sheet.Content>
-      </Sheet>
+export const NotificationList: Story = {
+  name: "7. Use Case: Notification List",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Displaying a feed of notifications with avatars and timestamps.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-[450px]">
+      <ItemGroup>
+        <Item variant="secondary" shape="minimal">
+          <ItemMedia variant="avatar">
+            <Avatar src="https://i.pravatar.cc/150?img=4" />
+          </ItemMedia>
+          <ItemContent>
+            <ItemDescription>
+              <b>Diana Prince</b> mentioned you in the <b>Q4 Planning</b>{" "}
+              document.
+            </ItemDescription>
+            <ItemFooter>
+              <Typography variant="muted" className="!text-xs">
+                2 minutes ago
+              </Typography>
+            </ItemFooter>
+          </ItemContent>
+          <ItemActions>
+            <div className="size-2.5 rounded-full bg-blue-500" />
+          </ItemActions>
+        </Item>
+        <Item variant="secondary" shape="minimal">
+          <ItemMedia variant="avatar">
+            <Avatar src="https://i.pravatar.cc/150?img=5" />
+          </ItemMedia>
+          <ItemContent>
+            <ItemDescription>
+              <b>Clark Kent</b> completed the task "Deploy to production".
+            </ItemDescription>
+            <ItemFooter>
+              <Typography variant="muted" className="!text-xs">
+                1 hour ago
+              </Typography>
+            </ItemFooter>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
     </div>
   ),
 };
@@ -12399,6 +12676,503 @@ export const FullAppLayout: Story = {
 ```
 
 
+### Component: `slider`
+
+This section contains the source code for the `slider` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\slider\index.tsx`)**
+```tsx
+"use client";
+
+import * as RadixSlider from "@radix-ui/react-slider";
+import { cva, type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { createContext, useContext, useState } from "react";
+import { Typography } from "../typography";
+
+// --- CVA Variants for component parts ---
+
+const sliderRootVariants = cva(
+  "relative flex touch-none select-none items-center",
+  {
+    variants: {
+      direction: {
+        horizontal: "w-full flex-row py-2",
+        vertical: "h-48 w-fit flex-col px-2",
+      },
+    },
+    defaultVariants: {
+      direction: "horizontal",
+    },
+  }
+);
+
+const sliderTrackVariants = cva("relative grow overflow-hidden rounded-full", {
+  variants: {
+    variant: {
+      linear: "bg-graphite-secondary",
+      bar: "bg-graphite-secondary",
+    },
+    direction: {
+      horizontal: "w-full",
+      vertical: "h-full",
+    },
+    size: {
+      sm: "",
+      md: "",
+      lg: "",
+      xl: "",
+      "2xl": "",
+    },
+  },
+  compoundVariants: [
+    { variant: "linear", direction: "horizontal", className: "h-1" },
+    { variant: "linear", direction: "vertical", className: "w-1" },
+    { variant: "bar", direction: "horizontal", size: "sm", className: "h-2" },
+    { variant: "bar", direction: "horizontal", size: "md", className: "h-3" },
+    { variant: "bar", direction: "horizontal", size: "lg", className: "h-5" },
+    { variant: "bar", direction: "horizontal", size: "xl", className: "h-7" },
+    { variant: "bar", direction: "horizontal", size: "2xl", className: "h-10" },
+    { variant: "bar", direction: "vertical", size: "sm", className: "w-2" },
+    { variant: "bar", direction: "vertical", size: "md", className: "w-3" },
+    { variant: "bar", direction: "vertical", size: "lg", className: "w-5" },
+    { variant: "bar", direction: "vertical", size: "xl", className: "w-7" },
+    { variant: "bar", direction: "vertical", size: "2xl", className: "w-10" },
+  ],
+  defaultVariants: {
+    variant: "linear",
+    direction: "horizontal",
+    size: "lg",
+  },
+});
+
+const sliderRangeVariants = cva(
+  "absolute bg-graphite-primary data-[disabled]:bg-graphite-primary/50",
+  {
+    variants: {
+      direction: {
+        horizontal: "h-full",
+        vertical: "w-full",
+      },
+    },
+    defaultVariants: {
+      direction: "horizontal",
+    },
+  }
+);
+
+const barThumbVariants = cva(
+  // FIX: Add z-10 to ensure the thumb is rendered on top of the range/track
+  "relative z-10 block rounded-full bg-graphite-primary outline-4 outline-graphite-secondary  transition-shadow focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 data-[disabled]:bg-graphite-primary/50 data-[disabled]:cursor-not-allowed",
+  {
+    variants: {
+      direction: {
+        horizontal: "",
+        vertical: "",
+      },
+      size: {
+        sm: "",
+        md: "",
+        lg: "",
+        xl: "",
+        "2xl": "",
+      },
+    },
+    compoundVariants: [
+      { direction: "horizontal", size: "sm", className: "h-4 w-1.5" },
+      { direction: "horizontal", size: "md", className: "h-5 w-1.5" },
+      { direction: "horizontal", size: "lg", className: "h-7 w-2" },
+      { direction: "horizontal", size: "xl", className: "h-9 w-2" },
+      { direction: "horizontal", size: "2xl", className: "h-12 w-2.5" },
+      { direction: "vertical", size: "sm", className: "w-4 h-1.5" },
+      { direction: "vertical", size: "md", className: "w-5 h-1.5" },
+      { direction: "vertical", size: "lg", className: "w-7 h-2" },
+      { direction: "vertical", size: "xl", className: "w-9 h-2" },
+      { direction: "vertical", size: "2xl", className: "w-12 h-2.5" },
+    ],
+    defaultVariants: {
+      direction: "horizontal",
+      size: "lg",
+    },
+  }
+);
+
+const barThumbHaloVariants = cva(
+  "absolute rounded-full bg-graphite-primary/20",
+  {
+    variants: {
+      direction: {
+        horizontal: "",
+        vertical: "",
+      },
+      size: {
+        sm: "",
+        md: "",
+        lg: "",
+        xl: "",
+        "2xl": "",
+      },
+    },
+    compoundVariants: [
+      { direction: "horizontal", size: "sm", className: "h-9 w-6" },
+      { direction: "horizontal", size: "md", className: "h-10 w-6" },
+      { direction: "horizontal", size: "lg", className: "h-12 w-7" },
+      { direction: "horizontal", size: "xl", className: "h-14 w-7" },
+      { direction: "horizontal", size: "2xl", className: "h-[68px] w-8" },
+      { direction: "vertical", size: "sm", className: "w-9 h-6" },
+      { direction: "vertical", size: "md", className: "w-10 h-6" },
+      { direction: "vertical", size: "lg", className: "w-12 h-7" },
+      { direction: "vertical", size: "xl", className: "w-14 h-7" },
+      { direction: "vertical", size: "2xl", className: "w-[68px] h-8" },
+    ],
+    defaultVariants: {
+      direction: "horizontal",
+      size: "lg",
+    },
+  }
+);
+
+// --- Context to pass props down to thumbs ---
+type SliderContextProps = VariantProps<typeof sliderTrackVariants>;
+const SliderContext = createContext<SliderContextProps | null>(null);
+const useSliderContext = () => {
+  const context = useContext(SliderContext);
+  if (!context) {
+    throw new Error("Slider sub-components must be used within a Slider");
+  }
+  return context;
+};
+
+// --- Internal Thumb Components ---
+
+const LinearThumb = React.forwardRef<
+  HTMLSpanElement,
+  { value: number } & React.ComponentPropsWithoutRef<typeof RadixSlider.Thumb>
+>(({ value, ...props }, ref) => {
+  const [isHoveredOrActive, setIsHoveredOrActive] = useState(false);
+  return (
+    <RadixSlider.Thumb
+      ref={ref}
+      onPointerEnter={() => setIsHoveredOrActive(true)}
+      onPointerLeave={() => setIsHoveredOrActive(false)}
+      className={clsx(
+        "relative z-10 block h-5 w-5 rounded-full outline-4 outline-graphite-secondary bg-graphite-primary transition-shadow",
+        "focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+        "data-[disabled]:bg-graphite-primary/50 data-[disabled]:cursor-not-allowed"
+      )}
+      {...props}
+    >
+      <span
+        className={clsx(
+          "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
+          "h-10 w-10 rounded-full bg-graphite-primary/20 transition-transform",
+          isHoveredOrActive ? "scale-100" : "scale-0"
+        )}
+      />
+      <AnimatePresence>
+        {isHoveredOrActive && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.8 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="absolute bottom-full left-1/2 mb-3 -translate-x-1/2"
+          >
+            <div className="rounded-lg bg-graphite-secondary px-2 py-1 shadow-md">
+              <Typography
+                variant="small"
+                className="font-semibold text-graphite-secondaryForeground"
+              >
+                {value}
+              </Typography>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </RadixSlider.Thumb>
+  );
+});
+LinearThumb.displayName = "LinearThumb";
+
+const BarThumb = React.forwardRef<
+  HTMLSpanElement,
+  React.ComponentPropsWithoutRef<typeof RadixSlider.Thumb>
+>((props, ref) => {
+  const { size, direction } = useSliderContext();
+  const [isHoveredOrActive, setIsHoveredOrActive] = useState(false);
+
+  return (
+    <RadixSlider.Thumb
+      ref={ref}
+      onPointerEnter={() => setIsHoveredOrActive(true)}
+      onPointerLeave={() => setIsHoveredOrActive(false)}
+      className={barThumbVariants({ size, direction })}
+      {...props}
+    >
+      <span
+        className={clsx(
+          "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 transition-transform",
+          isHoveredOrActive ? "scale-100" : "scale-0",
+          barThumbHaloVariants({ size, direction })
+        )}
+      />
+    </RadixSlider.Thumb>
+  );
+});
+BarThumb.displayName = "BarThumb";
+
+// --- Main Slider Component ---
+
+type SliderProps = React.ComponentPropsWithoutRef<typeof RadixSlider.Root> &
+  VariantProps<typeof sliderTrackVariants>;
+
+const Slider = React.forwardRef<
+  React.ElementRef<typeof RadixSlider.Root>,
+  SliderProps
+>(
+  (
+    {
+      className,
+      value,
+      variant = "linear",
+      direction = "horizontal",
+      size = "lg",
+      ...props
+    },
+    ref
+  ) => {
+    const isRange = Array.isArray(value);
+
+    return (
+      <SliderContext.Provider value={{ variant, direction, size }}>
+        <RadixSlider.Root
+          ref={ref}
+          value={value}
+          orientation={direction}
+          className={clsx(sliderRootVariants({ direction }), className)}
+          {...props}
+        >
+          <RadixSlider.Track
+            className={sliderTrackVariants({ variant, direction, size })}
+          >
+            <RadixSlider.Range className={sliderRangeVariants({ direction })} />
+          </RadixSlider.Track>
+
+          {variant === "linear" ? (
+            isRange ? (
+              <>
+                <LinearThumb value={value[0]} key="thumb-start" />
+                <LinearThumb value={value[1]} key="thumb-end" />
+              </>
+            ) : (
+              <LinearThumb value={value?.[0] ?? 0} />
+            )
+          ) : isRange ? (
+            <>
+              <BarThumb key="thumb-start" />
+              <BarThumb key="thumb-end" />
+            </>
+          ) : (
+            <BarThumb />
+          )}
+        </RadixSlider.Root>
+      </SliderContext.Provider>
+    );
+  }
+);
+Slider.displayName = "Slider";
+
+export { Slider };
+```
+
+**Storybook Stories (`Slider.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
+import { Typography } from "../typography";
+import { Slider } from "./index";
+
+const meta: Meta<typeof Slider> = {
+  title: "Components/Forms & Inputs/Slider",
+  component: Slider,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A slider component inspired by Material Design 3 for selecting a value or range of values. It supports 'linear' and 'bar' variants, as well as 'horizontal' and 'vertical' directions.",
+      },
+    },
+  },
+  argTypes: {
+    variant: {
+      control: "select",
+      options: ["linear", "bar"],
+    },
+    direction: {
+      control: "select",
+      options: ["horizontal", "vertical"],
+    },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg", "xl", "2xl"],
+      if: { arg: "variant", eq: "bar" },
+    },
+    disabled: { control: "boolean" },
+    min: { control: "number" },
+    max: { control: "number" },
+    step: { control: "number" },
+    minStepsBetweenThumbs: { control: "number" },
+    onValueChange: { action: "value changed" },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof Slider>;
+
+export const Linear: Story = {
+  name: "1. Linear (Single Value)",
+  args: {
+    variant: "linear",
+    defaultValue: [50],
+    max: 100,
+    step: 1,
+  },
+  render: function Render(args) {
+    const [value, setValue] = useState(args.defaultValue);
+
+    return (
+      <div className="w-80">
+        <Typography variant="large" className="text-center">
+          Volume: {value?.[0]}
+        </Typography>
+        <Slider {...args} value={value} onValueChange={setValue} />
+      </div>
+    );
+  },
+};
+
+export const LinearRange: Story = {
+  name: "2. Linear (Range)",
+  args: {
+    variant: "linear",
+    defaultValue: [25, 75],
+    max: 100,
+    step: 1,
+    minStepsBetweenThumbs: 10,
+  },
+  render: function Render(args) {
+    const [range, setRange] = useState(args.defaultValue);
+
+    return (
+      <div className="w-80">
+        <Typography variant="large" className="text-center">
+          Price Range: ${range?.[0]} - ${range?.[1]}
+        </Typography>
+        <Slider {...args} value={range} onValueChange={setRange} />
+      </div>
+    );
+  },
+};
+
+export const BarVariant: Story = {
+  name: "3. Bar Variant (All Sizes)",
+  args: {
+    variant: "bar",
+    defaultValue: [60],
+    max: 100,
+  },
+  render: (args) => (
+    <div className="w-80 flex flex-col gap-8">
+      <div>
+        <Typography variant="small" className="font-semibold">
+          Size: sm
+        </Typography>
+        <Slider {...args} size="sm" />
+      </div>
+      <div>
+        <Typography variant="small" className="font-semibold">
+          Size: md
+        </Typography>
+        <Slider {...args} size="md" />
+      </div>
+      <div>
+        <Typography variant="small" className="font-semibold">
+          Size: lg
+        </Typography>
+        <Slider {...args} size="lg" />
+      </div>
+      <div>
+        <Typography variant="small" className="font-semibold">
+          Size: xl
+        </Typography>
+        <Slider {...args} size="xl" />
+      </div>
+      <div>
+        <Typography variant="small" className="font-semibold">
+          Size: 2xl
+        </Typography>
+        <Slider {...args} size="2xl" />
+      </div>
+    </div>
+  ),
+};
+
+export const VerticalDirection: Story = {
+  name: "4. Vertical Direction",
+  args: {
+    direction: "vertical",
+    defaultValue: [50],
+    max: 100,
+  },
+  render: (args) => (
+    <div className="flex h-64 items-center justify-center gap-16">
+      <div>
+        <Typography variant="h4" className="mb-4 text-center">
+          Linear
+        </Typography>
+        <Slider {...args} variant="linear" />
+      </div>
+      <div>
+        <Typography variant="h4" className="mb-4 text-center">
+          Bar
+        </Typography>
+        <Slider {...args} variant="bar" size="lg" />
+      </div>
+      <div>
+        <Typography variant="h4" className="mb-4 text-center">
+          Bar (Range)
+        </Typography>
+        <Slider {...args} variant="bar" size="xl" defaultValue={[20, 80]} />
+      </div>
+    </div>
+  ),
+};
+
+export const Disabled: Story = {
+  name: "5. Disabled State",
+  render: () => (
+    <div className="w-80 flex flex-col gap-8">
+      <div>
+        <Typography variant="small" className="mb-2">
+          Linear (Disabled)
+        </Typography>
+        <Slider variant="linear" defaultValue={[50]} disabled />
+      </div>
+      <div>
+        <Typography variant="small" className="mb-2">
+          Bar (Disabled)
+        </Typography>
+        <Slider variant="bar" size="lg" defaultValue={[20, 80]} disabled />
+      </div>
+    </div>
+  ),
+};
+```
+
+
 ### Component: `split-button`
 
 This section contains the source code for the `split-button` component and its corresponding Storybook stories.
@@ -12790,6 +13564,12 @@ This section contains the source code for the `table` component and its correspo
 ```tsx
 "use client";
 
+import {
+  flexRender,
+  type ColumnDef,
+  type Row,
+  type Table as TanstackTable,
+} from "@tanstack/react-table";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
@@ -12799,37 +13579,46 @@ import React, { createContext, useContext, useMemo, useState } from "react";
 import { Card, type CardProps } from "../card";
 import { Typography } from "../typography";
 
-// --- 1. TYPES & CONTEXT (Unchanged) ---
-
-export interface ColumnDef<TData> {
-  accessorKey: keyof TData;
-  header: React.ReactNode;
-  cell?: (row: TData) => React.ReactNode;
-  /** Show this column in the accordion header on mobile */
-  isAccordionHeader?: boolean;
+// --- Augment TanStack's ColumnMeta type to include our custom property ---
+// biome-ignore lint/correctness/noUnusedVariables: This is a required type augmentation for the library.
+declare module "@tanstack/react-table" {
+  interface ColumnMeta<TData, TValue> {
+    isAccordionHeader?: boolean;
+  }
 }
+
+// --- 1. TYPES & CONTEXT (Refactored) ---
+
+export type { ColumnDef };
 
 type ResponsiveLayout = "card" | "accordion" | "scroll";
 
-interface TableContextProps<TData> {
-  columns: ColumnDef<TData>[];
+// The context itself is no longer generic. It holds a table of `any` type.
+interface TableContextProps {
+  table: TanstackTable<any>;
   responsiveLayout: ResponsiveLayout;
   isMobile: boolean;
 }
 
-const TableContext = createContext<TableContextProps<any> | null>(null);
+const TableContext = createContext<TableContextProps | null>(null);
 
+// The hook is now generic and will cast the context to the correct type.
 const useTableContext = <TData,>() => {
   const context = useContext(
-    TableContext as React.Context<TableContextProps<TData> | null>
+    TableContext as React.Context<TableContextProps | null>
   );
   if (!context) {
     throw new Error("Table components must be used within a <Table.Root>");
   }
-  return context;
+  // Cast the table to the specific data type when the hook is used.
+  return context as {
+    table: TanstackTable<TData>;
+    responsiveLayout: ResponsiveLayout;
+    isMobile: boolean;
+  };
 };
 
-// --- 2. CVA VARIANTS (MODIFIED) ---
+// --- 2. CVA VARIANTS (Unchanged) ---
 
 const tableVariants = cva("w-full text-sm", {
   variants: {
@@ -12893,16 +13682,16 @@ const tdVariants = cva("p-4 border-b border-graphite-border align-top", {
   ],
 });
 
-// --- 3. SUB-COMPONENTS (MODIFIED) ---
+// --- 3. SUB-COMPONENTS (Refactored) ---
 
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
 >(({ children, className, colIndex, ...props }, ref) => {
   const { responsiveLayout } = useTableContext();
-  const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
-  // This component now needs access to the root props for stickyCellVariant
   const { stickyCellVariant } = useContext(TableRootContext);
+  const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
+
   return (
     <th
       ref={ref}
@@ -12920,9 +13709,9 @@ const TableCell = React.forwardRef<
   React.TdHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
 >(({ children, className, colIndex, ...props }, ref) => {
   const { responsiveLayout } = useTableContext();
-  const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
-  // This component now needs access to the root props for stickyCellVariant
   const { stickyCellVariant } = useContext(TableRootContext);
+  const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
+
   return (
     <td
       ref={ref}
@@ -12935,52 +13724,51 @@ const TableCell = React.forwardRef<
 });
 TableCell.displayName = "Table.Cell";
 
-// --- Row Components (Responsive Logic - REFACTORED) ---
+// --- Row Components (Refactored for TanStack Table) ---
 
 interface TableRowProps<TData> extends Omit<CardProps, "children"> {
-  rowData: TData;
+  row: Row<TData>;
 }
 
 const CardRow = <TData extends {}>({
-  rowData,
+  row,
   ...cardProps
 }: TableRowProps<TData>) => {
-  const { columns } = useTableContext<TData>();
   return (
     <Card shape="minimal" variant="secondary" {...cardProps} padding="lg">
       <div className="flex justify-between items-center flex-wrap gap-8">
-        {columns.map((col) => {
-          const value = rowData[col.accessorKey];
-          const renderedCell = col.cell ? col.cell(rowData) : String(value);
-          return (
-            <div key={String(col.accessorKey)}>
-              <Typography variant="muted" className="!mt-0 !text-xs">
-                {col.header}
-              </Typography>
-              <Typography
-                variant="small"
-                className="!mt-0 font-semibold truncate"
-              >
-                {renderedCell}
-              </Typography>
-            </div>
-          );
-        })}
+        {row.getVisibleCells().map((cell) => (
+          <div key={cell.id}>
+            <Typography variant="muted" className="!mt-0 !text-xs">
+              {cell.column.columnDef.header as React.ReactNode}
+            </Typography>
+            <Typography
+              variant="small"
+              className="!mt-0 font-semibold truncate"
+            >
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </Typography>
+          </div>
+        ))}
       </div>
     </Card>
   );
 };
 
 const AccordionRow = <TData extends {}>({
-  rowData,
+  row,
   ...cardProps
 }: TableRowProps<TData>) => {
-  const { columns } = useTableContext<TData>();
   const { accordionDetailsProps } = useContext(TableRootContext);
   const [isOpen, setIsOpen] = useState(false);
 
-  const accordionHeaderCols = columns.filter((c) => c.isAccordionHeader);
-  const accordionBodyCols = columns.filter((c) => !c.isAccordionHeader);
+  const allCells = row.getVisibleCells();
+  const accordionHeaderCells = allCells.filter(
+    (cell) => cell.column.columnDef.meta?.isAccordionHeader
+  );
+  const accordionBodyCells = allCells.filter(
+    (cell) => !cell.column.columnDef.meta?.isAccordionHeader
+  );
 
   return (
     <Card
@@ -12996,26 +13784,19 @@ const AccordionRow = <TData extends {}>({
         className="flex items-center justify-between w-full p-5 text-left"
       >
         <div className="flex justify-between items-center gap-8 flex-1 min-w-0 space-y-1">
-          {accordionHeaderCols.map((col) => {
-            const value = rowData[col.accessorKey];
-            const renderedCell = col.cell ? col.cell(rowData) : String(value);
-            return (
-              <div key={col.accessorKey?.toString()}>
-                <Typography
-                  variant="muted"
-                  className="!mt-0 font-semibold truncate"
-                >
-                  {col.header}
-                </Typography>
-                <Typography
-                  variant="p"
-                  className="!mt-0 font-semibold truncate"
-                >
-                  {renderedCell}
-                </Typography>
-              </div>
-            );
-          })}
+          {accordionHeaderCells.map((cell) => (
+            <div key={cell.id}>
+              <Typography
+                variant="muted"
+                className="!mt-0 font-semibold truncate"
+              >
+                {cell.column.columnDef.header as React.ReactNode}
+              </Typography>
+              <Typography variant="p" className="!mt-0 font-semibold truncate">
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </Typography>
+            </div>
+          ))}
         </div>
         <ChevronDown
           className={clsx(
@@ -13040,25 +13821,19 @@ const AccordionRow = <TData extends {}>({
                 accordionDetailsProps?.className
               )}
             >
-              {accordionBodyCols.map((col) => {
-                const value = rowData[col.accessorKey];
-                const renderedCell = col.cell
-                  ? col.cell(rowData)
-                  : String(value);
-                return (
-                  <div key={String(col.accessorKey)}>
-                    <Typography variant="muted" className="!mt-0 !text-xs">
-                      {col.header}
-                    </Typography>
-                    <Typography
-                      variant="small"
-                      className="!mt-0 font-semibold truncate"
-                    >
-                      {renderedCell}
-                    </Typography>
-                  </div>
-                );
-              })}
+              {accordionBodyCells.map((cell) => (
+                <div key={cell.id}>
+                  <Typography variant="muted" className="!mt-0 !text-xs">
+                    {cell.column.columnDef.header as React.ReactNode}
+                  </Typography>
+                  <Typography
+                    variant="small"
+                    className="!mt-0 font-semibold truncate"
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </Typography>
+                </div>
+              ))}
             </div>
           </motion.div>
         )}
@@ -13067,18 +13842,15 @@ const AccordionRow = <TData extends {}>({
   );
 };
 
-const TableRow = <TData extends {}>({
-  rowData,
-  ...rest
-}: TableRowProps<TData>) => {
-  const { isMobile, responsiveLayout, columns } = useTableContext<TData>();
+const TableRow = <TData extends {}>({ row, ...rest }: TableRowProps<TData>) => {
+  const { isMobile, responsiveLayout } = useTableContext<TData>();
 
   if (isMobile) {
     if (responsiveLayout === "card") {
-      return <CardRow rowData={rowData} {...rest} />;
+      return <CardRow row={row} {...rest} />;
     }
     if (responsiveLayout === "accordion") {
-      return <AccordionRow rowData={rowData} {...rest} />;
+      return <AccordionRow row={row} {...rest} />;
     }
   }
 
@@ -13087,14 +13859,11 @@ const TableRow = <TData extends {}>({
       className={clsx("hover:bg-graphite-secondary/50", rest.className)}
       {...rest}
     >
-      {columns.map((col, colIndex) => {
-        const value = rowData[col.accessorKey];
-        return (
-          <TableCell key={String(col.accessorKey)} colIndex={colIndex}>
-            {col.cell ? col.cell(rowData) : String(value)}
-          </TableCell>
-        );
-      })}
+      {row.getVisibleCells().map((cell, cellIndex) => (
+        <TableCell key={cell.id} colIndex={cellIndex}>
+          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </TableCell>
+      ))}
     </tr>
   );
 };
@@ -13105,26 +13874,23 @@ TableRow.displayName = "Table.Row";
 export interface TableRootProps<TData>
   extends React.HTMLAttributes<HTMLTableElement>,
     VariantProps<typeof tableVariants> {
-  data: TData[];
-  columns: ColumnDef<TData>[];
+  table: TanstackTable<TData>;
   responsiveLayout?: ResponsiveLayout;
   breakpoint?: "sm" | "md" | "lg";
-  rowProps?: (row: TData) => Omit<CardProps, "children">;
+  rowProps?: (row: Row<TData>) => Omit<CardProps, "children">;
   stickyCellVariant?: "card" | "secondary";
   accordionDetailsProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
-// Create a new context to pass root-level props down to deeply nested children
 const TableRootContext = createContext<
-  Pick<TableRootProps<any>, "stickyCellVariant" | "accordionDetailsProps">
+  Pick<TableRootProps<unknown>, "stickyCellVariant" | "accordionDetailsProps">
 >({
   stickyCellVariant: "card",
 });
 
 const TableRoot = <TData extends {}>({
   className,
-  data,
-  columns,
+  table,
   responsiveLayout = "scroll",
   breakpoint = "md",
   rowProps,
@@ -13136,8 +13902,8 @@ const TableRoot = <TData extends {}>({
   const isMobile = useMediaQuery(`(max-width: ${breakpointMap[breakpoint]}px)`);
 
   const contextValue = useMemo(
-    () => ({ columns, responsiveLayout, isMobile }),
-    [columns, responsiveLayout, isMobile]
+    () => ({ table, responsiveLayout, isMobile }),
+    [table, responsiveLayout, isMobile]
   );
 
   const rootContextValue = useMemo(
@@ -13152,10 +13918,10 @@ const TableRoot = <TData extends {}>({
       <TableContext.Provider value={contextValue}>
         {layout === "card" || layout === "accordion" ? (
           <div className={tableVariants({ layout, className })} {...props}>
-            {data.map((row, index) => (
+            {table.getRowModel().rows.map((row) => (
               <TableRow
-                key={index}
-                rowData={row}
+                key={row.id}
+                row={row}
                 {...(rowProps ? rowProps(row) : {})}
               />
             ))}
@@ -13170,19 +13936,26 @@ const TableRoot = <TData extends {}>({
           >
             <table className={tableVariants({ layout, className })} {...props}>
               <thead>
-                <tr>
-                  {columns.map((col, index) => (
-                    <TableHead key={String(col.accessorKey)} colIndex={index}>
-                      {col.header}
-                    </TableHead>
-                  ))}
-                </tr>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header, headerIndex) => (
+                      <TableHead key={header.id} colIndex={headerIndex}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </tr>
+                ))}
               </thead>
               <tbody>
-                {data.map((row, index) => (
+                {table.getRowModel().rows.map((row) => (
                   <TableRow
-                    key={index}
-                    rowData={row}
+                    key={row.id}
+                    row={row}
                     {...(rowProps ? rowProps(row) : {})}
                   />
                 ))}
@@ -13205,11 +13978,16 @@ export const Table = Object.assign(TableRoot, {
 
 **Storybook Stories (`Table.stories.tsx`)**
 ```tsx
+import {
+  getCoreRowModel,
+  useReactTable,
+  type ColumnDef,
+} from "@tanstack/react-table";
 import type { Meta, StoryObj } from "@storybook/react";
 import { Badge } from "../badge";
 import { Button } from "../button";
 import { Card } from "../card";
-import { Table, type ColumnDef, type TableRootProps } from "./index";
+import { Table, type TableRootProps } from "./index";
 
 const meta: Meta<TableRootProps<Payment>> = {
   title: "Components/Data/Table",
@@ -13220,7 +13998,7 @@ const meta: Meta<TableRootProps<Payment>> = {
     docs: {
       description: {
         component:
-          "A versatile and responsive data table. It displays data in a standard tabular format on desktop and transforms into a specified layout (cards, accordion, or scrollable) on mobile viewports.",
+          "A versatile and responsive data table, now powered by TanStack Table. It displays data in a standard tabular format on desktop and transforms into a specified layout (cards, accordion, or scrollable) on mobile viewports.",
       },
     },
   },
@@ -13240,12 +14018,10 @@ const meta: Meta<TableRootProps<Payment>> = {
       options: ["card", "secondary"],
       description: "Background color for the sticky column in 'scroll' mode.",
     },
-    data: { control: false },
-    columns: { control: false },
+    table: { control: false }, // The table instance is now the main prop
     rowProps: { control: false },
     accordionDetailsProps: { control: false },
   },
-  // We remove the global render function to apply custom wrappers per story
 };
 
 export default meta;
@@ -13301,13 +14077,17 @@ const basicColumns: ColumnDef<Payment>[] = [
   {
     accessorKey: "account",
     header: "Account",
-    isAccordionHeader: true,
+    meta: {
+      isAccordionHeader: true,
+    },
   },
   {
     accessorKey: "amount",
     header: "Amount",
-    isAccordionHeader: true,
-    cell: (row) => `$${row.amount.toLocaleString()}`,
+    cell: (info) => `$${info.getValue<number>().toLocaleString()}`,
+    meta: {
+      isAccordionHeader: true,
+    },
   },
   {
     accessorKey: "dueDate",
@@ -13323,10 +14103,7 @@ const basicColumns: ColumnDef<Payment>[] = [
 
 export const DesktopView: Story = {
   name: "1. Desktop View",
-  args: {
-    data: sampleData,
-    columns: basicColumns,
-  },
+  args: {},
   parameters: {
     viewport: { defaultViewport: "responsive" },
     docs: {
@@ -13336,17 +14113,24 @@ export const DesktopView: Story = {
       },
     },
   },
-  render: (args) => (
-    <Card className="w-full overflow-hidden">
-      <Table<Payment> {...args} />
-    </Card>
-  ),
+  render: (args) => {
+    const table = useReactTable({
+      data: sampleData,
+      columns: basicColumns,
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+    return (
+      <Card className="w-full overflow-hidden">
+        <Table<Payment> {...args} table={table} />
+      </Card>
+    );
+  },
 };
 
 export const CardLayout: Story = {
   name: "2. Responsive: Card Layout",
   args: {
-    ...DesktopView.args,
     responsiveLayout: "card",
   },
   parameters: {
@@ -13358,17 +14142,24 @@ export const CardLayout: Story = {
       },
     },
   },
-  render: (args) => (
-    <Card>
-      <Table<Payment> {...args} />
-    </Card>
-  ),
+  render: (args) => {
+    const table = useReactTable({
+      data: sampleData,
+      columns: basicColumns,
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+    return (
+      <Card>
+        <Table<Payment> {...args} table={table} />
+      </Card>
+    );
+  },
 };
 
 export const AccordionLayout: Story = {
   name: "3. Responsive: Accordion Layout",
   args: {
-    ...DesktopView.args,
     responsiveLayout: "accordion",
   },
   parameters: {
@@ -13376,21 +14167,28 @@ export const AccordionLayout: Story = {
     docs: {
       description: {
         story:
-          "Set `responsiveLayout='accordion'`. Each row becomes a collapsible item. Columns with `isAccordionHeader: true` will be visible in the collapsed state.",
+          "Set `responsiveLayout='accordion'`. Each row becomes a collapsible item. Columns with `meta: { isAccordionHeader: true }` will be visible in the collapsed state.",
       },
     },
   },
-  render: (args) => (
-    <Card>
-      <Table<Payment> {...args} />
-    </Card>
-  ),
+  render: (args) => {
+    const table = useReactTable({
+      data: sampleData,
+      columns: basicColumns,
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+    return (
+      <Card>
+        <Table<Payment> {...args} table={table} />
+      </Card>
+    );
+  },
 };
 
 export const ScrollLayout: Story = {
   name: "4. Responsive: Scroll Layout (Default)",
   args: {
-    ...DesktopView.args,
     responsiveLayout: "scroll",
   },
   parameters: {
@@ -13402,43 +14200,56 @@ export const ScrollLayout: Story = {
       },
     },
   },
-  render: (args) => (
-    <Card>
-      <Table<Payment> {...args} />
-    </Card>
-  ),
+  render: (args) => {
+    const table = useReactTable({
+      data: sampleData,
+      columns: basicColumns,
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+    return (
+      <Card>
+        <Table<Payment> {...args} table={table} />
+      </Card>
+    );
+  },
 };
 
 const columnsWithCustomCells: ColumnDef<Payment>[] = [
   {
     accessorKey: "account",
     header: "Account",
-    isAccordionHeader: true,
+    meta: {
+      isAccordionHeader: true,
+    },
   },
   {
     accessorKey: "amount",
     header: "Amount",
-    isAccordionHeader: true,
-    cell: (row) => `$${row.amount.toLocaleString()}`,
+    cell: (info) => `$${info.getValue<number>().toLocaleString()}`,
+    meta: {
+      isAccordionHeader: true,
+    },
   },
   {
     accessorKey: "status",
     header: "Status",
-    cell: (row) => {
+    cell: (info) => {
+      const status = info.getValue<Payment["status"]>();
       const variant = {
         Paid: "primary",
         Pending: "secondary",
         Overdue: "destructive",
-      }[row.status] as "primary" | "secondary" | "destructive";
+      }[status] as "primary" | "secondary" | "destructive";
       return (
         <Badge variant={variant} shape="full">
-          {row.status}
+          {status}
         </Badge>
       );
     },
   },
   {
-    accessorKey: "id",
+    id: "actions",
     header: "Actions",
     cell: () => (
       <Button size="xs" variant="ghost" shape="minimal">
@@ -13451,8 +14262,6 @@ const columnsWithCustomCells: ColumnDef<Payment>[] = [
 export const CustomCells: Story = {
   name: "5. With Custom Cells",
   args: {
-    data: sampleData,
-    columns: columnsWithCustomCells,
     responsiveLayout: "accordion",
   },
   parameters: {
@@ -13463,22 +14272,28 @@ export const CustomCells: Story = {
       },
     },
   },
-  render: (args) => (
-    <Card>
-      <Table<Payment> {...args} />
-    </Card>
-  ),
+  render: (args) => {
+    const table = useReactTable({
+      data: sampleData,
+      columns: columnsWithCustomCells,
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+    return (
+      <Card>
+        <Table<Payment> {...args} table={table} />
+      </Card>
+    );
+  },
 };
 
 export const CustomizedRow: Story = {
   name: "6. Customized Row",
   args: {
-    data: sampleData,
-    columns: basicColumns,
     responsiveLayout: "card",
     rowProps: (row) => ({
-      variant: row.status === "Overdue" ? "selected" : "secondary",
-      onClick: () => alert(`Clicked on account: ${row.account}`),
+      variant: row.original.status === "Overdue" ? "selected" : "secondary",
+      onClick: () => alert(`Clicked on account: ${row.original.account}`),
       className: "cursor-pointer",
     }),
   },
@@ -13491,18 +14306,24 @@ export const CustomizedRow: Story = {
       },
     },
   },
-  render: (args) => (
-    <Card>
-      <Table<Payment> {...args} />
-    </Card>
-  ),
+  render: (args) => {
+    const table = useReactTable({
+      data: sampleData,
+      columns: basicColumns,
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+    return (
+      <Card>
+        <Table<Payment> {...args} table={table} />
+      </Card>
+    );
+  },
 };
 
 export const AdvancedCustomization: Story = {
   name: "7. Advanced Customization",
   args: {
-    data: sampleData,
-    columns: basicColumns,
     responsiveLayout: "accordion",
     stickyCellVariant: "secondary",
     accordionDetailsProps: {
@@ -13517,11 +14338,19 @@ export const AdvancedCustomization: Story = {
       },
     },
   },
-  render: (args) => (
-    <Card>
-      <Table<Payment> {...args} />
-    </Card>
-  ),
+  render: (args) => {
+    const table = useReactTable({
+      data: sampleData,
+      columns: basicColumns,
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+    return (
+      <Card>
+        <Table<Payment> {...args} table={table} />
+      </Card>
+    );
+  },
 };
 ```
 
@@ -15329,6 +16158,264 @@ export const WithCustomRows: Story = {
 ```
 
 
+### Component: `toast`
+
+This section contains the source code for the `toast` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\toast\index.tsx`)**
+```tsx
+"use client";
+
+import { Toaster as Sonner } from "sonner";
+
+type ToasterProps = React.ComponentProps<typeof Sonner>;
+
+/**
+ * A toaster component that displays notifications. It is a styled wrapper
+ * around the `sonner` library, configured to match the chesai-ui theme.
+ */
+const Toaster = ({ ...props }: ToasterProps) => {
+  return (
+    <Sonner
+      // The chesai-ui theme is light, so we set the sonner theme accordingly.
+      theme="light"
+      className="toaster group"
+      toastOptions={{
+        classNames: {
+          // --- General Toast Styling ---
+          toast:
+            "group toast group-[.toaster]:bg-graphite-card group-[.toaster]:text-graphite-foreground group-[.toaster]:border-graphite-border group-[.toaster]:shadow-lg",
+          description: "group-[.toast]:text-gray-500",
+
+          // --- Button Styling ---
+          actionButton:
+            "group-[.toast]:bg-graphite-primary group-[.toast]:text-graphite-primaryForeground",
+          cancelButton:
+            "group-[.toast]:bg-graphite-secondary group-[.toast]:text-graphite-secondaryForeground",
+
+          // --- Icon Styling for Different States ---
+          success:
+            "group-[.toast]:!text-green-500 group-[.toast]:[&_[data-icon]]:!text-green-500",
+          error:
+            "group-[.toast]:!text-red-500 group-[.toast]:[&_[data-icon]]:!text-red-500",
+          warning:
+            "group-[.toast]:!text-yellow-500 group-[.toast]:[&_[data-icon]]:!text-yellow-500",
+          info: "group-[.toast]:!text-blue-500 group-[.toast]:[&_[data-icon]]:!text-blue-500",
+        },
+      }}
+      {...props}
+    />
+  );
+};
+
+// Re-export the toast function from sonner for easy access
+export { toast } from "sonner";
+export { Toaster };
+```
+
+**Storybook Stories (`Toast.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { Button } from "../button";
+import { Typography } from "../typography";
+import { toast, Toaster } from "./index";
+
+const meta: Meta<typeof Toaster> = {
+  title: "Components/Feedback/Toaster",
+  component: Toaster,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A styled wrapper around the `sonner` toast library. To use, place the `<Toaster />` component at the root of your app, then call the `toast()` function from anywhere to trigger a notification.",
+      },
+    },
+  },
+  argTypes: {
+    position: {
+      control: "select",
+      options: [
+        "top-left",
+        "top-center",
+        "top-right",
+        "bottom-left",
+        "bottom-center",
+        "bottom-right",
+      ],
+    },
+    expand: { control: "boolean" },
+    richColors: { control: "boolean" },
+    duration: { control: "number" },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof Toaster>;
+
+export const Default: Story = {
+  name: "1. Basic Usage",
+  args: {
+    position: "bottom-right",
+  },
+  render: (args) => (
+    <div className="h-[75vh]">
+      <Toaster {...args} />
+      <div className="flex flex-col items-start gap-4">
+        <Typography variant="large">Trigger Toasts</Typography>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => toast("A new event has been created.")}
+          >
+            Default
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              toast.message("Event Created", {
+                description: "Sunday, October 5, 2025 at 2:43 PM",
+              })
+            }
+          >
+            With Description
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => toast.success("Profile updated successfully!")}
+          >
+            Success
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => toast.error("Failed to connect to the server.")}
+          >
+            Error
+          </Button>
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const WithActions: Story = {
+  name: "2. With Actions",
+  args: {
+    ...Default.args,
+  },
+  render: (args) => (
+    <div className="h-[75vh]">
+      <Toaster {...args} />
+      <Button
+        onClick={() =>
+          toast("An item was added to your cart.", {
+            action: {
+              label: "Undo",
+              onClick: () => console.log("Undo action triggered"),
+            },
+            cancel: {
+              label: "Dismiss",
+              onClick: () => console.log("Cancel action triggered"),
+            },
+          })
+        }
+      >
+        Trigger Action Toast
+      </Button>
+    </div>
+  ),
+};
+
+// Helper function to simulate a promise
+const simulatePromise = () =>
+  new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // Randomly resolve or reject
+      if (Math.random() > 0.3) {
+        resolve({ name: "Chesai UI" });
+      } else {
+        reject({ name: "API Error" });
+      }
+    }, 2000);
+  });
+
+export const AsyncPromise: Story = {
+  name: "3. Async (Promise)",
+  args: {
+    ...Default.args,
+  },
+  render: (args) => (
+    <div className="h-[75vh]">
+      <Toaster {...args} />
+      <Button
+        onClick={() =>
+          toast.promise(simulatePromise, {
+            loading: "Saving your preferences...",
+            success: (data: any) => `${data.name} preferences have been saved!`,
+            error: "Could not save preferences.",
+          })
+        }
+      >
+        Trigger Promise Toast
+      </Button>
+    </div>
+  ),
+};
+
+export const Positioning: Story = {
+  name: "4. Positioning",
+  render: () => (
+    <div className="h-[75vh] grid grid-cols-3 gap-4">
+      <Toaster position="top-left" />
+      <Toaster position="top-center" />
+      <Toaster position="top-right" />
+      <Toaster position="bottom-left" />
+      <Toaster position="bottom-center" />
+      <Toaster position="bottom-right" />
+
+      <Button
+        variant="secondary"
+        onClick={() => toast("Top Left", { id: "tl" })}
+      >
+        Top Left
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() => toast("Top Center", { id: "tc" })}
+      >
+        Top Center
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() => toast("Top Right", { id: "tr" })}
+      >
+        Top Right
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() => toast("Bottom Left", { id: "bl" })}
+      >
+        Bottom Left
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() => toast("Bottom Center", { id: "bc" })}
+      >
+        Bottom Center
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() => toast("Bottom Right", { id: "br" })}
+      >
+        Bottom Right
+      </Button>
+    </div>
+  ),
+};
+```
+
+
 ### Component: `tooltip`
 
 This section contains the source code for the `tooltip` component and its corresponding Storybook stories.
@@ -16815,6 +17902,7 @@ input[type="number"] {
     -ms-user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
+    overscroll-behavior: contain;
   }
   ::-webkit-scrollbar {
   display: none; /* Hides the scrollbar visually */

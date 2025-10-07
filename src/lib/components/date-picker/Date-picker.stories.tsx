@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { addDays } from "date-fns";
-import React, { useState } from "react";
+import { useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { DatePicker } from "./index";
 
@@ -108,33 +108,8 @@ export const ModalRange: Story = {
   },
 };
 
-export const Fullscreen: Story = {
-  name: "4. Fullscreen (Mobile Default)",
-  args: {
-    variant: "fullscreen",
-    label: "Booking",
-    mode: "range",
-  },
-  parameters: { viewport: { defaultViewport: "mobile1" } },
-  render: function Render(args) {
-    const [range, setRange] = useState<DateRange | undefined>({
-      from: new Date(),
-      to: addDays(new Date(), 5),
-    });
-    return (
-      <div className="w-80">
-        <DatePicker
-          {...args}
-          value={range}
-          onChange={(val) => setRange(val as DateRange)}
-        />
-      </div>
-    );
-  },
-};
-
 export const InputMode: Story = {
-  name: "5. Manual Input Mode",
+  name: "4. Manual Input Mode",
   args: {
     variant: "modal",
     label: "Date of Birth",

@@ -200,6 +200,31 @@
 
 /* --- END: Radix Navigation Menu Animations --- */
 
+@keyframes accordion-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+/* Add these new utilities to your --animate-* list */
+--animate-accordion-down: accordion-down 200ms cubic-bezier(0.87, 0, 0.13, 1) forwards;
+--animate-accordion-up: accordion-up 200ms cubic-bezier(0.87, 0, 0.13, 1) forwards;
 
 
 
@@ -255,6 +280,7 @@ input[type="number"] {
     -ms-user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
+    overscroll-behavior: contain;
   }
   ::-webkit-scrollbar {
   display: none; /* Hides the scrollbar visually */
