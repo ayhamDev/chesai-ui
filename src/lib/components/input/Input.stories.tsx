@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Eye, EyeOff, Mail, Search } from "lucide-react";
 import { useState } from "react";
 import { Input } from "./index";
+import { Card } from "../card";
+import { Typography } from "../typography";
 
 const meta: Meta<typeof Input> = {
   title: "Components/Forms & Inputs/Input",
@@ -10,7 +12,7 @@ const meta: Meta<typeof Input> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary"],
+      options: ["primary", "secondary", "minimal"],
     },
     shape: {
       control: "select",
@@ -38,6 +40,43 @@ export const Default: Story = {
     label: "Email Address",
     placeholder: "you@example.com",
     startAdornment: <Mail className="h-4 w-4" />,
+  },
+};
+
+export const CompositionWithMinimal: Story = {
+  name: "Composition with Minimal Variant",
+  render: () => (
+    <div className="flex flex-col gap-8 max-w-sm">
+      <Typography variant="h4">Custom Search Bar</Typography>
+      <Card variant="secondary" shape="full" padding="none">
+        <Input
+          variant="minimal"
+          size="md"
+          placeholder="Search..."
+          startAdornment={<Search className="h-5 w-5 ml-4" />}
+          wrapperClassName="h-12"
+        />
+      </Card>
+      <Typography variant="h4">Error State</Typography>
+      <Card variant="primary" shape="minimal" padding="sm" isSelected>
+        <Input
+          variant="minimal"
+          size="md"
+          placeholder="Search..."
+          startAdornment={<Search className="h-5 w-5 mr-2" />}
+          error="Search term is required."
+          wrapperClassName="h-12"
+        />
+      </Card>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `minimal` variant is completely unstyled, making it perfect for composing custom input components. Here, it's placed inside a `Card` to create a search bar. The card provides the background and border, while the input only provides the text functionality.",
+      },
+    },
   },
 };
 
@@ -93,6 +132,12 @@ export const AllVariantsAndShapes: Story = {
             placeholder="Minimal Shape"
           />
           <Input variant="secondary" shape="sharp" placeholder="Sharp Shape" />
+        </div>
+      </div>
+      <div>
+        <h3 className="font-bold mb-4">Minimal Variant (Standalone)</h3>
+        <div className="flex flex-col gap-4 p-4 bg-graphite-secondary rounded-lg">
+          <Input variant="minimal" placeholder="No background or border" />
         </div>
       </div>
     </div>

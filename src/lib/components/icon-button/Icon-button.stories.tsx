@@ -10,7 +10,7 @@ const meta: Meta<typeof IconButton> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "ghost", "link"],
+      options: ["primary", "secondary", "destructive", "ghost", "link"],
     },
     size: {
       control: "select",
@@ -48,6 +48,9 @@ export const AllVariants: Story = {
         <Plus className="h-6 w-6" />
       </IconButton>
       <IconButton variant="secondary" size="md" aria-label="Secondary">
+        <Plus className="h-6 w-6" />
+      </IconButton>
+      <IconButton variant="destructive" size="md" aria-label="Destructive">
         <Plus className="h-6 w-6" />
       </IconButton>
       <IconButton variant="ghost" size="md" aria-label="Ghost">

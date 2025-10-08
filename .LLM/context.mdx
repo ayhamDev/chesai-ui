@@ -14,6 +14,409 @@ You are an expert React developer tasked with assisting in the development of th
 ## UI Components
 
 
+### Component: `accordion`
+
+This section contains the source code for the `accordion` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\accordion\index.tsx`)**
+```tsx
+"use client";
+
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
+import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
+import { ChevronDown } from "lucide-react";
+import React, { createContext, useContext, useRef } from "react";
+import useRipple from "use-ripple-hook";
+
+// --- Context for Accordion Configuration ---
+interface AccordionContextProps {
+  variant: "primary" | "secondary";
+  shape: "full" | "minimal" | "sharp";
+  layout: "integrated" | "separated";
+}
+
+const AccordionContext = createContext<AccordionContextProps>({
+  variant: "primary",
+  shape: "minimal",
+  layout: "integrated",
+});
+
+const useAccordionContext = () => useContext(AccordionContext);
+
+// --- CVA Variants ---
+const itemVariants = cva("overflow-hidden transition-colors", {
+  variants: {
+    variant: {
+      primary: "bg-graphite-card",
+      secondary: "bg-graphite-secondary",
+    },
+    layout: {
+      integrated: "border-b border-graphite-border last:border-b-0",
+      separated: "border border-transparent",
+    },
+    shape: {
+      full: "",
+      minimal: "",
+      sharp: "",
+    },
+  },
+  compoundVariants: [
+    { layout: "separated", shape: "full", className: "rounded-2xl" },
+    { layout: "separated", shape: "minimal", className: "rounded-xl" },
+    { layout: "separated", shape: "sharp", className: "rounded-none" },
+  ],
+  defaultVariants: {
+    variant: "primary",
+    layout: "integrated",
+    shape: "minimal",
+  },
+});
+
+// --- Root Component ---
+interface AccordionRootProps
+  extends React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Root> {
+  variant?: "primary" | "secondary";
+  shape?: "full" | "minimal" | "sharp";
+  layout?: "integrated" | "separated";
+}
+
+const AccordionRoot = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Root>,
+  AccordionRootProps
+>(
+  (
+    {
+      className,
+      variant = "primary",
+      shape = "minimal",
+      layout = "integrated",
+      children,
+      ...props
+    },
+    ref
+  ) => (
+    <AccordionContext.Provider value={{ variant, shape, layout }}>
+      <AccordionPrimitive.Root
+        ref={ref}
+        className={clsx(
+          "w-full",
+          layout === "separated" && "space-y-2",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </AccordionPrimitive.Root>
+    </AccordionContext.Provider>
+  )
+);
+AccordionRoot.displayName = "Accordion";
+
+// --- Accordion Item ---
+const AccordionItem = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
+>(({ className, ...props }, ref) => {
+  const { variant, shape, layout } = useAccordionContext();
+  return (
+    <AccordionPrimitive.Item
+      ref={ref}
+      className={clsx(itemVariants({ variant, shape, layout }), className)}
+      {...props}
+    />
+  );
+});
+AccordionItem.displayName = "AccordionItem";
+
+// --- Accordion Trigger (MODIFIED) ---
+const AccordionTrigger = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
+    /** If true, the ripple effect on click will be disabled. */
+    disableRipple?: boolean;
+  }
+>(({ className, children, disableRipple = false, ...props }, ref) => {
+  const localRef = useRef<HTMLButtonElement>(null);
+  const [, event] = useRipple({
+    ref: localRef,
+    color: "rgba(0, 0, 0, 0.1)",
+    duration: 400,
+    disabled: disableRipple, // Pass the new prop to the hook
+  });
+  React.useImperativeHandle(ref, () => localRef.current!);
+
+  return (
+    <AccordionPrimitive.Header className="flex">
+      <AccordionPrimitive.Trigger
+        ref={localRef}
+        onPointerDown={event}
+        className={clsx(
+          "relative flex flex-1 items-center justify-between p-4 font-semibold text-graphite-foreground transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+          "[&[data-state=open]>svg]:rotate-180",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
+      </AccordionPrimitive.Trigger>
+    </AccordionPrimitive.Header>
+  );
+});
+AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
+
+// --- Accordion Content ---
+const AccordionContent = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+  <AccordionPrimitive.Content
+    ref={ref}
+    className="overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+    {...props}
+  >
+    <div className={clsx("px-4 pb-4 pt-0", className)}>{children}</div>
+  </AccordionPrimitive.Content>
+));
+AccordionContent.displayName = AccordionPrimitive.Content.displayName;
+
+// --- Compound Export ---
+export const Accordion = Object.assign(AccordionRoot, {
+  Item: AccordionItem,
+  Trigger: AccordionTrigger,
+  Content: AccordionContent,
+});
+```
+
+**Storybook Stories (`Accordion.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { Typography } from "../typography";
+import { Accordion } from "./index";
+
+const meta: Meta<typeof Accordion> = {
+  title: "Components/Data/Accordion",
+  component: Accordion,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A vertically stacked set of interactive headings that each reveal a section of content. Built on Radix UI for accessibility and styled for chesai-ui.",
+      },
+    },
+  },
+  argTypes: {
+    type: {
+      control: "select",
+      options: ["single", "multiple"],
+      description: "Determines if one or multiple items can be open at once.",
+    },
+    layout: {
+      control: "select",
+      options: ["integrated", "separated"],
+      description: "The structural layout of the items.",
+    },
+    variant: {
+      control: "select",
+      options: ["primary", "secondary"],
+      description: "The visual style of the accordion items.",
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+      description: "The border-radius of the accordion items.",
+    },
+    collapsible: {
+      control: "boolean",
+      description: "When type is 'single', allows closing all items.",
+    },
+    defaultValue: { control: "text" },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof Accordion>;
+
+const AccordionItems = () => (
+  <>
+    <Accordion.Item value="item-1">
+      <Accordion.Trigger>What is chesai-ui?</Accordion.Trigger>
+      <Accordion.Content>
+        <Typography variant="p">
+          chesai-ui is a React component library designed for building modern,
+          accessible, and beautiful user interfaces with ease.
+        </Typography>
+      </Accordion.Content>
+    </Accordion.Item>
+    <Accordion.Item value="item-2">
+      <Accordion.Trigger>Is it accessible?</Accordion.Trigger>
+      <Accordion.Content>
+        <Typography variant="p">
+          Yes. It is built on top of Radix UI primitives, which are fully
+          accessible and follow WAI-ARIA design patterns.
+        </Typography>
+      </Accordion.Content>
+    </Accordion.Item>
+    <Accordion.Item value="item-3">
+      <Accordion.Trigger>Can I customize the styling?</Accordion.Trigger>
+      <Accordion.Content>
+        <Typography variant="p">
+          Absolutely. The library is built with Tailwind CSS and CSS variables,
+          making it highly customizable to fit your brand's design system.
+        </Typography>
+      </Accordion.Content>
+    </Accordion.Item>
+  </>
+);
+
+export const IntegratedLayout: Story = {
+  name: "1. Integrated Layout (Default)",
+  args: {
+    type: "single",
+    collapsible: true,
+    defaultValue: "item-1",
+    layout: "integrated",
+    variant: "primary",
+  },
+  render: (args) => (
+    <div className="w-96">
+      <Accordion {...args}>
+        <AccordionItems />
+      </Accordion>
+    </div>
+  ),
+};
+
+export const SeparatedLayout: Story = {
+  name: "2. Separated Layout",
+  args: {
+    type: "single",
+    collapsible: true,
+    layout: "separated",
+    variant: "secondary",
+    shape: "minimal",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `separated` layout renders each item as a distinct, card-like element, separated by a gap.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-96">
+      <Accordion {...args}>
+        <AccordionItems />
+      </Accordion>
+    </div>
+  ),
+};
+
+export const VariantCombinations: Story = {
+  name: "3. Variant Combinations",
+  args: {
+    type: "single",
+    collapsible: true,
+    layout: "separated",
+    shape: "minimal",
+  },
+  render: (args) => (
+    <div className="flex items-start gap-8">
+      <div className="w-80">
+        <Typography variant="h4" className="mb-4 text-center">
+          Layout: Separated
+          <br />
+          Variant: Primary
+        </Typography>
+        <Accordion {...args} variant="primary">
+          <AccordionItems />
+        </Accordion>
+      </div>
+      <div className="w-80">
+        <Typography variant="h4" className="mb-4 text-center">
+          Layout: Separated
+          <br />
+          Variant: Secondary
+        </Typography>
+        <Accordion {...args} variant="secondary">
+          <AccordionItems />
+        </Accordion>
+      </div>
+    </div>
+  ),
+};
+
+export const MultipleOpen: Story = {
+  name: "4. Allow Multiple Open",
+  args: {
+    type: "multiple",
+    layout: "integrated",
+    defaultValue: ["item-1", "item-3"],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Set `type='multiple'` to allow users to open more than one item at a time.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-96">
+      <Accordion {...args}>
+        <AccordionItems />
+      </Accordion>
+    </div>
+  ),
+};
+
+export const RippleControl: Story = {
+  name: "5. Ripple Control",
+  args: {
+    type: "single",
+    collapsible: true,
+    layout: "integrated",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "You can explicitly disable the ripple effect on a trigger by setting `disableRipple={true}` on the `<Accordion.Trigger>` component.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-96">
+      <Accordion {...args}>
+        <Accordion.Item value="item-1">
+          <Accordion.Trigger>Ripple Enabled (Default)</Accordion.Trigger>
+          <Accordion.Content>
+            <Typography variant="p">
+              Click the trigger to see the ripple effect.
+            </Typography>
+          </Accordion.Content>
+        </Accordion.Item>
+        <Accordion.Item value="item-2">
+          <Accordion.Trigger disableRipple={true}>
+            Ripple Disabled
+          </Accordion.Trigger>
+          <Accordion.Content>
+            <Typography variant="p">
+              This trigger will not have a ripple effect.
+            </Typography>
+          </Accordion.Content>
+        </Accordion.Item>
+      </Accordion>
+    </div>
+  ),
+};
+```
+
+
 ### Component: `appbar`
 
 This section contains the source code for the `appbar` component and its corresponding Storybook stories.
@@ -1573,6 +1976,8 @@ export const buttonVariants = cva(
           "bg-graphite-primary hover:shadow-md disabled:bg-graphite-primary/70  text-graphite-primaryForeground hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring ",
         secondary:
           "bg-graphite-secondary text-graphite-secondaryForeground disabled:bg-graphite-secondary/70 hover:bg-graphite-secondary/80  focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+        destructive:
+          "bg-red-500 text-graphite-primaryForeground disabled:bg-red-500/70 hover:bg-red-600/80 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         ghost:
           "bg-transparent text-graphite-foreground disabled:opacity-70 hover:bg-graphite-secondary focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         link: "bg-transparent text-graphite-primary disabled:opacity-70 hover:text-graphite-primary hover:underline !p-1 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
@@ -1627,7 +2032,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const localRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
     const rippleColor =
-      variant === "primary" ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.1)";
+      variant === "primary" || variant === "destructive"
+        ? "rgba(255, 255, 255, 0.4)"
+        : "rgba(0, 0, 0, 0.1)";
 
     const rippleRef = localRef as React.RefObject<HTMLElement>;
     const [, event] = useRipple({
@@ -1654,7 +2061,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           isLoading,
         })}
         ref={localRef}
-        onPointerDown={event}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          event(e);
+        }}
         disabled={disabled || isLoading}
         {...props}
       >
@@ -1715,7 +2125,7 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "ghost", "link"],
+      options: ["primary", "secondary", "destructive", "ghost", "link"],
     },
     size: {
       control: "select",
@@ -1750,6 +2160,7 @@ export const AllVariants: Story = {
     <div className="flex flex-wrap items-center gap-4">
       <Button variant="primary">Primary</Button>
       <Button variant="secondary">Secondary</Button>
+      <Button variant="destructive">Destructive</Button>
       <Button variant="ghost">Ghost</Button>
       <Button variant="link">Link</Button>
     </div>
@@ -2235,49 +2646,64 @@ import clsx from "clsx";
 import React from "react";
 
 const cardVariants = cva(
-  // Base classes: Removed hardcoded padding, as it's now a variant.
+  // Base classes
   "shadow-xs transition-colors duration-200",
   {
     variants: {
       variant: {
         primary: "bg-graphite-card",
         secondary: "bg-graphite-secondary",
-        // Selected variant adds a border to indicate its state
-        selected: "bg-graphite-card border-2 border-graphite-primary",
+        /** A semi-transparent, blurred background effect. Best used on a colorful or textured background. */
+        glass:
+          "bg-white/5 backdrop-blur-lg border border-white/10 text-graphite-primaryForeground",
       },
       shape: {
         full: "rounded-3xl",
         minimal: "rounded-xl",
         sharp: "rounded-none",
       },
-      // New variant for controlling padding
       padding: {
         none: "p-0",
         sm: "p-2",
-        md: "p-5", // This was the original hardcoded value
+        md: "p-5",
         lg: "p-8",
       },
+      isSelected: {
+        true: "border-2 border-graphite-primary",
+        false: " border-2 border-transparent", // No border by default
+      },
     },
-    // Set default variants, including the new padding
+    // Special case for the glass variant to use its own border style
+    compoundVariants: [
+      {
+        variant: "glass",
+        isSelected: false,
+        className: "border border-white/10",
+      },
+    ],
     defaultVariants: {
       variant: "primary",
       shape: "minimal",
-      padding: "md", // Sets the default padding to p-5
+      padding: "md",
+      isSelected: false,
     },
   }
 );
 
 export interface CardProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {}
+    VariantProps<typeof cardVariants> {
+  // The isSelected prop is now automatically included from VariantProps
+}
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  // Destructure the new 'padding' prop
-  ({ className, shape, variant, padding, ...props }, ref) => {
+  ({ className, shape, variant, padding, isSelected, ...props }, ref) => {
     return (
       <div
-        // Pass the 'padding' prop to the cva function
-        className={clsx(cardVariants({ shape, variant, padding }), className)}
+        className={clsx(
+          cardVariants({ shape, variant, padding, isSelected }),
+          className
+        )}
         ref={ref}
         {...props}
       />
@@ -2302,11 +2728,14 @@ const meta: Meta<typeof Card> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "selected"],
+      options: ["primary", "secondary", "glass"],
     },
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
+    },
+    isSelected: {
+      control: "boolean",
     },
   },
 };
@@ -2330,9 +2759,8 @@ export const Default: Story = {
   ),
 };
 
-// --- NEW STORY TO SHOWCASE VARIANTS ---
 export const AllVariants: Story = {
-  name: "All Variants",
+  name: "All Variants & States",
   render: () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card variant="primary" shape="minimal">
@@ -2343,9 +2771,42 @@ export const AllVariants: Story = {
         <Typography variant="h4">Secondary</Typography>
         <Typography variant="p">For less emphasis.</Typography>
       </Card>
-      <Card variant="selected" shape="minimal">
-        <Typography variant="h4">Selected</Typography>
+      <Card variant="primary" shape="minimal" isSelected={true}>
+        <Typography variant="h4">Primary (Selected)</Typography>
         <Typography variant="p">To indicate selection.</Typography>
+      </Card>
+    </div>
+  ),
+};
+
+export const GlassVariant: Story = {
+  name: "Glass Variant",
+  args: {
+    variant: "glass",
+    shape: "minimal",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `glass` variant creates a 'glassmorphism' effect with a blurred, semi-transparent background. It's designed to be placed on top of colorful or textured backgrounds.",
+      },
+    },
+  },
+  render: (args) => (
+    <div
+      className="w-full max-w-2xl h-96 flex items-center justify-center rounded-2xl overflow-hidden bg-cover bg-center"
+      style={{
+        backgroundImage:
+          "url(https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=1470&auto=format&fit=crop)",
+      }}
+    >
+      <Card {...args} className="max-w-md">
+        <Typography variant="h3">Glass Card</Typography>
+        <Typography variant="p" className="!text-white/80">
+          This card uses a backdrop-blur effect to create a frosted glass look,
+          letting the background color and texture show through.
+        </Typography>
       </Card>
     </div>
   ),
@@ -2712,463 +3173,6 @@ export const Disabled: Story = {
       </Chip>
     </div>
   ),
-};
-```
-
-
-### Component: `command`
-
-This section contains the source code for the `command` component and its corresponding Storybook stories.
-
-**Component Source (`src\lib\components\command\index.tsx`)**
-```tsx
-"use client";
-
-import { type DialogProps } from "@radix-ui/react-dialog";
-import { useMediaQuery } from "@uidotdev/usehooks";
-import { clsx } from "clsx";
-import { Command as CommandPrimitive } from "cmdk";
-import { Search } from "lucide-react";
-import * as React from "react";
-import useRipple from "use-ripple-hook";
-import { Dialog, DialogContent } from "../dialog";
-
-const Command = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive> & {
-    shouldFilter?: boolean;
-  }
->(({ className, shouldFilter = true, ...props }, ref) => (
-  <CommandPrimitive
-    ref={ref}
-    shouldFilter={shouldFilter}
-    className={clsx(
-      "flex h-full w-full flex-col overflow-hidden rounded-xl bg-graphite-card text-graphite-foreground",
-      className
-    )}
-    {...props}
-  />
-));
-Command.displayName = CommandPrimitive.displayName;
-
-interface CommandDialogProps extends DialogProps {}
-
-const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
-  const isMobile = useMediaQuery("(max-width: 768px)");
-
-  return (
-    <Dialog {...props} variant={isMobile ? "fullscreen" : "basic"}>
-      <DialogContent className="flex flex-col overflow-hidden p-0! shadow-lg max-w-xl">
-        {children}
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-const CommandInput = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive.Input>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
->(({ className, ...props }, ref) => (
-  <div className="flex items-center  flex-1" cmdk-input-wrapper="">
-    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-    <CommandPrimitive.Input
-      autoFocus={true}
-      ref={ref}
-      className={clsx(
-        "flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-graphite-foreground/60 disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
-      {...props}
-    />
-  </div>
-));
-CommandInput.displayName = CommandPrimitive.Input.displayName;
-
-const CommandList = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.List
-    ref={ref}
-    className={clsx(
-      "overflow-y-auto overflow-x-hidden flex-1",
-      "max-h-[450px] sm:max-h-[300px]",
-      className
-    )}
-    {...props}
-  />
-));
-CommandList.displayName = CommandPrimitive.List.displayName;
-
-const CommandEmpty = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive.Empty>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>
->((props, ref) => (
-  <CommandPrimitive.Empty
-    ref={ref}
-    className="py-6 text-center text-sm text-graphite-foreground/70"
-    {...props}
-  />
-));
-CommandEmpty.displayName = CommandPrimitive.Empty.displayName;
-
-const CommandGroup = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive.Group>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Group
-    ref={ref}
-    className={clsx(
-      "overflow-hidden p-1 text-graphite-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-graphite-foreground/70",
-      className
-    )}
-    {...props}
-  />
-));
-CommandGroup.displayName = CommandPrimitive.Group.displayName;
-
-const CommandSeparator = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive.Separator>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Separator>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Separator
-    ref={ref}
-    className={clsx("-mx-1 my-1 h-px bg-graphite-border", className)}
-    {...props}
-  />
-));
-CommandSeparator.displayName = CommandPrimitive.Separator.displayName;
-
-const CommandItem = React.forwardRef<
-  React.ElementRef<typeof CommandPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
->(({ className, onPointerDown, ...props }, ref) => {
-  const localRef = React.useRef<HTMLDivElement>(null);
-  const [, event] = useRipple({
-    ref: localRef,
-    color: "rgba(0, 0, 0, 0.1)",
-    duration: 400,
-    disabled: props.disabled,
-  });
-
-  React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
-
-  return (
-    <CommandPrimitive.Item
-      ref={localRef}
-      onPointerDown={(e) => {
-        event(e);
-        onPointerDown?.(e);
-      }}
-      className={clsx(
-        "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden transition-colors duration-150",
-        "hover:bg-graphite-secondary/80",
-        "aria-selected:bg-graphite-secondary",
-        "focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
-        "aria-disabled:pointer-events-none aria-disabled:opacity-50",
-        className
-      )}
-      {...props}
-    />
-  );
-});
-CommandItem.displayName = CommandPrimitive.Item.displayName;
-
-const CommandShortcut = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement>) => {
-  return (
-    <span
-      className={clsx(
-        "ml-auto text-xs tracking-widest text-graphite-foreground/60",
-        className
-      )}
-      {...props}
-    />
-  );
-};
-CommandShortcut.displayName = "CommandShortcut";
-
-export {
-  Command,
-  CommandDialog,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandShortcut,
-  CommandSeparator,
-};
-```
-
-**Storybook Stories (`Command.stories.tsx`)**
-```tsx
-import type { Meta, StoryObj } from "@storybook/react";
-import {
-  ArrowLeft,
-  Calculator,
-  Calendar,
-  CreditCard,
-  Settings,
-  Smile,
-  User,
-} from "lucide-react";
-import * as React from "react";
-import { Button } from "../button";
-import { DialogClose } from "../dialog";
-import { IconButton } from "../icon-button";
-import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut,
-} from "./index";
-
-const meta: Meta<typeof Command> = {
-  title: "Components/Command",
-  component: Command,
-  subcomponents: {
-    CommandDialog,
-    CommandInput,
-    CommandList,
-    CommandEmpty,
-    CommandGroup,
-    CommandItem,
-    CommandShortcut,
-    CommandSeparator,
-  },
-  tags: ["autodocs"],
-  parameters: {
-    layout: "centered",
-    docs: {
-      description: {
-        component:
-          "A fast, composable command menu. Built on `cmdk` and styled for the chesai-ui theme. Can be used inline or within a dialog.",
-      },
-    },
-  },
-};
-
-export default meta;
-type Story = StoryObj<typeof Command>;
-
-interface CommandItemType {
-  value: string;
-  label: string;
-  icon: React.ReactNode;
-  disabled?: boolean;
-  shortcut?: string;
-}
-
-interface CommandGroupType {
-  group: string;
-  items: CommandItemType[];
-}
-
-const commandItems: CommandGroupType[] = [
-  {
-    group: "Suggestions",
-    items: [
-      {
-        value: "calendar",
-        label: "Calendar",
-        icon: <Calendar className="mr-2 h-4 w-4" />,
-      },
-      {
-        value: "emoji",
-        label: "Search Emoji",
-        icon: <Smile className="mr-2 h-4 w-4" />,
-      },
-      {
-        value: "calculator",
-        label: "Calculator",
-        icon: <Calculator className="mr-2 h-4 w-4" />,
-        disabled: true,
-      },
-    ],
-  },
-  {
-    group: "Settings",
-    items: [
-      {
-        value: "profile",
-        label: "Profile",
-        icon: <User className="mr-2 h-4 w-4" />,
-        shortcut: "⌘P",
-      },
-      {
-        value: "billing",
-        label: "Billing",
-        icon: <CreditCard className="mr-2 h-4 w-4" />,
-        shortcut: "⌘B",
-      },
-      {
-        value: "settings",
-        label: "Settings",
-        icon: <Settings className="mr-2 h-4 w-4" />,
-        shortcut: "⌘S",
-      },
-    ],
-  },
-];
-
-export const Default: Story = {
-  name: "1. Inline Usage",
-  render: (args) => (
-    <Command
-      {...args}
-      className="max-w-lg rounded-lg border border-graphite-border shadow-md"
-    >
-      <CommandInput placeholder="Type a command or search..." />
-      <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        {commandItems.map((group) => (
-          <CommandGroup key={group.group} heading={group.group}>
-            {group.items.map((item) => (
-              <CommandItem
-                key={item.value}
-                value={item.value}
-                disabled={item.disabled}
-                onSelect={() => alert(`Selected: ${item.label}`)}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-                {item.shortcut && (
-                  <CommandShortcut>{item.shortcut}</CommandShortcut>
-                )}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        ))}
-      </CommandList>
-    </Command>
-  ),
-};
-
-export const DialogDesktop: Story = {
-  name: "2. Dialog (Desktop)",
-  parameters: {
-    layout: "fullscreen",
-  },
-  render: () => {
-    const [open, setOpen] = React.useState(false);
-
-    React.useEffect(() => {
-      const down = (e: KeyboardEvent) => {
-        if (e.key === "f" && (e.metaKey || e.ctrlKey)) {
-          e.preventDefault();
-          setOpen((open) => !open);
-        }
-      };
-      document.addEventListener("keydown", down);
-      return () => document.removeEventListener("keydown", down);
-    }, []);
-
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-graphite-background p-0">
-        <p className="text-sm text-graphite-foreground/70">
-          Press{" "}
-          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-graphite-card px-1.5 font-mono text-[10px] font-medium opacity-100">
-            <span className="text-xs">⌘</span>K
-          </kbd>{" "}
-          to open.
-        </p>
-        <CommandDialog open={open} onOpenChange={setOpen}>
-          {/* --- FIX: Keep CommandInput and CommandList as direct children of Command --- */}
-          <Command>
-            <div className="flex items-center border-b border-graphite-border">
-              <DialogClose asChild>
-                <IconButton variant="ghost" className="m-1">
-                  <ArrowLeft />
-                </IconButton>
-              </DialogClose>
-              <CommandInput placeholder="Type a command or search..." />
-            </div>
-            <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
-              {commandItems.map((group) => (
-                <CommandGroup key={group.group} heading={group.group}>
-                  {group.items.map((item) => (
-                    <CommandItem
-                      key={item.value}
-                      value={item.value}
-                      disabled={item.disabled}
-                      onSelect={() => setOpen(false)}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                      {item.shortcut && (
-                        <CommandShortcut>{item.shortcut}</CommandShortcut>
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              ))}
-            </CommandList>
-          </Command>
-          {/* --- END FIX --- */}
-        </CommandDialog>
-      </div>
-    );
-  },
-};
-
-export const DialogMobile: Story = {
-  name: "3. Dialog (Mobile)",
-  parameters: {
-    ...DialogDesktop.parameters,
-    viewport: { defaultViewport: "mobile1" },
-  },
-  render: () => {
-    const [open, setOpen] = React.useState(false);
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-graphite-background p-0">
-        <Button onClick={() => setOpen(true)}>Open Command Menu</Button>
-        <CommandDialog open={open} onOpenChange={setOpen}>
-          {/* --- FIX: Keep CommandInput and CommandList as direct children of Command --- */}
-          <Command>
-            <div className="flex items-center border-b border-graphite-border">
-              <DialogClose asChild>
-                <IconButton variant="ghost" className="m-1">
-                  <ArrowLeft />
-                </IconButton>
-              </DialogClose>
-              <CommandInput placeholder="Type a command or search..." />
-            </div>
-            <CommandList>
-              <CommandEmpty>No results found.</CommandEmpty>
-              {commandItems.map((group) => (
-                <CommandGroup key={group.group} heading={group.group}>
-                  {group.items.map((item) => (
-                    <CommandItem
-                      key={item.value}
-                      value={item.value}
-                      disabled={item.disabled}
-                      onSelect={() => setOpen(false)}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                      {item.shortcut && (
-                        <CommandShortcut>{item.shortcut}</CommandShortcut>
-                      )}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              ))}
-            </CommandList>
-          </Command>
-          {/* --- END FIX --- */}
-        </CommandDialog>
-      </div>
-    );
-  },
 };
 ```
 
@@ -6212,6 +6216,8 @@ export const iconButtonVariants = cva(
           "bg-graphite-primary disabled:bg-graphite-primary/70 text-graphite-primaryForeground hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         secondary:
           "bg-graphite-secondary disabled:bg-graphite-secondary/70 text-graphite-secondaryForeground hover:bg-graphite-secondary/80  focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+        destructive:
+          "bg-red-500 text-graphite-primaryForeground disabled:bg-red-500/70 hover:bg-red-600/80 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         ghost:
           "bg-transparent disabled:opacity-70 text-graphite-foreground hover:bg-graphite-secondary focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         link: "bg-transparent disabled:opacity-70 text-graphite-primary hover:text-graphite-primary hover:underline !p-1 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
@@ -6262,7 +6268,9 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     const localRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
     const rippleColor =
-      variant === "primary" ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.1)";
+      variant === "primary" || variant === "destructive"
+        ? "rgba(255, 255, 255, 0.4)"
+        : "rgba(0, 0, 0, 0.1)";
     const rippleRef = localRef as React.RefObject<HTMLElement>;
     const [, event] = useRipple({
       ref: rippleRef,
@@ -6288,7 +6296,10 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           isLoading,
         })}
         ref={localRef}
-        onPointerDown={event}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          event(e);
+        }}
         disabled={disabled || isLoading}
         {...props}
       >
@@ -6341,7 +6352,7 @@ const meta: Meta<typeof IconButton> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "ghost", "link"],
+      options: ["primary", "secondary", "destructive", "ghost", "link"],
     },
     size: {
       control: "select",
@@ -6379,6 +6390,9 @@ export const AllVariants: Story = {
         <Plus className="h-6 w-6" />
       </IconButton>
       <IconButton variant="secondary" size="md" aria-label="Secondary">
+        <Plus className="h-6 w-6" />
+      </IconButton>
+      <IconButton variant="destructive" size="md" aria-label="Destructive">
         <Plus className="h-6 w-6" />
       </IconButton>
       <IconButton variant="ghost" size="md" aria-label="Ghost">
@@ -6498,13 +6512,15 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import React from "react";
 
-const inputWrapperVariants = cva(
-  "flex items-center transition-all duration-200 w-full px-4 border-2",
+export const inputWrapperVariants = cva(
+  "flex items-center transition-all duration-200 w-full",
   {
     variants: {
       variant: {
-        primary: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
+        primary: "bg-graphite-card border-2 px-4",
+        secondary: "bg-graphite-secondary border-2 px-4",
+        // MODIFIED: Truly minimal variant with no borders or padding on the wrapper.
+        minimal: "bg-transparent p-0",
       },
       shape: {
         full: "rounded-4xl",
@@ -6523,6 +6539,7 @@ const inputWrapperVariants = cva(
       },
     },
     compoundVariants: [
+      // Primary states
       {
         variant: "primary",
         isErrored: false,
@@ -6530,46 +6547,51 @@ const inputWrapperVariants = cva(
         className: "border-graphite-border",
       },
       {
+        variant: "primary",
+        isFocused: true,
+        isErrored: false,
+        className: "border-graphite-primary",
+      },
+      {
+        variant: "primary",
+        isErrored: true,
+        className: "border-red-500",
+      },
+      {
+        variant: "primary",
+        isFocused: true,
+        isErrored: true,
+        className: "border-red-600",
+      },
+      // Secondary states
+      {
         variant: "secondary",
         isErrored: false,
         isFocused: false,
         className: "border-transparent",
       },
       {
-        variant: "primary",
-        isFocused: true,
-        isErrored: false,
-        className: "border-graphite-primary",
-      },
-      {
         variant: "secondary",
         isFocused: true,
         isErrored: false,
         className: "border-graphite-primary",
       },
       {
-        variant: "primary",
-        isFocused: false,
-        isErrored: true,
-        className: "border-red-500",
-      },
-      {
         variant: "secondary",
-        isFocused: false,
         isErrored: true,
         className: "border-red-500",
-      },
-      {
-        variant: "primary",
-        isFocused: true,
-        isErrored: true,
-        className: "border-red-600",
       },
       {
         variant: "secondary",
         isFocused: true,
         isErrored: true,
         className: "border-red-600",
+      },
+      // MODIFIED: Remove all focus/error border effects for the minimal variant.
+      // Also ensure it ignores the 'shape' prop by forcing no rounding.
+      {
+        variant: "minimal",
+        className: "rounded-none border-0",
       },
     ],
     defaultVariants: {
@@ -6730,6 +6752,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Eye, EyeOff, Mail, Search } from "lucide-react";
 import { useState } from "react";
 import { Input } from "./index";
+import { Card } from "../card";
+import { Typography } from "../typography";
 
 const meta: Meta<typeof Input> = {
   title: "Components/Forms & Inputs/Input",
@@ -6738,7 +6762,7 @@ const meta: Meta<typeof Input> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary"],
+      options: ["primary", "secondary", "minimal"],
     },
     shape: {
       control: "select",
@@ -6766,6 +6790,43 @@ export const Default: Story = {
     label: "Email Address",
     placeholder: "you@example.com",
     startAdornment: <Mail className="h-4 w-4" />,
+  },
+};
+
+export const CompositionWithMinimal: Story = {
+  name: "Composition with Minimal Variant",
+  render: () => (
+    <div className="flex flex-col gap-8 max-w-sm">
+      <Typography variant="h4">Custom Search Bar</Typography>
+      <Card variant="secondary" shape="full" padding="none">
+        <Input
+          variant="minimal"
+          size="md"
+          placeholder="Search..."
+          startAdornment={<Search className="h-5 w-5 ml-4" />}
+          wrapperClassName="h-12"
+        />
+      </Card>
+      <Typography variant="h4">Error State</Typography>
+      <Card variant="primary" shape="minimal" padding="sm" isSelected>
+        <Input
+          variant="minimal"
+          size="md"
+          placeholder="Search..."
+          startAdornment={<Search className="h-5 w-5 mr-2" />}
+          error="Search term is required."
+          wrapperClassName="h-12"
+        />
+      </Card>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `minimal` variant is completely unstyled, making it perfect for composing custom input components. Here, it's placed inside a `Card` to create a search bar. The card provides the background and border, while the input only provides the text functionality.",
+      },
+    },
   },
 };
 
@@ -6821,6 +6882,12 @@ export const AllVariantsAndShapes: Story = {
             placeholder="Minimal Shape"
           />
           <Input variant="secondary" shape="sharp" placeholder="Sharp Shape" />
+        </div>
+      </div>
+      <div>
+        <h3 className="font-bold mb-4">Minimal Variant (Standalone)</h3>
+        <div className="flex flex-col gap-4 p-4 bg-graphite-secondary rounded-lg">
+          <Input variant="minimal" placeholder="No background or border" />
         </div>
       </div>
     </div>
@@ -6979,6 +7046,7 @@ This section contains the source code for the `item` component and its correspon
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
+import { useLongPress } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import * as React from "react";
@@ -6988,18 +7056,19 @@ import useRipple from "use-ripple-hook";
 interface ItemContextProps {
   variant: "primary" | "secondary" | "ghost";
   size: "sm" | "md" | "lg";
+  direction: "horizontal" | "vertical";
 }
 
 const ItemContext = React.createContext<ItemContextProps>({
   variant: "primary",
   size: "md",
+  direction: "horizontal",
 });
 
 const useItemContext = () => React.useContext(ItemContext);
 
 // --- CVA Variants ---
 const itemVariants = cva(
-  // MODIFIED: Added overflow-hidden for ripple effect clipping
   "group/item relative flex flex-wrap items-center border text-sm outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 overflow-hidden",
   {
     variants: {
@@ -7010,26 +7079,38 @@ const itemVariants = cva(
           "bg-transparent border-transparent hover:bg-graphite-secondary/60",
       },
       size: {
-        sm: "gap-3 p-3",
-        md: "gap-4 p-4",
-        lg: "gap-4 p-5",
+        sm: "gap-3",
+        md: "gap-4",
+        lg: "gap-4",
+      },
+      padding: {
+        none: "p-0",
+        sm: "p-3",
+        md: "p-4",
+        lg: "p-5",
       },
       shape: {
         full: "rounded-full",
         minimal: "rounded-xl",
         sharp: "rounded-none",
       },
+      direction: {
+        horizontal: "flex-row",
+        vertical: "flex-col justify-center text-center",
+      },
     },
     defaultVariants: {
       variant: "primary",
       size: "md",
+      padding: "md",
       shape: "minimal",
+      direction: "horizontal",
     },
   }
 );
 
 const itemMediaVariants = cva(
-  "flex shrink-0 items-center mb-auto justify-center gap-2 [&_svg]:pointer-events-none",
+  "flex shrink-0 items-center justify-center gap-2 [&_svg]:pointer-events-none",
   {
     variants: {
       variant: {
@@ -7091,6 +7172,14 @@ const Item = React.forwardRef<
     VariantProps<typeof itemVariants> & {
       asChild?: boolean;
       disabled?: boolean;
+      /** If true, the ripple effect on click will be disabled. */
+      disableRipple?: boolean;
+      /** Callback fired when the item is pressed for 500ms. */
+      onLongPress?: (
+        event:
+          | React.PointerEvent<HTMLDivElement>
+          | React.MouseEvent<HTMLDivElement>
+      ) => void;
     }
 >(
   (
@@ -7099,44 +7188,73 @@ const Item = React.forwardRef<
       variant = "primary",
       size = "md",
       shape = "minimal",
+      direction = "horizontal",
+      padding = "md",
       asChild = false,
-      disabled, // MODIFIED: Destructure disabled prop
-      onPointerDown, // MODIFIED: Destructure onPointerDown
+      disabled,
+      disableRipple = false,
+      onLongPress,
+      onPointerDown,
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : "div";
 
-    // --- MODIFIED: Added ripple effect logic ---
     const localRef = React.useRef<HTMLDivElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
     const [, event] = useRipple({
       ref: localRef,
       color: "rgba(0, 0, 0, 0.1)",
-      duration: 300, // Faster ripple duration
-      disabled,
+      duration: 400,
+      disabled: disabled || disableRipple,
     });
-    // --- END MODIFICATION ---
+
+    // --- NEW: Long Press Logic ---
+    // @ts-ignore
+    const longPressBindings = useLongPress(onLongPress || null);
+
+    // Combine event handlers: onLongPress bindings, ripple effect, and user's onPointerDown
+    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+      // Conditionally trigger the long press hook's pointer down handler
+      if (
+        onLongPress &&
+        typeof longPressBindings.onPointerDown === "function"
+      ) {
+        longPressBindings.onPointerDown(e);
+      }
+      // Trigger the ripple effect
+      event(e);
+      // Trigger the user's custom onPointerDown handler
+      onPointerDown?.(e);
+    };
+
+    // Construct the final props, merging our event handlers with the long press ones
+    const finalProps = {
+      ...props,
+      ...(onLongPress ? longPressBindings : {}), // Spread all handlers from the hook
+      onPointerDown: handlePointerDown, // Override with our combined handler
+    };
 
     return (
-      <ItemContext.Provider value={{ variant, size }}>
+      <ItemContext.Provider value={{ variant, size, direction }}>
         <Comp
           ref={localRef}
           data-slot="item"
           disabled={disabled}
           className={clsx(
-            itemVariants({ variant, size, shape, className }),
+            itemVariants({
+              variant,
+              size,
+              shape,
+              direction,
+              padding,
+              className,
+            }),
             disabled && "opacity-50 cursor-not-allowed"
           )}
-          // --- MODIFIED: Added onPointerDown handler ---
-          onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
-            event(e);
-            onPointerDown?.(e);
-          }}
-          // --- END MODIFICATION ---
-          {...props}
+          {...finalProps}
         />
       </ItemContext.Provider>
     );
@@ -7148,7 +7266,7 @@ const ItemMedia = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof itemMediaVariants>
 >(({ className, variant, shape = "minimal", ...props }, ref) => {
-  const { size: contextSize } = useItemContext();
+  const { size: contextSize, direction } = useItemContext();
   return (
     <div
       ref={ref}
@@ -7159,7 +7277,8 @@ const ItemMedia = React.forwardRef<
           size: contextSize,
           shape,
           className,
-        })
+        }),
+        direction === "horizontal" ? "mb-auto" : "mb-2"
       )}
       {...props}
     />
@@ -7170,30 +7289,41 @@ ItemMedia.displayName = "ItemMedia";
 const ItemContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-slot="item-content"
-    className={clsx("flex flex-1 flex-col gap-0.5 min-w-0", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const { direction } = useItemContext();
+  return (
+    <div
+      ref={ref}
+      data-slot="item-content"
+      className={clsx(
+        "flex flex-1 flex-col gap-0.5 min-w-0",
+        direction === "vertical" && "items-center",
+        className
+      )}
+      {...props}
+    />
+  );
+});
 ItemContent.displayName = "ItemContent";
 
 const ItemTitle = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-slot="item-title"
-    className={clsx(
-      "flex w-fit items-center gap-2 text-base font-semibold leading-snug truncate",
-      className
-    )}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const { direction } = useItemContext();
+  return (
+    <div
+      ref={ref}
+      data-slot="item-title"
+      className={clsx(
+        "flex w-fit items-center gap-2 text-base font-semibold leading-snug truncate",
+        direction === "vertical" && "justify-center",
+        className
+      )}
+      {...props}
+    />
+  );
+});
 ItemTitle.displayName = "ItemTitle";
 
 const ItemDescription = React.forwardRef<
@@ -7215,14 +7345,21 @@ ItemDescription.displayName = "ItemDescription";
 const ItemActions = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-slot="item-actions"
-    className={clsx("flex items-center gap-2 ml-auto pl-4", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const { direction } = useItemContext();
+  return (
+    <div
+      ref={ref}
+      data-slot="item-actions"
+      className={clsx(
+        "flex items-center gap-2",
+        direction === "horizontal" ? "ml-auto pl-4" : "mt-2",
+        className
+      )}
+      {...props}
+    />
+  );
+});
 ItemActions.displayName = "ItemActions";
 
 const ItemHeader = React.forwardRef<
@@ -7340,8 +7477,18 @@ const meta: Meta<typeof Item> = {
       control: "select",
       options: ["full", "minimal", "sharp"],
     },
+    direction: {
+      control: "select",
+      options: ["horizontal", "vertical"],
+    },
+    padding: {
+      control: "select",
+      options: ["none", "sm", "md", "lg"],
+    },
     asChild: { control: "boolean" },
     disabled: { control: "boolean" },
+    disableRipple: { control: "boolean" },
+    onLongPress: { action: "longPressed" },
   },
 };
 
@@ -7354,6 +7501,7 @@ export const Default: Story = {
     variant: "primary",
     size: "md",
     shape: "minimal",
+    direction: "horizontal",
   },
   render: (args) => (
     <div className="w-96">
@@ -7436,8 +7584,39 @@ export const AllSizes: Story = {
   ),
 };
 
+export const VerticalProductCard: Story = {
+  name: "4. Vertical (Product Card Style)",
+  args: {
+    direction: "vertical",
+    shape: "minimal",
+    variant: "primary",
+    padding: "none",
+  },
+  render: (args) => (
+    <div className="flex items-start gap-4">
+      <Item
+        {...args}
+        className="w-60 text-left cursor-pointer"
+        onClick={() => alert("Product card clicked!")}
+      >
+        <ItemMedia className="!mb-0 !p-0 !rounded-t-xl !rounded-b-none overflow-hidden w-full h-[150px]">
+          <img
+            src="https://images.unsplash.com/photo-1588421357574-87938a86fa28?q=80&w=600&auto=format&fit=crop"
+            alt="Abstract dark texture"
+            className="w-full h-40 object-cover"
+          />
+        </ItemMedia>
+        <ItemContent className="p-4 w-full !items-start">
+          <ItemTitle>v0-1.5-sm</ItemTitle>
+          <ItemDescription>Everyday tasks and UI generation.</ItemDescription>
+        </ItemContent>
+      </Item>
+    </div>
+  ),
+};
+
 export const AsLink: Story = {
-  name: "4. Polymorphic (as link)",
+  name: "5. Polymorphic (as link)",
   parameters: {
     docs: {
       description: {
@@ -7466,8 +7645,81 @@ export const AsLink: Story = {
   ),
 };
 
+export const RippleControl: Story = {
+  name: "6. Ripple Control",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "You can explicitly disable the ripple effect on an item by setting `disableRipple={true}`.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-96">
+      <ItemGroup>
+        <Item onClick={() => {}} className="cursor-pointer">
+          <ItemMedia variant="icon">
+            <Star />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Ripple Enabled (Default)</ItemTitle>
+            <ItemDescription>Click me to see the effect.</ItemDescription>
+          </ItemContent>
+        </Item>
+        <Item onClick={() => {}} disableRipple className="cursor-pointer">
+          <ItemMedia variant="icon">
+            <Star />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Ripple Disabled</ItemTitle>
+            <ItemDescription>
+              This item will not have a ripple effect.
+            </ItemDescription>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
+    </div>
+  ),
+};
+
+export const WithLongPress: Story = {
+  name: "7. With Long Press",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `onLongPress` prop allows you to trigger an action when an item is pressed for 500ms. This is particularly useful for context menus on touch devices.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-96">
+      <ItemGroup>
+        <Item
+          onLongPress={() => {
+            alert("Long press triggered!");
+          }}
+          onClick={() => alert("Item clicked!")}
+          className="cursor-pointer"
+        >
+          <ItemMedia variant="icon">
+            <File />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Long Press Me</ItemTitle>
+            <ItemDescription>
+              Press and hold this item for half a second.
+            </ItemDescription>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
+    </div>
+  ),
+};
+
 export const TeamMembersList: Story = {
-  name: "5. Use Case: Interactive Team List",
+  name: "8. Use Case: Interactive Team List",
   parameters: {
     docs: {
       description: {
@@ -7575,7 +7827,7 @@ export const TeamMembersList: Story = {
 };
 
 export const SettingsList: Story = {
-  name: "6. Use Case: Interactive Settings List",
+  name: "9. Use Case: Interactive Settings List",
   parameters: {
     docs: {
       description: {
@@ -7662,7 +7914,7 @@ export const SettingsList: Story = {
 };
 
 export const NotificationList: Story = {
-  name: "7. Use Case: Notification List",
+  name: "10. Use Case: Notification List",
   parameters: {
     docs: {
       description: {
@@ -13573,27 +13825,23 @@ import {
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import { Card, type CardProps } from "../card";
-import { Typography } from "../typography";
 
-// --- Augment TanStack's ColumnMeta type to include our custom property ---
-// biome-ignore lint/correctness/noUnusedVariables: This is a required type augmentation for the library.
+// --- Type Augmentation (Unchanged) ---
 declare module "@tanstack/react-table" {
   interface ColumnMeta<TData, TValue> {
     isAccordionHeader?: boolean;
   }
 }
 
-// --- 1. TYPES & CONTEXT (Refactored) ---
+// --- 1. TYPES & CONTEXT (Refactored for new API) ---
 
 export type { ColumnDef };
 
-type ResponsiveLayout = "card" | "accordion" | "scroll";
+// The responsive layout options are now simplified.
+type ResponsiveLayout = "scroll" | "custom";
 
-// The context itself is no longer generic. It holds a table of `any` type.
 interface TableContextProps {
   table: TanstackTable<any>;
   responsiveLayout: ResponsiveLayout;
@@ -13602,7 +13850,6 @@ interface TableContextProps {
 
 const TableContext = createContext<TableContextProps | null>(null);
 
-// The hook is now generic and will cast the context to the correct type.
 const useTableContext = <TData,>() => {
   const context = useContext(
     TableContext as React.Context<TableContextProps | null>
@@ -13610,7 +13857,6 @@ const useTableContext = <TData,>() => {
   if (!context) {
     throw new Error("Table components must be used within a <Table.Root>");
   }
-  // Cast the table to the specific data type when the hook is used.
   return context as {
     table: TanstackTable<TData>;
     responsiveLayout: ResponsiveLayout;
@@ -13618,15 +13864,14 @@ const useTableContext = <TData,>() => {
   };
 };
 
-// --- 2. CVA VARIANTS (Unchanged) ---
-
+// --- 2. CVA VARIANTS (Updated for new API) ---
 const tableVariants = cva("w-full text-sm", {
   variants: {
     layout: {
       desktop: "table-auto border-collapse",
       scroll: "table-auto border-collapse",
-      card: "flex flex-col gap-3",
-      accordion: "flex flex-col gap-2",
+      // 'custom' variant will be a flex container for the custom rendered items
+      custom: "flex flex-col gap-3",
     },
   },
 });
@@ -13639,22 +13884,10 @@ const thVariants = cva(
         true: "sticky left-0 z-10",
       },
       stickyCellVariant: {
-        card: "",
-        secondary: "",
+        card: "bg-graphite-card",
+        secondary: "bg-graphite-secondary",
       },
     },
-    compoundVariants: [
-      {
-        isFirstSticky: true,
-        stickyCellVariant: "card",
-        className: "bg-graphite-card",
-      },
-      {
-        isFirstSticky: true,
-        stickyCellVariant: "secondary",
-        className: "bg-graphite-secondary",
-      },
-    ],
   }
 );
 
@@ -13664,30 +13897,18 @@ const tdVariants = cva("p-4 border-b border-graphite-border align-top", {
       true: "sticky left-0 z-10",
     },
     stickyCellVariant: {
-      card: "",
-      secondary: "",
+      card: "bg-graphite-card",
+      secondary: "bg-graphite-secondary",
     },
   },
-  compoundVariants: [
-    {
-      isFirstSticky: true,
-      stickyCellVariant: "card",
-      className: "bg-graphite-card",
-    },
-    {
-      isFirstSticky: true,
-      stickyCellVariant: "secondary",
-      className: "bg-graphite-secondary",
-    },
-  ],
 });
 
-// --- 3. SUB-COMPONENTS (Refactored) ---
+// --- 3. SUB-COMPONENTS (Simplified) ---
 
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
->(({ children, className, colIndex, ...props }, ref) => {
+>(({ className, colIndex, ...props }, ref) => {
   const { responsiveLayout } = useTableContext();
   const { stickyCellVariant } = useContext(TableRootContext);
   const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
@@ -13697,9 +13918,7 @@ const TableHead = React.forwardRef<
       ref={ref}
       className={thVariants({ isFirstSticky, stickyCellVariant, className })}
       {...props}
-    >
-      {children}
-    </th>
+    />
   );
 });
 TableHead.displayName = "Table.Head";
@@ -13707,7 +13926,7 @@ TableHead.displayName = "Table.Head";
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
->(({ children, className, colIndex, ...props }, ref) => {
+>(({ className, colIndex, ...props }, ref) => {
   const { responsiveLayout } = useTableContext();
   const { stickyCellVariant } = useContext(TableRootContext);
   const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
@@ -13717,143 +13936,19 @@ const TableCell = React.forwardRef<
       ref={ref}
       className={tdVariants({ isFirstSticky, stickyCellVariant, className })}
       {...props}
-    >
-      {children}
-    </td>
+    />
   );
 });
 TableCell.displayName = "Table.Cell";
 
-// --- Row Components (Refactored for TanStack Table) ---
-
-interface TableRowProps<TData> extends Omit<CardProps, "children"> {
+const TableRow = <TData extends {}>({
+  row,
+  ...rest
+}: {
   row: Row<TData>;
-}
-
-const CardRow = <TData extends {}>({
-  row,
-  ...cardProps
-}: TableRowProps<TData>) => {
-  return (
-    <Card shape="minimal" variant="secondary" {...cardProps} padding="lg">
-      <div className="flex justify-between items-center flex-wrap gap-8">
-        {row.getVisibleCells().map((cell) => (
-          <div key={cell.id}>
-            <Typography variant="muted" className="!mt-0 !text-xs">
-              {cell.column.columnDef.header as React.ReactNode}
-            </Typography>
-            <Typography
-              variant="small"
-              className="!mt-0 font-semibold truncate"
-            >
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </Typography>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-};
-
-const AccordionRow = <TData extends {}>({
-  row,
-  ...cardProps
-}: TableRowProps<TData>) => {
-  const { accordionDetailsProps } = useContext(TableRootContext);
-  const [isOpen, setIsOpen] = useState(false);
-
-  const allCells = row.getVisibleCells();
-  const accordionHeaderCells = allCells.filter(
-    (cell) => cell.column.columnDef.meta?.isAccordionHeader
-  );
-  const accordionBodyCells = allCells.filter(
-    (cell) => !cell.column.columnDef.meta?.isAccordionHeader
-  );
-
-  return (
-    <Card
-      shape="minimal"
-      variant="secondary"
-      {...cardProps}
-      padding="none"
-      className={clsx("overflow-hidden", cardProps.className)}
-    >
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full p-5 text-left"
-      >
-        <div className="flex justify-between items-center gap-8 flex-1 min-w-0 space-y-1">
-          {accordionHeaderCells.map((cell) => (
-            <div key={cell.id}>
-              <Typography
-                variant="muted"
-                className="!mt-0 font-semibold truncate"
-              >
-                {cell.column.columnDef.header as React.ReactNode}
-              </Typography>
-              <Typography variant="p" className="!mt-0 font-semibold truncate">
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </Typography>
-            </div>
-          ))}
-        </div>
-        <ChevronDown
-          className={clsx(
-            "ml-4 h-5 w-5 transition-transform flex-shrink-0",
-            isOpen && "rotate-180"
-          )}
-        />
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ type: "spring", duration: 0.4, bounce: 0 }}
-            className="overflow-hidden"
-          >
-            <div
-              {...accordionDetailsProps}
-              className={clsx(
-                "flex justify-between items-center flex-wrap gap-8 gap-y-4 p-4 border-t border-graphite-border",
-                accordionDetailsProps?.className
-              )}
-            >
-              {accordionBodyCells.map((cell) => (
-                <div key={cell.id}>
-                  <Typography variant="muted" className="!mt-0 !text-xs">
-                    {cell.column.columnDef.header as React.ReactNode}
-                  </Typography>
-                  <Typography
-                    variant="small"
-                    className="!mt-0 font-semibold truncate"
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Typography>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Card>
-  );
-};
-
-const TableRow = <TData extends {}>({ row, ...rest }: TableRowProps<TData>) => {
-  const { isMobile, responsiveLayout } = useTableContext<TData>();
-
-  if (isMobile) {
-    if (responsiveLayout === "card") {
-      return <CardRow row={row} {...rest} />;
-    }
-    if (responsiveLayout === "accordion") {
-      return <AccordionRow row={row} {...rest} />;
-    }
-  }
-
+  [key: string]: any;
+}) => {
+  // This component now only ever renders a `<tr>`, as the custom logic is handled in the root.
   return (
     <tr
       className={clsx("hover:bg-graphite-secondary/50", rest.className)}
@@ -13869,7 +13964,7 @@ const TableRow = <TData extends {}>({ row, ...rest }: TableRowProps<TData>) => {
 };
 TableRow.displayName = "Table.Row";
 
-// --- 4. ROOT COMPONENT (REFACTORED) ---
+// --- 4. ROOT COMPONENT (Refactored with Custom Render Prop) ---
 
 export interface TableRootProps<TData>
   extends React.HTMLAttributes<HTMLTableElement>,
@@ -13877,13 +13972,17 @@ export interface TableRootProps<TData>
   table: TanstackTable<TData>;
   responsiveLayout?: ResponsiveLayout;
   breakpoint?: "sm" | "md" | "lg";
-  rowProps?: (row: Row<TData>) => Omit<CardProps, "children">;
   stickyCellVariant?: "card" | "secondary";
-  accordionDetailsProps?: React.HTMLAttributes<HTMLDivElement>;
+  /**
+   * A function to render a custom component for each row on mobile viewports.
+   * Required when `responsiveLayout` is set to `'custom'`.
+   * @param row The TanStack Table `row` object.
+   */
+  renderMobileRow?: (row: Row<TData>) => React.ReactNode;
 }
 
 const TableRootContext = createContext<
-  Pick<TableRootProps<unknown>, "stickyCellVariant" | "accordionDetailsProps">
+  Pick<TableRootProps<unknown>, "stickyCellVariant">
 >({
   stickyCellVariant: "card",
 });
@@ -13893,9 +13992,8 @@ const TableRoot = <TData extends {}>({
   table,
   responsiveLayout = "scroll",
   breakpoint = "md",
-  rowProps,
   stickyCellVariant = "card",
-  accordionDetailsProps,
+  renderMobileRow,
   ...props
 }: TableRootProps<TData>) => {
   const breakpointMap = { sm: 640, md: 768, lg: 1024 };
@@ -13907,62 +14005,66 @@ const TableRoot = <TData extends {}>({
   );
 
   const rootContextValue = useMemo(
-    () => ({ stickyCellVariant, accordionDetailsProps }),
-    [stickyCellVariant, accordionDetailsProps]
+    () => ({ stickyCellVariant }),
+    [stickyCellVariant]
   );
 
   const layout = isMobile ? responsiveLayout : "desktop";
 
+  // --- LOGIC FOR CUSTOM MOBILE RENDERER ---
+  if (layout === "custom") {
+    if (!renderMobileRow) {
+      throw new Error(
+        "The `renderMobileRow` prop is required when `responsiveLayout` is 'custom'."
+      );
+    }
+    return (
+      <TableContext.Provider value={contextValue}>
+        <div className={tableVariants({ layout, className })} {...props}>
+          {table.getRowModel().rows.map((row) => (
+            // The key is now on the root element rendered by the user's function
+            <React.Fragment key={row.id}>{renderMobileRow(row)}</React.Fragment>
+          ))}
+        </div>
+      </TableContext.Provider>
+    );
+  }
+
+  // --- LOGIC FOR DESKTOP & SCROLL LAYOUTS ---
   return (
     <TableRootContext.Provider value={rootContextValue}>
       <TableContext.Provider value={contextValue}>
-        {layout === "card" || layout === "accordion" ? (
-          <div className={tableVariants({ layout, className })} {...props}>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                row={row}
-                {...(rowProps ? rowProps(row) : {})}
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            className={clsx(
-              isMobile &&
-                responsiveLayout === "scroll" &&
-                "w-full overflow-x-auto"
-            )}
-          >
-            <table className={tableVariants({ layout, className })} {...props}>
-              <thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header, headerIndex) => (
-                      <TableHead key={header.id} colIndex={headerIndex}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    row={row}
-                    {...(rowProps ? rowProps(row) : {})}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div
+          className={clsx(
+            isMobile &&
+              responsiveLayout === "scroll" &&
+              "w-full overflow-x-auto"
+          )}
+        >
+          <table className={tableVariants({ layout, className })} {...props}>
+            <thead>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header, headerIndex) => (
+                    <TableHead key={header.id} colIndex={headerIndex}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id} row={row} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </TableContext.Provider>
     </TableRootContext.Provider>
   );
@@ -13978,15 +14080,17 @@ export const Table = Object.assign(TableRoot, {
 
 **Storybook Stories (`Table.stories.tsx`)**
 ```tsx
+import type { Meta, StoryObj } from "@storybook/react";
 import {
+  flexRender,
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
+  type Row,
 } from "@tanstack/react-table";
-import type { Meta, StoryObj } from "@storybook/react";
 import { Badge } from "../badge";
-import { Button } from "../button";
 import { Card } from "../card";
+import { Typography } from "../typography";
 import { Table, type TableRootProps } from "./index";
 
 const meta: Meta<TableRootProps<Payment>> = {
@@ -13998,14 +14102,14 @@ const meta: Meta<TableRootProps<Payment>> = {
     docs: {
       description: {
         component:
-          "A versatile and responsive data table, now powered by TanStack Table. It displays data in a standard tabular format on desktop and transforms into a specified layout (cards, accordion, or scrollable) on mobile viewports.",
+          "A versatile and responsive data table powered by TanStack Table. It displays data in a standard table on desktop and can transform into a horizontally scrollable table or a fully custom layout on mobile.",
       },
     },
   },
   argTypes: {
     responsiveLayout: {
       control: "select",
-      options: ["card", "accordion", "scroll"],
+      options: ["scroll", "custom"],
       description: "Determines the table's layout on mobile viewports.",
     },
     breakpoint: {
@@ -14018,9 +14122,8 @@ const meta: Meta<TableRootProps<Payment>> = {
       options: ["card", "secondary"],
       description: "Background color for the sticky column in 'scroll' mode.",
     },
-    table: { control: false }, // The table instance is now the main prop
-    rowProps: { control: false },
-    accordionDetailsProps: { control: false },
+    table: { control: false },
+    renderMobileRow: { control: false },
   },
 };
 
@@ -14028,7 +14131,6 @@ export default meta;
 type Story = StoryObj<TableRootProps<Payment>>;
 
 // --- Sample Data and Columns ---
-
 interface Payment {
   id: string;
   account: string;
@@ -14077,17 +14179,11 @@ const basicColumns: ColumnDef<Payment>[] = [
   {
     accessorKey: "account",
     header: "Account",
-    meta: {
-      isAccordionHeader: true,
-    },
   },
   {
     accessorKey: "amount",
     header: "Amount",
     cell: (info) => `$${info.getValue<number>().toLocaleString()}`,
-    meta: {
-      isAccordionHeader: true,
-    },
   },
   {
     accessorKey: "dueDate",
@@ -14096,140 +14192,6 @@ const basicColumns: ColumnDef<Payment>[] = [
   {
     accessorKey: "period",
     header: "Period",
-  },
-];
-
-// --- STORIES ---
-
-export const DesktopView: Story = {
-  name: "1. Desktop View",
-  args: {},
-  parameters: {
-    viewport: { defaultViewport: "responsive" },
-    docs: {
-      description: {
-        story:
-          "This is the default table layout on viewports wider than the specified `breakpoint` (md by default).",
-      },
-    },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card className="w-full overflow-hidden">
-        <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-export const CardLayout: Story = {
-  name: "2. Responsive: Card Layout",
-  args: {
-    responsiveLayout: "card",
-  },
-  parameters: {
-    viewport: { defaultViewport: "mobile1" },
-    docs: {
-      description: {
-        story:
-          "Set `responsiveLayout='card'`. On mobile viewports, each row transforms into a distinct `Card`.",
-      },
-    },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card>
-        <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-export const AccordionLayout: Story = {
-  name: "3. Responsive: Accordion Layout",
-  args: {
-    responsiveLayout: "accordion",
-  },
-  parameters: {
-    viewport: { defaultViewport: "mobile1" },
-    docs: {
-      description: {
-        story:
-          "Set `responsiveLayout='accordion'`. Each row becomes a collapsible item. Columns with `meta: { isAccordionHeader: true }` will be visible in the collapsed state.",
-      },
-    },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card>
-        <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-export const ScrollLayout: Story = {
-  name: "4. Responsive: Scroll Layout (Default)",
-  args: {
-    responsiveLayout: "scroll",
-  },
-  parameters: {
-    viewport: { defaultViewport: "mobile1" },
-    docs: {
-      description: {
-        story:
-          "Set `responsiveLayout='scroll'`. The table container becomes horizontally scrollable, with the first column remaining sticky for context.",
-      },
-    },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card>
-        <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-const columnsWithCustomCells: ColumnDef<Payment>[] = [
-  {
-    accessorKey: "account",
-    header: "Account",
-    meta: {
-      isAccordionHeader: true,
-    },
-  },
-  {
-    accessorKey: "amount",
-    header: "Amount",
-    cell: (info) => `$${info.getValue<number>().toLocaleString()}`,
-    meta: {
-      isAccordionHeader: true,
-    },
   },
   {
     accessorKey: "status",
@@ -14248,61 +14210,114 @@ const columnsWithCustomCells: ColumnDef<Payment>[] = [
       );
     },
   },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: () => (
-      <Button size="xs" variant="ghost" shape="minimal">
-        View Details
-      </Button>
-    ),
-  },
 ];
 
-export const CustomCells: Story = {
-  name: "5. With Custom Cells",
-  args: {
-    responsiveLayout: "accordion",
-  },
+// --- STORIES ---
+
+export const DesktopView: Story = {
+  name: "1. Desktop View",
+  args: {},
   parameters: {
-    docs: {
-      description: {
-        story:
-          "The `cell` property in the `columns` definition allows you to render custom components, like Badges or Buttons, within a cell.",
-      },
-    },
+    viewport: { defaultViewport: "responsive" },
   },
   render: (args) => {
     const table = useReactTable({
       data: sampleData,
-      columns: columnsWithCustomCells,
+      columns: basicColumns,
       getCoreRowModel: getCoreRowModel(),
     });
 
     return (
-      <Card>
+      <Card className="w-full max-w-4xl overflow-hidden">
         <Table<Payment> {...args} table={table} />
       </Card>
     );
   },
 };
 
-export const CustomizedRow: Story = {
-  name: "6. Customized Row",
+export const ScrollLayout: Story = {
+  name: "2. Responsive: Scroll Layout",
   args: {
-    responsiveLayout: "card",
-    rowProps: (row) => ({
-      variant: row.original.status === "Overdue" ? "selected" : "secondary",
-      onClick: () => alert(`Clicked on account: ${row.original.account}`),
-      className: "cursor-pointer",
-    }),
+    responsiveLayout: "scroll",
+  },
+  parameters: {
+    viewport: { defaultViewport: "mobile1" },
+  },
+  render: (args) => {
+    const table = useReactTable({
+      data: sampleData,
+      columns: basicColumns,
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+    return (
+      <Card className="w-full">
+        <Table<Payment> {...args} table={table} />
+      </Card>
+    );
+  },
+};
+
+export const CustomMobileLayout: Story = {
+  name: "3. Responsive: Custom Layout",
+  args: {
+    responsiveLayout: "custom",
+    renderMobileRow: (row: Row<Payment>) => (
+      <Card
+        shape="minimal"
+        variant={"primary"}
+        isSelected={row.original.status === "Overdue"}
+        padding="lg"
+        onClick={() => alert(`Clicked on account: ${row.original.account}`)}
+        className="cursor-pointer"
+      >
+        <div className="flex flex-col gap-8">
+          {/* Main Info */}
+          <div className="flex justify-between items-start gap-4">
+            <div>
+              <Typography variant="muted" className="!mt-0 !text-xs">
+                Account
+              </Typography>
+              <Typography variant="p" className="!mt-0 font-semibold truncate">
+                {row.original.account}
+              </Typography>
+            </div>
+            <div>
+              <Typography variant="muted" className="!mt-0 !text-xs text-right">
+                Amount
+              </Typography>
+              <Typography variant="p" className="!mt-0 font-semibold truncate">
+                ${row.original.amount.toLocaleString()}
+              </Typography>
+            </div>
+          </div>
+          {/* Secondary Info */}
+          <div className="flex justify-between items-center gap-8">
+            {row.getVisibleCells().map((cell) => {
+              // We've already rendered 'account' and 'amount', so we skip them.
+              if (["account", "amount"].includes(cell.column.id)) return null;
+              return (
+                <div key={cell.id}>
+                  <Typography variant="muted" className="!mt-0 !text-xs">
+                    {cell.column.columnDef.header as React.ReactNode}
+                  </Typography>
+                  <Typography variant="small" className="!mt-0 font-semibold">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </Typography>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
+    ),
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
     docs: {
       description: {
         story:
-          "You can pass `Card` props to each row using the `rowProps` function. This allows for conditional styling, click handlers, and more.",
+          "Set `responsiveLayout='custom'` and provide a `renderMobileRow` function. This function receives the `row` object, giving you complete control to render it as a card, an accordion, or any other custom component.",
       },
     },
   },
@@ -14314,41 +14329,9 @@ export const CustomizedRow: Story = {
     });
 
     return (
-      <Card>
+      <div className="w-full">
         <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-export const AdvancedCustomization: Story = {
-  name: "7. Advanced Customization",
-  args: {
-    responsiveLayout: "accordion",
-    stickyCellVariant: "secondary",
-    accordionDetailsProps: {
-      className: "bg-graphite-background",
-    },
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Use `stickyCellVariant` to change the sticky column's background in scroll mode. Use `accordionDetailsProps` to style the expanded content area in accordion mode.",
-      },
-    },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card>
-        <Table<Payment> {...args} table={table} />
-      </Card>
+      </div>
     );
   },
 };
@@ -15751,12 +15734,15 @@ import { clsx } from "clsx";
 import React, { useEffect, useImperativeHandle, useRef } from "react";
 
 const textAreaWrapperVariants = cva(
-  "flex items-start transition-all duration-200 w-full px-4 border-2",
+  // FIX: Removed `px-4` and `border-2` from the base class.
+  "flex items-start transition-all duration-200 w-full",
   {
     variants: {
       variant: {
-        primary: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
+        // FIX: Added `border-2` and `px-4` to the variants that need them.
+        primary: "bg-graphite-card border-2 px-4",
+        secondary: "bg-graphite-secondary border-2 px-4",
+        minimal: "bg-transparent p-0",
       },
       shape: {
         full: "rounded-4xl",
@@ -15822,6 +15808,10 @@ const textAreaWrapperVariants = cva(
         isFocused: true,
         isErrored: true,
         className: "border-red-600",
+      },
+      {
+        variant: "minimal",
+        className: "rounded-none border-0",
       },
     ],
     defaultVariants: {
@@ -15957,6 +15947,20 @@ TextArea.displayName = "TextArea";
 **Storybook Stories (`Textarea.stories.tsx`)**
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react";
+import {
+  ArrowUp,
+  CornerDownLeft,
+  FileCode,
+  Maximize,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
+import { Button } from "../button";
+import { ButtonGroup } from "../button-group";
+import { Card } from "../card";
+import { IconButton } from "../icon-button";
+import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "../item";
+import { Typography } from "../typography";
 import { TextArea } from "./index";
 
 const meta: Meta<typeof TextArea> = {
@@ -15966,7 +15970,7 @@ const meta: Meta<typeof TextArea> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary"],
+      options: ["primary", "secondary", "minimal"],
     },
     shape: {
       control: "select",
@@ -15985,7 +15989,7 @@ const meta: Meta<typeof TextArea> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<typeof TextArea>;
 
 export const Default: Story = {
   args: {
@@ -15996,6 +16000,115 @@ export const Default: Story = {
     placeholder: "Enter your comments here...",
     rows: 4,
   },
+};
+
+export const AdvancedComposition: Story = {
+  name: "Advanced Composition Examples",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `minimal` variant is completely unstyled, making it perfect for composing custom input components. Here are two examples inspired by modern UI patterns.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex flex-col items-center gap-12">
+      {/* --- Chat Input Example --- */}
+      <div className="w-full max-w-lg">
+        <Card variant="primary" shape="minimal" padding="none">
+          <TextArea
+            variant="minimal"
+            placeholder="Ask, Search or Chat..."
+            rows={1}
+            wrapperClassName="p-4"
+          />
+          <div className="flex items-center justify-between gap-4 px-4 pb-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              shape="minimal"
+              startIcon={<Plus size={16} />}
+            >
+              Auto
+            </Button>
+            <Typography variant="muted" className="!mt-0">
+              52% used
+            </Typography>
+            <IconButton
+              variant="secondary"
+              size="sm"
+              shape="full"
+              aria-label="Send"
+            >
+              <ArrowUp size={16} />
+            </IconButton>
+          </div>
+        </Card>
+      </div>
+
+      {/* --- Code Editor Example --- */}
+      <div className="w-full max-w-lg">
+        <Card variant="primary" shape="minimal" padding="none">
+          {/* Header */}
+          <Item padding="sm" className="border-b border-graphite-border">
+            <ItemMedia variant="icon" className="!bg-transparent !border-0">
+              <FileCode size={18} />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle className="!text-sm">script.js</ItemTitle>
+            </ItemContent>
+            <ItemActions>
+              <ButtonGroup shape="minimal">
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  aria-label="Refresh script"
+                >
+                  <RefreshCw size={14} />
+                </IconButton>
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  aria-label="Expand script"
+                >
+                  <Maximize size={14} />
+                </IconButton>
+              </ButtonGroup>
+            </ItemActions>
+          </Item>
+
+          {/* Body */}
+          <TextArea
+            variant="minimal"
+            defaultValue="console.log('Hello, world!');"
+            rows={8}
+            className="font-mono text-sm"
+            wrapperClassName="p-4"
+          />
+
+          {/* Footer */}
+          <Item padding="sm" className="border-t border-graphite-border">
+            <ItemContent>
+              <Typography variant="muted" className="!mt-0 !text-xs">
+                Line 1, Column 1
+              </Typography>
+            </ItemContent>
+            <ItemActions>
+              <Button
+                variant="secondary"
+                size="sm"
+                shape="minimal"
+                endIcon={<CornerDownLeft size={14} />}
+              >
+                Run
+              </Button>
+            </ItemActions>
+          </Item>
+        </Card>
+      </div>
+    </div>
+  ),
 };
 
 export const AllSizes: Story = {
@@ -16153,6 +16266,511 @@ export const WithCustomRows: Story = {
     label: "A Tall Text Area",
     placeholder: "This area starts with 8 rows",
     rows: 8,
+  },
+};
+```
+
+
+### Component: `time-picker`
+
+This section contains the source code for the `time-picker` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\time-picker\index.tsx`)**
+```tsx
+// src/components/time-picker.tsx
+
+"use client";
+
+import * as PopoverPrimitive from "@radix-ui/react-popover";
+import { useMediaQuery } from "@uidotdev/usehooks";
+import { type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import { format } from "date-fns";
+import { animate } from "framer-motion";
+import { Clock } from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { useTimePicker } from "../../hooks/use-time-picker";
+import { Button } from "../button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../dialog";
+import { ElasticScrollArea } from "../elastic-scroll-area";
+// --- MAKE SURE THIS IMPORT PATH IS CORRECT ---
+import { inputWrapperVariants } from "../input";
+
+// --- 1. Internal TimeRoller Component (MODIFIED: Smoother Snapping) ---
+interface TimeRollerProps {
+  items: (string | number)[];
+  value: string | number;
+  onValueChange: (newValue: string | number) => void;
+}
+
+const ITEM_HEIGHT = 36; // in pixels
+const VISIBLE_ITEMS = 5;
+
+const TimeRoller = React.forwardRef<HTMLDivElement, TimeRollerProps>(
+  ({ items, value, onValueChange }, ref) => {
+    const scrollerRef = useRef<HTMLDivElement>(null);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    useImperativeHandle(ref, () => scrollerRef.current!);
+
+    const paddingCount = Math.floor(VISIBLE_ITEMS / 2);
+
+    const getTargetIndex = useCallback(
+      (val: string | number) => {
+        const index = items.findIndex((item) => String(item) === String(val));
+        return Math.max(0, index);
+      },
+      [items]
+    );
+
+    useLayoutEffect(() => {
+      const scroller = scrollerRef.current;
+      if (scroller) {
+        const targetIndex = getTargetIndex(value);
+        scroller.scrollTop = targetIndex * ITEM_HEIGHT;
+      }
+    }, [value, getTargetIndex]);
+
+    const handleScroll = useCallback(() => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        const scroller = scrollerRef.current;
+        if (!scroller) return;
+
+        const currentScrollTop = scroller.scrollTop;
+        const snappedIndex = Math.round(currentScrollTop / ITEM_HEIGHT);
+        const clampedIndex = Math.max(
+          0,
+          Math.min(snappedIndex, items.length - 1)
+        );
+        const targetScrollTop = clampedIndex * ITEM_HEIGHT;
+
+        animate(currentScrollTop, targetScrollTop, {
+          type: "spring",
+          stiffness: 400,
+          damping: 40,
+          mass: 0.8,
+          onUpdate: (latest) => {
+            if (scroller) {
+              scroller.scrollTop = latest;
+            }
+          },
+          onComplete: () => {
+            const newValue = items[clampedIndex];
+            if (String(newValue) !== String(value)) {
+              onValueChange(newValue);
+            }
+          },
+        });
+      }, 150);
+    }, [items, value, onValueChange]);
+
+    useEffect(() => {
+      const scroller = scrollerRef.current;
+      if (!scroller) return;
+
+      scroller.addEventListener("scroll", handleScroll);
+      return () => {
+        scroller.removeEventListener("scroll", handleScroll);
+      };
+    }, [handleScroll]);
+
+    return (
+      <div
+        className="h-[180px] w-20"
+        style={{ height: `${VISIBLE_ITEMS * ITEM_HEIGHT}px` }}
+      >
+        <ElasticScrollArea
+          ref={scrollerRef}
+          className="h-full w-full"
+          elasticity={true}
+          dampingFactor={0.6}
+          scrollbarVisibility="never"
+        >
+          <div style={{ height: `${paddingCount * ITEM_HEIGHT}px` }} />
+
+          {items.map((item, index) => (
+            <div
+              key={`${item}-${index}`}
+              className="flex h-[36px] items-center justify-center text-xl text-graphite-foreground"
+              style={{ height: `${ITEM_HEIGHT}px` }}
+            >
+              {typeof item === "number" ? String(item).padStart(2, "0") : item}
+            </div>
+          ))}
+
+          <div style={{ height: `${paddingCount * ITEM_HEIGHT}px` }} />
+        </ElasticScrollArea>
+      </div>
+    );
+  }
+);
+TimeRoller.displayName = "TimeRoller";
+
+// --- 2. Internal TimePickerPanel Component (Unchanged) ---
+interface TimePickerPanelProps {
+  value: Date;
+  onValueChange: (newDate: Date) => void;
+}
+
+const TimePickerPanel: React.FC<TimePickerPanelProps> = ({
+  value,
+  onValueChange,
+}) => {
+  const { time, displayHour, minutes, period, setHour, setMinute, setPeriod } =
+    useTimePicker(value);
+
+  useEffect(() => {
+    onValueChange(time);
+  }, [time, onValueChange]);
+
+  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
+  const minutesArray = Array.from({ length: 60 }, (_, i) => i);
+
+  return (
+    <div className="relative flex items-center justify-center p-4">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-1/2 z-0 h-[36px] -translate-y-1/2 rounded-lg bg-graphite-secondary"
+        style={{ height: `${ITEM_HEIGHT}px` }}
+      />
+      <div className="z-10 flex items-center">
+        <TimeRoller
+          items={hours}
+          value={displayHour}
+          onValueChange={(newHour) => setHour(newHour as number)}
+        />
+        <div className="pb-1 text-xl font-bold">:</div>
+        <TimeRoller
+          items={minutesArray}
+          value={minutes}
+          onValueChange={(newMinute) => setMinute(newMinute as number)}
+        />
+        <TimeRoller
+          items={["AM", "PM"]}
+          value={period}
+          onValueChange={(newPeriod) => setPeriod(newPeriod as "AM" | "PM")}
+        />
+      </div>
+    </div>
+  );
+};
+
+// --- 3. Main Exported TimePicker Component (Unchanged) ---
+export interface TimePickerProps
+  extends Omit<
+      React.ButtonHTMLAttributes<HTMLButtonElement>,
+      "value" | "onChange" | "size"
+    >,
+    VariantProps<typeof inputWrapperVariants> {
+  label?: string;
+  error?: string;
+  placeholder?: string;
+  value?: Date;
+  onChange?: (date: Date) => void;
+  variant?: "docked" | "modal";
+}
+
+export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
+  (
+    {
+      label,
+      error,
+      placeholder = "Select time",
+      value: controlledValue,
+      onChange,
+      variant: variantProp,
+      shape = "minimal", // <-- This now correctly applies the new minimal style
+      size = "md",
+      disabled,
+      className,
+      ...props
+    },
+    ref
+  ) => {
+    const isMobile = useMediaQuery("(max-width: 768px)");
+    const variant = variantProp || (isMobile ? "modal" : "docked");
+
+    const [uncontrolledValue, setUncontrolledValue] = useState(new Date());
+    const isControlled = controlledValue !== undefined;
+    const value = isControlled ? controlledValue : uncontrolledValue;
+    const setValue = onChange || setUncontrolledValue;
+
+    const [isOpen, setIsOpen] = useState(false);
+    const [tempValue, setTempValue] = useState(value);
+
+    const formattedValue = value ? format(value, "hh:mm a") : "";
+
+    if (variant === "modal") {
+      const handleOpenChange = (open: boolean) => {
+        if (open) {
+          setTempValue(value || new Date());
+        }
+        setIsOpen(open);
+      };
+
+      const handleConfirm = () => {
+        setValue(tempValue);
+        setIsOpen(false);
+      };
+
+      return (
+        <div className="flex w-full flex-col gap-2">
+          {label && (
+            <label className="block text-sm font-medium text-graphite-primary">
+              {label}
+            </label>
+          )}
+          <Dialog
+            open={isOpen}
+            onOpenChange={handleOpenChange}
+            variant={variant}
+          >
+            <DialogTrigger asChild>
+              <button
+                ref={ref}
+                type="button"
+                disabled={disabled}
+                className={clsx(
+                  inputWrapperVariants({
+                    shape,
+                    size,
+                    disabled,
+                    isErrored: !!error,
+                  }),
+                  className
+                )}
+                {...props}
+              >
+                <Clock className="mr-2 h-4 w-4 opacity-50" />
+                <span className="flex-1 text-left">
+                  {formattedValue || placeholder}
+                </span>
+              </button>
+            </DialogTrigger>
+            <DialogContent shape={shape} className="max-w-[320px]!">
+              <DialogHeader>
+                <DialogTitle>{label || placeholder}</DialogTitle>
+              </DialogHeader>
+              <TimePickerPanel value={tempValue} onValueChange={setTempValue} />
+              <DialogFooter className="flex justify-end gap-4">
+                <Button variant="secondary" onClick={() => setIsOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleConfirm}>Done</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex w-full flex-col gap-2">
+        {label && (
+          <label className="block text-sm font-medium text-graphite-primary">
+            {label}
+          </label>
+        )}
+        <PopoverPrimitive.Root open={isOpen} onOpenChange={setIsOpen}>
+          <PopoverPrimitive.Trigger asChild>
+            <button
+              ref={ref}
+              type="button"
+              disabled={disabled}
+              className={clsx(
+                inputWrapperVariants({
+                  shape,
+                  size,
+                  disabled,
+                  isErrored: !!error,
+                  isFocused: isOpen,
+                }),
+                className
+              )}
+              {...props}
+            >
+              <Clock className="mr-2 h-4 w-4 opacity-50" />
+              <span className="flex-1 text-left">
+                {formattedValue || placeholder}
+              </span>
+            </button>
+          </PopoverPrimitive.Trigger>
+          <PopoverPrimitive.Portal>
+            <PopoverPrimitive.Content
+              sideOffset={8}
+              align="start"
+              className={clsx(
+                "z-50 w-auto rounded-xl border border-graphite-border bg-graphite-card shadow-md",
+                "data-[state=open]:animate-menu-enter",
+                "data-[state=closed]:animate-menu-exit"
+              )}
+            >
+              <TimePickerPanel
+                value={value || new Date()}
+                onValueChange={setValue}
+              />
+            </PopoverPrimitive.Content>
+          </PopoverPrimitive.Portal>
+        </PopoverPrimitive.Root>
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      </div>
+    );
+  }
+);
+TimePicker.displayName = "TimePicker";
+```
+
+**Storybook Stories (`Timer-picker.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
+import { TimePicker } from "./index";
+
+const meta: Meta<typeof TimePicker> = {
+  title: "Components/Date & Time/TimePicker",
+  component: TimePicker,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A custom, iOS-style time picker with a roller interface. It supports single time selection and features responsive variants: `docked` (desktop), `modal`, and `fullscreen` (mobile).",
+      },
+    },
+  },
+  argTypes: {
+    variant: {
+      control: "select",
+      options: ["docked", "modal", "fullscreen"],
+      description:
+        "Overrides the default responsive behavior to force a specific variant.",
+    },
+    size: { control: "select", options: ["sm", "md", "lg"] },
+    shape: { control: "select", options: ["full", "minimal", "sharp"] },
+    label: { control: "text" },
+    disabled: { control: "boolean" },
+    value: { control: false },
+    onChange: { control: false },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof TimePicker>;
+
+export const Docked: Story = {
+  name: "1. Docked (Desktop Default)",
+  args: {
+    variant: "docked",
+    label: "Event Time",
+  },
+  render: function Render(args) {
+    const [time, setTime] = useState<Date | undefined>(new Date());
+    return (
+      <div className="w-80">
+        <TimePicker {...args} value={time} onChange={(val) => setTime(val)} />
+      </div>
+    );
+  },
+};
+
+export const Modal: Story = {
+  name: "2. Modal",
+  args: {
+    variant: "modal",
+    label: "Appointment Time",
+  },
+  render: function Render(args) {
+    const [time, setTime] = useState<Date | undefined>(new Date());
+    return (
+      <div className="w-80">
+        <TimePicker {...args} value={time} onChange={(val) => setTime(val)} />
+      </div>
+    );
+  },
+};
+
+export const Fullscreen: Story = {
+  name: "3. Fullscreen (Mobile Default)",
+  args: {
+    variant: "fullscreen",
+    label: "Alarm Time",
+  },
+  parameters: {
+    viewport: { defaultViewport: "mobile1" },
+  },
+  render: function Render(args) {
+    const [time, setTime] = useState<Date | undefined>(new Date());
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-graphite-background p-4">
+        <TimePicker {...args} value={time} onChange={(val) => setTime(val)} />
+      </div>
+    );
+  },
+};
+
+export const AllSizesAndShapes: Story = {
+  name: "4. Trigger Sizes & Shapes",
+  render: () => (
+    <div className="flex max-w-sm flex-col gap-8">
+      <div>
+        <h3 className="mb-4 font-bold">Small Size</h3>
+        <div className="flex items-start gap-4">
+          <TimePicker size="sm" shape="full" placeholder="Full" />
+          <TimePicker size="sm" shape="minimal" placeholder="Minimal" />
+          <TimePicker size="sm" shape="sharp" placeholder="Sharp" />
+        </div>
+      </div>
+      <div>
+        <h3 className="mb-4 font-bold">Medium Size</h3>
+        <div className="flex items-start gap-4">
+          <TimePicker size="md" shape="full" placeholder="Full" />
+          <TimePicker size="md" shape="minimal" placeholder="Minimal" />
+          <TimePicker size="md" shape="sharp" placeholder="Sharp" />
+        </div>
+      </div>
+      <div>
+        <h3 className="mb-4 font-bold">Large Size</h3>
+        <div className="flex items-start gap-4">
+          <TimePicker size="lg" shape="full" placeholder="Full" />
+          <TimePicker size="lg" shape="minimal" placeholder="Minimal" />
+          <TimePicker size="lg" shape="sharp" placeholder="Sharp" />
+        </div>
+      </div>
+    </div>
+  ),
+};
+
+export const Disabled: Story = {
+  name: "5. Disabled State",
+  args: {
+    label: "Start Time",
+    disabled: true,
+  },
+  render: function Render(args) {
+    return (
+      <div className="w-80">
+        <TimePicker {...args} />
+      </div>
+    );
   },
 };
 ```
@@ -17166,6 +17784,74 @@ export const useCalendar = (cursorDate: Date, value?: Date | DateRange, mode: 's
 ```
 
 
+### Source: `src\lib\hooks\use-time-picker.ts`
+
+```ts
+import { getHours, getMinutes, setHours, setMinutes } from 'date-fns'
+import { useMemo, useState } from 'react'
+
+export const useTimePicker = (initialDate: Date) => {
+  const [time, setTime] = useState(initialDate)
+
+  const hours = getHours(time)
+  const minutes = getMinutes(time)
+
+  const period = useMemo(() => (hours >= 12 ? 'PM' : 'AM'), [hours])
+  const displayHour = useMemo(() => {
+    const h = hours % 12
+    return h === 0 ? 12 : h
+  }, [hours])
+
+  const setHour = (hour: number) => {
+    // Converts 12-hour format to 24-hour format
+    let newHour = hour
+    if (period === 'PM' && newHour < 12) {
+      newHour += 12
+    } else if (period === 'AM' && newHour === 12) {
+      newHour = 0 // Midnight case
+    }
+    setTime(prev => setHours(prev, newHour))
+  }
+
+  const setMinute = (minute: number) => {
+    setTime(prev => setMinutes(prev, minute))
+  }
+
+  const setPeriod = (newPeriod: 'AM' | 'PM') => {
+    if (newPeriod !== period) {
+      const currentHours = getHours(time)
+      if (newPeriod === 'PM' && currentHours < 12) {
+        setTime(prev => setHours(prev, currentHours + 12))
+      } else if (newPeriod === 'AM' && currentHours >= 12) {
+        setTime(prev => setHours(prev, currentHours - 12))
+      }
+    }
+  }
+
+  const formattedTime = useMemo(
+    () => ({
+      hour: String(displayHour).padStart(2, '0'),
+      minute: String(minutes).padStart(2, '0'),
+      period: period,
+    }),
+    [displayHour, minutes, period],
+  )
+
+  return {
+    time,
+    setTime,
+    displayHour,
+    minutes,
+    period,
+    setHour,
+    setMinute,
+    setPeriod,
+    formattedTime,
+  }
+}
+```
+
+
 ### Source: `src\lib\hooks\useAppBar.tsx`
 
 ```tsx
@@ -17847,6 +18533,31 @@ export default useShallowRouter;
 
 /* --- END: Radix Navigation Menu Animations --- */
 
+@keyframes accordion-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+/* Add these new utilities to your --animate-* list */
+--animate-accordion-down: accordion-down 200ms cubic-bezier(0.87, 0, 0.13, 1) forwards;
+--animate-accordion-up: accordion-up 200ms cubic-bezier(0.87, 0, 0.13, 1) forwards;
 
 
 

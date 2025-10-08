@@ -13,6 +13,8 @@ export const iconButtonVariants = cva(
           "bg-graphite-primary disabled:bg-graphite-primary/70 text-graphite-primaryForeground hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         secondary:
           "bg-graphite-secondary disabled:bg-graphite-secondary/70 text-graphite-secondaryForeground hover:bg-graphite-secondary/80  focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+        destructive:
+          "bg-red-500 text-graphite-primaryForeground disabled:bg-red-500/70 hover:bg-red-600/80 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         ghost:
           "bg-transparent disabled:opacity-70 text-graphite-foreground hover:bg-graphite-secondary focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         link: "bg-transparent disabled:opacity-70 text-graphite-primary hover:text-graphite-primary hover:underline !p-1 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
@@ -63,7 +65,9 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     const localRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
     const rippleColor =
-      variant === "primary" ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.1)";
+      variant === "primary" || variant === "destructive"
+        ? "rgba(255, 255, 255, 0.4)"
+        : "rgba(0, 0, 0, 0.1)";
     const rippleRef = localRef as React.RefObject<HTMLElement>;
     const [, event] = useRipple({
       ref: rippleRef,
@@ -89,7 +93,10 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           isLoading,
         })}
         ref={localRef}
-        onPointerDown={event}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          event(e);
+        }}
         disabled={disabled || isLoading}
         {...props}
       >

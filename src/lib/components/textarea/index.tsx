@@ -3,12 +3,15 @@ import { clsx } from "clsx";
 import React, { useEffect, useImperativeHandle, useRef } from "react";
 
 const textAreaWrapperVariants = cva(
-  "flex items-start transition-all duration-200 w-full px-4 border-2",
+  // FIX: Removed `px-4` and `border-2` from the base class.
+  "flex items-start transition-all duration-200 w-full",
   {
     variants: {
       variant: {
-        primary: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
+        // FIX: Added `border-2` and `px-4` to the variants that need them.
+        primary: "bg-graphite-card border-2 px-4",
+        secondary: "bg-graphite-secondary border-2 px-4",
+        minimal: "bg-transparent p-0",
       },
       shape: {
         full: "rounded-4xl",
@@ -74,6 +77,10 @@ const textAreaWrapperVariants = cva(
         isFocused: true,
         isErrored: true,
         className: "border-red-600",
+      },
+      {
+        variant: "minimal",
+        className: "rounded-none border-0",
       },
     ],
     defaultVariants: {

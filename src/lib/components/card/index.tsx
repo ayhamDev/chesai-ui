@@ -3,49 +3,64 @@ import clsx from "clsx";
 import React from "react";
 
 const cardVariants = cva(
-  // Base classes: Removed hardcoded padding, as it's now a variant.
+  // Base classes
   "shadow-xs transition-colors duration-200",
   {
     variants: {
       variant: {
         primary: "bg-graphite-card",
         secondary: "bg-graphite-secondary",
-        // Selected variant adds a border to indicate its state
-        selected: "bg-graphite-card border-2 border-graphite-primary",
+        /** A semi-transparent, blurred background effect. Best used on a colorful or textured background. */
+        glass:
+          "bg-white/5 backdrop-blur-lg border border-white/10 text-graphite-primaryForeground",
       },
       shape: {
         full: "rounded-3xl",
         minimal: "rounded-xl",
         sharp: "rounded-none",
       },
-      // New variant for controlling padding
       padding: {
         none: "p-0",
         sm: "p-2",
-        md: "p-5", // This was the original hardcoded value
+        md: "p-5",
         lg: "p-8",
       },
+      isSelected: {
+        true: "border-2 border-graphite-primary",
+        false: " border-2 border-transparent", // No border by default
+      },
     },
-    // Set default variants, including the new padding
+    // Special case for the glass variant to use its own border style
+    compoundVariants: [
+      {
+        variant: "glass",
+        isSelected: false,
+        className: "border border-white/10",
+      },
+    ],
     defaultVariants: {
       variant: "primary",
       shape: "minimal",
-      padding: "md", // Sets the default padding to p-5
+      padding: "md",
+      isSelected: false,
     },
   }
 );
 
 export interface CardProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {}
+    VariantProps<typeof cardVariants> {
+  // The isSelected prop is now automatically included from VariantProps
+}
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  // Destructure the new 'padding' prop
-  ({ className, shape, variant, padding, ...props }, ref) => {
+  ({ className, shape, variant, padding, isSelected, ...props }, ref) => {
     return (
       <div
-        // Pass the 'padding' prop to the cva function
-        className={clsx(cardVariants({ shape, variant, padding }), className)}
+        className={clsx(
+          cardVariants({ shape, variant, padding, isSelected }),
+          className
+        )}
         ref={ref}
         {...props}
       />

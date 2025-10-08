@@ -1,4 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import {
+  ArrowUp,
+  CornerDownLeft,
+  FileCode,
+  Maximize,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
+import { Button } from "../button";
+import { ButtonGroup } from "../button-group";
+import { Card } from "../card";
+import { IconButton } from "../icon-button";
+import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "../item";
+import { Typography } from "../typography";
 import { TextArea } from "./index";
 
 const meta: Meta<typeof TextArea> = {
@@ -8,7 +22,7 @@ const meta: Meta<typeof TextArea> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary"],
+      options: ["primary", "secondary", "minimal"],
     },
     shape: {
       control: "select",
@@ -27,7 +41,7 @@ const meta: Meta<typeof TextArea> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<typeof TextArea>;
 
 export const Default: Story = {
   args: {
@@ -38,6 +52,115 @@ export const Default: Story = {
     placeholder: "Enter your comments here...",
     rows: 4,
   },
+};
+
+export const AdvancedComposition: Story = {
+  name: "Advanced Composition Examples",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `minimal` variant is completely unstyled, making it perfect for composing custom input components. Here are two examples inspired by modern UI patterns.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex flex-col items-center gap-12">
+      {/* --- Chat Input Example --- */}
+      <div className="w-full max-w-lg">
+        <Card variant="primary" shape="minimal" padding="none">
+          <TextArea
+            variant="minimal"
+            placeholder="Ask, Search or Chat..."
+            rows={1}
+            wrapperClassName="p-4"
+          />
+          <div className="flex items-center justify-between gap-4 px-4 pb-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              shape="minimal"
+              startIcon={<Plus size={16} />}
+            >
+              Auto
+            </Button>
+            <Typography variant="muted" className="!mt-0">
+              52% used
+            </Typography>
+            <IconButton
+              variant="secondary"
+              size="sm"
+              shape="full"
+              aria-label="Send"
+            >
+              <ArrowUp size={16} />
+            </IconButton>
+          </div>
+        </Card>
+      </div>
+
+      {/* --- Code Editor Example --- */}
+      <div className="w-full max-w-lg">
+        <Card variant="primary" shape="minimal" padding="none">
+          {/* Header */}
+          <Item padding="sm" className="border-b border-graphite-border">
+            <ItemMedia variant="icon" className="!bg-transparent !border-0">
+              <FileCode size={18} />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle className="!text-sm">script.js</ItemTitle>
+            </ItemContent>
+            <ItemActions>
+              <ButtonGroup shape="minimal">
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  aria-label="Refresh script"
+                >
+                  <RefreshCw size={14} />
+                </IconButton>
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  aria-label="Expand script"
+                >
+                  <Maximize size={14} />
+                </IconButton>
+              </ButtonGroup>
+            </ItemActions>
+          </Item>
+
+          {/* Body */}
+          <TextArea
+            variant="minimal"
+            defaultValue="console.log('Hello, world!');"
+            rows={8}
+            className="font-mono text-sm"
+            wrapperClassName="p-4"
+          />
+
+          {/* Footer */}
+          <Item padding="sm" className="border-t border-graphite-border">
+            <ItemContent>
+              <Typography variant="muted" className="!mt-0 !text-xs">
+                Line 1, Column 1
+              </Typography>
+            </ItemContent>
+            <ItemActions>
+              <Button
+                variant="secondary"
+                size="sm"
+                shape="minimal"
+                endIcon={<CornerDownLeft size={14} />}
+              >
+                Run
+              </Button>
+            </ItemActions>
+          </Item>
+        </Card>
+      </div>
+    </div>
+  ),
 };
 
 export const AllSizes: Story = {

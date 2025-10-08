@@ -1,13 +1,21 @@
 // src/components/dialog/index.tsx
 import { clsx } from "clsx";
 import FocusTrap from "focus-trap-react";
-import { AnimatePresence, motion, type Variants } from "motion/react";
-import React, {
+import { AnimatePresence, motion, type Variants } from "framer-motion";
+import {
   createContext,
   useContext,
   useEffect,
   useId,
   useState,
+  type FC,
+  type HTMLAttributes,
+  type ReactNode,
+  type ButtonHTMLAttributes,
+  forwardRef,
+  isValidElement,
+  cloneElement,
+  type MouseEvent,
 } from "react";
 import ReactDOM from "react-dom";
 import { Card, type CardProps } from "../card";
@@ -17,7 +25,7 @@ import {
 } from "../elastic-scroll-area";
 import { Typography } from "../typography";
 
-// --- CONTEXT and PORTAL (No Changes) ---
+// --- CONTEXT and PORTAL ---
 type DialogVariant = "basic" | "fullscreen";
 interface DialogContextProps {
   open: boolean;
@@ -35,26 +43,26 @@ const useDialogContext = () => {
   }
   return context;
 };
-const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const Portal: FC<{ children: ReactNode }> = ({ children }) => {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   return mounted ? ReactDOM.createPortal(children, document.body) : null;
 };
 
-// --- ROOT Component (No Changes) ---
+// --- ROOT Component ---
 export interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: DialogVariant;
 }
-const Dialog: React.FC<DialogProps> = ({
+const Dialog: FC<DialogProps> = ({
   open,
   onOpenChange,
   children,
   variant = "basic",
 }) => {
-  const [triggerRef, setTriggerRef] = useState<HTMLElement | null>(null);
+  const [, setTriggerRef] = useState<HTMLElement | null>(null);
   const titleId = useId();
   const descriptionId = useId();
   return (
@@ -73,12 +81,11 @@ const Dialog: React.FC<DialogProps> = ({
   );
 };
 
-// --- TRIGGER (No Changes) ---
-interface DialogTriggerProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+// --- TRIGGER ---
+interface DialogTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
 }
-const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
+const DialogTrigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(
   ({ children, asChild = false, onClick, ...props }, ref) => {
     const { onOpenChange, setTriggerRef } = useDialogContext();
     const handleRef = (node: HTMLButtonElement | null) => {
@@ -89,20 +96,20 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
     const triggerProps = {
       ...props,
       ref: handleRef,
-      onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+      onClick: (e: MouseEvent<HTMLButtonElement>) => {
         onOpenChange(true);
         onClick?.(e);
       },
     };
-    if (asChild && React.isValidElement(children)) {
-      return React.cloneElement(children, triggerProps);
+    if (asChild && isValidElement(children)) {
+      return cloneElement(children, triggerProps);
     }
     return <button {...triggerProps}>{children}</button>;
   }
 );
 DialogTrigger.displayName = "DialogTrigger";
 
-// --- ANIMATION VARIANTS (No Changes) ---
+// --- ANIMATION VARIANTS ---
 const basicDialogVariants: Variants = {
   hidden: { opacity: 0, scale: 0.92 },
   visible: {
@@ -157,12 +164,11 @@ const materialContentVariants: Variants = {
   },
 };
 
-// --- CONTENT (No Changes) ---
-export interface DialogContentProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+// --- CONTENT ---
+export interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
   shape?: CardProps["shape"];
 }
-const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
+const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
   ({ className, children, shape = "minimal", ...props }, ref) => {
     const { open, onOpenChange, titleId, descriptionId, variant } =
       useDialogContext();
@@ -279,31 +285,30 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 );
 DialogContent.displayName = "DialogContent";
 
-// --- HELPER COMPONENTS (DialogBody is REFACTORED) ---
-interface DialogCloseProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+// --- HELPER COMPONENTS ---
+interface DialogCloseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
 }
-const DialogClose = React.forwardRef<HTMLButtonElement, DialogCloseProps>(
+const DialogClose = forwardRef<HTMLButtonElement, DialogCloseProps>(
   ({ children, asChild = false, onClick, ...props }, ref) => {
     const { onOpenChange } = useDialogContext();
     const closeProps = {
       ...props,
       ref,
-      onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+      onClick: (e: MouseEvent<HTMLButtonElement>) => {
         onOpenChange(false);
         onClick?.(e);
       },
     };
-    if (asChild && React.isValidElement(children)) {
-      return React.cloneElement(children, closeProps);
+    if (asChild && isValidElement(children)) {
+      return cloneElement(children, closeProps);
     }
     return <button {...closeProps}>{children}</button>;
   }
 );
 DialogClose.displayName = "DialogClose";
 
-const DialogHeader = (props: React.HTMLAttributes<HTMLDivElement>) => {
+const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
   const { variant } = useDialogContext();
   return (
     <div
@@ -330,7 +335,7 @@ const DialogHeader = (props: React.HTMLAttributes<HTMLDivElement>) => {
 };
 DialogHeader.displayName = "DialogHeader";
 
-const DialogFooter = (props: React.HTMLAttributes<HTMLDivElement>) => {
+const DialogFooter = (props: HTMLAttributes<HTMLDivElement>) => {
   const { variant } = useDialogContext();
   return (
     <div
@@ -356,9 +361,9 @@ const DialogFooter = (props: React.HTMLAttributes<HTMLDivElement>) => {
 };
 DialogFooter.displayName = "DialogFooter";
 
-const DialogTitle = React.forwardRef<
+const DialogTitle = forwardRef<
   HTMLHeadingElement,
-  React.HTMLAttributes<HTMLHeadingElement>
+  HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
   const { titleId, variant } = useDialogContext();
   return (
@@ -375,9 +380,9 @@ const DialogTitle = React.forwardRef<
 });
 DialogTitle.displayName = "DialogTitle";
 
-const DialogDescription = React.forwardRef<
+const DialogDescription = forwardRef<
   HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
+  HTMLAttributes<HTMLParagraphElement>
 >((props, ref) => {
   const { descriptionId } = useDialogContext();
   return <Typography variant="muted" ref={ref} id={descriptionId} {...props} />;
@@ -386,16 +391,14 @@ DialogDescription.displayName = "DialogDescription";
 
 // --- MODIFIED: DialogBody now integrates ElasticScrollArea ---
 export interface DialogBodyProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    // Expose ElasticScrollArea props, omitting ones we handle
+  extends Omit<HTMLAttributes<HTMLDivElement>, "dir">,
     Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {}
 
-const DialogBody = React.forwardRef<HTMLDivElement, DialogBodyProps>(
+const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
   (
     {
       className,
       children,
-      // Destructure ElasticScrollArea props to pass them down
       elasticity = true,
       pullToRefresh,
       onRefresh,
@@ -405,14 +408,13 @@ const DialogBody = React.forwardRef<HTMLDivElement, DialogBodyProps>(
   ) => {
     const { variant } = useDialogContext();
 
-    // For fullscreen dialogs, render the enhanced scroll area
     if (variant === "fullscreen") {
       return (
         <ElasticScrollArea
           ref={ref}
           className={clsx(
-            "flex-1 pt-0!", // This makes the scroll area fill the available space
-            "px-6 py-4 sm:px-8 sm:py-6", // Default padding
+            "flex-1 pt-0!",
+            "px-6 py-4 sm:px-8 sm:py-6 transition-all",
             className
           )}
           elasticity={elasticity}
@@ -425,7 +427,6 @@ const DialogBody = React.forwardRef<HTMLDivElement, DialogBodyProps>(
       );
     }
 
-    // For basic dialogs, render a simple div as before
     return (
       <div ref={ref} className={clsx("flex-1", className)} {...props}>
         {children}

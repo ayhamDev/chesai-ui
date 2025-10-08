@@ -316,6 +316,7 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
       // Find the child that corresponds to the active tab.
       const activeChild = React.Children.toArray(children).find(
         (child) =>
+          // @ts-ignore
           React.isValidElement(child) && child.props?.value === activeTab
       );
 
@@ -437,6 +438,7 @@ const TabsPanel = React.forwardRef<HTMLDivElement, TabsPanelProps>(
       // This component just needs to render the animatable motion.div.
       // The key={value} here is now redundant but harmless.
       return (
+        // @ts-ignore
         <motion.div
           ref={ref}
           role="tabpanel"

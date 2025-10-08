@@ -3,14 +3,19 @@
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import { clsx } from "clsx";
 import {
+  type MotionValue,
   animate,
   motion,
   useMotionValue,
   useTransform,
-  type MotionValue,
 } from "framer-motion";
 import { ArrowDown, Loader2 } from "lucide-react";
-import React, {
+import {
+  type ComponentPropsWithoutRef,
+  type ComponentType,
+  type ElementRef,
+  type FC,
+  type RefObject,
   forwardRef,
   useCallback,
   useEffect,
@@ -33,7 +38,7 @@ interface RefreshIndicatorProps {
 }
 
 export interface ElasticScrollAreaProps
-  extends React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
+  extends ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
   /** The primary scrolling direction of the content. @default "vertical" */
   orientation?: "vertical" | "horizontal";
   elasticity?: boolean;
@@ -42,11 +47,11 @@ export interface ElasticScrollAreaProps
   pullToRefresh?: boolean;
   onRefresh?: () => Promise<unknown>;
   pullThreshold?: number;
-  RefreshIndicatorComponent?: React.ComponentType<RefreshIndicatorProps>;
+  RefreshIndicatorComponent?: ComponentType<RefreshIndicatorProps>;
 }
 
 // --- DEFAULT REFRESH INDICATOR ---
-const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
+const DefaultRefreshIndicator: FC<RefreshIndicatorProps> = ({
   pullProgress,
   isRefreshing,
 }) => {
@@ -66,7 +71,7 @@ const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
 };
 // --- OVERSCROLL & PULL-TO-REFRESH LOGIC HOOK ---
 const useElasticAndRefresh = (
-  viewportRef: React.RefObject<HTMLDivElement>,
+  viewportRef: RefObject<HTMLDivElement>,
   motionValue: MotionValue<number>,
   options: {
     orientation: "vertical" | "horizontal";
@@ -250,7 +255,6 @@ const useElasticAndRefresh = (
     };
   }, [
     viewportRef,
-    orientation,
     isEnabled,
     damping,
     motionValue,
@@ -287,7 +291,11 @@ const ElasticScrollAreaRoot = forwardRef<
     ref
   ) => {
     const localViewportRef = useRef<HTMLDivElement>(null);
-    useImperativeHandle(ref, () => localViewportRef.current!);
+    useImperativeHandle(
+      ref,
+      () => localViewportRef.current as HTMLDivElement,
+      []
+    );
 
     const motionValue = useMotionValue(0);
     const isVertical = orientation === "vertical";
@@ -363,8 +371,8 @@ ElasticScrollAreaRoot.displayName = "ElasticScrollArea";
 
 // --- STYLED SUB-COMPONENTS ---
 const ScrollBar = forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.Scrollbar>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Scrollbar> & {
+  ElementRef<typeof ScrollAreaPrimitive.Scrollbar>,
+  ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Scrollbar> & {
     scrollbarVisibility?: ElasticScrollAreaProps["scrollbarVisibility"];
   }
 >(

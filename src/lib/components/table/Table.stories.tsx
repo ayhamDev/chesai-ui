@@ -1,12 +1,14 @@
+import type { Meta, StoryObj } from "@storybook/react";
 import {
+  flexRender,
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
+  type Row,
 } from "@tanstack/react-table";
-import type { Meta, StoryObj } from "@storybook/react";
 import { Badge } from "../badge";
-import { Button } from "../button";
 import { Card } from "../card";
+import { Typography } from "../typography";
 import { Table, type TableRootProps } from "./index";
 
 const meta: Meta<TableRootProps<Payment>> = {
@@ -18,14 +20,14 @@ const meta: Meta<TableRootProps<Payment>> = {
     docs: {
       description: {
         component:
-          "A versatile and responsive data table, now powered by TanStack Table. It displays data in a standard tabular format on desktop and transforms into a specified layout (cards, accordion, or scrollable) on mobile viewports.",
+          "A versatile and responsive data table powered by TanStack Table. It displays data in a standard table on desktop and can transform into a horizontally scrollable table or a fully custom layout on mobile.",
       },
     },
   },
   argTypes: {
     responsiveLayout: {
       control: "select",
-      options: ["card", "accordion", "scroll"],
+      options: ["scroll", "custom"],
       description: "Determines the table's layout on mobile viewports.",
     },
     breakpoint: {
@@ -38,9 +40,8 @@ const meta: Meta<TableRootProps<Payment>> = {
       options: ["card", "secondary"],
       description: "Background color for the sticky column in 'scroll' mode.",
     },
-    table: { control: false }, // The table instance is now the main prop
-    rowProps: { control: false },
-    accordionDetailsProps: { control: false },
+    table: { control: false },
+    renderMobileRow: { control: false },
   },
 };
 
@@ -48,7 +49,6 @@ export default meta;
 type Story = StoryObj<TableRootProps<Payment>>;
 
 // --- Sample Data and Columns ---
-
 interface Payment {
   id: string;
   account: string;
@@ -97,17 +97,11 @@ const basicColumns: ColumnDef<Payment>[] = [
   {
     accessorKey: "account",
     header: "Account",
-    meta: {
-      isAccordionHeader: true,
-    },
   },
   {
     accessorKey: "amount",
     header: "Amount",
     cell: (info) => `$${info.getValue<number>().toLocaleString()}`,
-    meta: {
-      isAccordionHeader: true,
-    },
   },
   {
     accessorKey: "dueDate",
@@ -116,140 +110,6 @@ const basicColumns: ColumnDef<Payment>[] = [
   {
     accessorKey: "period",
     header: "Period",
-  },
-];
-
-// --- STORIES ---
-
-export const DesktopView: Story = {
-  name: "1. Desktop View",
-  args: {},
-  parameters: {
-    viewport: { defaultViewport: "responsive" },
-    docs: {
-      description: {
-        story:
-          "This is the default table layout on viewports wider than the specified `breakpoint` (md by default).",
-      },
-    },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card className="w-full overflow-hidden">
-        <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-export const CardLayout: Story = {
-  name: "2. Responsive: Card Layout",
-  args: {
-    responsiveLayout: "card",
-  },
-  parameters: {
-    viewport: { defaultViewport: "mobile1" },
-    docs: {
-      description: {
-        story:
-          "Set `responsiveLayout='card'`. On mobile viewports, each row transforms into a distinct `Card`.",
-      },
-    },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card>
-        <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-export const AccordionLayout: Story = {
-  name: "3. Responsive: Accordion Layout",
-  args: {
-    responsiveLayout: "accordion",
-  },
-  parameters: {
-    viewport: { defaultViewport: "mobile1" },
-    docs: {
-      description: {
-        story:
-          "Set `responsiveLayout='accordion'`. Each row becomes a collapsible item. Columns with `meta: { isAccordionHeader: true }` will be visible in the collapsed state.",
-      },
-    },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card>
-        <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-export const ScrollLayout: Story = {
-  name: "4. Responsive: Scroll Layout (Default)",
-  args: {
-    responsiveLayout: "scroll",
-  },
-  parameters: {
-    viewport: { defaultViewport: "mobile1" },
-    docs: {
-      description: {
-        story:
-          "Set `responsiveLayout='scroll'`. The table container becomes horizontally scrollable, with the first column remaining sticky for context.",
-      },
-    },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card>
-        <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-const columnsWithCustomCells: ColumnDef<Payment>[] = [
-  {
-    accessorKey: "account",
-    header: "Account",
-    meta: {
-      isAccordionHeader: true,
-    },
-  },
-  {
-    accessorKey: "amount",
-    header: "Amount",
-    cell: (info) => `$${info.getValue<number>().toLocaleString()}`,
-    meta: {
-      isAccordionHeader: true,
-    },
   },
   {
     accessorKey: "status",
@@ -268,61 +128,114 @@ const columnsWithCustomCells: ColumnDef<Payment>[] = [
       );
     },
   },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: () => (
-      <Button size="xs" variant="ghost" shape="minimal">
-        View Details
-      </Button>
-    ),
-  },
 ];
 
-export const CustomCells: Story = {
-  name: "5. With Custom Cells",
-  args: {
-    responsiveLayout: "accordion",
-  },
+// --- STORIES ---
+
+export const DesktopView: Story = {
+  name: "1. Desktop View",
+  args: {},
   parameters: {
-    docs: {
-      description: {
-        story:
-          "The `cell` property in the `columns` definition allows you to render custom components, like Badges or Buttons, within a cell.",
-      },
-    },
+    viewport: { defaultViewport: "responsive" },
   },
   render: (args) => {
     const table = useReactTable({
       data: sampleData,
-      columns: columnsWithCustomCells,
+      columns: basicColumns,
       getCoreRowModel: getCoreRowModel(),
     });
 
     return (
-      <Card>
+      <Card className="w-full max-w-4xl overflow-hidden">
         <Table<Payment> {...args} table={table} />
       </Card>
     );
   },
 };
 
-export const CustomizedRow: Story = {
-  name: "6. Customized Row",
+export const ScrollLayout: Story = {
+  name: "2. Responsive: Scroll Layout",
   args: {
-    responsiveLayout: "card",
-    rowProps: (row) => ({
-      variant: row.original.status === "Overdue" ? "selected" : "secondary",
-      onClick: () => alert(`Clicked on account: ${row.original.account}`),
-      className: "cursor-pointer",
-    }),
+    responsiveLayout: "scroll",
+  },
+  parameters: {
+    viewport: { defaultViewport: "mobile1" },
+  },
+  render: (args) => {
+    const table = useReactTable({
+      data: sampleData,
+      columns: basicColumns,
+      getCoreRowModel: getCoreRowModel(),
+    });
+
+    return (
+      <Card className="w-full">
+        <Table<Payment> {...args} table={table} />
+      </Card>
+    );
+  },
+};
+
+export const CustomMobileLayout: Story = {
+  name: "3. Responsive: Custom Layout",
+  args: {
+    responsiveLayout: "custom",
+    renderMobileRow: (row: Row<Payment>) => (
+      <Card
+        shape="minimal"
+        variant={"primary"}
+        isSelected={row.original.status === "Overdue"}
+        padding="lg"
+        onClick={() => alert(`Clicked on account: ${row.original.account}`)}
+        className="cursor-pointer"
+      >
+        <div className="flex flex-col gap-8">
+          {/* Main Info */}
+          <div className="flex justify-between items-start gap-4">
+            <div>
+              <Typography variant="muted" className="!mt-0 !text-xs">
+                Account
+              </Typography>
+              <Typography variant="p" className="!mt-0 font-semibold truncate">
+                {row.original.account}
+              </Typography>
+            </div>
+            <div>
+              <Typography variant="muted" className="!mt-0 !text-xs text-right">
+                Amount
+              </Typography>
+              <Typography variant="p" className="!mt-0 font-semibold truncate">
+                ${row.original.amount.toLocaleString()}
+              </Typography>
+            </div>
+          </div>
+          {/* Secondary Info */}
+          <div className="flex justify-between items-center gap-8">
+            {row.getVisibleCells().map((cell) => {
+              // We've already rendered 'account' and 'amount', so we skip them.
+              if (["account", "amount"].includes(cell.column.id)) return null;
+              return (
+                <div key={cell.id}>
+                  <Typography variant="muted" className="!mt-0 !text-xs">
+                    {cell.column.columnDef.header as React.ReactNode}
+                  </Typography>
+                  <Typography variant="small" className="!mt-0 font-semibold">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </Typography>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
+    ),
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
     docs: {
       description: {
         story:
-          "You can pass `Card` props to each row using the `rowProps` function. This allows for conditional styling, click handlers, and more.",
+          "Set `responsiveLayout='custom'` and provide a `renderMobileRow` function. This function receives the `row` object, giving you complete control to render it as a card, an accordion, or any other custom component.",
       },
     },
   },
@@ -334,41 +247,9 @@ export const CustomizedRow: Story = {
     });
 
     return (
-      <Card>
+      <div className="w-full">
         <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-export const AdvancedCustomization: Story = {
-  name: "7. Advanced Customization",
-  args: {
-    responsiveLayout: "accordion",
-    stickyCellVariant: "secondary",
-    accordionDetailsProps: {
-      className: "bg-graphite-background",
-    },
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Use `stickyCellVariant` to change the sticky column's background in scroll mode. Use `accordionDetailsProps` to style the expanded content area in accordion mode.",
-      },
-    },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card>
-        <Table<Payment> {...args} table={table} />
-      </Card>
+      </div>
     );
   },
 };

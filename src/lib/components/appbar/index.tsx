@@ -2,7 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import React from "react";
-import { useAppBar } from "../../hooks/useAppbar";
+import { useAppBar } from "../../hooks/useAppBar";
 
 const appBarVariants = cva(
   "fixed top-0 z-40 w-full transition-[colors,box-shadow] duration-300 ease-in-out",

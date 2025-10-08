@@ -2,13 +2,15 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import React from "react";
 
-const inputWrapperVariants = cva(
-  "flex items-center transition-all duration-200 w-full px-4 border-2",
+export const inputWrapperVariants = cva(
+  "flex items-center transition-all duration-200 w-full",
   {
     variants: {
       variant: {
-        primary: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
+        primary: "bg-graphite-card border-2 px-4",
+        secondary: "bg-graphite-secondary border-2 px-4",
+        // MODIFIED: Truly minimal variant with no borders or padding on the wrapper.
+        minimal: "bg-transparent p-0",
       },
       shape: {
         full: "rounded-4xl",
@@ -27,6 +29,7 @@ const inputWrapperVariants = cva(
       },
     },
     compoundVariants: [
+      // Primary states
       {
         variant: "primary",
         isErrored: false,
@@ -34,46 +37,51 @@ const inputWrapperVariants = cva(
         className: "border-graphite-border",
       },
       {
+        variant: "primary",
+        isFocused: true,
+        isErrored: false,
+        className: "border-graphite-primary",
+      },
+      {
+        variant: "primary",
+        isErrored: true,
+        className: "border-red-500",
+      },
+      {
+        variant: "primary",
+        isFocused: true,
+        isErrored: true,
+        className: "border-red-600",
+      },
+      // Secondary states
+      {
         variant: "secondary",
         isErrored: false,
         isFocused: false,
         className: "border-transparent",
       },
       {
-        variant: "primary",
-        isFocused: true,
-        isErrored: false,
-        className: "border-graphite-primary",
-      },
-      {
         variant: "secondary",
         isFocused: true,
         isErrored: false,
         className: "border-graphite-primary",
       },
       {
-        variant: "primary",
-        isFocused: false,
-        isErrored: true,
-        className: "border-red-500",
-      },
-      {
         variant: "secondary",
-        isFocused: false,
         isErrored: true,
         className: "border-red-500",
-      },
-      {
-        variant: "primary",
-        isFocused: true,
-        isErrored: true,
-        className: "border-red-600",
       },
       {
         variant: "secondary",
         isFocused: true,
         isErrored: true,
         className: "border-red-600",
+      },
+      // MODIFIED: Remove all focus/error border effects for the minimal variant.
+      // Also ensure it ignores the 'shape' prop by forcing no rounding.
+      {
+        variant: "minimal",
+        className: "rounded-none border-0",
       },
     ],
     defaultVariants: {

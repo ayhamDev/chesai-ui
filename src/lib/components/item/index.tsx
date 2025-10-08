@@ -1,6 +1,7 @@
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
+import { useLongPress } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import * as React from "react";
@@ -126,6 +127,14 @@ const Item = React.forwardRef<
     VariantProps<typeof itemVariants> & {
       asChild?: boolean;
       disabled?: boolean;
+      /** If true, the ripple effect on click will be disabled. */
+      disableRipple?: boolean;
+      /** Callback fired when the item is pressed for 500ms. */
+      onLongPress?: (
+        event:
+          | React.PointerEvent<HTMLDivElement>
+          | React.MouseEvent<HTMLDivElement>
+      ) => void;
     }
 >(
   (
@@ -138,6 +147,8 @@ const Item = React.forwardRef<
       padding = "md",
       asChild = false,
       disabled,
+      disableRipple = false,
+      onLongPress,
       onPointerDown,
       ...props
     },
@@ -151,15 +162,44 @@ const Item = React.forwardRef<
     const [, event] = useRipple({
       ref: localRef,
       color: "rgba(0, 0, 0, 0.1)",
-      duration: 300,
-      disabled,
+      duration: 400,
+      disabled: disabled || disableRipple,
     });
+
+    // --- NEW: Long Press Logic ---
+    // @ts-ignore
+    const longPressBindings = useLongPress(onLongPress || null);
+
+    // Combine event handlers: onLongPress bindings, ripple effect, and user's onPointerDown
+    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+      // Conditionally trigger the long press hook's pointer down handler
+      if (
+        onLongPress &&
+        // @ts-ignore
+        typeof longPressBindings.onPointerDown === "function"
+      ) {
+        // @ts-ignore
+        longPressBindings.onPointerDown(e);
+      }
+      // Trigger the ripple effect
+      event(e);
+      // Trigger the user's custom onPointerDown handler
+      onPointerDown?.(e);
+    };
+
+    // Construct the final props, merging our event handlers with the long press ones
+    const finalProps = {
+      ...props,
+      ...(onLongPress ? longPressBindings : {}), // Spread all handlers from the hook
+      onPointerDown: handlePointerDown, // Override with our combined handler
+    };
 
     return (
       <ItemContext.Provider value={{ variant, size, direction }}>
         <Comp
           ref={localRef}
           data-slot="item"
+          // @ts-ignore
           disabled={disabled}
           className={clsx(
             itemVariants({
@@ -172,11 +212,7 @@ const Item = React.forwardRef<
             }),
             disabled && "opacity-50 cursor-not-allowed"
           )}
-          onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
-            event(e);
-            onPointerDown?.(e);
-          }}
-          {...props}
+          {...finalProps}
         />
       </ItemContext.Provider>
     );

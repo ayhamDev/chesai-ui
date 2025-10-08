@@ -1,7 +1,7 @@
 "use client";
 
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { ChevronDown } from "lucide-react";
 import React, { createContext, useContext, useRef } from "react";
@@ -14,14 +14,17 @@ interface AccordionContextProps {
   layout: "integrated" | "separated";
 }
 
-const AccordionContext = createContext<AccordionContextProps>({
-  variant: "primary",
-  shape: "minimal",
-  layout: "integrated",
-});
+const AccordionContext = createContext<AccordionContextProps | null>(null);
 
-const useAccordionContext = () => useContext(AccordionContext);
-
+const useAccordionContext = () => {
+  const context = useContext(AccordionContext);
+  if (!context) {
+    throw new Error(
+      "useAccordionContext must be used within an AccordionContext.Provider"
+    );
+  }
+  return context;
+};
 // --- CVA Variants ---
 const itemVariants = cva("overflow-hidden transition-colors", {
   variants: {
@@ -52,12 +55,13 @@ const itemVariants = cva("overflow-hidden transition-colors", {
 });
 
 // --- Root Component ---
-interface AccordionRootProps
-  extends React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Root> {
+type AccordionRootProps = React.ComponentPropsWithoutRef<
+  typeof AccordionPrimitive.Root
+> & {
   variant?: "primary" | "secondary";
   shape?: "full" | "minimal" | "sharp";
   layout?: "integrated" | "separated";
-}
+};
 
 const AccordionRoot = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Root>,
@@ -107,18 +111,22 @@ const AccordionItem = React.forwardRef<
 });
 AccordionItem.displayName = "AccordionItem";
 
-// --- Accordion Trigger ---
+// --- Accordion Trigger (MODIFIED) ---
 const AccordionTrigger = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
->(({ className, children, ...props }, ref) => {
-  const localRef = useRef<HTMLButtonElement>(null);
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
+    /** If true, the ripple effect on click will be disabled. */
+    disableRipple?: boolean;
+  }
+>(({ className, children, disableRipple = false, ...props }, ref) => {
+  const localRef = useRef<HTMLButtonElement | null>(null);
   const [, event] = useRipple({
     ref: localRef,
     color: "rgba(0, 0, 0, 0.1)",
     duration: 400,
+    disabled: disableRipple, // Pass the new prop to the hook
   });
-  React.useImperativeHandle(ref, () => localRef.current!);
+  React.useImperativeHandle(ref, () => localRef.current);
 
   return (
     <AccordionPrimitive.Header className="flex">

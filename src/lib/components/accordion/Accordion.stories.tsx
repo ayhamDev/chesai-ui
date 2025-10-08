@@ -180,3 +180,44 @@ export const MultipleOpen: Story = {
     </div>
   ),
 };
+
+export const RippleControl: Story = {
+  name: "5. Ripple Control",
+  args: {
+    type: "single",
+    collapsible: true,
+    layout: "integrated",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "You can explicitly disable the ripple effect on a trigger by setting `disableRipple={true}` on the `<Accordion.Trigger>` component.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-96">
+      <Accordion {...args}>
+        <Accordion.Item value="item-1">
+          <Accordion.Trigger>Ripple Enabled (Default)</Accordion.Trigger>
+          <Accordion.Content>
+            <Typography variant="p">
+              Click the trigger to see the ripple effect.
+            </Typography>
+          </Accordion.Content>
+        </Accordion.Item>
+        <Accordion.Item value="item-2">
+          <Accordion.Trigger disableRipple={true}>
+            Ripple Disabled
+          </Accordion.Trigger>
+          <Accordion.Content>
+            <Typography variant="p">
+              This trigger will not have a ripple effect.
+            </Typography>
+          </Accordion.Content>
+        </Accordion.Item>
+      </Accordion>
+    </div>
+  ),
+};

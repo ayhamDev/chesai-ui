@@ -11,7 +11,6 @@ import {
 import React, { useState } from "react";
 import { Avatar } from "../avatar";
 import { Badge } from "../badge";
-import { Button } from "../button";
 import { Checkbox } from "../checkbox";
 import { IconButton } from "../icon-button";
 import { Switch } from "../switch";
@@ -28,7 +27,6 @@ import {
   ItemSeparator,
   ItemTitle,
 } from "./index";
-import { clsx } from "clsx";
 
 const meta: Meta<typeof Item> = {
   title: "Components/Data/Item",
@@ -77,6 +75,8 @@ const meta: Meta<typeof Item> = {
     },
     asChild: { control: "boolean" },
     disabled: { control: "boolean" },
+    disableRipple: { control: "boolean" },
+    onLongPress: { action: "longPressed" },
   },
 };
 
@@ -233,8 +233,81 @@ export const AsLink: Story = {
   ),
 };
 
+export const RippleControl: Story = {
+  name: "6. Ripple Control",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "You can explicitly disable the ripple effect on an item by setting `disableRipple={true}`.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-96">
+      <ItemGroup>
+        <Item onClick={() => {}} className="cursor-pointer">
+          <ItemMedia variant="icon">
+            <Star />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Ripple Enabled (Default)</ItemTitle>
+            <ItemDescription>Click me to see the effect.</ItemDescription>
+          </ItemContent>
+        </Item>
+        <Item onClick={() => {}} disableRipple className="cursor-pointer">
+          <ItemMedia variant="icon">
+            <Star />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Ripple Disabled</ItemTitle>
+            <ItemDescription>
+              This item will not have a ripple effect.
+            </ItemDescription>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
+    </div>
+  ),
+};
+
+export const WithLongPress: Story = {
+  name: "7. With Long Press",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `onLongPress` prop allows you to trigger an action when an item is pressed for 500ms. This is particularly useful for context menus on touch devices.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-96">
+      <ItemGroup>
+        <Item
+          onLongPress={() => {
+            alert("Long press triggered!");
+          }}
+          onClick={() => alert("Item clicked!")}
+          className="cursor-pointer"
+        >
+          <ItemMedia variant="icon">
+            <File />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Long Press Me</ItemTitle>
+            <ItemDescription>
+              Press and hold this item for half a second.
+            </ItemDescription>
+          </ItemContent>
+        </Item>
+      </ItemGroup>
+    </div>
+  ),
+};
+
 export const TeamMembersList: Story = {
-  name: "6. Use Case: Interactive Team List",
+  name: "8. Use Case: Interactive Team List",
   parameters: {
     docs: {
       description: {
@@ -342,7 +415,7 @@ export const TeamMembersList: Story = {
 };
 
 export const SettingsList: Story = {
-  name: "7. Use Case: Interactive Settings List",
+  name: "9. Use Case: Interactive Settings List",
   parameters: {
     docs: {
       description: {
@@ -429,7 +502,7 @@ export const SettingsList: Story = {
 };
 
 export const NotificationList: Story = {
-  name: "8. Use Case: Notification List",
+  name: "10. Use Case: Notification List",
   parameters: {
     docs: {
       description: {

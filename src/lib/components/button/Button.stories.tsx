@@ -10,7 +10,7 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "ghost", "link"],
+      options: ["primary", "secondary", "destructive", "ghost", "link"],
     },
     size: {
       control: "select",
@@ -45,6 +45,7 @@ export const AllVariants: Story = {
     <div className="flex flex-wrap items-center gap-4">
       <Button variant="primary">Primary</Button>
       <Button variant="secondary">Secondary</Button>
+      <Button variant="destructive">Destructive</Button>
       <Button variant="ghost">Ghost</Button>
       <Button variant="link">Link</Button>
     </div>

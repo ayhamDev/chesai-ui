@@ -427,6 +427,7 @@ const SidebarPrimaryAction = React.memo(
       const { isExpanded } = useSidebar();
       return (
         <div className="px-3 py-2">
+          {/* @ts-ignore */}
           <motion.button
             ref={ref}
             layout

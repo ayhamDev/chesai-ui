@@ -5,7 +5,8 @@ import React from "react";
 type ButtonShape = "full" | "minimal" | "sharp";
 
 // Define the component's props
-interface ButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+// FIX 1: The wrapping element is now a <fieldset>, so the attributes should match.
+interface ButtonGroupProps extends React.HTMLAttributes<HTMLFieldSetElement> {
   children: React.ReactNode;
   shape?: ButtonShape;
 }
@@ -26,13 +27,17 @@ export const ButtonGroup = ({
   const childArray = React.Children.toArray(children);
 
   return (
-    <div
-      className={clsx("inline-flex items-center", className)}
-      role="group" // Important for accessibility
+    // FIX 1: Use a more semantic <fieldset> element as suggested by the linter.
+    // The role="group" attribute is now implicit.
+    // Added border-none and p-0 to reset default fieldset browser styles.
+    <fieldset
+      className={clsx("inline-flex items-center border-none p-0", className)}
       {...props}
     >
       {childArray.map((child, index) => {
-        if (!React.isValidElement(child)) {
+        // FIX 2 & 3: Use a generic type guard to inform TypeScript about the child's props.
+        // This ensures child.props is recognized as an object with a potential `className`.
+        if (!React.isValidElement<React.HTMLAttributes<HTMLElement>>(child)) {
           return child;
         }
 
@@ -41,7 +46,6 @@ export const ButtonGroup = ({
 
         // --- NEW, ROBUST LOGIC INSPIRED BY SPLITBUTTON ---
         // Determine the precise rounding classes based on the child's position.
-        // This is more explicit and reliable than trying to reset with '!rounded-none'.
         let positionClasses = "";
         if (isFirst) {
           // The first child gets the group's left rounding and a sharp right corner.
@@ -55,7 +59,7 @@ export const ButtonGroup = ({
         }
 
         const newClassName = clsx(
-          child.props.className,
+          child.props.className, // This is now type-safe
           positionClasses,
           // Create the overlapping border effect for a seamless look.
           !isFirst && "-ml-px",
@@ -64,11 +68,11 @@ export const ButtonGroup = ({
         );
 
         return React.cloneElement(child, {
-          ...child.props,
+          ...child.props, // This spread is also now type-safe
           className: newClassName,
         });
       })}
-    </div>
+    </fieldset>
   );
 };
 
