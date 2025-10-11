@@ -5,6 +5,8 @@ import { ArrowLeft } from "lucide-react";
 import React, {
   createContext,
   useContext,
+  useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -103,7 +105,7 @@ const Header = <T extends Record<string, object | undefined>>({
   );
 };
 
-// --- Main Navigator Logic ---
+// --- Main Navigator Logic (MODIFIED) ---
 interface StackNavigatorProps<T extends Record<string, object | undefined>> {
   initialRouteName: keyof T;
   children:
@@ -133,15 +135,25 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     return screenConfig;
   }, [children]);
 
-  const [state, setState] = useState<StackNavigationState<T>>({
-    index: 0,
-    routes: [
-      {
-        key: `${String(initialRouteName)}-${Date.now()}`,
-        name: initialRouteName,
-        params: undefined,
-      },
-    ],
+  // --- MODIFIED: State initialization from browser history ---
+  const [state, setState] = useState<StackNavigationState<T>>(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.history.state &&
+      window.history.state.routes
+    ) {
+      return window.history.state as StackNavigationState<T>;
+    }
+    return {
+      index: 0,
+      routes: [
+        {
+          key: `${String(initialRouteName)}-${Date.now()}`,
+          name: initialRouteName,
+          params: undefined,
+        },
+      ],
+    };
   });
 
   const listeners = useRef<
@@ -151,103 +163,100 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     transitionEnd: new Set(),
   }).current;
 
+  // --- MODIFIED: Sync initial state and listen for popstate events ---
+  useLayoutEffect(() => {
+    // On first load, if history.state is empty, replace it with our initial state.
+    if (
+      typeof window !== "undefined" &&
+      (!window.history.state || !window.history.state.routes)
+    ) {
+      window.history.replaceState(state, "");
+    }
+  }, [state]);
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.routes) {
+        setState(event.state as StackNavigationState<T>);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const currentRoute = state.routes[state.index];
   const screen = screens[currentRoute.name as string];
 
-  // Get the animation config from the currently active screen
   const activeScreenOptions =
     typeof screen?.options === "function"
       ? screen.options({ route: currentRoute as any })
       : screen?.options || {};
-
   const activeAnimationOption = activeScreenOptions.animation || "default";
   const activeAnimationConfig =
     typeof activeAnimationOption === "string"
       ? STACK_TRANSITIONS[activeAnimationOption] || STACK_TRANSITIONS.default
       : activeAnimationOption;
 
+  // --- MODIFIED: Navigation actions now use History API ---
   const navigation = useMemo((): NavigationProp<T> => {
     const canGoBack = () => state.index > 0;
 
-    const performNavigation = (
-      updater: (prevState: StackNavigationState<T>) => StackNavigationState<T>
-    ) => {
-      setState(updater);
-    };
-
     return {
       navigate: (name, params) => {
-        performNavigation((prevState) => {
-          const newRoute: Route<T, keyof T> = {
-            key: `${String(name)}-${Date.now()}`,
-            name,
-            params,
-          };
-          return {
-            index: prevState.routes.length,
-            routes: [...prevState.routes, newRoute],
-          };
-        });
+        const newRoute: Route<T, keyof T> = {
+          key: `${String(name)}-${Date.now()}`,
+          name,
+          params,
+        };
+        const newState: StackNavigationState<T> = {
+          index: state.routes.length,
+          routes: [...state.routes, newRoute],
+        };
+        window.history.pushState(newState, "");
+        setState(newState);
       },
       push: (name, params) => {
-        performNavigation((prevState) => {
-          const newRoute: Route<T, keyof T> = {
-            key: `${String(name)}-${Date.now()}`,
-            name,
-            params,
-          };
-          return {
-            index: prevState.routes.length,
-            routes: [...prevState.routes, newRoute],
-          };
-        });
+        const newRoute: Route<T, keyof T> = {
+          key: `${String(name)}-${Date.now()}`,
+          name,
+          params,
+        };
+        const newState: StackNavigationState<T> = {
+          index: state.routes.length,
+          routes: [...state.routes, newRoute],
+        };
+        window.history.pushState(newState, "");
+        setState(newState);
       },
       replace: (name, params) => {
-        performNavigation((prevState) => {
-          const newRoute: Route<T, keyof T> = {
-            key: `${String(name)}-${Date.now()}`,
-            name,
-            params,
-          };
-          const newRoutes = [...prevState.routes.slice(0, -1), newRoute];
-          return {
-            index: newRoutes.length - 1,
-            routes: newRoutes,
-          };
-        });
+        const newRoute: Route<T, keyof T> = {
+          key: `${String(name)}-${Date.now()}`,
+          name,
+          params,
+        };
+        const newRoutes = [...state.routes.slice(0, -1), newRoute];
+        const newState: StackNavigationState<T> = {
+          index: newRoutes.length - 1,
+          routes: newRoutes,
+        };
+        window.history.replaceState(newState, "");
+        setState(newState);
       },
       goBack: () => {
         if (canGoBack()) {
-          performNavigation((prevState) => {
-            const newRoutes = prevState.routes.slice(0, -1);
-            return {
-              index: newRoutes.length - 1,
-              routes: newRoutes,
-            };
-          });
+          window.history.back();
         }
       },
       pop: (count = 1) => {
         if (canGoBack()) {
-          performNavigation((prevState) => {
-            const newRoutes = prevState.routes.slice(
-              0,
-              prevState.routes.length - count
-            );
-            return {
-              index: newRoutes.length - 1,
-              routes: newRoutes,
-            };
-          });
+          window.history.go(-count);
         }
       },
       popToTop: () => {
         if (canGoBack()) {
-          performNavigation((prevState) => ({
-            index: 0,
-            routes: [prevState.routes[0]],
-          }));
+          window.history.go(-state.index);
         }
       },
       canGoBack,
@@ -260,7 +269,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
       },
       scrollContainerRef,
     };
-  }, [state.index, listeners]);
+  }, [state.index, state.routes, listeners]);
 
   const handleAnimationStart = (isPop: boolean) => {
     listeners.transitionStart.forEach((cb) => cb({ data: { closing: isPop } }));
@@ -284,11 +293,9 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         >
           {state.routes.map((route, index) => {
             const Component = screens[route.name as string].component;
-
             const isActive = index === state.index;
             const variantName = isActive ? "center" : "behind";
 
-            // Use the active screen's animation config for all screens
             return (
               <motion.div
                 key={route.key}
