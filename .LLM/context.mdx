@@ -3,7 +3,10 @@
 
 You are an expert React developer tasked with assisting in the development of the "chesai-ui" library. The following document contains the complete source code for all UI components, hooks, contexts, and styling configurations.
 
-**Your Task:**
+**Your Task for Usage:**
+import { ComponentName } from 'chesai-ui'
+
+**Your Task for development:**
 - Use this file as the single source of truth for the entire library.
 - When asked to create, modify, or extend any part of the library, refer to its source code provided here.
 - Maintain the existing coding style, architecture, and conventions (e.g., using CVA, Radix UI, Framer Motion).
@@ -36,14 +39,17 @@ interface AccordionContextProps {
   layout: "integrated" | "separated";
 }
 
-const AccordionContext = createContext<AccordionContextProps>({
-  variant: "primary",
-  shape: "minimal",
-  layout: "integrated",
-});
+const AccordionContext = createContext<AccordionContextProps | null>(null);
 
-const useAccordionContext = () => useContext(AccordionContext);
-
+const useAccordionContext = () => {
+  const context = useContext(AccordionContext);
+  if (!context) {
+    throw new Error(
+      "useAccordionContext must be used within an AccordionContext.Provider"
+    );
+  }
+  return context;
+};
 // --- CVA Variants ---
 const itemVariants = cva("overflow-hidden transition-colors", {
   variants: {
@@ -74,12 +80,13 @@ const itemVariants = cva("overflow-hidden transition-colors", {
 });
 
 // --- Root Component ---
-interface AccordionRootProps
-  extends React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Root> {
+type AccordionRootProps = React.ComponentPropsWithoutRef<
+  typeof AccordionPrimitive.Root
+> & {
   variant?: "primary" | "secondary";
   shape?: "full" | "minimal" | "sharp";
   layout?: "integrated" | "separated";
-}
+};
 
 const AccordionRoot = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Root>,
@@ -137,14 +144,14 @@ const AccordionTrigger = React.forwardRef<
     disableRipple?: boolean;
   }
 >(({ className, children, disableRipple = false, ...props }, ref) => {
-  const localRef = useRef<HTMLButtonElement>(null);
+  const localRef = useRef<HTMLButtonElement | null>(null);
   const [, event] = useRipple({
     ref: localRef,
     color: "rgba(0, 0, 0, 0.1)",
     duration: 400,
     disabled: disableRipple, // Pass the new prop to the hook
   });
-  React.useImperativeHandle(ref, () => localRef.current!);
+  React.useImperativeHandle(ref, () => localRef.current);
 
   return (
     <AccordionPrimitive.Header className="flex">
@@ -427,10 +434,10 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import React from "react";
-import { useAppBar } from "../../hooks/useAppbar";
+import { useAppBar } from "../../hooks/useAppBar";
 
 const appBarVariants = cva(
-  "fixed top-0 z-40 w-full transition-[colors,box-shadow] duration-300 ease-in-out",
+  "absolute top-0 z-40 w-full transition-[colors,box-shadow] duration-300 ease-in-out",
   {
     variants: {
       appBarColor: {
@@ -1859,7 +1866,7 @@ export const BouncyBox = React.forwardRef<HTMLDivElement, BouncyBoxProps>(
         // The magic prop: animates to this state while tapped/clicked
         whileTap={{ scale: scaleAmount }}
         // Configure the spring physics for a nice "bouncy" feel
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30, mass: 3 }}
         {...props}
       >
         {children}
@@ -1961,9 +1968,10 @@ This section contains the source code for the `button` component and its corresp
 
 **Component Source (`src\lib\components\button\index.tsx`)**
 ```tsx
+import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2 } from "lucide-react"; // Import Loader from lucide-react
+import { Loader2 } from "lucide-react";
 import React from "react";
 import useRipple from "use-ripple-hook";
 
@@ -2011,6 +2019,8 @@ export interface ButtonProps
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
   isLoading?: boolean;
+  /** If true, the button will render as a `Slot.Root` and merge its props onto the immediate child. */
+  asChild?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -2025,6 +2035,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       startIcon,
       endIcon,
       isLoading,
+      asChild = false,
       ...props
     },
     ref
@@ -2051,6 +2062,29 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       lg: "h-6 w-6",
     };
 
+    if (asChild) {
+      return (
+        <Slot
+          className={buttonVariants({
+            variant,
+            size,
+            shape,
+            className,
+            isLoading,
+          })}
+          ref={localRef}
+          onPointerDown={(e: React.PointerEvent<HTMLButtonElement>) => {
+            e.stopPropagation();
+            event(e);
+          }}
+          disabled={disabled || isLoading}
+          {...props}
+        >
+          {children}
+        </Slot>
+      );
+    }
+
     return (
       <button
         className={buttonVariants({
@@ -2061,7 +2095,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           isLoading,
         })}
         ref={localRef}
-        onPointerDown={(e) => {
+        onPointerDown={(e: React.PointerEvent<HTMLButtonElement>) => {
           e.stopPropagation();
           event(e);
         }}
@@ -2077,7 +2111,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               exit={{ opacity: 0, scale: 0.5 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Use lucide-react Loader with animate-spin */}
               <Loader2
                 className={`animate-spin ease-[cubic-bezier(0.95,0.05,0.795,0.035)] ${
                   loaderSizeMap[size || "md"]
@@ -2136,8 +2169,9 @@ const meta: Meta<typeof Button> = {
       options: ["full", "minimal", "sharp"],
       description: "The border radius of the button.",
     },
-    isLoading: { control: "boolean" }, // Added isLoading control
+    isLoading: { control: "boolean" },
     disabled: { control: "boolean" },
+    asChild: { control: "boolean" },
     onClick: { action: "clicked" },
   },
 };
@@ -2227,8 +2261,6 @@ export const WithIcons: Story = {
   ),
 };
 
-// --- NEW STORIES FOR LOADING STATE ---
-
 export const Loading: Story = {
   name: "Loading State",
   render: () => (
@@ -2263,6 +2295,23 @@ export const InteractiveLoading: Story = {
     );
   },
 };
+
+export const AsChild: Story = {
+  name: "As Child (Polymorphic)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Use the `asChild` prop to render the button as a different element, like an anchor tag, while preserving all styles and functionality.",
+      },
+    },
+  },
+  render: () => (
+    <Button asChild variant={"primary"} size="lg">
+      <a href="#">This is an anchor tag</a>
+    </Button>
+  ),
+};
 ```
 
 
@@ -2279,7 +2328,8 @@ import React from "react";
 type ButtonShape = "full" | "minimal" | "sharp";
 
 // Define the component's props
-interface ButtonGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+// FIX 1: The wrapping element is now a <fieldset>, so the attributes should match.
+interface ButtonGroupProps extends React.HTMLAttributes<HTMLFieldSetElement> {
   children: React.ReactNode;
   shape?: ButtonShape;
 }
@@ -2300,13 +2350,17 @@ export const ButtonGroup = ({
   const childArray = React.Children.toArray(children);
 
   return (
-    <div
-      className={clsx("inline-flex items-center", className)}
-      role="group" // Important for accessibility
+    // FIX 1: Use a more semantic <fieldset> element as suggested by the linter.
+    // The role="group" attribute is now implicit.
+    // Added border-none and p-0 to reset default fieldset browser styles.
+    <fieldset
+      className={clsx("inline-flex items-center border-none p-0", className)}
       {...props}
     >
       {childArray.map((child, index) => {
-        if (!React.isValidElement(child)) {
+        // FIX 2 & 3: Use a generic type guard to inform TypeScript about the child's props.
+        // This ensures child.props is recognized as an object with a potential `className`.
+        if (!React.isValidElement<React.HTMLAttributes<HTMLElement>>(child)) {
           return child;
         }
 
@@ -2315,7 +2369,6 @@ export const ButtonGroup = ({
 
         // --- NEW, ROBUST LOGIC INSPIRED BY SPLITBUTTON ---
         // Determine the precise rounding classes based on the child's position.
-        // This is more explicit and reliable than trying to reset with '!rounded-none'.
         let positionClasses = "";
         if (isFirst) {
           // The first child gets the group's left rounding and a sharp right corner.
@@ -2329,7 +2382,7 @@ export const ButtonGroup = ({
         }
 
         const newClassName = clsx(
-          child.props.className,
+          child.props.className, // This is now type-safe
           positionClasses,
           // Create the overlapping border effect for a seamless look.
           !isFirst && "-ml-px",
@@ -2338,11 +2391,11 @@ export const ButtonGroup = ({
         );
 
         return React.cloneElement(child, {
-          ...child.props,
+          ...child.props, // This spread is also now type-safe
           className: newClassName,
         });
       })}
-    </div>
+    </fieldset>
   );
 };
 
@@ -3939,13 +3992,21 @@ This section contains the source code for the `dialog` component and its corresp
 // src/components/dialog/index.tsx
 import { clsx } from "clsx";
 import FocusTrap from "focus-trap-react";
-import { AnimatePresence, motion, type Variants } from "motion/react";
-import React, {
+import { AnimatePresence, motion, type Variants } from "framer-motion";
+import {
   createContext,
   useContext,
   useEffect,
   useId,
   useState,
+  type FC,
+  type HTMLAttributes,
+  type ReactNode,
+  type ButtonHTMLAttributes,
+  forwardRef,
+  isValidElement,
+  cloneElement,
+  type MouseEvent,
 } from "react";
 import ReactDOM from "react-dom";
 import { Card, type CardProps } from "../card";
@@ -3955,7 +4016,7 @@ import {
 } from "../elastic-scroll-area";
 import { Typography } from "../typography";
 
-// --- CONTEXT and PORTAL (No Changes) ---
+// --- CONTEXT and PORTAL ---
 type DialogVariant = "basic" | "fullscreen";
 interface DialogContextProps {
   open: boolean;
@@ -3973,26 +4034,26 @@ const useDialogContext = () => {
   }
   return context;
 };
-const Portal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const Portal: FC<{ children: ReactNode }> = ({ children }) => {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   return mounted ? ReactDOM.createPortal(children, document.body) : null;
 };
 
-// --- ROOT Component (No Changes) ---
+// --- ROOT Component ---
 export interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: DialogVariant;
 }
-const Dialog: React.FC<DialogProps> = ({
+const Dialog: FC<DialogProps> = ({
   open,
   onOpenChange,
   children,
   variant = "basic",
 }) => {
-  const [triggerRef, setTriggerRef] = useState<HTMLElement | null>(null);
+  const [, setTriggerRef] = useState<HTMLElement | null>(null);
   const titleId = useId();
   const descriptionId = useId();
   return (
@@ -4011,12 +4072,11 @@ const Dialog: React.FC<DialogProps> = ({
   );
 };
 
-// --- TRIGGER (No Changes) ---
-interface DialogTriggerProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+// --- TRIGGER ---
+interface DialogTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
 }
-const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
+const DialogTrigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(
   ({ children, asChild = false, onClick, ...props }, ref) => {
     const { onOpenChange, setTriggerRef } = useDialogContext();
     const handleRef = (node: HTMLButtonElement | null) => {
@@ -4027,20 +4087,20 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
     const triggerProps = {
       ...props,
       ref: handleRef,
-      onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+      onClick: (e: MouseEvent<HTMLButtonElement>) => {
         onOpenChange(true);
         onClick?.(e);
       },
     };
-    if (asChild && React.isValidElement(children)) {
-      return React.cloneElement(children, triggerProps);
+    if (asChild && isValidElement(children)) {
+      return cloneElement(children, triggerProps);
     }
     return <button {...triggerProps}>{children}</button>;
   }
 );
 DialogTrigger.displayName = "DialogTrigger";
 
-// --- ANIMATION VARIANTS (No Changes) ---
+// --- ANIMATION VARIANTS ---
 const basicDialogVariants: Variants = {
   hidden: { opacity: 0, scale: 0.92 },
   visible: {
@@ -4095,12 +4155,11 @@ const materialContentVariants: Variants = {
   },
 };
 
-// --- CONTENT (No Changes) ---
-export interface DialogContentProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+// --- CONTENT ---
+export interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
   shape?: CardProps["shape"];
 }
-const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
+const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
   ({ className, children, shape = "minimal", ...props }, ref) => {
     const { open, onOpenChange, titleId, descriptionId, variant } =
       useDialogContext();
@@ -4217,31 +4276,30 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 );
 DialogContent.displayName = "DialogContent";
 
-// --- HELPER COMPONENTS (DialogBody is REFACTORED) ---
-interface DialogCloseProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+// --- HELPER COMPONENTS ---
+interface DialogCloseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
 }
-const DialogClose = React.forwardRef<HTMLButtonElement, DialogCloseProps>(
+const DialogClose = forwardRef<HTMLButtonElement, DialogCloseProps>(
   ({ children, asChild = false, onClick, ...props }, ref) => {
     const { onOpenChange } = useDialogContext();
     const closeProps = {
       ...props,
       ref,
-      onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+      onClick: (e: MouseEvent<HTMLButtonElement>) => {
         onOpenChange(false);
         onClick?.(e);
       },
     };
-    if (asChild && React.isValidElement(children)) {
-      return React.cloneElement(children, closeProps);
+    if (asChild && isValidElement(children)) {
+      return cloneElement(children, closeProps);
     }
     return <button {...closeProps}>{children}</button>;
   }
 );
 DialogClose.displayName = "DialogClose";
 
-const DialogHeader = (props: React.HTMLAttributes<HTMLDivElement>) => {
+const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
   const { variant } = useDialogContext();
   return (
     <div
@@ -4268,7 +4326,7 @@ const DialogHeader = (props: React.HTMLAttributes<HTMLDivElement>) => {
 };
 DialogHeader.displayName = "DialogHeader";
 
-const DialogFooter = (props: React.HTMLAttributes<HTMLDivElement>) => {
+const DialogFooter = (props: HTMLAttributes<HTMLDivElement>) => {
   const { variant } = useDialogContext();
   return (
     <div
@@ -4294,9 +4352,9 @@ const DialogFooter = (props: React.HTMLAttributes<HTMLDivElement>) => {
 };
 DialogFooter.displayName = "DialogFooter";
 
-const DialogTitle = React.forwardRef<
+const DialogTitle = forwardRef<
   HTMLHeadingElement,
-  React.HTMLAttributes<HTMLHeadingElement>
+  HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
   const { titleId, variant } = useDialogContext();
   return (
@@ -4313,9 +4371,9 @@ const DialogTitle = React.forwardRef<
 });
 DialogTitle.displayName = "DialogTitle";
 
-const DialogDescription = React.forwardRef<
+const DialogDescription = forwardRef<
   HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
+  HTMLAttributes<HTMLParagraphElement>
 >((props, ref) => {
   const { descriptionId } = useDialogContext();
   return <Typography variant="muted" ref={ref} id={descriptionId} {...props} />;
@@ -4324,16 +4382,14 @@ DialogDescription.displayName = "DialogDescription";
 
 // --- MODIFIED: DialogBody now integrates ElasticScrollArea ---
 export interface DialogBodyProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    // Expose ElasticScrollArea props, omitting ones we handle
+  extends Omit<HTMLAttributes<HTMLDivElement>, "dir">,
     Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {}
 
-const DialogBody = React.forwardRef<HTMLDivElement, DialogBodyProps>(
+const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
   (
     {
       className,
       children,
-      // Destructure ElasticScrollArea props to pass them down
       elasticity = true,
       pullToRefresh,
       onRefresh,
@@ -4343,14 +4399,13 @@ const DialogBody = React.forwardRef<HTMLDivElement, DialogBodyProps>(
   ) => {
     const { variant } = useDialogContext();
 
-    // For fullscreen dialogs, render the enhanced scroll area
     if (variant === "fullscreen") {
       return (
         <ElasticScrollArea
           ref={ref}
           className={clsx(
-            "flex-1 pt-0!", // This makes the scroll area fill the available space
-            "px-6 py-4 sm:px-8 sm:py-6", // Default padding
+            "flex-1 pt-0!",
+            "px-6 py-4 sm:px-8 sm:py-6 transition-all",
             className
           )}
           elasticity={elasticity}
@@ -4363,7 +4418,6 @@ const DialogBody = React.forwardRef<HTMLDivElement, DialogBodyProps>(
       );
     }
 
-    // For basic dialogs, render a simple div as before
     return (
       <div ref={ref} className={clsx("flex-1", className)} {...props}>
         {children}
@@ -5218,14 +5272,19 @@ This section contains the source code for the `elastic-scroll-area` component an
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import { clsx } from "clsx";
 import {
+  type MotionValue,
   animate,
   motion,
   useMotionValue,
   useTransform,
-  type MotionValue,
 } from "framer-motion";
 import { ArrowDown, Loader2 } from "lucide-react";
-import React, {
+import {
+  type ComponentPropsWithoutRef,
+  type ComponentType,
+  type ElementRef,
+  type FC,
+  type RefObject,
   forwardRef,
   useCallback,
   useEffect,
@@ -5248,7 +5307,7 @@ interface RefreshIndicatorProps {
 }
 
 export interface ElasticScrollAreaProps
-  extends React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
+  extends ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
   /** The primary scrolling direction of the content. @default "vertical" */
   orientation?: "vertical" | "horizontal";
   elasticity?: boolean;
@@ -5257,11 +5316,11 @@ export interface ElasticScrollAreaProps
   pullToRefresh?: boolean;
   onRefresh?: () => Promise<unknown>;
   pullThreshold?: number;
-  RefreshIndicatorComponent?: React.ComponentType<RefreshIndicatorProps>;
+  RefreshIndicatorComponent?: ComponentType<RefreshIndicatorProps>;
 }
 
 // --- DEFAULT REFRESH INDICATOR ---
-const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
+const DefaultRefreshIndicator: FC<RefreshIndicatorProps> = ({
   pullProgress,
   isRefreshing,
 }) => {
@@ -5281,7 +5340,7 @@ const DefaultRefreshIndicator: React.FC<RefreshIndicatorProps> = ({
 };
 // --- OVERSCROLL & PULL-TO-REFRESH LOGIC HOOK ---
 const useElasticAndRefresh = (
-  viewportRef: React.RefObject<HTMLDivElement>,
+  viewportRef: RefObject<HTMLDivElement>,
   motionValue: MotionValue<number>,
   options: {
     orientation: "vertical" | "horizontal";
@@ -5465,7 +5524,6 @@ const useElasticAndRefresh = (
     };
   }, [
     viewportRef,
-    orientation,
     isEnabled,
     damping,
     motionValue,
@@ -5502,7 +5560,11 @@ const ElasticScrollAreaRoot = forwardRef<
     ref
   ) => {
     const localViewportRef = useRef<HTMLDivElement>(null);
-    useImperativeHandle(ref, () => localViewportRef.current!);
+    useImperativeHandle(
+      ref,
+      () => localViewportRef.current as HTMLDivElement,
+      []
+    );
 
     const motionValue = useMotionValue(0);
     const isVertical = orientation === "vertical";
@@ -5578,8 +5640,8 @@ ElasticScrollAreaRoot.displayName = "ElasticScrollArea";
 
 // --- STYLED SUB-COMPONENTS ---
 const ScrollBar = forwardRef<
-  React.ElementRef<typeof ScrollAreaPrimitive.Scrollbar>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Scrollbar> & {
+  ElementRef<typeof ScrollAreaPrimitive.Scrollbar>,
+  ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Scrollbar> & {
     scrollbarVisibility?: ElasticScrollAreaProps["scrollbarVisibility"];
   }
 >(
@@ -7220,8 +7282,10 @@ const Item = React.forwardRef<
       // Conditionally trigger the long press hook's pointer down handler
       if (
         onLongPress &&
+        // @ts-ignore
         typeof longPressBindings.onPointerDown === "function"
       ) {
+        // @ts-ignore
         longPressBindings.onPointerDown(e);
       }
       // Trigger the ripple effect
@@ -7242,6 +7306,7 @@ const Item = React.forwardRef<
         <Comp
           ref={localRef}
           data-slot="item"
+          // @ts-ignore
           disabled={disabled}
           className={clsx(
             itemVariants({
@@ -10827,7 +10892,7 @@ export const ShallowSwitch: React.FC<ShallowSwitchProps> = ({ children }) => {
 };
 ```
 
-**Storybook Stories (`shallow-router.stories.tsx`)**
+**Storybook Stories (`Shallow-router.stories.tsx`)**
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import { ArrowLeft } from "lucide-react";
@@ -10846,7 +10911,7 @@ import {
 } from "./index";
 
 const meta: Meta<typeof ShallowRouter> = {
-  title: "Components/ShallowRouter",
+  title: "Components/Navigators/ShallowRouter",
   component: ShallowRouter,
   subcomponents: { ShallowRoute, ShallowSwitch, ShallowPage },
   tags: ["autodocs"],
@@ -12109,6 +12174,7 @@ const SidebarPrimaryAction = React.memo(
       const { isExpanded } = useSidebar();
       return (
         <div className="px-3 py-2">
+          {/* @ts-ignore */}
           <motion.button
             ref={ref}
             layout
@@ -13593,6 +13659,698 @@ export const DifferentSizes: Story = {
 ```
 
 
+### Component: `stack-router`
+
+This section contains the source code for the `stack-router` component and its corresponding Storybook stories.
+
+**Component Source (`src\lib\components\stack-router\index.tsx`)**
+```tsx
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { AppBar } from "../appbar";
+import { IconButton } from "../icon-button";
+import { STACK_TRANSITIONS } from "./transitions";
+import type {
+  NavigationEvent,
+  NavigationEventCallback,
+  NavigationProp,
+  Route,
+  RouteProp,
+  StackNavigationState,
+  StackScreenComponent,
+} from "./types";
+
+// --- Contexts ---
+const NavigationContext = createContext<NavigationProp<any> | undefined>(
+  undefined
+);
+const RouteContext = createContext<Route<any, any> | undefined>(undefined);
+
+// --- Hooks ---
+export function useNavigation<T extends Record<string, object | undefined>>() {
+  const navigation = useContext(NavigationContext);
+  if (!navigation) {
+    throw new Error(
+      "useNavigation must be used within a screen of a StackNavigator."
+    );
+  }
+  return navigation as NavigationProp<T>;
+}
+
+export function useRoute<
+  T extends Record<string, object | undefined>,
+  R extends keyof T
+>() {
+  const route = useContext(RouteContext);
+  if (!route) {
+    throw new Error(
+      "useRoute must be used within a screen of a StackNavigator."
+    );
+  }
+  return route as RouteProp<T, R>;
+}
+
+// --- Internal Header Component ---
+const Header = <T extends Record<string, object | undefined>>({
+  screen,
+  navigation,
+  scrollContainerRef,
+}: {
+  screen: StackScreenComponent<T, keyof T>["props"] | undefined;
+  navigation: NavigationProp<T>;
+  scrollContainerRef: React.RefObject<HTMLElement | null>;
+}) => {
+  if (!screen) return null;
+
+  const options = screen.options || {};
+  if (options.headerShown === false) return null;
+
+  const title = options.headerTitle || options.title || screen.name;
+
+  const HeaderLeft = () => {
+    if (options.headerLeft)
+      return options.headerLeft({ canGoBack: navigation.canGoBack() });
+    if (navigation.canGoBack()) {
+      return (
+        <IconButton variant="ghost" onClick={navigation.goBack}>
+          <ArrowLeft />
+        </IconButton>
+      );
+    }
+    return null;
+  };
+
+  const HeaderRight = () => {
+    if (options.headerRight)
+      return options.headerRight({ canGoBack: navigation.canGoBack() });
+    return null;
+  };
+
+  return (
+    <AppBar
+      {...options.appBarProps}
+      scrollContainerRef={scrollContainerRef}
+      appBarColor={options.headerStyle?.backgroundColor || "card"}
+      startAdornment={<HeaderLeft />}
+      endAdornments={
+        HeaderRight() ? [<HeaderRight key="header-right" />] : undefined
+      }
+    >
+      {typeof title === "function" ? title({}) : (title as React.ReactNode)}
+    </AppBar>
+  );
+};
+
+// --- Main Navigator Logic ---
+interface StackNavigatorProps<T extends Record<string, object | undefined>> {
+  initialRouteName: keyof T;
+  children:
+    | React.ReactElement<StackScreenComponent<T, keyof T>["props"]>
+    | React.ReactElement<StackScreenComponent<T, keyof T>["props"]>[];
+}
+
+const StackNavigator = <T extends Record<string, object | undefined>>({
+  initialRouteName,
+  children,
+}: StackNavigatorProps<T>) => {
+  const screens = useMemo(() => {
+    const screenConfig: Record<
+      string,
+      StackScreenComponent<T, keyof T>["props"]
+    > = {};
+    React.Children.forEach(
+      children,
+      (
+        child: React.ReactElement<StackScreenComponent<T, keyof T>["props"]>
+      ) => {
+        if (React.isValidElement(child)) {
+          screenConfig[child.props.name as string] = child.props;
+        }
+      }
+    );
+    return screenConfig;
+  }, [children]);
+
+  const [state, setState] = useState<StackNavigationState<T>>({
+    index: 0,
+    routes: [
+      {
+        key: `${String(initialRouteName)}-${Date.now()}`,
+        name: initialRouteName,
+        params: undefined,
+      },
+    ],
+  });
+
+  const listeners = useRef<
+    Record<NavigationEvent, Set<NavigationEventCallback>>
+  >({
+    transitionStart: new Set(),
+    transitionEnd: new Set(),
+  }).current;
+
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  const currentRoute = state.routes[state.index];
+  const screen = screens[currentRoute.name as string];
+
+  const navigation = useMemo((): NavigationProp<T> => {
+    const canGoBack = () => state.index > 0;
+
+    const performNavigation = (
+      updater: (prevState: StackNavigationState<T>) => StackNavigationState<T>
+    ) => {
+      setState(updater);
+    };
+
+    return {
+      navigate: (name, params) => {
+        performNavigation((prevState) => {
+          const newRoute: Route<T, keyof T> = {
+            key: `${String(name)}-${Date.now()}`,
+            name,
+            params,
+          };
+          return {
+            index: prevState.routes.length,
+            routes: [...prevState.routes, newRoute],
+          };
+        });
+      },
+      push: (name, params) => {
+        performNavigation((prevState) => {
+          const newRoute: Route<T, keyof T> = {
+            key: `${String(name)}-${Date.now()}`,
+            name,
+            params,
+          };
+          return {
+            index: prevState.routes.length,
+            routes: [...prevState.routes, newRoute],
+          };
+        });
+      },
+      replace: (name, params) => {
+        performNavigation((prevState) => {
+          const newRoute: Route<T, keyof T> = {
+            key: `${String(name)}-${Date.now()}`,
+            name,
+            params,
+          };
+          const newRoutes = [...prevState.routes.slice(0, -1), newRoute];
+          return {
+            index: newRoutes.length - 1,
+            routes: newRoutes,
+          };
+        });
+      },
+      goBack: () => {
+        if (canGoBack()) {
+          performNavigation((prevState) => {
+            const newRoutes = prevState.routes.slice(0, -1);
+            return {
+              index: newRoutes.length - 1,
+              routes: newRoutes,
+            };
+          });
+        }
+      },
+      pop: (count = 1) => {
+        if (canGoBack()) {
+          performNavigation((prevState) => {
+            const newRoutes = prevState.routes.slice(
+              0,
+              prevState.routes.length - count
+            );
+            return {
+              index: newRoutes.length - 1,
+              routes: newRoutes,
+            };
+          });
+        }
+      },
+      popToTop: () => {
+        if (canGoBack()) {
+          performNavigation((prevState) => ({
+            index: 0,
+            routes: [prevState.routes[0]],
+          }));
+        }
+      },
+      canGoBack,
+      addListener: (event, callback) => {
+        listeners[event].add(callback);
+        return () => listeners[event].delete(callback);
+      },
+      removeListener: (event, callback) => {
+        listeners[event].delete(callback);
+      },
+      scrollContainerRef,
+    };
+  }, [state.index, listeners]);
+
+  const handleAnimationStart = (isPop: boolean) => {
+    listeners.transitionStart.forEach((cb) => cb({ data: { closing: isPop } }));
+  };
+
+  const handleAnimationComplete = (isPop: boolean) => {
+    listeners.transitionEnd.forEach((cb) => cb({ data: { closing: isPop } }));
+  };
+
+  return (
+    <div className="relative h-full w-full overflow-hidden bg-graphite-background">
+      <Header
+        screen={screen}
+        navigation={navigation}
+        scrollContainerRef={scrollContainerRef}
+      />
+      <div className="relative h-full w-full">
+        <AnimatePresence
+          initial={false}
+          onExitComplete={() => handleAnimationComplete(true)}
+        >
+          {state.routes.map((route, index) => {
+            const Component = screens[route.name as string].component;
+            const screenOptionsProp = screens[route.name as string].options;
+            const screenOptions =
+              typeof screenOptionsProp === "function"
+                ? screenOptionsProp({ route: route as any })
+                : screenOptionsProp || {};
+
+            const isActive = index === state.index;
+
+            const variantName = isActive ? "center" : "behind";
+
+            const animationOption = screenOptions.animation || "default";
+
+            const animationConfig =
+              typeof animationOption === "string"
+                ? STACK_TRANSITIONS[animationOption] ||
+                  STACK_TRANSITIONS.default
+                : animationOption;
+            console.log(route, isActive, variantName);
+
+            return (
+              <motion.div
+                key={route.key}
+                layoutId={route.key}
+                variants={animationConfig.variants}
+                transition={animationConfig.transition}
+                initial="enter"
+                animate={variantName}
+                exit="exit"
+                onAnimationStart={
+                  isActive ? () => handleAnimationStart(false) : undefined
+                }
+                onAnimationComplete={
+                  isActive ? () => handleAnimationComplete(false) : undefined
+                }
+                style={{
+                  zIndex: index,
+                  boxShadow:
+                    typeof animationOption === "string" &&
+                    animationOption.startsWith("slide") &&
+                    isActive
+                      ? "-5px 0px 15px rgba(0, 0, 0, 0.1)"
+                      : undefined,
+                }}
+                className="absolute inset-x-0 bottom-0 top-0 bg-graphite-background"
+              >
+                <NavigationContext.Provider value={navigation}>
+                  <RouteContext.Provider value={route}>
+                    <Component
+                      navigation={navigation}
+                      route={route as RouteProp<T, keyof T>}
+                    />
+                  </RouteContext.Provider>
+                </NavigationContext.Provider>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+// --- Factory Function ---
+export function createStackNavigator<
+  T extends Record<string, object | undefined>
+>() {
+  const Screen = <R extends keyof T>(
+    _props: StackScreenComponent<T, R>["props"]
+  ) => {
+    return null;
+  };
+
+  return {
+    Navigator: (props: StackNavigatorProps<T>) => <StackNavigator {...props} />,
+    Screen,
+  };
+}
+```
+
+**Storybook Stories (`stack-router.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { Mail, MoreVertical, Search } from "lucide-react";
+import { Button } from "../button";
+import DeviceFrame from "../device";
+import { ElasticScrollArea } from "../elastic-scroll-area";
+import { IconButton } from "../icon-button";
+import { Input } from "../input";
+import { Item, ItemContent, ItemTitle } from "../item";
+import { Typography } from "../typography";
+import { createStackNavigator, useNavigation, useRoute } from "./index";
+import type { RouteProp, StackScreenProps } from "./types";
+
+const meta: Meta = {
+  title: "Components/Navigators/StackRouter",
+  component: undefined, // Component is a factory, not a single element
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A stack navigator that mimics the React Navigation API for the web. It uses `AppBar` for headers and Framer Motion for smooth, native-like screen transitions. Create a navigator instance with `createStackNavigator()`.",
+      },
+    },
+  },
+  decorators: [
+    (Story) => (
+      <DeviceFrame>
+        <Story />
+      </DeviceFrame>
+    ),
+  ],
+};
+export default meta;
+
+// --- 1. Basic Navigation Example ---
+type BasicStackParamList = {
+  Home: undefined;
+  Profile: { userId: string; name: string };
+};
+const BasicStack = createStackNavigator<BasicStackParamList>();
+
+const HomeScreen = () => {
+  const navigation = useNavigation<BasicStackParamList>();
+  return (
+    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
+      <Typography variant="h4">Home Screen</Typography>
+      <Typography variant="p">
+        This is the initial screen of the stack.
+      </Typography>
+      <Button
+        className="mt-4"
+        onClick={() =>
+          navigation.push("Profile", { userId: "user-123", name: "Alice" })
+        }
+      >
+        Go to Alice's Profile
+      </Button>
+    </div>
+  );
+};
+
+const ProfileScreen = () => {
+  const navigation = useNavigation<BasicStackParamList>();
+  const route = useRoute<BasicStackParamList, "Profile">();
+  const { userId, name } = route.params;
+
+  return (
+    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
+      <Typography variant="h4">Profile Screen</Typography>
+      <Typography variant="p">User: {name}</Typography>
+      <Typography variant="muted">ID: {userId}</Typography>
+      <Button
+        className="mt-4"
+        variant="secondary"
+        onClick={() => navigation.goBack()}
+      >
+        Go Back Manually
+      </Button>
+    </div>
+  );
+};
+
+export const BasicNavigation: StoryObj = {
+  name: "1. Basic Navigation",
+  render: () => (
+    <BasicStack.Navigator initialRouteName="Home">
+      <BasicStack.Screen name="Home" component={HomeScreen} />
+      <BasicStack.Screen name="Profile" component={ProfileScreen} />
+    </BasicStack.Navigator>
+  ),
+};
+
+// --- 2. Header Customization Example ---
+type HeaderStackParamList = {
+  Feed: undefined;
+  Article: { articleId: string };
+  Settings: undefined;
+};
+const HeaderStack = createStackNavigator<HeaderStackParamList>();
+
+const FeedScreen = ({}: StackScreenProps<HeaderStackParamList, "Feed">) => {
+  const navigation = useNavigation<BasicStackParamList>();
+
+  return (
+    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
+      <Typography variant="h4">Feed</Typography>
+      <div className="flex flex-col gap-4 mt-4">
+        <Button onClick={() => navigation.push("Article", { articleId: "a1" })}>
+          Go to Article (Custom Header)
+        </Button>
+        <Button variant="secondary" onClick={() => navigation.push("Settings")}>
+          Go to Settings (No Header)
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const ArticleScreen = () => {
+  const navigation = useNavigation<BasicStackParamList>();
+
+  return (
+    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
+      <Typography variant="large">This is the article content.</Typography>
+    </div>
+  );
+};
+const SettingsScreen = () => {
+  return (
+    <div className="p-6 pt-6">
+      <Typography variant="h4">Settings</Typography>
+      <Typography variant="p">This screen has no header.</Typography>
+    </div>
+  );
+};
+
+export const HeaderCustomization: StoryObj = {
+  name: "2. Header Customization",
+  render: () => (
+    <HeaderStack.Navigator initialRouteName="Feed">
+      <HeaderStack.Screen name="Feed" component={FeedScreen} />
+      <HeaderStack.Screen
+        name="Article"
+        component={ArticleScreen}
+        options={{
+          title: "Article Details",
+          headerRight: () => (
+            <IconButton variant="ghost">
+              <MoreVertical />
+            </IconButton>
+          ),
+        }}
+      />
+      <HeaderStack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ headerShown: false }}
+      />
+    </HeaderStack.Navigator>
+  ),
+};
+
+// --- 3. Transition Presets Example ---
+type AnimationStackParamList = {
+  Main: undefined;
+  SlideBottom: undefined;
+  Fade: undefined;
+};
+const AnimationStack = createStackNavigator<AnimationStackParamList>();
+
+const MainScreen = ({}: StackScreenProps<AnimationStackParamList, "Main">) => {
+  const navigation = useNavigation<AnimationStackParamList>();
+
+  return (
+    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
+      <Typography variant="h4">Animation Presets</Typography>
+      <div className="flex flex-col gap-4 mt-4">
+        <Button onClick={() => navigation.push("SlideBottom", {})}>
+          Push with Slide from Bottom
+        </Button>
+        <Button variant="secondary" onClick={() => navigation.push("Fade", {})}>
+          Push with Fade
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const GenericScreen = ({ route }: { route: RouteProp<any, any> }) => {
+  const navigation = useNavigation<AnimationStackParamList>();
+
+  return (
+    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
+      <Typography variant="h4">{route.name} Screen</Typography>
+      <Typography variant="p">
+        This screen transitioned using its specified animation preset.
+      </Typography>
+    </div>
+  );
+};
+
+export const TransitionPresets: StoryObj = {
+  name: "3. Transition Presets",
+  render: () => (
+    <AnimationStack.Navigator initialRouteName="Main">
+      <AnimationStack.Screen name="Main" component={MainScreen} />
+      <AnimationStack.Screen
+        name="SlideBottom"
+        component={GenericScreen}
+        options={{ animation: "slide-from-bottom" }}
+      />
+      <AnimationStack.Screen
+        name="Fade"
+        component={GenericScreen}
+        options={{ animation: "fade" }}
+      />
+    </AnimationStack.Navigator>
+  ),
+};
+
+// --- 4. Mail App Example ---
+type MailStackParamList = {
+  Inbox: undefined;
+  Email: { emailId: number; subject: string };
+};
+const MailStack = createStackNavigator<MailStackParamList>();
+const emails = Array.from({ length: 10 }, (_, i) => ({
+  id: i + 1,
+  from: ["Alice", "Bob", "Charlie", "Diana", "Ethan"][i % 5],
+  subject: [
+    "Project Update",
+    "Lunch Plans",
+    "Weekly Report",
+    "Design Feedback",
+    "Q4 Roadmap",
+  ][i % 5],
+}));
+const InboxScreen = () => {
+  const navigation = useNavigation<MailStackParamList>();
+  const { scrollContainerRef } = useNavigation();
+  return (
+    <ElasticScrollArea className="" ref={scrollContainerRef}>
+      <div className="pt-[120px] p-4">
+        {emails.map((email) => (
+          <Item
+            key={email.id}
+            variant="ghost"
+            onClick={() =>
+              navigation.navigate("Email", {
+                emailId: email.id,
+                subject: email.subject,
+              })
+            }
+            className="cursor-pointer "
+          >
+            <ItemContent>
+              <ItemTitle>{email.from}</ItemTitle>
+              <Typography variant="muted">{email.subject}</Typography>
+            </ItemContent>
+          </Item>
+        ))}
+      </div>
+    </ElasticScrollArea>
+  );
+};
+const EmailScreen = () => {
+  const route = useRoute<MailStackParamList, "Email">();
+  const email = emails.find((e) => e.id === route.params.emailId);
+  return (
+    <div className="p-6 pt-[70px]">
+      <Typography variant="h4">{email?.subject}</Typography>
+      <Typography variant="muted" className="!mt-2">
+        From: {email?.from}
+      </Typography>
+      <Typography variant="p">
+        This is the body of the email. Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit...
+      </Typography>
+    </div>
+  );
+};
+export const FullAppExample: StoryObj = {
+  name: "4. Full App Example (Mail Client)",
+  render: () => (
+    <MailStack.Navigator initialRouteName="Inbox">
+      <MailStack.Screen
+        name="Inbox"
+        component={InboxScreen}
+        options={{
+          title: "Inbox",
+          headerRight: () => (
+            <IconButton
+              variant="ghost"
+              onClick={() => alert("Compose new email!")}
+            >
+              <Mail />
+            </IconButton>
+          ),
+          appBarProps: {
+            size: "lg",
+            scrollBehavior: "conditionally-sticky",
+            largeHeaderRowHeight: 55,
+            largeHeaderContent: (
+              <Input
+                variant="secondary"
+                shape="full"
+                startAdornment={<Search className="h-5 w-5 text-gray-500" />}
+                placeholder="Search mail..."
+              />
+            ),
+          },
+        }}
+      />
+      <MailStack.Screen
+        name="Email"
+        component={EmailScreen}
+        options={({
+          route,
+        }: {
+          route: RouteProp<MailStackParamList, "Email">;
+        }) => ({
+          title: route.params.subject,
+        })}
+      />
+    </MailStack.Navigator>
+  ),
+};
+```
+
+
 ### Component: `switch`
 
 This section contains the source code for the `switch` component and its corresponding Storybook stories.
@@ -14662,6 +15420,7 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
       // Find the child that corresponds to the active tab.
       const activeChild = React.Children.toArray(children).find(
         (child) =>
+          // @ts-ignore
           React.isValidElement(child) && child.props?.value === activeTab
       );
 
@@ -14783,6 +15542,7 @@ const TabsPanel = React.forwardRef<HTMLDivElement, TabsPanelProps>(
       // This component just needs to render the animatable motion.div.
       // The key={value} here is now redundant but harmless.
       return (
+        // @ts-ignore
         <motion.div
           ref={ref}
           role="tabpanel"
@@ -16402,10 +17162,10 @@ const TimeRoller = React.forwardRef<HTMLDivElement, TimeRollerProps>(
           className="h-full w-full"
           elasticity={true}
           dampingFactor={0.6}
-          scrollbarVisibility="never"
+          scrollbarVisibility="scroll"
         >
           <div style={{ height: `${paddingCount * ITEM_HEIGHT}px` }} />
-
+          {/* @ts-ignore */}
           {items.map((item, index) => (
             <div
               key={`${item}-${index}`}
@@ -16473,6 +17233,7 @@ const TimePickerPanel: React.FC<TimePickerPanelProps> = ({
 };
 
 // --- 3. Main Exported TimePicker Component (Unchanged) ---
+// @ts-ignore
 export interface TimePickerProps
   extends Omit<
       React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -16540,7 +17301,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
           <Dialog
             open={isOpen}
             onOpenChange={handleOpenChange}
-            variant={variant}
+            variant={variant === "modal" ? "basic" : "fullscreen"}
           >
             <DialogTrigger asChild>
               <button
@@ -18320,6 +19081,13 @@ const useShallowRouter = (options: UseHistoryOptions = {}) => {
 };
 
 export default useShallowRouter;
+```
+
+
+### Source: `src\lib\hooks\useStackRouter.tsx`
+
+```tsx
+
 ```
 
 

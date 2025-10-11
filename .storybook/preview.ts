@@ -1,5 +1,6 @@
 import type { Preview } from '@storybook/react-vite'
 import '../src/lib/tailwind/theme.css'
+import { withTanstackRouter } from './withTanstackRouter'
 
 const preview: Preview = {
   parameters: {
@@ -11,6 +12,7 @@ const preview: Preview = {
       },
     },
   },
+  decorators: [withTanstackRouter],
 }
 
 export default preview

@@ -5,7 +5,7 @@ import React from "react";
 import { useAppBar } from "../../hooks/useAppBar";
 
 const appBarVariants = cva(
-  "fixed top-0 z-40 w-full transition-[colors,box-shadow] duration-300 ease-in-out",
+  "absolute top-0 z-40 w-full transition-[colors,box-shadow] duration-300 ease-in-out",
   {
     variants: {
       appBarColor: {

@@ -15,7 +15,7 @@ import {
 } from "./index";
 
 const meta: Meta<typeof ShallowRouter> = {
-  title: "Components/ShallowRouter",
+  title: "Components/Navigators/ShallowRouter",
   component: ShallowRouter,
   subcomponents: { ShallowRoute, ShallowSwitch, ShallowPage },
   tags: ["autodocs"],

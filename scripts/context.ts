@@ -188,7 +188,10 @@ async function generateAIContext() {
 
 You are an expert React developer tasked with assisting in the development of the "chesai-ui" library. The following document contains the complete source code for all UI components, hooks, contexts, and styling configurations.
 
-**Your Task:**
+**Your Task for Usage:**
+import { ComponentName } from 'chesai-ui'
+
+**Your Task for development:**
 - Use this file as the single source of truth for the entire library.
 - When asked to create, modify, or extend any part of the library, refer to its source code provided here.
 - Maintain the existing coding style, architecture, and conventions (e.g., using CVA, Radix UI, Framer Motion).

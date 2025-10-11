@@ -20,7 +20,7 @@ export const BouncyBox = React.forwardRef<HTMLDivElement, BouncyBoxProps>(
         // The magic prop: animates to this state while tapped/clicked
         whileTap={{ scale: scaleAmount }}
         // Configure the spring physics for a nice "bouncy" feel
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30, mass: 3 }}
         {...props}
       >
         {children}

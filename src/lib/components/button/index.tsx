@@ -1,6 +1,7 @@
+import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2 } from "lucide-react"; // Import Loader from lucide-react
+import { Loader2 } from "lucide-react";
 import React from "react";
 import useRipple from "use-ripple-hook";
 
@@ -48,6 +49,8 @@ export interface ButtonProps
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
   isLoading?: boolean;
+  /** If true, the button will render as a `Slot.Root` and merge its props onto the immediate child. */
+  asChild?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -62,6 +65,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       startIcon,
       endIcon,
       isLoading,
+      asChild = false,
       ...props
     },
     ref
@@ -88,6 +92,29 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       lg: "h-6 w-6",
     };
 
+    if (asChild) {
+      return (
+        <Slot
+          className={buttonVariants({
+            variant,
+            size,
+            shape,
+            className,
+            isLoading,
+          })}
+          ref={localRef}
+          onPointerDown={(e: React.PointerEvent<HTMLButtonElement>) => {
+            e.stopPropagation();
+            event(e);
+          }}
+          disabled={disabled || isLoading}
+          {...props}
+        >
+          {children}
+        </Slot>
+      );
+    }
+
     return (
       <button
         className={buttonVariants({
@@ -98,7 +125,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           isLoading,
         })}
         ref={localRef}
-        onPointerDown={(e) => {
+        onPointerDown={(e: React.PointerEvent<HTMLButtonElement>) => {
           e.stopPropagation();
           event(e);
         }}
@@ -114,7 +141,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               exit={{ opacity: 0, scale: 0.5 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Use lucide-react Loader with animate-spin */}
               <Loader2
                 className={`animate-spin ease-[cubic-bezier(0.95,0.05,0.795,0.035)] ${
                   loaderSizeMap[size || "md"]

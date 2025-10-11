@@ -21,8 +21,9 @@ const meta: Meta<typeof Button> = {
       options: ["full", "minimal", "sharp"],
       description: "The border radius of the button.",
     },
-    isLoading: { control: "boolean" }, // Added isLoading control
+    isLoading: { control: "boolean" },
     disabled: { control: "boolean" },
+    asChild: { control: "boolean" },
     onClick: { action: "clicked" },
   },
 };
@@ -112,8 +113,6 @@ export const WithIcons: Story = {
   ),
 };
 
-// --- NEW STORIES FOR LOADING STATE ---
-
 export const Loading: Story = {
   name: "Loading State",
   render: () => (
@@ -147,4 +146,21 @@ export const InteractiveLoading: Story = {
       </Button>
     );
   },
+};
+
+export const AsChild: Story = {
+  name: "As Child (Polymorphic)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Use the `asChild` prop to render the button as a different element, like an anchor tag, while preserving all styles and functionality.",
+      },
+    },
+  },
+  render: () => (
+    <Button asChild variant={"primary"} size="lg">
+      <a href="#">This is an anchor tag</a>
+    </Button>
+  ),
 };
