@@ -1,7 +1,11 @@
 "use client";
 
-// --- MODIFICATION: Import AnimatePresence and motion ---
-import { AnimatePresence, motion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  type Transition,
+  type Variants,
+} from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import React, {
   createContext,
@@ -11,25 +15,113 @@ import React, {
   useMemo,
   useRef,
   useState,
+  type RefObject,
 } from "react";
-import { AppBar } from "../appbar";
+import { AppBar, type AppBarSharedProps } from "../appbar";
 import { IconButton } from "../icon-button";
 import { STACK_TRANSITIONS } from "./transitions";
-import type {
-  NavigationEvent,
-  NavigationEventCallback,
-  NavigationProp,
-  Route,
-  RouteProp,
-  StackNavigationState,
-  StackScreenComponent,
-} from "./types";
 
-// --- Contexts ---
-const NavigationContext = createContext<NavigationProp<any> | undefined>(
-  undefined
-);
-const RouteContext = createContext<Route<any, any> | undefined>(undefined);
+// --- INLINED TYPE DEFINITIONS (from types.ts) ---
+
+// Base types
+export interface Route<
+  T extends Record<string, object | undefined>,
+  R extends keyof T
+> {
+  key: string;
+  name: R;
+  params: T[R];
+}
+
+export type RouteProp<
+  T extends Record<string, object | undefined>,
+  R extends keyof T
+> = Route<T, R>;
+
+export interface NavigationProp<T extends Record<string, object | undefined>> {
+  navigate: <R extends keyof T>(name: R, params: T[R]) => void;
+  push: <R extends keyof T>(name: R, params: T[R]) => void;
+  replace: <R extends keyof T>(name: R, params: T[R]) => void;
+  goBack: () => void;
+  pop: (count?: number) => void;
+  popToTop: () => void;
+  canGoBack: () => boolean;
+  addListener: (
+    event: NavigationEvent,
+    callback: NavigationEventCallback
+  ) => () => void;
+  removeListener: (
+    event: NavigationEvent,
+    callback: NavigationEventCallback
+  ) => void;
+  scrollContainerRef: RefObject<HTMLElement | null>;
+}
+
+export interface StackScreenProps<
+  T extends Record<string, object | undefined>,
+  R extends keyof T
+> {
+  navigation: NavigationProp<T>;
+  route: RouteProp<T, R>;
+}
+
+export type NavigationEvent = "transitionStart" | "transitionEnd";
+export type NavigationEventCallback = (event: {
+  data: { closing: boolean };
+}) => void;
+
+export interface StackNavigationState<
+  T extends Record<string, object | undefined>
+> {
+  index: number;
+  routes: Route<T, keyof T>[];
+}
+
+// Options for each screen
+export interface StackScreenOptions {
+  title?: string;
+  headerTitle?: React.ReactNode | ((props: {}) => React.ReactNode);
+  headerShown?: boolean;
+  headerLeft?: (props: { canGoBack: boolean }) => React.ReactNode;
+  headerRight?: (props: { canGoBack: boolean }) => React.ReactNode;
+  headerStyle?: {
+    backgroundColor?: "background" | "card" | "primary" | "secondary";
+  };
+  appBarProps?: AppBarSharedProps;
+  animation?:
+    | "default"
+    | "none"
+    | "fade"
+    | "zoom-fade"
+    | "flip"
+    | "slide-from-left"
+    | "slide-from-right"
+    | "slide-from-top"
+    | "slide-from-bottom"
+    // biome-ignore lint/suspicious/noExplicitAny: Variants can be complex
+    | { variants: any; transition: any };
+}
+
+export interface StackScreenComponent<
+  T extends Record<string, object | undefined>,
+  R extends keyof T
+> {
+  props: {
+    name: R;
+    component: React.ComponentType<StackScreenProps<T, R>>;
+    options?:
+      | StackScreenOptions
+      | ((props: { route: RouteProp<T, R> }) => StackScreenOptions);
+  };
+}
+
+// --- Contexts (FIX: Replaced 'any' with a more specific generic) ---
+const NavigationContext = createContext<
+  NavigationProp<Record<string, object | undefined>> | undefined
+>(undefined);
+const RouteContext = createContext<
+  Route<Record<string, object | undefined>, string> | undefined
+>(undefined);
 
 // --- Hooks ---
 export function useNavigation<T extends Record<string, object | undefined>>() {
@@ -55,7 +147,41 @@ export function useRoute<
   return route as RouteProp<T, R>;
 }
 
-// --- MODIFICATION START: Modified Internal Header Component ---
+// --- FIX: Moved HeaderLeft and HeaderRight outside the Header component ---
+const HeaderLeft = <T extends Record<string, object | undefined>>({
+  options,
+  navigation,
+}: {
+  options: StackScreenOptions;
+  navigation: NavigationProp<T>;
+}) => {
+  if (options.headerLeft) {
+    return options.headerLeft({ canGoBack: navigation.canGoBack() });
+  }
+  if (navigation.canGoBack()) {
+    return (
+      <IconButton variant="ghost" onClick={navigation.goBack}>
+        <ArrowLeft />
+      </IconButton>
+    );
+  }
+  return null;
+};
+
+const HeaderRight = <T extends Record<string, object | undefined>>({
+  options,
+  navigation,
+}: {
+  options: StackScreenOptions;
+  navigation: NavigationProp<T>;
+}) => {
+  if (options.headerRight) {
+    return options.headerRight({ canGoBack: navigation.canGoBack() });
+  }
+  return null;
+};
+
+// --- MODIFIED: Modified Internal Header Component ---
 const Header = <T extends Record<string, object | undefined>>({
   screen,
   navigation,
@@ -69,37 +195,19 @@ const Header = <T extends Record<string, object | undefined>>({
 }) => {
   if (!screen) return null;
 
-  const options = screen.options || {};
+  // FIX: Cast options to StackScreenOptions to resolve property errors
+  const options = (screen.options || {}) as StackScreenOptions;
   if (options.headerShown === false) return null;
 
   const title = options.headerTitle || options.title || screen.name;
 
-  const HeaderLeft = () => {
-    if (options.headerLeft)
-      return options.headerLeft({ canGoBack: navigation.canGoBack() });
-    if (navigation.canGoBack()) {
-      return (
-        <IconButton variant="ghost" onClick={navigation.goBack}>
-          <ArrowLeft />
-        </IconButton>
-      );
-    }
-    return null;
-  };
-
-  const HeaderRight = () => {
-    if (options.headerRight)
-      return options.headerRight({ canGoBack: navigation.canGoBack() });
-    return null;
-  };
-
-  // Animation variants for the content (title, buttons)
-  const contentAnimation = {
+  // FIX: Define animation variants and transition with correct types
+  const contentAnimation: Variants = {
     initial: { opacity: 0.2, y: -5 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0.2, y: 5 },
-    transition: { duration: 0.12, ease: "easeInOut" },
   };
+  const contentTransition: Transition = { duration: 0.12, ease: "easeInOut" };
 
   return (
     <AppBar
@@ -109,32 +217,45 @@ const Header = <T extends Record<string, object | undefined>>({
       startAdornment={
         <AnimatePresence mode="wait">
           <motion.div
-            key={`${routeKey}-left`} // Key changes with the route
-            {...contentAnimation}
+            key={`${routeKey}-left`}
+            variants={contentAnimation}
+            transition={contentTransition}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
-            <HeaderLeft />
+            <HeaderLeft options={options} navigation={navigation} />
           </motion.div>
         </AnimatePresence>
       }
       endAdornments={
-        HeaderRight()
-          ? [
-              <AnimatePresence mode="wait" key={`${routeKey}-right-presence`}>
-                <motion.div
-                  key={`${routeKey}-right`} // Key changes with the route
-                  {...contentAnimation}
-                >
-                  <HeaderRight />
-                </motion.div>
-              </AnimatePresence>,
-            ]
-          : undefined
+        // @ts-ignore
+        <HeaderRight options={options} navigation={navigation} /> ? (
+          [
+            <AnimatePresence mode="wait" key={`${routeKey}-right-presence`}>
+              <motion.div
+                key={`${routeKey}-right`}
+                variants={contentAnimation}
+                transition={contentTransition}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <HeaderRight options={options} navigation={navigation} />
+              </motion.div>
+            </AnimatePresence>,
+          ]
+        ) : undefined
       }
     >
       <AnimatePresence mode="wait">
         <motion.div
-          key={`${routeKey}-title`} // Key changes with the route
-          {...contentAnimation}
+          key={`${routeKey}-title`}
+          variants={contentAnimation}
+          transition={contentTransition}
+          initial="initial"
+          animate="animate"
+          exit="exit"
           className="truncate"
         >
           {typeof title === "function" ? title({}) : (title as React.ReactNode)}
@@ -143,7 +264,6 @@ const Header = <T extends Record<string, object | undefined>>({
     </AppBar>
   );
 };
-// --- MODIFICATION END ---
 
 // --- Main Navigator Logic (MODIFIED) ---
 interface StackNavigatorProps<T extends Record<string, object | undefined>> {
@@ -177,11 +297,8 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
   // --- MODIFIED: State initialization from browser history ---
   const [state, setState] = useState<StackNavigationState<T>>(() => {
-    if (
-      typeof window !== "undefined" &&
-      window.history.state &&
-      window.history.state.routes
-    ) {
+    // FIX: Use optional chaining
+    if (typeof window !== "undefined" && window.history.state?.routes) {
       return window.history.state as StackNavigationState<T>;
     }
     return {
@@ -205,11 +322,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
   // --- MODIFIED: Sync initial state and listen for popstate events ---
   useLayoutEffect(() => {
-    // On first load, if history.state is empty, replace it with our initial state.
-    if (
-      typeof window !== "undefined" &&
-      (!window.history.state || !window.history.state.routes)
-    ) {
+    if (typeof window !== "undefined" && !window.history.state?.routes) {
       window.history.replaceState(state, "");
     }
   }, [state]);
@@ -229,9 +342,12 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
   const currentRoute = state.routes[state.index];
   const screen = screens[currentRoute.name as string];
 
+  // FIX: Correctly handle function-based options and cast 'any'
   const activeScreenOptions =
     typeof screen?.options === "function"
-      ? screen.options({ route: currentRoute as any })
+      ? screen.options({
+          route: currentRoute as RouteProp<T, keyof T>,
+        })
       : screen?.options || {};
   const activeAnimationOption = activeScreenOptions.animation || "default";
   const activeAnimationConfig =
@@ -254,6 +370,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
+        // biome-ignore lint/suspicious/noExplicitAny: History API's state can be any serializable object
         window.history.pushState(newState, "");
         setState(newState);
       },
@@ -267,6 +384,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
+        // biome-ignore lint/suspicious/noExplicitAny: History API's state can be any serializable object
         window.history.pushState(newState, "");
         setState(newState);
       },
@@ -281,6 +399,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: newRoutes.length - 1,
           routes: newRoutes,
         };
+        // biome-ignore lint/suspicious/noExplicitAny: History API's state can be any serializable object
         window.history.replaceState(newState, "");
         setState(newState);
       },
@@ -363,6 +482,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                 className="absolute inset-x-0 bottom-0 top-0 bg-graphite-background"
               >
                 <NavigationContext.Provider value={navigation}>
+                  {/* @ts-ignore */}
                   <RouteContext.Provider value={route}>
                     <Component
                       navigation={navigation}
