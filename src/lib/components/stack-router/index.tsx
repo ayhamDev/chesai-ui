@@ -40,7 +40,7 @@ export type RouteProp<
 
 export interface NavigationProp<T extends Record<string, object | undefined>> {
   navigate: <R extends keyof T>(name: R, params: T[R]) => void;
-  push: <R extends keyof T>(name: R, params: T[R]) => void;
+  push: <R extends keyof T>(name: R, params?: T[R]) => void;
   replace: <R extends keyof T>(name: R, params: T[R]) => void;
   goBack: () => void;
   pop: (count?: number) => void;
@@ -54,7 +54,7 @@ export interface NavigationProp<T extends Record<string, object | undefined>> {
     event: NavigationEvent,
     callback: NavigationEventCallback
   ) => void;
-  scrollContainerRef: RefObject<HTMLElement | null>;
+  scrollContainerRef: RefObject<any | null>;
 }
 
 export interface StackScreenProps<
@@ -472,15 +472,22 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                 }
                 style={{
                   zIndex: index,
-                  boxShadow:
-                    typeof activeAnimationOption === "string" &&
-                    activeAnimationOption.startsWith("slide") &&
-                    isActive
-                      ? "-5px 0px 15px rgba(0, 0, 0, 0.1)"
-                      : undefined,
+                  willChange: "transform, opacity", // OPTIMIZATION: Add will-change
                 }}
                 className="absolute inset-x-0 bottom-0 top-0 bg-graphite-background"
               >
+                {/* OPTIMIZATION: Added a separate motion.div for the shadow */}
+                {typeof activeAnimationOption === "string" &&
+                  activeAnimationOption.startsWith("slide") && (
+                    <motion.div
+                      className="pointer-events-none absolute inset-0 shadow-[ -5px_0px_25px_rgba(0,0,0,0.12)]"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: isActive ? 1 : 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  )}
+
                 <NavigationContext.Provider value={navigation}>
                   {/* @ts-ignore */}
                   <RouteContext.Provider value={route}>

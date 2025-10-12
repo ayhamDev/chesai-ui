@@ -22,10 +22,10 @@ const DURATION = {
   instant: 0,
   micro: 0.15,
   fast: 0.25,
-  base: 0.3,
-  moderate: 0.35,
-  relaxed: 0.4,
-  slow: 0.5,
+  base: 0.4,
+  moderate: 0.45,
+  relaxed: 0.5,
+  slow: 0.6,
 }
 
 // Core transition presets

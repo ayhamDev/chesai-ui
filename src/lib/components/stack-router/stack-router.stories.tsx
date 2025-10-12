@@ -8,7 +8,7 @@ import { Input } from "../input";
 import { Item, ItemContent, ItemTitle } from "../item";
 import { Typography } from "../typography";
 import { createStackNavigator, useNavigation, useRoute } from "./index";
-import type { RouteProp, StackScreenProps } from "./types";
+import type { RouteProp } from "./types";
 
 const meta: Meta = {
   title: "Components/Navigators/StackRouter",
@@ -100,8 +100,8 @@ type HeaderStackParamList = {
 };
 const HeaderStack = createStackNavigator<HeaderStackParamList>();
 
-const FeedScreen = ({}: StackScreenProps<HeaderStackParamList, "Feed">) => {
-  const navigation = useNavigation<BasicStackParamList>();
+const FeedScreen = () => {
+  const navigation = useNavigation<HeaderStackParamList>();
 
   return (
     <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
@@ -176,7 +176,7 @@ type AnimationStackParamList = {
 };
 const AnimationStack = createStackNavigator<AnimationStackParamList>();
 
-const MainScreen = ({}: StackScreenProps<AnimationStackParamList, "Main">) => {
+const MainScreen = () => {
   const navigation = useNavigation<AnimationStackParamList>();
 
   return (
