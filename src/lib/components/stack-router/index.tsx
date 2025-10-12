@@ -1,5 +1,6 @@
 "use client";
 
+// --- MODIFICATION: Import AnimatePresence and motion ---
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import React, {
@@ -54,15 +55,17 @@ export function useRoute<
   return route as RouteProp<T, R>;
 }
 
-// --- Internal Header Component ---
+// --- MODIFICATION START: Modified Internal Header Component ---
 const Header = <T extends Record<string, object | undefined>>({
   screen,
   navigation,
   scrollContainerRef,
+  routeKey, // New prop to trigger animations
 }: {
   screen: StackScreenComponent<T, keyof T>["props"] | undefined;
   navigation: NavigationProp<T>;
   scrollContainerRef: React.RefObject<HTMLElement | null>;
+  routeKey: string; // Unique key for the current route
 }) => {
   if (!screen) return null;
 
@@ -90,20 +93,57 @@ const Header = <T extends Record<string, object | undefined>>({
     return null;
   };
 
+  // Animation variants for the content (title, buttons)
+  const contentAnimation = {
+    initial: { opacity: 0.2, y: -5 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0.2, y: 5 },
+    transition: { duration: 0.12, ease: "easeInOut" },
+  };
+
   return (
     <AppBar
       {...options.appBarProps}
       scrollContainerRef={scrollContainerRef}
       appBarColor={options.headerStyle?.backgroundColor || "card"}
-      startAdornment={<HeaderLeft />}
+      startAdornment={
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${routeKey}-left`} // Key changes with the route
+            {...contentAnimation}
+          >
+            <HeaderLeft />
+          </motion.div>
+        </AnimatePresence>
+      }
       endAdornments={
-        HeaderRight() ? [<HeaderRight key="header-right" />] : undefined
+        HeaderRight()
+          ? [
+              <AnimatePresence mode="wait" key={`${routeKey}-right-presence`}>
+                <motion.div
+                  key={`${routeKey}-right`} // Key changes with the route
+                  {...contentAnimation}
+                >
+                  <HeaderRight />
+                </motion.div>
+              </AnimatePresence>,
+            ]
+          : undefined
       }
     >
-      {typeof title === "function" ? title({}) : (title as React.ReactNode)}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${routeKey}-title`} // Key changes with the route
+          {...contentAnimation}
+          className="truncate"
+        >
+          {typeof title === "function" ? title({}) : (title as React.ReactNode)}
+        </motion.div>
+      </AnimatePresence>
     </AppBar>
   );
 };
+// --- MODIFICATION END ---
 
 // --- Main Navigator Logic (MODIFIED) ---
 interface StackNavigatorProps<T extends Record<string, object | undefined>> {
@@ -285,6 +325,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         screen={screen}
         navigation={navigation}
         scrollContainerRef={scrollContainerRef}
+        routeKey={currentRoute.key} // Pass the key to the Header
       />
       <div className="relative h-full w-full">
         <AnimatePresence

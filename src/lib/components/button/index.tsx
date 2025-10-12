@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import React from "react";
 import useRipple from "use-ripple-hook";
-
+import clsx from "clsx";
 export const buttonVariants = cva(
   "font-semibold cursor-pointer  min-w-max focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden",
   {
@@ -95,19 +95,21 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     if (asChild) {
       return (
         <Slot
-          className={buttonVariants({
-            variant,
-            size,
-            shape,
-            className,
-            isLoading,
-          })}
+          className={clsx(
+            buttonVariants({
+              variant,
+              size,
+              shape,
+              className,
+              isLoading,
+            }),
+            disabled || isLoading ? "opacity-70 pointer-events-none" : ""
+          )}
           ref={localRef}
           onPointerDown={(e: React.PointerEvent<HTMLButtonElement>) => {
             e.stopPropagation();
             event(e);
           }}
-          disabled={disabled || isLoading}
           {...props}
         >
           {children}

@@ -294,7 +294,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
           <>
             {!isDesktop && mobileVariant === "modal" && (
               <motion.div
-                className="fixed inset-0 z-40 bg-black/40"
+                className="fixed inset-0 z-[10000] bg-black/40"
                 style={{ opacity: overlayOpacity }}
                 onClick={() => handleOpenChange(false)}
                 initial={{ pointerEvents: "none" }}

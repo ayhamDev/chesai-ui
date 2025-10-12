@@ -1,13 +1,13 @@
 import {
+  type MotionStyle,
   useMotionValue,
   useMotionValueEvent,
   useScroll,
   useSpring,
   useTransform,
-  type MotionStyle,
 } from "framer-motion";
 import { useLayoutEffect, useRef, useState } from "react";
-import { type AppBarSharedProps } from "../components/appbar";
+import type { AppBarSharedProps } from "../components/appbar";
 
 // --- HOOK DEFINITION ---
 export type UseAppBarOptions = AppBarSharedProps;

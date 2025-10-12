@@ -1,6 +1,7 @@
 import type { Transition, Variants } from 'framer-motion'
 import type { ForwardedRef } from 'react'
 import type { AppBarProps } from '../appbar'
+import type { TransitionPresets } from './transitions'
 
 export interface StackScreenOptions {
   title?: string
@@ -12,7 +13,7 @@ export interface StackScreenOptions {
     backgroundColor?: 'background' | 'card' | 'primary' | 'secondary'
   }
   appBarProps?: Partial<AppBarProps>
-  animation?: 'default' | 'slide-from-bottom' | 'fade' | StackAnimation
+  animation?: TransitionPresets | StackAnimation
 }
 
 export interface StackScreenProps<T extends Record<string, object | undefined>, R extends keyof T> {
@@ -55,7 +56,7 @@ export interface NavigationProp<T extends Record<string, object | undefined>> {
   canGoBack: () => boolean
   addListener: (event: NavigationEvent, callback: NavigationEventCallback) => () => void
   removeListener: (event: NavigationEvent, callback: NavigationEventCallback) => void
-  scrollContainerRef: ForwardedRef<HTMLElement | null>
+  scrollContainerRef: ForwardedRef<any | null>
 }
 
 // --- MODIFIED: The top-level `transition` is now optional ---

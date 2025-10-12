@@ -73,6 +73,7 @@ const ProfileScreen = () => {
       <Button
         className="mt-4"
         variant="secondary"
+        size={"sm"}
         onClick={() => navigation.goBack()}
       >
         Go Back Manually
@@ -164,8 +165,14 @@ export const HeaderCustomization: StoryObj = {
 // --- 3. Transition Presets Example ---
 type AnimationStackParamList = {
   Main: undefined;
-  SlideBottom: undefined;
+  None: undefined;
   Fade: undefined;
+  ZoomFade: undefined;
+  Flip: undefined;
+  SlideRight: undefined;
+  SlideBottom: undefined;
+  SlideLeft: undefined;
+  SlideTop: undefined;
 };
 const AnimationStack = createStackNavigator<AnimationStackParamList>();
 
@@ -176,11 +183,29 @@ const MainScreen = ({}: StackScreenProps<AnimationStackParamList, "Main">) => {
     <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
       <Typography variant="h4">Animation Presets</Typography>
       <div className="flex flex-col gap-4 mt-4">
-        <Button onClick={() => navigation.push("SlideBottom", {})}>
-          Push with Slide from Bottom
+        <Button onClick={() => navigation.push("None")}>
+          Push with 'None'
         </Button>
-        <Button variant="secondary" onClick={() => navigation.push("Fade", {})}>
-          Push with Fade
+        <Button onClick={() => navigation.push("Fade")}>
+          Push with 'Fade'
+        </Button>
+        <Button onClick={() => navigation.push("ZoomFade")}>
+          Push with 'ZoomFade'
+        </Button>
+        <Button onClick={() => navigation.push("Flip")}>
+          Push with 'Flip'
+        </Button>
+        <Button onClick={() => navigation.push("SlideRight")}>
+          Push with 'Slide From Right' (defualt)
+        </Button>
+        <Button onClick={() => navigation.push("SlideBottom")}>
+          Push with 'Slide from Bottom'
+        </Button>
+        <Button onClick={() => navigation.push("SlideLeft")}>
+          Push with 'Slide from Left'
+        </Button>
+        <Button onClick={() => navigation.push("SlideTop")}>
+          Push with 'Slide from Top'
         </Button>
       </div>
     </div>
@@ -196,6 +221,14 @@ const GenericScreen = ({ route }: { route: RouteProp<any, any> }) => {
       <Typography variant="p">
         This screen transitioned using its specified animation preset.
       </Typography>
+      <Button
+        className="mt-4"
+        variant="secondary"
+        size={"sm"}
+        onClick={() => navigation.goBack()}
+      >
+        Go Back
+      </Button>
     </div>
   );
 };
@@ -206,14 +239,44 @@ export const TransitionPresets: StoryObj = {
     <AnimationStack.Navigator initialRouteName="Main">
       <AnimationStack.Screen name="Main" component={MainScreen} />
       <AnimationStack.Screen
-        name="SlideBottom"
+        name="None"
         component={GenericScreen}
-        options={{ animation: "slide-from-bottom" }}
+        options={{ animation: "none" }}
       />
       <AnimationStack.Screen
         name="Fade"
         component={GenericScreen}
         options={{ animation: "fade" }}
+      />
+      <AnimationStack.Screen
+        name="ZoomFade"
+        component={GenericScreen}
+        options={{ animation: "zoom-fade" }}
+      />
+      <AnimationStack.Screen
+        name="Flip"
+        component={GenericScreen}
+        options={{ animation: "flip" }}
+      />
+      <AnimationStack.Screen
+        name="SlideRight"
+        component={GenericScreen}
+        options={{ animation: "default" }}
+      />
+      <AnimationStack.Screen
+        name="SlideBottom"
+        component={GenericScreen}
+        options={{ animation: "slide-from-bottom" }}
+      />
+      <AnimationStack.Screen
+        name="SlideLeft"
+        component={GenericScreen}
+        options={{ animation: "slide-from-left" }}
+      />
+      <AnimationStack.Screen
+        name="SlideTop"
+        component={GenericScreen}
+        options={{ animation: "slide-from-top" }}
       />
     </AnimationStack.Navigator>
   ),
@@ -300,7 +363,7 @@ export const FullAppExample: StoryObj = {
           appBarProps: {
             size: "lg",
             scrollBehavior: "conditionally-sticky",
-            largeHeaderRowHeight: 55,
+            largeHeaderRowHeight: 50,
             largeHeaderContent: (
               <Input
                 variant="secondary"
@@ -321,6 +384,7 @@ export const FullAppExample: StoryObj = {
           route: RouteProp<MailStackParamList, "Email">;
         }) => ({
           title: route.params.subject,
+          animation: "default",
         })}
       />
     </MailStack.Navigator>

@@ -1,22 +1,20 @@
-import type { Transition } from 'framer-motion'
+import { cubicBezier, type Transition } from 'framer-motion'
 import type { StackAnimation } from './types'
 
 // Professionally calibrated easing curves
 const EASING = {
-  // Apple's signature ease - perfect for iOS-style interactions
-  apple: [0.28, 0, 0.2, 1],
+  // NEW: A smoother, more modern iOS curve inspired by SwiftUI's default animation.
+  // This provides a gentle acceleration and a long, graceful deceleration.
+  iOS: cubicBezier(0.32, 0.72, 0, 1),
+
+  // OLD: A very aggressive, fast-starting curve. Good for snappy feedback but can feel less fluid.
   // Google Material - balanced and predictable
-  material: [0.4, 0, 0.2, 1],
-  // Emphasized deceleration - powerful entry, gentle landing
-  emphasized: [0.05, 0.7, 0.1, 1],
-  // Silk smooth - symmetric and luxurious
-  silk: [0.65, 0, 0.35, 1],
-  // Snappy - quick and responsive
-  snappy: [0.25, 0.1, 0.25, 1],
-  // Expressive - playful with personality
-  expressive: [0.68, -0.55, 0.265, 1.55],
-  // Linear for consistent speed
-  linear: [0, 0, 1, 1],
+  material: cubicBezier(0.4, 0, 0.2, 1),
+
+  // You might have these defined elsewhere, kept for compatibility with the original file
+  emphasized: cubicBezier(0.4, 0, 0.2, 1), // Assuming a value
+  silk: cubicBezier(0.25, 1, 0.5, 1), // Assuming a value
+  snappy: cubicBezier(0.34, 1.56, 0.64, 1), // Assuming a value
 }
 
 // Optimized duration constants
@@ -33,27 +31,35 @@ const DURATION = {
 // Core transition presets
 const navigation: Transition = {
   type: 'tween',
-  ease: EASING.apple,
-  duration: DURATION.moderate,
+  ease: EASING.iOS,
+  duration: DURATION.relaxed,
 }
 
 const modal: Transition = {
   type: 'tween',
-  ease: EASING.emphasized,
+  ease: EASING.iOS,
   duration: DURATION.relaxed,
 }
 
 const fade: Transition = {
   type: 'tween',
   ease: EASING.silk,
-  duration: DURATION.fast,
+  duration: DURATION.base,
 }
 
 const instant: Transition = {
   duration: DURATION.instant,
 }
-
-export const STACK_TRANSITIONS: Record<string, StackAnimation> = {
+export type TransitionPresets =
+  | 'default'
+  | 'none'
+  | 'fade'
+  | 'zoom-fade'
+  | 'slide-from-bottom'
+  | 'slide-from-top'
+  | 'slide-from-left'
+  | 'flip'
+export const STACK_TRANSITIONS: Record<TransitionPresets, StackAnimation> = {
   /**
    * Default: Apple-inspired slide animation
    * Timing: 350ms with signature Apple easing
@@ -63,7 +69,7 @@ export const STACK_TRANSITIONS: Record<string, StackAnimation> = {
     variants: {
       enter: { x: '100%', opacity: 1 },
       center: { x: 0, opacity: 1, scale: 1 },
-      behind: { x: '-30%', opacity: 1, scale: 0.95 },
+      behind: { x: '-30%', opacity: 1, scale: 0.9 },
       exit: { x: '100%', opacity: 1, scale: 1 },
       hidden: { opacity: 0, x: 0, transition: instant },
     },
@@ -117,48 +123,8 @@ export const STACK_TRANSITIONS: Record<string, StackAnimation> = {
     },
     transition: {
       type: 'tween',
-      ease: EASING.silk,
-      duration: DURATION.base,
-    },
-  },
-
-  /**
-   * Lightning: Ultra-fast slide
-   * Timing: 250ms with snappy easing
-   * Best for: Quick actions, rapid navigation
-   */
-  lightning: {
-    variants: {
-      enter: { x: '100%', opacity: 1 },
-      center: { x: 0, opacity: 1, scale: 1 },
-      behind: { x: '-25%', opacity: 0.9, scale: 0.96 },
-      exit: { x: '100%', opacity: 1, scale: 1 },
-      hidden: { opacity: 0, x: 0, transition: instant },
-    },
-    transition: {
-      type: 'tween',
-      ease: EASING.snappy,
-      duration: DURATION.fast,
-    },
-  },
-
-  /**
-   * Cinematic: Slow, luxurious slide
-   * Timing: 500ms with silk easing
-   * Best for: Premium experiences, onboarding
-   */
-  cinematic: {
-    variants: {
-      enter: { x: '100%', opacity: 0.8 },
-      center: { x: 0, opacity: 1, scale: 1 },
-      behind: { x: '-35%', opacity: 0.7, scale: 0.94 },
-      exit: { x: '100%', opacity: 0.8, scale: 1 },
-      hidden: { opacity: 0, x: 0, transition: instant },
-    },
-    transition: {
-      type: 'tween',
-      ease: EASING.silk,
-      duration: DURATION.slow,
+      ease: EASING.iOS,
+      duration: DURATION.moderate,
     },
   },
 
@@ -169,15 +135,15 @@ export const STACK_TRANSITIONS: Record<string, StackAnimation> = {
    */
   flip: {
     variants: {
-      enter: { rotateY: 90, opacity: 0 },
+      enter: { rotateY: 70, opacity: 0 },
       center: { rotateY: 0, opacity: 1 },
-      behind: { rotateY: 0, opacity: 0.4, scale: 0.95 },
-      exit: { rotateY: -90, opacity: 0 },
+      behind: { rotateY: 0, opacity: 0.4, scale: 0.9 },
+      exit: { rotateY: -45, opacity: 0 },
       hidden: { opacity: 0, rotateY: 0, transition: instant },
     },
     transition: {
       type: 'tween',
-      ease: EASING.emphasized,
+      ease: EASING.iOS,
       duration: DURATION.relaxed,
     },
   },
@@ -187,11 +153,11 @@ export const STACK_TRANSITIONS: Record<string, StackAnimation> = {
    * Timing: 350ms with Apple easing
    * Best for: Back navigation, dismiss actions
    */
-  'slide-left': {
+  'slide-from-left': {
     variants: {
       enter: { x: '-100%', opacity: 1 },
       center: { x: 0, opacity: 1, scale: 1 },
-      behind: { x: '30%', opacity: 1, scale: 0.95 },
+      behind: { x: '30%', opacity: 1, scale: 0.9 },
       exit: { x: '-100%', opacity: 1, scale: 1 },
       hidden: { opacity: 0, x: 0, transition: instant },
     },
@@ -207,15 +173,11 @@ export const STACK_TRANSITIONS: Record<string, StackAnimation> = {
     variants: {
       enter: { y: '-100%', opacity: 1 },
       center: { y: 0, opacity: 1 },
-      behind: { y: 0, opacity: 0.6, scale: 0.97 },
+      behind: { y: 0, opacity: 0.6, scale: 0.9 },
       exit: { y: '-100%', opacity: 1 },
       hidden: { opacity: 0, y: 0, transition: instant },
     },
-    transition: {
-      type: 'tween',
-      ease: EASING.snappy,
-      duration: DURATION.base,
-    },
+    transition: modal,
   },
 
   /**
