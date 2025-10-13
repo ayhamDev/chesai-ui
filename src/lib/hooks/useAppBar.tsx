@@ -6,7 +6,7 @@ import {
   useSpring,
   useTransform,
 } from "framer-motion";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react"; // Import useEffect
 import type { AppBarSharedProps } from "../components/appbar";
 
 // --- HOOK DEFINITION ---
@@ -27,11 +27,12 @@ export const useAppBar = (
     smallHeaderContent,
     stickyHideTarget,
     scrollContainerRef,
-    // --- NEW CUSTOMIZABLE PROPS WITH DEFAULTS ---
     normalHeaderRowHeight = 64,
     largeHeaderRowHeight = 96,
     foldAnimationDistance = 50,
     foldBorderRadius = 24,
+    // --- MODIFICATION: Destructure the new routeKey prop ---
+    routeKey,
   } = options;
 
   // --- REFS & STATE ---
@@ -67,6 +68,14 @@ export const useAppBar = (
       });
     }
   });
+
+  // --- MODIFICATION: Add useEffect to reset AppBar position on route change ---
+  useEffect(() => {
+    // Reset the header's vertical position whenever the route changes.
+    // This ensures the new screen's AppBar is always visible on mount.
+    headerY.set(0);
+  }, [routeKey, headerY]);
+  // --- END MODIFICATION ---
 
   // --- ANIMATION LOGIC ---
   useMotionValueEvent(scrollY, "change", (latest) => {

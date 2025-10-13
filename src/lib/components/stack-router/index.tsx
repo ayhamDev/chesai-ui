@@ -115,7 +115,7 @@ export interface StackScreenComponent<
   };
 }
 
-// --- Contexts (FIX: Replaced 'any' with a more specific generic) ---
+// --- Contexts ---
 const NavigationContext = createContext<
   NavigationProp<Record<string, object | undefined>> | undefined
 >(undefined);
@@ -147,7 +147,6 @@ export function useRoute<
   return route as RouteProp<T, R>;
 }
 
-// --- FIX: Moved HeaderLeft and HeaderRight outside the Header component ---
 const HeaderLeft = <T extends Record<string, object | undefined>>({
   options,
   navigation,
@@ -181,27 +180,25 @@ const HeaderRight = <T extends Record<string, object | undefined>>({
   return null;
 };
 
-// --- MODIFIED: Modified Internal Header Component ---
+// --- MODIFIED: Internal Header Component ---
 const Header = <T extends Record<string, object | undefined>>({
   screen,
   navigation,
   scrollContainerRef,
-  routeKey, // New prop to trigger animations
+  routeKey,
 }: {
   screen: StackScreenComponent<T, keyof T>["props"] | undefined;
   navigation: NavigationProp<T>;
   scrollContainerRef: React.RefObject<HTMLElement | null>;
-  routeKey: string; // Unique key for the current route
+  routeKey: string;
 }) => {
   if (!screen) return null;
 
-  // FIX: Cast options to StackScreenOptions to resolve property errors
   const options = (screen.options || {}) as StackScreenOptions;
   if (options.headerShown === false) return null;
 
   const title = options.headerTitle || options.title || screen.name;
 
-  // FIX: Define animation variants and transition with correct types
   const contentAnimation: Variants = {
     initial: { opacity: 0.2, y: -5 },
     animate: { opacity: 1, y: 0 },
@@ -212,6 +209,9 @@ const Header = <T extends Record<string, object | undefined>>({
   return (
     <AppBar
       {...options.appBarProps}
+      // --- MODIFICATION: Pass the routeKey to AppBar ---
+      routeKey={routeKey}
+      // --- END MODIFICATION ---
       scrollContainerRef={scrollContainerRef}
       appBarColor={options.headerStyle?.backgroundColor || "card"}
       startAdornment={
@@ -265,7 +265,7 @@ const Header = <T extends Record<string, object | undefined>>({
   );
 };
 
-// --- Main Navigator Logic (MODIFIED) ---
+// --- Main Navigator Logic ---
 interface StackNavigatorProps<T extends Record<string, object | undefined>> {
   initialRouteName: keyof T;
   children:
@@ -295,9 +295,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     return screenConfig;
   }, [children]);
 
-  // --- MODIFIED: State initialization from browser history ---
   const [state, setState] = useState<StackNavigationState<T>>(() => {
-    // FIX: Use optional chaining
     if (typeof window !== "undefined" && window.history.state?.routes) {
       return window.history.state as StackNavigationState<T>;
     }
@@ -320,7 +318,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     transitionEnd: new Set(),
   }).current;
 
-  // --- MODIFIED: Sync initial state and listen for popstate events ---
   useLayoutEffect(() => {
     if (typeof window !== "undefined" && !window.history.state?.routes) {
       window.history.replaceState(state, "");
@@ -342,7 +339,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
   const currentRoute = state.routes[state.index];
   const screen = screens[currentRoute.name as string];
 
-  // FIX: Correctly handle function-based options and cast 'any'
   const activeScreenOptions =
     typeof screen?.options === "function"
       ? screen.options({
@@ -355,7 +351,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
       ? STACK_TRANSITIONS[activeAnimationOption] || STACK_TRANSITIONS.default
       : activeAnimationOption;
 
-  // --- MODIFIED: Navigation actions now use History API ---
   const navigation = useMemo((): NavigationProp<T> => {
     const canGoBack = () => state.index > 0;
 
@@ -370,7 +365,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        // biome-ignore lint/suspicious/noExplicitAny: History API's state can be any serializable object
         window.history.pushState(newState, "");
         setState(newState);
       },
@@ -384,7 +378,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        // biome-ignore lint/suspicious/noExplicitAny: History API's state can be any serializable object
         window.history.pushState(newState, "");
         setState(newState);
       },
@@ -399,7 +392,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: newRoutes.length - 1,
           routes: newRoutes,
         };
-        // biome-ignore lint/suspicious/noExplicitAny: History API's state can be any serializable object
         window.history.replaceState(newState, "");
         setState(newState);
       },
@@ -444,7 +436,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         screen={screen}
         navigation={navigation}
         scrollContainerRef={scrollContainerRef}
-        routeKey={currentRoute.key} // Pass the key to the Header
+        routeKey={currentRoute.key}
       />
       <div className="relative h-full w-full">
         <AnimatePresence
@@ -452,7 +444,22 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           onExitComplete={() => handleAnimationComplete(true)}
         >
           {state.routes.map((route, index) => {
-            const Component = screens[route.name as string].component;
+            // --- FIX STARTS HERE ---
+            const screenConfig = screens[route.name as string];
+
+            if (!screenConfig) {
+              console.error(
+                `Stack Router Error: No screen component found for route name "${String(
+                  route.name
+                )}". Did you forget to add a <Stack.Screen name="${String(
+                  route.name
+                )}" /> component?`
+              );
+              return null; // Render nothing to prevent the crash
+            }
+            const Component = screenConfig.component;
+            // --- FIX ENDS HERE ---
+
             const isActive = index === state.index;
             const variantName = isActive ? "center" : "behind";
 
@@ -472,11 +479,10 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                 }
                 style={{
                   zIndex: index,
-                  willChange: "transform, opacity", // OPTIMIZATION: Add will-change
+                  willChange: "transform, opacity",
                 }}
                 className="absolute inset-x-0 bottom-0 top-0 bg-graphite-background"
               >
-                {/* OPTIMIZATION: Added a separate motion.div for the shadow */}
                 {typeof activeAnimationOption === "string" &&
                   activeAnimationOption.startsWith("slide") && (
                     <motion.div

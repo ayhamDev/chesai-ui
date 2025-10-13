@@ -3,19 +3,19 @@ import { clsx } from "clsx";
 import FocusTrap from "focus-trap-react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import {
+  cloneElement,
   createContext,
+  forwardRef,
+  isValidElement,
   useContext,
   useEffect,
   useId,
   useState,
+  type ButtonHTMLAttributes,
   type FC,
   type HTMLAttributes,
-  type ReactNode,
-  type ButtonHTMLAttributes,
-  forwardRef,
-  isValidElement,
-  cloneElement,
   type MouseEvent,
+  type ReactNode,
 } from "react";
 import ReactDOM from "react-dom";
 import { Card, type CardProps } from "../card";

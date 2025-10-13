@@ -4,7 +4,6 @@
 
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { format } from "date-fns";
 import { animate } from "framer-motion";
@@ -197,10 +196,11 @@ const TimePickerPanel: React.FC<TimePickerPanelProps> = ({
 // @ts-ignore
 export interface TimePickerProps
   extends Omit<
-      React.ButtonHTMLAttributes<HTMLButtonElement>,
-      "value" | "onChange" | "size"
-    >,
-    VariantProps<typeof inputWrapperVariants> {
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    "value" | "onChange" | "size"
+  > {
+  shape?: "full" | "minimal" | "sharp";
+  size?: "sm" | "md" | "lg";
   label?: string;
   error?: string;
   placeholder?: string;

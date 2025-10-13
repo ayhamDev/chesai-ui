@@ -1,4 +1,4 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import React from "react";
@@ -44,12 +44,16 @@ export interface AppBarSharedProps {
   foldAnimationDistance?: number;
   /** The border-radius applied at the end of the "fold" animation. @default 24 */
   foldBorderRadius?: number;
+  // --- MODIFICATION: Add routeKey to shared props ---
+  /** A unique key representing the current route, used to reset animations on navigation. */
+  routeKey?: string;
 }
 
 export interface AppBarProps
   extends Omit<HTMLMotionProps<"header">, "color" | "size">,
-    VariantProps<typeof appBarVariants>,
     AppBarSharedProps {
+  appBarColor?: "background" | "card" | "primary" | "secondary";
+  shadow?: "none" | "md";
   startAdornment?: React.ReactNode;
   centerAdornment?: React.ReactNode;
   endAdornments?: React.ReactNode[];
@@ -72,6 +76,8 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       smallHeaderContent,
       stickyHideTarget,
       scrollContainerRef,
+      // --- MODIFICATION: Destructure routeKey ---
+      routeKey,
       // --- DESTRUCTURE NEW PROPS ---
       normalHeaderRowHeight,
       largeHeaderRowHeight,
@@ -91,6 +97,8 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       smallHeaderContent,
       stickyHideTarget,
       scrollContainerRef,
+      // --- MODIFICATION: Pass routeKey to hook ---
+      routeKey,
       // --- PASS NEW PROPS TO HOOK ---
       normalHeaderRowHeight,
       largeHeaderRowHeight,

@@ -47,10 +47,11 @@ const cardVariants = cva(
   }
 );
 
-export interface CardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {
-  // The isSelected prop is now automatically included from VariantProps
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "primary" | "secondary" | "glass";
+  shape?: "full" | "minimal" | "sharp";
+  padding?: "none" | "sm" | "md" | "lg";
+  isSelected?: boolean;
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(

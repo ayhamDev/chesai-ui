@@ -1,4 +1,4 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React from "react";
 
@@ -56,8 +56,9 @@ const translateMap: Record<"sm" | "md" | "lg", string> = {
 };
 
 export interface SwitchProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">, // Omit the conflicting 'size' prop
-    VariantProps<typeof switchTrackVariants> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
   label?: string;
 }
 

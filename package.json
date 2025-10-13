@@ -1,7 +1,7 @@
 {
   "name": "chesai-ui",
   "private": false,
-  "version": "0.1.1",
+  "version": "0.1.3",
   "packageManager": "pnpm@10.12.1",
   "repository": {
     "type": "git",
@@ -46,8 +46,5 @@
   },
   "trustedDependencies": [
     "@tailwindcss/oxide"
-  ],
-  "dependencies": {
-    "framer-motion": "^12.23.24"
-  }
+  ]
 }

@@ -123,19 +123,23 @@ ItemSeparator.displayName = "ItemSeparator";
 
 const Item = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> &
-    VariantProps<typeof itemVariants> & {
-      asChild?: boolean;
-      disabled?: boolean;
-      /** If true, the ripple effect on click will be disabled. */
-      disableRipple?: boolean;
-      /** Callback fired when the item is pressed for 500ms. */
-      onLongPress?: (
-        event:
-          | React.PointerEvent<HTMLDivElement>
-          | React.MouseEvent<HTMLDivElement>
-      ) => void;
-    }
+  React.HTMLAttributes<HTMLDivElement> & {
+    variant?: "primary" | "secondary" | "ghost";
+    size?: "sm" | "md" | "lg";
+    padding?: "none" | "sm" | "md" | "lg";
+    shape?: "full" | "minimal" | "sharp";
+    direction?: "horizontal" | "vertical";
+    asChild?: boolean;
+    disabled?: boolean;
+    /** If true, the ripple effect on click will be disabled. */
+    disableRipple?: boolean;
+    /** Callback fired when the item is pressed for 500ms. */
+    onLongPress?: (
+      event:
+        | React.PointerEvent<HTMLDivElement>
+        | React.MouseEvent<HTMLDivElement>
+    ) => void;
+  }
 >(
   (
     {
@@ -222,7 +226,10 @@ Item.displayName = "Item";
 
 const ItemMedia = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof itemMediaVariants>
+  React.HTMLAttributes<HTMLDivElement> & {
+    variant?: "default" | "icon" | "avatar";
+    shape?: "full" | "minimal" | "sharp";
+  }
 >(({ className, variant, shape = "minimal", ...props }, ref) => {
   const { size: contextSize, direction } = useItemContext();
   return (

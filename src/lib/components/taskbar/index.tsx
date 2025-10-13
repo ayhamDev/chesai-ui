@@ -1,4 +1,4 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { Copy, Minus, Square, X } from "lucide-react";
 import React, { useRef } from "react";
@@ -96,9 +96,10 @@ const WindowButton = React.forwardRef<HTMLButtonElement, WindowButtonProps>(
 WindowButton.displayName = "WindowButton";
 
 // --- Component Props ---
-export interface TaskbarProps
-  extends React.HTMLAttributes<HTMLElement>,
-    VariantProps<typeof taskbarVariants> {
+export interface TaskbarProps extends React.HTMLAttributes<HTMLElement> {
+  variant?: "transparent" | "card" | "secondary";
+  bordered?: boolean;
+  size?: "sm" | "md" | "lg";
   /** Content to render at the start of the taskbar (e.g., app icon, title). */
   startAdornment?: React.ReactNode;
   /** Content to render in the center (e.g., navigation menu). */
@@ -112,7 +113,6 @@ export interface TaskbarProps
   /** Callback fired when the close button is clicked. */
   onClose?: () => void;
 }
-
 // --- Main Component ---
 export const Taskbar = React.forwardRef<HTMLElement, TaskbarProps>(
   (

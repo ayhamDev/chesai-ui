@@ -151,6 +151,7 @@ const barThumbHaloVariants = cva(
 
 // --- Context to pass props down to thumbs ---
 type SliderContextProps = VariantProps<typeof sliderTrackVariants>;
+
 const SliderContext = createContext<SliderContextProps | null>(null);
 const useSliderContext = () => {
   const context = useContext(SliderContext);
@@ -240,8 +241,11 @@ BarThumb.displayName = "BarThumb";
 
 // --- Main Slider Component ---
 
-type SliderProps = React.ComponentPropsWithoutRef<typeof RadixSlider.Root> &
-  VariantProps<typeof sliderTrackVariants>;
+type SliderProps = React.ComponentPropsWithoutRef<typeof RadixSlider.Root> & {
+  variant?: "linear" | "bar";
+  direction?: "horizontal" | "vertical";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
+};
 
 const Slider = React.forwardRef<
   React.ElementRef<typeof RadixSlider.Root>,

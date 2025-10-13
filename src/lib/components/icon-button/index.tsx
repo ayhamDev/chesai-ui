@@ -1,6 +1,6 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader, Loader2 } from "lucide-react"; // Import Loader from lucide-react
+import { Loader2 } from "lucide-react"; // Import Loader from lucide-react
 import React from "react";
 import useRipple from "use-ripple-hook";
 
@@ -43,8 +43,10 @@ export const iconButtonVariants = cva(
 );
 
 export interface IconButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof iconButtonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "destructive" | "ghost" | "link";
+  size?: "xs" | "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
   isLoading?: boolean;
 }
 

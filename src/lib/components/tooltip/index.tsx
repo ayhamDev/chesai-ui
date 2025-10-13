@@ -17,7 +17,7 @@ import {
 } from "@floating-ui/react";
 // 2. Import the new hooks from the library
 import { useLongPress, useMediaQuery } from "@uidotdev/usehooks";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, {
   cloneElement,
@@ -55,10 +55,11 @@ const tooltipVariants = cva("font-semibold relative z-50", {
   },
 });
 
-export interface TooltipProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof tooltipVariants> {}
-
+export interface TooltipProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "primary" | "secondary";
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
+}
 // Context type remains unchanged
 interface TooltipContextType {
   isOpen: boolean;

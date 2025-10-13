@@ -1,4 +1,4 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import {
   AnimatePresence,
@@ -39,8 +39,10 @@ const fabVariants = cva(
 );
 
 export interface FABProps
-  extends Omit<HTMLMotionProps<"button">, "children" | "ref">,
-    VariantProps<typeof fabVariants> {
+  extends Omit<HTMLMotionProps<"button">, "children" | "ref"> {
+  variant?: "primary" | "secondary";
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
   icon: React.ReactNode;
   isExtended?: boolean;
   children?: React.ReactNode;

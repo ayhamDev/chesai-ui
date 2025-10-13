@@ -476,6 +476,9 @@ export interface AppBarSharedProps {
   foldAnimationDistance?: number;
   /** The border-radius applied at the end of the "fold" animation. @default 24 */
   foldBorderRadius?: number;
+  // --- MODIFICATION: Add routeKey to shared props ---
+  /** A unique key representing the current route, used to reset animations on navigation. */
+  routeKey?: string;
 }
 
 export interface AppBarProps
@@ -504,6 +507,8 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       smallHeaderContent,
       stickyHideTarget,
       scrollContainerRef,
+      // --- MODIFICATION: Destructure routeKey ---
+      routeKey,
       // --- DESTRUCTURE NEW PROPS ---
       normalHeaderRowHeight,
       largeHeaderRowHeight,
@@ -523,6 +528,8 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       smallHeaderContent,
       stickyHideTarget,
       scrollContainerRef,
+      // --- MODIFICATION: Pass routeKey to hook ---
+      routeKey,
       // --- PASS NEW PROPS TO HOOK ---
       normalHeaderRowHeight,
       largeHeaderRowHeight,
@@ -1970,11 +1977,11 @@ This section contains the source code for the `button` component and its corresp
 ```tsx
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import React from "react";
 import useRipple from "use-ripple-hook";
-import clsx from "clsx";
 export const buttonVariants = cva(
   "font-semibold cursor-pointer  min-w-max focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden",
   {
@@ -3996,19 +4003,19 @@ import { clsx } from "clsx";
 import FocusTrap from "focus-trap-react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import {
+  cloneElement,
   createContext,
+  forwardRef,
+  isValidElement,
   useContext,
   useEffect,
   useId,
   useState,
+  type ButtonHTMLAttributes,
   type FC,
   type HTMLAttributes,
-  type ReactNode,
-  type ButtonHTMLAttributes,
-  forwardRef,
-  isValidElement,
-  cloneElement,
   type MouseEvent,
+  type ReactNode,
 } from "react";
 import ReactDOM from "react-dom";
 import { Card, type CardProps } from "../card";
@@ -13709,7 +13716,7 @@ export type RouteProp<
 
 export interface NavigationProp<T extends Record<string, object | undefined>> {
   navigate: <R extends keyof T>(name: R, params: T[R]) => void;
-  push: <R extends keyof T>(name: R, params: T[R]) => void;
+  push: <R extends keyof T>(name: R, params?: T[R]) => void;
   replace: <R extends keyof T>(name: R, params: T[R]) => void;
   goBack: () => void;
   pop: (count?: number) => void;
@@ -13723,7 +13730,7 @@ export interface NavigationProp<T extends Record<string, object | undefined>> {
     event: NavigationEvent,
     callback: NavigationEventCallback
   ) => void;
-  scrollContainerRef: RefObject<HTMLElement | null>;
+  scrollContainerRef: RefObject<any | null>;
 }
 
 export interface StackScreenProps<
@@ -13784,7 +13791,7 @@ export interface StackScreenComponent<
   };
 }
 
-// --- Contexts (FIX: Replaced 'any' with a more specific generic) ---
+// --- Contexts ---
 const NavigationContext = createContext<
   NavigationProp<Record<string, object | undefined>> | undefined
 >(undefined);
@@ -13816,7 +13823,6 @@ export function useRoute<
   return route as RouteProp<T, R>;
 }
 
-// --- FIX: Moved HeaderLeft and HeaderRight outside the Header component ---
 const HeaderLeft = <T extends Record<string, object | undefined>>({
   options,
   navigation,
@@ -13850,27 +13856,25 @@ const HeaderRight = <T extends Record<string, object | undefined>>({
   return null;
 };
 
-// --- MODIFIED: Modified Internal Header Component ---
+// --- MODIFIED: Internal Header Component ---
 const Header = <T extends Record<string, object | undefined>>({
   screen,
   navigation,
   scrollContainerRef,
-  routeKey, // New prop to trigger animations
+  routeKey,
 }: {
   screen: StackScreenComponent<T, keyof T>["props"] | undefined;
   navigation: NavigationProp<T>;
   scrollContainerRef: React.RefObject<HTMLElement | null>;
-  routeKey: string; // Unique key for the current route
+  routeKey: string;
 }) => {
   if (!screen) return null;
 
-  // FIX: Cast options to StackScreenOptions to resolve property errors
   const options = (screen.options || {}) as StackScreenOptions;
   if (options.headerShown === false) return null;
 
   const title = options.headerTitle || options.title || screen.name;
 
-  // FIX: Define animation variants and transition with correct types
   const contentAnimation: Variants = {
     initial: { opacity: 0.2, y: -5 },
     animate: { opacity: 1, y: 0 },
@@ -13881,6 +13885,9 @@ const Header = <T extends Record<string, object | undefined>>({
   return (
     <AppBar
       {...options.appBarProps}
+      // --- MODIFICATION: Pass the routeKey to AppBar ---
+      routeKey={routeKey}
+      // --- END MODIFICATION ---
       scrollContainerRef={scrollContainerRef}
       appBarColor={options.headerStyle?.backgroundColor || "card"}
       startAdornment={
@@ -13934,7 +13941,7 @@ const Header = <T extends Record<string, object | undefined>>({
   );
 };
 
-// --- Main Navigator Logic (MODIFIED) ---
+// --- Main Navigator Logic ---
 interface StackNavigatorProps<T extends Record<string, object | undefined>> {
   initialRouteName: keyof T;
   children:
@@ -13964,9 +13971,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     return screenConfig;
   }, [children]);
 
-  // --- MODIFIED: State initialization from browser history ---
   const [state, setState] = useState<StackNavigationState<T>>(() => {
-    // FIX: Use optional chaining
     if (typeof window !== "undefined" && window.history.state?.routes) {
       return window.history.state as StackNavigationState<T>;
     }
@@ -13989,7 +13994,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     transitionEnd: new Set(),
   }).current;
 
-  // --- MODIFIED: Sync initial state and listen for popstate events ---
   useLayoutEffect(() => {
     if (typeof window !== "undefined" && !window.history.state?.routes) {
       window.history.replaceState(state, "");
@@ -14011,7 +14015,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
   const currentRoute = state.routes[state.index];
   const screen = screens[currentRoute.name as string];
 
-  // FIX: Correctly handle function-based options and cast 'any'
   const activeScreenOptions =
     typeof screen?.options === "function"
       ? screen.options({
@@ -14024,7 +14027,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
       ? STACK_TRANSITIONS[activeAnimationOption] || STACK_TRANSITIONS.default
       : activeAnimationOption;
 
-  // --- MODIFIED: Navigation actions now use History API ---
   const navigation = useMemo((): NavigationProp<T> => {
     const canGoBack = () => state.index > 0;
 
@@ -14039,7 +14041,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        // biome-ignore lint/suspicious/noExplicitAny: History API's state can be any serializable object
         window.history.pushState(newState, "");
         setState(newState);
       },
@@ -14053,7 +14054,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        // biome-ignore lint/suspicious/noExplicitAny: History API's state can be any serializable object
         window.history.pushState(newState, "");
         setState(newState);
       },
@@ -14068,7 +14068,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: newRoutes.length - 1,
           routes: newRoutes,
         };
-        // biome-ignore lint/suspicious/noExplicitAny: History API's state can be any serializable object
         window.history.replaceState(newState, "");
         setState(newState);
       },
@@ -14113,7 +14112,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         screen={screen}
         navigation={navigation}
         scrollContainerRef={scrollContainerRef}
-        routeKey={currentRoute.key} // Pass the key to the Header
+        routeKey={currentRoute.key}
       />
       <div className="relative h-full w-full">
         <AnimatePresence
@@ -14121,7 +14120,22 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           onExitComplete={() => handleAnimationComplete(true)}
         >
           {state.routes.map((route, index) => {
-            const Component = screens[route.name as string].component;
+            // --- FIX STARTS HERE ---
+            const screenConfig = screens[route.name as string];
+
+            if (!screenConfig) {
+              console.error(
+                `Stack Router Error: No screen component found for route name "${String(
+                  route.name
+                )}". Did you forget to add a <Stack.Screen name="${String(
+                  route.name
+                )}" /> component?`
+              );
+              return null; // Render nothing to prevent the crash
+            }
+            const Component = screenConfig.component;
+            // --- FIX ENDS HERE ---
+
             const isActive = index === state.index;
             const variantName = isActive ? "center" : "behind";
 
@@ -14141,15 +14155,21 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                 }
                 style={{
                   zIndex: index,
-                  boxShadow:
-                    typeof activeAnimationOption === "string" &&
-                    activeAnimationOption.startsWith("slide") &&
-                    isActive
-                      ? "-5px 0px 15px rgba(0, 0, 0, 0.1)"
-                      : undefined,
+                  willChange: "transform, opacity",
                 }}
                 className="absolute inset-x-0 bottom-0 top-0 bg-graphite-background"
               >
+                {typeof activeAnimationOption === "string" &&
+                  activeAnimationOption.startsWith("slide") && (
+                    <motion.div
+                      className="pointer-events-none absolute inset-0 shadow-[ -5px_0px_25px_rgba(0,0,0,0.12)]"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: isActive ? 1 : 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  )}
+
                 <NavigationContext.Provider value={navigation}>
                   {/* @ts-ignore */}
                   <RouteContext.Provider value={route}>
@@ -14197,7 +14217,7 @@ import { Input } from "../input";
 import { Item, ItemContent, ItemTitle } from "../item";
 import { Typography } from "../typography";
 import { createStackNavigator, useNavigation, useRoute } from "./index";
-import type { RouteProp, StackScreenProps } from "./types";
+import type { RouteProp } from "./types";
 
 const meta: Meta = {
   title: "Components/Navigators/StackRouter",
@@ -14289,8 +14309,8 @@ type HeaderStackParamList = {
 };
 const HeaderStack = createStackNavigator<HeaderStackParamList>();
 
-const FeedScreen = ({}: StackScreenProps<HeaderStackParamList, "Feed">) => {
-  const navigation = useNavigation<BasicStackParamList>();
+const FeedScreen = () => {
+  const navigation = useNavigation<HeaderStackParamList>();
 
   return (
     <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
@@ -14365,7 +14385,7 @@ type AnimationStackParamList = {
 };
 const AnimationStack = createStackNavigator<AnimationStackParamList>();
 
-const MainScreen = ({}: StackScreenProps<AnimationStackParamList, "Main">) => {
+const MainScreen = () => {
   const navigation = useNavigation<AnimationStackParamList>();
 
   return (
@@ -18855,7 +18875,7 @@ import {
   useSpring,
   useTransform,
 } from "framer-motion";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react"; // Import useEffect
 import type { AppBarSharedProps } from "../components/appbar";
 
 // --- HOOK DEFINITION ---
@@ -18876,11 +18896,12 @@ export const useAppBar = (
     smallHeaderContent,
     stickyHideTarget,
     scrollContainerRef,
-    // --- NEW CUSTOMIZABLE PROPS WITH DEFAULTS ---
     normalHeaderRowHeight = 64,
     largeHeaderRowHeight = 96,
     foldAnimationDistance = 50,
     foldBorderRadius = 24,
+    // --- MODIFICATION: Destructure the new routeKey prop ---
+    routeKey,
   } = options;
 
   // --- REFS & STATE ---
@@ -18916,6 +18937,14 @@ export const useAppBar = (
       });
     }
   });
+
+  // --- MODIFICATION: Add useEffect to reset AppBar position on route change ---
+  useEffect(() => {
+    // Reset the header's vertical position whenever the route changes.
+    // This ensures the new screen's AppBar is always visible on mount.
+    headerY.set(0);
+  }, [routeKey, headerY]);
+  // --- END MODIFICATION ---
 
   // --- ANIMATION LOGIC ---
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -19312,13 +19341,6 @@ const useShallowRouter = (options: UseHistoryOptions = {}) => {
 };
 
 export default useShallowRouter;
-```
-
-
-### Source: `src\lib\hooks\useStackRouter.tsx`
-
-```tsx
-
 ```
 
 

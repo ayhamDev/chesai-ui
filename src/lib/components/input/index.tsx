@@ -1,4 +1,4 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React from "react";
 
@@ -94,8 +94,10 @@ export const inputWrapperVariants = cva(
 
 // FIX #2: Use VariantProps to remove the unused import warning and keep types in sync.
 export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
-    VariantProps<typeof inputWrapperVariants> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
+  variant?: "primary" | "secondary" | "minimal";
+  shape?: "full" | "minimal" | "sharp";
+  size?: "sm" | "md" | "lg";
   label?: string;
   startAdornment?: React.ReactNode;
   endAdornment?: React.ReactNode;

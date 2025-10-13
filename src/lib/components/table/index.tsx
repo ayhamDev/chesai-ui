@@ -7,10 +7,9 @@ import {
   type Table as TanstackTable,
 } from "@tanstack/react-table";
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { createContext, useContext, useMemo } from "react";
-import { Card, type CardProps } from "../card";
 
 // --- Type Augmentation (Unchanged) ---
 declare module "@tanstack/react-table" {
@@ -151,8 +150,7 @@ TableRow.displayName = "Table.Row";
 // --- 4. ROOT COMPONENT (Refactored with Custom Render Prop) ---
 
 export interface TableRootProps<TData>
-  extends React.HTMLAttributes<HTMLTableElement>,
-    VariantProps<typeof tableVariants> {
+  extends React.HTMLAttributes<HTMLTableElement> {
   table: TanstackTable<TData>;
   responsiveLayout?: ResponsiveLayout;
   breakpoint?: "sm" | "md" | "lg";

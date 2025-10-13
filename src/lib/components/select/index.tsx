@@ -2,7 +2,7 @@
 
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { Check, ChevronDown } from "lucide-react";
 import React, { createContext, useContext, useRef, useState } from "react";
@@ -155,9 +155,9 @@ const Select: React.FC<SelectProps> = ({
 interface SelectTriggerProps
   extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> {
   error?: string;
-  variant?: VariantProps<typeof selectTriggerVariants>["variant"];
-  shape?: VariantProps<typeof selectTriggerVariants>["shape"];
-  size?: VariantProps<typeof selectTriggerVariants>["size"];
+  variant?: "primary" | "secondary";
+  shape?: "full" | "minimal" | "sharp";
+  size?: "sm" | "md" | "lg";
 }
 
 const SelectTrigger = React.forwardRef<
@@ -360,8 +360,10 @@ const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
 // --- MAIN WRAPPER COMPONENT ---
 
 interface SelectWrapperProps
-  extends Omit<SelectProps, "children" | "onChange">,
-    VariantProps<typeof selectTriggerVariants> {
+  extends Omit<SelectProps, "children" | "onChange"> {
+  variant?: "primary" | "secondary";
+  shape?: "full" | "minimal" | "sharp";
+  size?: "sm" | "md" | "lg";
   label?: string;
   error?: string;
   placeholder?: string;
@@ -536,12 +538,12 @@ SelectInput.displayName = "SelectInput";
 
 export {
   Select,
-  SelectGroup,
-  SelectValue,
-  SelectTrigger,
   SelectContent,
-  SelectLabel,
-  SelectItem,
-  SelectSeparator,
+  SelectGroup,
   SelectInput,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
 };

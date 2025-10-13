@@ -1,4 +1,4 @@
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { useEffect, useImperativeHandle, useRef } from "react";
 
@@ -92,13 +92,14 @@ const textAreaWrapperVariants = cva(
 );
 
 export interface TextAreaProps
-  extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "size">,
-    VariantProps<typeof textAreaWrapperVariants> {
+  extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "size"> {
+  variant?: "primary" | "secondary" | "minimal";
+  shape?: "full" | "minimal" | "sharp";
+  size?: "sm" | "md" | "lg";
   label?: string;
   error?: string;
   wrapperClassName?: string;
 }
-
 export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
   (
     {

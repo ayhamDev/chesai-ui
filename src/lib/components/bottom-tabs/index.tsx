@@ -184,9 +184,11 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 
 // --- NAVIGATOR COMPONENT (REFACTORED) ---
 
-interface NavigatorProps
-  extends React.HTMLAttributes<HTMLElement>,
-    VariantProps<typeof navigatorVariants> {
+interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
+  mode?: "attached" | "detached";
+  shape?: "full" | "minimal" | "sharp";
+  bordered?: boolean;
+  shadow?: "none" | "sm" | "md" | "lg";
   children: React.ReactElement<ScreenProps> | React.ReactElement<ScreenProps>[];
   activeTab: string;
   onTabPress: (name: string) => void;

@@ -1,10 +1,10 @@
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import React from "react";
 import useRipple from "use-ripple-hook";
-import clsx from "clsx";
 export const buttonVariants = cva(
   "font-semibold cursor-pointer  min-w-max focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden",
   {
@@ -44,11 +44,13 @@ export const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "destructive" | "ghost" | "link";
+  size?: "xs" | "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
+  isLoading?: boolean;
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
-  isLoading?: boolean;
   /** If true, the button will render as a `Slot.Root` and merge its props onto the immediate child. */
   asChild?: boolean;
 }
