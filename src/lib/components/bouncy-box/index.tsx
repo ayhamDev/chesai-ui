@@ -11,7 +11,7 @@ export interface BouncyBoxProps extends HTMLMotionProps<"div"> {
 export const BouncyBox = React.forwardRef<HTMLDivElement, BouncyBoxProps>(
   ({ className, children, scaleAmount = 0.95, ...props }, ref) => {
     return (
-      <motion.span
+      <motion.div
         ref={ref}
         className={clsx(
           "cursor-pointer inline-block", // Use inline-flex to wrap content tightly
@@ -24,7 +24,7 @@ export const BouncyBox = React.forwardRef<HTMLDivElement, BouncyBoxProps>(
         {...props}
       >
         {children}
-      </motion.span>
+      </motion.div>
     );
   }
 );

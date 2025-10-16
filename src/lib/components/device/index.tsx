@@ -87,7 +87,7 @@ const iPhone15Frame = ({
 
             {/* Content Area */}
             {isOn && (
-              <div className="w-full h-full pt-14 pb-8 overflow-hidden relative">
+              <div className="w-full h-full pt-14 pb-0 overflow-hidden relative">
                 {children || (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center p-8">

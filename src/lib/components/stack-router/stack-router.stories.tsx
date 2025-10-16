@@ -168,6 +168,10 @@ type AnimationStackParamList = {
   None: undefined;
   Fade: undefined;
   ZoomFade: undefined;
+  FadeRight: undefined;
+  FadeLeft: undefined;
+  FadeTop: undefined;
+  FadeBottom: undefined;
   Flip: undefined;
   SlideRight: undefined;
   SlideBottom: undefined;
@@ -180,35 +184,54 @@ const MainScreen = () => {
   const navigation = useNavigation<AnimationStackParamList>();
 
   return (
-    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
-      <Typography variant="h4">Animation Presets</Typography>
-      <div className="flex flex-col gap-4 mt-4">
-        <Button onClick={() => navigation.push("None")}>
+    <ElasticScrollArea
+      scrollbarVisibility="hidden"
+      className="pt-[70px]"
+      ref={navigation.scrollContainerRef}
+    >
+      <div className="box-border p-4 flex flex-col gap-4 mt-4">
+        <Typography variant="h4">Animation Presets</Typography>
+        <Button className="w-fit" onClick={() => navigation.push("None")}>
           Push with 'None'
         </Button>
-        <Button onClick={() => navigation.push("Fade")}>
+        <Button className="w-fit" onClick={() => navigation.push("Fade")}>
           Push with 'Fade'
         </Button>
-        <Button onClick={() => navigation.push("ZoomFade")}>
+        <Button className="w-fit" onClick={() => navigation.push("ZoomFade")}>
           Push with 'ZoomFade'
         </Button>
-        <Button onClick={() => navigation.push("Flip")}>
+        <Button className="w-fit" onClick={() => navigation.push("FadeRight")}>
+          Push with 'Fade From Right'
+        </Button>
+        <Button className="w-fit" onClick={() => navigation.push("FadeLeft")}>
+          Push with 'Fade From Left'
+        </Button>
+        <Button className="w-fit" onClick={() => navigation.push("FadeTop")}>
+          Push with 'Fade From Top'
+        </Button>
+        <Button className="w-fit" onClick={() => navigation.push("FadeBottom")}>
+          Push with 'Fade From Bottom'
+        </Button>
+        <Button className="w-fit" onClick={() => navigation.push("Flip")}>
           Push with 'Flip'
         </Button>
-        <Button onClick={() => navigation.push("SlideRight")}>
+        <Button className="w-fit" onClick={() => navigation.push("SlideRight")}>
           Push with 'Slide From Right' (defualt)
         </Button>
-        <Button onClick={() => navigation.push("SlideBottom")}>
+        <Button
+          className="w-fit"
+          onClick={() => navigation.push("SlideBottom")}
+        >
           Push with 'Slide from Bottom'
         </Button>
-        <Button onClick={() => navigation.push("SlideLeft")}>
+        <Button className="w-fit" onClick={() => navigation.push("SlideLeft")}>
           Push with 'Slide from Left'
         </Button>
-        <Button onClick={() => navigation.push("SlideTop")}>
+        <Button className="w-fit" onClick={() => navigation.push("SlideTop")}>
           Push with 'Slide from Top'
         </Button>
       </div>
-    </div>
+    </ElasticScrollArea>
   );
 };
 
@@ -254,6 +277,27 @@ export const TransitionPresets: StoryObj = {
         options={{ animation: "zoom-fade" }}
       />
       <AnimationStack.Screen
+        name="FadeRight"
+        component={GenericScreen}
+        options={{ animation: "fade-from-right" }}
+      />
+      <AnimationStack.Screen
+        name="FadeLeft"
+        component={GenericScreen}
+        options={{ animation: "fade-from-left" }}
+      />
+      <AnimationStack.Screen
+        name="FadeTop"
+        component={GenericScreen}
+        options={{ animation: "fade-from-top" }}
+      />
+      <AnimationStack.Screen
+        name="FadeBottom"
+        component={GenericScreen}
+        options={{ animation: "fade-from-bottom" }}
+      />
+
+      <AnimationStack.Screen
         name="Flip"
         component={GenericScreen}
         options={{ animation: "flip" }}
@@ -261,12 +305,17 @@ export const TransitionPresets: StoryObj = {
       <AnimationStack.Screen
         name="SlideRight"
         component={GenericScreen}
-        options={{ animation: "default" }}
+        options={{
+          animation: "default",
+          pageClassName: "shadow-md",
+        }}
       />
       <AnimationStack.Screen
         name="SlideBottom"
         component={GenericScreen}
-        options={{ animation: "slide-from-bottom" }}
+        options={{
+          animation: "slide-from-bottom",
+        }}
       />
       <AnimationStack.Screen
         name="SlideLeft"
@@ -303,7 +352,7 @@ const InboxScreen = () => {
   const navigation = useNavigation<MailStackParamList>();
   const { scrollContainerRef } = useNavigation();
   return (
-    <ElasticScrollArea className="" ref={scrollContainerRef}>
+    <ElasticScrollArea scrollbarVisibility="hidden" ref={scrollContainerRef}>
       <div className="pt-[120px] p-4">
         {emails.map((email) => (
           <Item

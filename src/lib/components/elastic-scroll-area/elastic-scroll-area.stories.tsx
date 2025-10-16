@@ -1,6 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { motion, useTransform, type MotionValue } from "framer-motion";
-import { Sun } from "lucide-react";
+import {
+  AnimatePresence,
+  motion,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
+import { Compass, Home, Library, Menu, Search, Sun } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { useAppBar } from "../../hooks/useAppBar";
+import { AppBar, type AppBarProps } from "../appbar";
+import { BottomTabs } from "../bottom-tabs";
+import { IconButton } from "../icon-button";
+import { Input } from "../input";
+import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { ElasticScrollArea } from "./index";
 
@@ -34,7 +46,7 @@ const meta: Meta<typeof ElasticScrollArea> = {
     },
     scrollbarVisibility: {
       control: "select",
-      options: ["auto", "always", "scroll"],
+      options: ["auto", "always", "scroll", "hidden", "visible"],
       description: "Controls the visibility of the scrollbar.",
     },
     pullToRefresh: {
@@ -46,6 +58,8 @@ const meta: Meta<typeof ElasticScrollArea> = {
       description: "The pixel distance to pull to trigger a refresh.",
     },
     onRefresh: { action: "refreshed" },
+    onScrollUp: { action: "scrolled up" },
+    onScrollDown: { action: "scrolled down" },
     children: { control: false },
     RefreshIndicatorComponent: { control: false },
   },
@@ -209,17 +223,17 @@ export const ScrollbarVisibility: Story = {
     docs: {
       description: {
         story:
-          "The `scrollbarVisibility` prop controls how the scrollbar is displayed. `auto` shows on hover/scroll, `always` keeps it visible, and `scroll` only shows during active scrolling.",
+          "The `scrollbarVisibility` prop controls how the scrollbar is displayed. `auto` shows on hover/scroll, `always`/`visible` keeps it visible, `scroll` only shows during active scrolling, and `hidden` never shows it.",
       },
     },
   },
   render: () => (
-    <div className="flex gap-4 items-start">
+    <div className="flex w-full max-w-7xl gap-4 items-start justify-center">
       <div className="flex flex-col items-center gap-2">
         <Typography variant="small" className="font-bold">
           'auto' (default)
         </Typography>
-        <div className="w-64 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+        <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
           <ElasticScrollArea scrollbarVisibility="auto">
             <DummyContent itemCount={15} />
           </ElasticScrollArea>
@@ -227,10 +241,10 @@ export const ScrollbarVisibility: Story = {
       </div>
       <div className="flex flex-col items-center gap-2">
         <Typography variant="small" className="font-bold">
-          'always'
+          'visible' / 'always'
         </Typography>
-        <div className="w-64 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
-          <ElasticScrollArea scrollbarVisibility="always">
+        <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+          <ElasticScrollArea scrollbarVisibility="visible">
             <DummyContent itemCount={15} />
           </ElasticScrollArea>
         </div>
@@ -239,12 +253,158 @@ export const ScrollbarVisibility: Story = {
         <Typography variant="small" className="font-bold">
           'scroll'
         </Typography>
-        <div className="w-64 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+        <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
           <ElasticScrollArea scrollbarVisibility="scroll">
             <DummyContent itemCount={15} />
           </ElasticScrollArea>
         </div>
       </div>
+      <div className="flex flex-col items-center gap-2">
+        <Typography variant="small" className="font-bold">
+          'hidden'
+        </Typography>
+        <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+          <ElasticScrollArea scrollbarVisibility="hidden">
+            <DummyContent itemCount={15} />
+          </ElasticScrollArea>
+        </div>
+      </div>
     </div>
+  ),
+};
+
+// This helper component calls the useAppBar hook safely *after* its parent has mounted and hydrated the ref.
+const ElasticScrollContent = ({
+  scrollRef,
+  appBarArgs,
+}: {
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  appBarArgs: AppBarProps;
+}) => {
+  // By the time this component renders, scrollRef.current is hydrated.
+  const { contentPaddingTop } = useAppBar({
+    ...appBarArgs,
+    scrollContainerRef: scrollRef,
+  });
+
+  return (
+    <div style={{ paddingTop: contentPaddingTop }}>
+      <DummyContent />
+    </div>
+  );
+};
+
+const RenderWithAppBarAndBottomTabs = ({
+  elasticScrollArgs,
+}: {
+  elasticScrollArgs: any;
+}) => {
+  const { path: activeTab, push: onTabPress } = useRouter();
+  const initialTab = "home";
+  const [isTabsVisible, setIsTabsVisible] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Define the props for the AppBar in one place
+  const appBarArgs: AppBarProps = {
+    size: "lg",
+    scrollBehavior: "conditionally-sticky",
+    appBarColor: "card",
+    animatedBehavior: ["shadow"],
+    largeHeaderRowHeight: 60,
+    startAdornment: (
+      <IconButton variant="ghost" aria-label="Menu">
+        <Menu />
+      </IconButton>
+    ),
+    children: (
+      <Typography variant="h4" className="font-semibold truncate">
+        Explore
+      </Typography>
+    ),
+    largeHeaderContent: (
+      <Input
+        variant="secondary"
+        shape="full"
+        startAdornment={<Search className="h-5 w-5 text-gray-500" />}
+        placeholder="Search..."
+      />
+    ),
+  };
+
+  return (
+    <div className="w-96 h-[600px] rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden relative bg-graphite-background">
+      {/* AppBar receives the ref but doesn't trigger the hook directly from here */}
+      <AppBar {...appBarArgs} scrollContainerRef={scrollRef} />
+
+      <ElasticScrollArea
+        {...elasticScrollArgs}
+        ref={scrollRef}
+        onScrollDown={() => setIsTabsVisible(false)}
+        onScrollUp={() => setIsTabsVisible(true)}
+      >
+        {/* Render the child component that safely calls the hook for padding */}
+        <ElasticScrollContent scrollRef={scrollRef} appBarArgs={appBarArgs} />
+      </ElasticScrollArea>
+
+      <AnimatePresence>
+        {isTabsVisible && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: "0%" }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 400, damping: 40 }}
+            className="absolute bottom-0 left-0 right-0"
+          >
+            <BottomTabs.Navigator
+              mode="detached"
+              shape="minimal"
+              activeTab={
+                activeTab === "/" ? initialTab : activeTab.substring(1)
+              }
+              onTabPress={(tab) => onTabPress(`/${tab}`)}
+            >
+              <BottomTabs.Screen
+                name="home"
+                label="Home"
+                icon={() => <Home size={24} />}
+              />
+              <BottomTabs.Screen
+                name="browse"
+                label="Browse"
+                icon={() => <Compass size={24} />}
+              />
+              <BottomTabs.Screen
+                name="library"
+                label="Library"
+                icon={() => <Library size={24} />}
+              />
+            </BottomTabs.Navigator>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export const WithAppBarAndBottomTabs: Story = {
+  name: "6. With AppBar & BottomTabs",
+  args: {
+    orientation: "vertical",
+    elasticity: true,
+    dampingFactor: 0.25,
+    scrollbarVisibility: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Use the `onScrollUp` and `onScrollDown` callbacks to react to scroll direction. This example shows a common mobile pattern: hiding/showing a `BottomTabs` component while a collapsible `AppBar` also reacts to the scroll position of the `ElasticScrollArea`.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter>
+      <RenderWithAppBarAndBottomTabs elasticScrollArgs={args} />
+    </ShallowRouter>
   ),
 };

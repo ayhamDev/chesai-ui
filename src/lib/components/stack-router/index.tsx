@@ -1,5 +1,6 @@
 "use client";
 
+import { clsx } from "clsx";
 import {
   AnimatePresence,
   motion,
@@ -80,7 +81,10 @@ export interface StackNavigationState<
 // Options for each screen
 export interface StackScreenOptions {
   title?: string;
-  headerTitle?: React.ReactNode | ((props: {}) => React.ReactNode);
+  headerTitle?:
+    | React.ReactNode
+    // biome-ignore lint/suspicious/noExplicitAny: This allows the function to be generic
+    | ((props: { navigation: NavigationProp<any> }) => React.ReactNode);
   headerShown?: boolean;
   headerLeft?: (props: { canGoBack: boolean }) => React.ReactNode;
   headerRight?: (props: { canGoBack: boolean }) => React.ReactNode;
@@ -94,12 +98,20 @@ export interface StackScreenOptions {
     | "fade"
     | "zoom-fade"
     | "flip"
+    | "fade-from-right"
+    | "fade-from-left"
+    | "fade-from-top"
+    | "fade-from-bottom"
     | "slide-from-left"
     | "slide-from-right"
     | "slide-from-top"
     | "slide-from-bottom"
     // biome-ignore lint/suspicious/noExplicitAny: Variants can be complex
     | { variants: any; transition: any };
+  /** An optional className to apply to the screen's container div. */
+  pageClassName?: string;
+  /** If false, the header's title and adornment fade/slide transitions are disabled. @default true */
+  headerAnimationEnabled?: boolean;
 }
 
 export interface StackScreenComponent<
@@ -198,20 +210,21 @@ const Header = <T extends Record<string, object | undefined>>({
   if (options.headerShown === false) return null;
 
   const title = options.headerTitle || options.title || screen.name;
+  const headerAnimationEnabled = options.headerAnimationEnabled ?? true;
 
   const contentAnimation: Variants = {
     initial: { opacity: 0.2, y: -5 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0.2, y: 5 },
   };
-  const contentTransition: Transition = { duration: 0.12, ease: "easeInOut" };
+  const contentTransition: Transition = headerAnimationEnabled
+    ? { duration: 0.12, ease: "easeInOut" }
+    : { duration: 0 };
 
   return (
     <AppBar
       {...options.appBarProps}
-      // --- MODIFICATION: Pass the routeKey to AppBar ---
       routeKey={routeKey}
-      // --- END MODIFICATION ---
       scrollContainerRef={scrollContainerRef}
       appBarColor={options.headerStyle?.backgroundColor || "card"}
       startAdornment={
@@ -258,7 +271,9 @@ const Header = <T extends Record<string, object | undefined>>({
           exit="exit"
           className="truncate"
         >
-          {typeof title === "function" ? title({}) : (title as React.ReactNode)}
+          {typeof title === "function"
+            ? title({ navigation })
+            : (title as React.ReactNode)}
         </motion.div>
       </AnimatePresence>
     </AppBar>
@@ -444,7 +459,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           onExitComplete={() => handleAnimationComplete(true)}
         >
           {state.routes.map((route, index) => {
-            // --- FIX STARTS HERE ---
             const screenConfig = screens[route.name as string];
 
             if (!screenConfig) {
@@ -455,10 +469,19 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                   route.name
                 )}" /> component?`
               );
-              return null; // Render nothing to prevent the crash
+              return null;
             }
             const Component = screenConfig.component;
-            // --- FIX ENDS HERE ---
+
+            // --- Get options for the specific screen being rendered ---
+            const screenOptions =
+              typeof screenConfig.options === "function"
+                ? screenConfig.options({
+                    route: route as RouteProp<T, keyof T>,
+                  })
+                : screenConfig.options || {};
+            const pageClassName = screenOptions.pageClassName;
+            // --- End Change ---
 
             const isActive = index === state.index;
             const variantName = isActive ? "center" : "behind";
@@ -481,19 +504,12 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                   zIndex: index,
                   willChange: "transform, opacity",
                 }}
-                className="absolute inset-x-0 bottom-0 top-0 bg-graphite-background"
+                // --- Apply the new className ---
+                className={clsx(
+                  "absolute inset-x-0 bottom-0 top-0 bg-graphite-background",
+                  pageClassName
+                )}
               >
-                {typeof activeAnimationOption === "string" &&
-                  activeAnimationOption.startsWith("slide") && (
-                    <motion.div
-                      className="pointer-events-none absolute inset-0 shadow-[ -5px_0px_25px_rgba(0,0,0,0.12)]"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: isActive ? 1 : 0 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  )}
-
                 <NavigationContext.Provider value={navigation}>
                   {/* @ts-ignore */}
                   <RouteContext.Provider value={route}>

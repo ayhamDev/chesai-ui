@@ -72,7 +72,7 @@ const DummyContent = () => (
     <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 30 }).map((_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: strict
-        <div key={i} className="h-48 rounded-2xl bg-black/5" />
+        (<div key={i} className="h-48 rounded-2xl bg-black/5" />)
       ))}
     </div>
   </main>
@@ -238,7 +238,7 @@ export const CombinedEffects: Story = {
   name: "Kitchen Sink (All Effects)",
   args: {
     ...LargeCollapsing.args,
-    animatedBehavior: ["appbar-color", "fold", "shadow"],
+    animatedBehavior: ["appbar-color", "shadow", "fold"],
     animatedColor: "secondary",
   },
   render: renderWithScrollContainer,

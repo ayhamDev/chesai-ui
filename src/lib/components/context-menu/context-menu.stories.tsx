@@ -69,8 +69,8 @@ const MenuContent = () => (
 export const Default: Story = {
   name: "1. Basic Usage",
   args: {
-    shape: "minimal",
-    size: "md",
+    shape: "sharp",
+    size: "sm",
   },
   render: (args) => (
     <ContextMenu {...args}>

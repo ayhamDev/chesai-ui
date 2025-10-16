@@ -430,7 +430,7 @@ This section contains the source code for the `appbar` component and its corresp
 
 **Component Source (`src\lib\components\appbar\index.tsx`)**
 ```tsx
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { motion, type HTMLMotionProps } from "framer-motion";
 import React from "react";
@@ -483,8 +483,9 @@ export interface AppBarSharedProps {
 
 export interface AppBarProps
   extends Omit<HTMLMotionProps<"header">, "color" | "size">,
-    VariantProps<typeof appBarVariants>,
     AppBarSharedProps {
+  appBarColor?: "background" | "card" | "primary" | "secondary";
+  shadow?: "none" | "md";
   startAdornment?: React.ReactNode;
   centerAdornment?: React.ReactNode;
   endAdornments?: React.ReactNode[];
@@ -1178,7 +1179,7 @@ This section contains the source code for the `badge` component and its correspo
 
 **Component Source (`src\lib\components\badge\index.tsx`)**
 ```tsx
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import React from "react";
 
 const badgeVariants = cva(
@@ -1210,9 +1211,10 @@ const badgeVariants = cva(
   }
 );
 
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "primary" | "secondary" | "destructive" | "outline";
+  shape?: "full" | "minimal" | "sharp";
+}
 
 export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
   ({ className, variant, shape, ...props }, ref) => {
@@ -1487,9 +1489,11 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 
 // --- NAVIGATOR COMPONENT (REFACTORED) ---
 
-interface NavigatorProps
-  extends React.HTMLAttributes<HTMLElement>,
-    VariantProps<typeof navigatorVariants> {
+interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
+  mode?: "attached" | "detached";
+  shape?: "full" | "minimal" | "sharp";
+  bordered?: boolean;
+  shadow?: "none" | "sm" | "md" | "lg";
   children: React.ReactElement<ScreenProps> | React.ReactElement<ScreenProps>[];
   activeTab: string;
   onTabPress: (name: string) => void;
@@ -1864,7 +1868,7 @@ export interface BouncyBoxProps extends HTMLMotionProps<"div"> {
 export const BouncyBox = React.forwardRef<HTMLDivElement, BouncyBoxProps>(
   ({ className, children, scaleAmount = 0.95, ...props }, ref) => {
     return (
-      <motion.span
+      <motion.div
         ref={ref}
         className={clsx(
           "cursor-pointer inline-block", // Use inline-flex to wrap content tightly
@@ -1877,7 +1881,7 @@ export const BouncyBox = React.forwardRef<HTMLDivElement, BouncyBoxProps>(
         {...props}
       >
         {children}
-      </motion.span>
+      </motion.div>
     );
   }
 );
@@ -2021,11 +2025,13 @@ export const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "destructive" | "ghost" | "link";
+  size?: "xs" | "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
+  isLoading?: boolean;
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
-  isLoading?: boolean;
   /** If true, the button will render as a `Slot.Root` and merge its props onto the immediate child. */
   asChild?: boolean;
 }
@@ -2752,10 +2758,11 @@ const cardVariants = cva(
   }
 );
 
-export interface CardProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {
-  // The isSelected prop is now automatically included from VariantProps
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "primary" | "secondary" | "glass";
+  shape?: "full" | "minimal" | "sharp";
+  padding?: "none" | "sm" | "md" | "lg";
+  isSelected?: boolean;
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
@@ -3104,8 +3111,8 @@ const chipVariants = cva(
 );
 
 export interface ChipProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof chipVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  selected?: boolean;
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
 }
@@ -3658,8 +3665,8 @@ const MenuContent = () => (
 export const Default: Story = {
   name: "1. Basic Usage",
   args: {
-    shape: "minimal",
-    size: "md",
+    shape: "sharp",
+    size: "sm",
   },
   render: (args) => (
     <ContextMenu {...args}>
@@ -5309,7 +5316,7 @@ const SNAP_BACK_STIFFNESS = 300;
 const SNAP_BACK_DAMPING = 30;
 const DEFAULT_PULL_THRESHOLD = 80;
 
-// --- TYPE DEFINITIONS ---
+// --- TYPE DEFINITIONS (MODIFIED) ---
 interface RefreshIndicatorProps {
   pullProgress: MotionValue<number>;
   isRefreshing: boolean;
@@ -5321,11 +5328,23 @@ export interface ElasticScrollAreaProps
   orientation?: "vertical" | "horizontal";
   elasticity?: boolean;
   dampingFactor?: number;
-  scrollbarVisibility?: "auto" | "always" | "scroll";
+  /**
+   * Controls scrollbar visibility.
+   * `auto`: Default browser behavior.
+   * `always`/`visible`: Always visible.
+   * `scroll`: Visible only when scrolling.
+   * `hidden`: Never visible.
+   * @default "auto"
+   */
+  scrollbarVisibility?: "auto" | "always" | "scroll" | "hidden" | "visible";
   pullToRefresh?: boolean;
   onRefresh?: () => Promise<unknown>;
   pullThreshold?: number;
   RefreshIndicatorComponent?: ComponentType<RefreshIndicatorProps>;
+  /** Callback fired when the user scrolls up. */
+  onScrollUp?: () => void;
+  /** Callback fired when the user scrolls down. */
+  onScrollDown?: () => void;
 }
 
 // --- DEFAULT REFRESH INDICATOR ---
@@ -5564,6 +5583,8 @@ const ElasticScrollAreaRoot = forwardRef<
       onRefresh,
       pullThreshold = DEFAULT_PULL_THRESHOLD,
       RefreshIndicatorComponent = DefaultRefreshIndicator,
+      onScrollUp,
+      onScrollDown,
       ...props
     },
     ref
@@ -5598,6 +5619,27 @@ const ElasticScrollAreaRoot = forwardRef<
       [0, 1]
     );
 
+    const lastScrollTop = useRef(0);
+    const handleScroll = useCallback(
+      (event: React.UIEvent<HTMLDivElement>) => {
+        const currentScrollTop = event.currentTarget.scrollTop;
+        const scrollDelta = currentScrollTop - lastScrollTop.current;
+
+        // Prevent firing on small jitters or bounce-back
+        if (Math.abs(scrollDelta) < 5) return;
+
+        if (scrollDelta > 0) {
+          onScrollDown?.();
+        } else {
+          onScrollUp?.();
+        }
+
+        // Update last scroll position, clamping at 0 for iOS bounce.
+        lastScrollTop.current = Math.max(0, currentScrollTop);
+      },
+      [onScrollDown, onScrollUp]
+    );
+
     return (
       <ScrollAreaPrimitive.Root
         className={clsx("relative h-full w-full overflow-hidden!", className)}
@@ -5628,6 +5670,7 @@ const ElasticScrollAreaRoot = forwardRef<
             ref={localViewportRef}
             className="h-full w-full rounded-[inherit]"
             style={{ touchAction: isVertical ? "pan-y" : "pan-x" }}
+            onScroll={onScrollUp || onScrollDown ? handleScroll : undefined}
           >
             {children}
           </ScrollAreaPrimitive.Viewport>
@@ -5647,7 +5690,7 @@ const ElasticScrollAreaRoot = forwardRef<
 );
 ElasticScrollAreaRoot.displayName = "ElasticScrollArea";
 
-// --- STYLED SUB-COMPONENTS ---
+// --- STYLED SUB-COMPONENTS (MODIFIED) ---
 const ScrollBar = forwardRef<
   ElementRef<typeof ScrollAreaPrimitive.Scrollbar>,
   ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Scrollbar> & {
@@ -5673,7 +5716,10 @@ const ScrollBar = forwardRef<
         orientation === "horizontal" &&
           "h-2.5 border-t border-t-transparent p-[1px]",
         {
-          "opacity-100": scrollbarVisibility === "always",
+          "opacity-100":
+            scrollbarVisibility === "always" ||
+            scrollbarVisibility === "visible",
+          hidden: scrollbarVisibility === "hidden",
           "data-[state=hidden]:opacity-0": scrollbarVisibility === "scroll",
           "opacity-0 data-[state=visible]:opacity-100":
             scrollbarVisibility === "auto",
@@ -5696,8 +5742,20 @@ export const ElasticScrollArea = Object.assign(ElasticScrollAreaRoot, {
 **Storybook Stories (`elastic-scroll-area.stories.tsx`)**
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react";
-import { motion, useTransform, type MotionValue } from "framer-motion";
-import { Sun } from "lucide-react";
+import {
+  AnimatePresence,
+  motion,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
+import { Compass, Home, Library, Menu, Search, Sun } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { useAppBar } from "../../hooks/useAppBar";
+import { AppBar, type AppBarProps } from "../appbar";
+import { BottomTabs } from "../bottom-tabs";
+import { IconButton } from "../icon-button";
+import { Input } from "../input";
+import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { ElasticScrollArea } from "./index";
 
@@ -5731,7 +5789,7 @@ const meta: Meta<typeof ElasticScrollArea> = {
     },
     scrollbarVisibility: {
       control: "select",
-      options: ["auto", "always", "scroll"],
+      options: ["auto", "always", "scroll", "hidden", "visible"],
       description: "Controls the visibility of the scrollbar.",
     },
     pullToRefresh: {
@@ -5743,6 +5801,8 @@ const meta: Meta<typeof ElasticScrollArea> = {
       description: "The pixel distance to pull to trigger a refresh.",
     },
     onRefresh: { action: "refreshed" },
+    onScrollUp: { action: "scrolled up" },
+    onScrollDown: { action: "scrolled down" },
     children: { control: false },
     RefreshIndicatorComponent: { control: false },
   },
@@ -5906,17 +5966,17 @@ export const ScrollbarVisibility: Story = {
     docs: {
       description: {
         story:
-          "The `scrollbarVisibility` prop controls how the scrollbar is displayed. `auto` shows on hover/scroll, `always` keeps it visible, and `scroll` only shows during active scrolling.",
+          "The `scrollbarVisibility` prop controls how the scrollbar is displayed. `auto` shows on hover/scroll, `always`/`visible` keeps it visible, `scroll` only shows during active scrolling, and `hidden` never shows it.",
       },
     },
   },
   render: () => (
-    <div className="flex gap-4 items-start">
+    <div className="flex w-full max-w-7xl gap-4 items-start justify-center">
       <div className="flex flex-col items-center gap-2">
         <Typography variant="small" className="font-bold">
           'auto' (default)
         </Typography>
-        <div className="w-64 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+        <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
           <ElasticScrollArea scrollbarVisibility="auto">
             <DummyContent itemCount={15} />
           </ElasticScrollArea>
@@ -5924,10 +5984,10 @@ export const ScrollbarVisibility: Story = {
       </div>
       <div className="flex flex-col items-center gap-2">
         <Typography variant="small" className="font-bold">
-          'always'
+          'visible' / 'always'
         </Typography>
-        <div className="w-64 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
-          <ElasticScrollArea scrollbarVisibility="always">
+        <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+          <ElasticScrollArea scrollbarVisibility="visible">
             <DummyContent itemCount={15} />
           </ElasticScrollArea>
         </div>
@@ -5936,13 +5996,159 @@ export const ScrollbarVisibility: Story = {
         <Typography variant="small" className="font-bold">
           'scroll'
         </Typography>
-        <div className="w-64 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+        <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
           <ElasticScrollArea scrollbarVisibility="scroll">
             <DummyContent itemCount={15} />
           </ElasticScrollArea>
         </div>
       </div>
+      <div className="flex flex-col items-center gap-2">
+        <Typography variant="small" className="font-bold">
+          'hidden'
+        </Typography>
+        <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
+          <ElasticScrollArea scrollbarVisibility="hidden">
+            <DummyContent itemCount={15} />
+          </ElasticScrollArea>
+        </div>
+      </div>
     </div>
+  ),
+};
+
+// This helper component calls the useAppBar hook safely *after* its parent has mounted and hydrated the ref.
+const ElasticScrollContent = ({
+  scrollRef,
+  appBarArgs,
+}: {
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  appBarArgs: AppBarProps;
+}) => {
+  // By the time this component renders, scrollRef.current is hydrated.
+  const { contentPaddingTop } = useAppBar({
+    ...appBarArgs,
+    scrollContainerRef: scrollRef,
+  });
+
+  return (
+    <div style={{ paddingTop: contentPaddingTop }}>
+      <DummyContent />
+    </div>
+  );
+};
+
+const RenderWithAppBarAndBottomTabs = ({
+  elasticScrollArgs,
+}: {
+  elasticScrollArgs: any;
+}) => {
+  const { path: activeTab, push: onTabPress } = useRouter();
+  const initialTab = "home";
+  const [isTabsVisible, setIsTabsVisible] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Define the props for the AppBar in one place
+  const appBarArgs: AppBarProps = {
+    size: "lg",
+    scrollBehavior: "conditionally-sticky",
+    appBarColor: "card",
+    animatedBehavior: ["shadow"],
+    largeHeaderRowHeight: 60,
+    startAdornment: (
+      <IconButton variant="ghost" aria-label="Menu">
+        <Menu />
+      </IconButton>
+    ),
+    children: (
+      <Typography variant="h4" className="font-semibold truncate">
+        Explore
+      </Typography>
+    ),
+    largeHeaderContent: (
+      <Input
+        variant="secondary"
+        shape="full"
+        startAdornment={<Search className="h-5 w-5 text-gray-500" />}
+        placeholder="Search..."
+      />
+    ),
+  };
+
+  return (
+    <div className="w-96 h-[600px] rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden relative bg-graphite-background">
+      {/* AppBar receives the ref but doesn't trigger the hook directly from here */}
+      <AppBar {...appBarArgs} scrollContainerRef={scrollRef} />
+
+      <ElasticScrollArea
+        {...elasticScrollArgs}
+        ref={scrollRef}
+        onScrollDown={() => setIsTabsVisible(false)}
+        onScrollUp={() => setIsTabsVisible(true)}
+      >
+        {/* Render the child component that safely calls the hook for padding */}
+        <ElasticScrollContent scrollRef={scrollRef} appBarArgs={appBarArgs} />
+      </ElasticScrollArea>
+
+      <AnimatePresence>
+        {isTabsVisible && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: "0%" }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 400, damping: 40 }}
+            className="absolute bottom-0 left-0 right-0"
+          >
+            <BottomTabs.Navigator
+              mode="detached"
+              shape="minimal"
+              activeTab={
+                activeTab === "/" ? initialTab : activeTab.substring(1)
+              }
+              onTabPress={(tab) => onTabPress(`/${tab}`)}
+            >
+              <BottomTabs.Screen
+                name="home"
+                label="Home"
+                icon={() => <Home size={24} />}
+              />
+              <BottomTabs.Screen
+                name="browse"
+                label="Browse"
+                icon={() => <Compass size={24} />}
+              />
+              <BottomTabs.Screen
+                name="library"
+                label="Library"
+                icon={() => <Library size={24} />}
+              />
+            </BottomTabs.Navigator>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export const WithAppBarAndBottomTabs: Story = {
+  name: "6. With AppBar & BottomTabs",
+  args: {
+    orientation: "vertical",
+    elasticity: true,
+    dampingFactor: 0.25,
+    scrollbarVisibility: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Use the `onScrollUp` and `onScrollDown` callbacks to react to scroll direction. This example shows a common mobile pattern: hiding/showing a `BottomTabs` component while a collapsible `AppBar` also reacts to the scroll position of the `ElasticScrollArea`.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter>
+      <RenderWithAppBarAndBottomTabs elasticScrollArgs={args} />
+    </ShallowRouter>
   ),
 };
 ```
@@ -5954,7 +6160,7 @@ This section contains the source code for the `fab` component and its correspond
 
 **Component Source (`src\lib\components\fab\index.tsx`)**
 ```tsx
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import {
   AnimatePresence,
@@ -5995,8 +6201,10 @@ const fabVariants = cva(
 );
 
 export interface FABProps
-  extends Omit<HTMLMotionProps<"button">, "children" | "ref">,
-    VariantProps<typeof fabVariants> {
+  extends Omit<HTMLMotionProps<"button">, "children" | "ref"> {
+  variant?: "primary" | "secondary";
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
   icon: React.ReactNode;
   isExtended?: boolean;
   children?: React.ReactNode;
@@ -6272,9 +6480,9 @@ This section contains the source code for the `icon-button` component and its co
 
 **Component Source (`src\lib\components\icon-button\index.tsx`)**
 ```tsx
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader, Loader2 } from "lucide-react"; // Import Loader from lucide-react
+import { Loader2 } from "lucide-react"; // Import Loader from lucide-react
 import React from "react";
 import useRipple from "use-ripple-hook";
 
@@ -6317,8 +6525,10 @@ export const iconButtonVariants = cva(
 );
 
 export interface IconButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof iconButtonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "destructive" | "ghost" | "link";
+  size?: "xs" | "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
   isLoading?: boolean;
 }
 
@@ -6346,7 +6556,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     const [, event] = useRipple({
       ref: rippleRef,
       color: rippleColor,
-      duration: 600,
+      duration: 400,
       disabled: disabled || isLoading,
     });
 
@@ -6579,7 +6789,7 @@ This section contains the source code for the `input` component and its correspo
 
 **Component Source (`src\lib\components\input\index.tsx`)**
 ```tsx
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React from "react";
 
@@ -6675,8 +6885,10 @@ export const inputWrapperVariants = cva(
 
 // FIX #2: Use VariantProps to remove the unused import warning and keep types in sync.
 export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
-    VariantProps<typeof inputWrapperVariants> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
+  variant?: "primary" | "secondary" | "minimal";
+  shape?: "full" | "minimal" | "sharp";
+  size?: "sm" | "md" | "lg";
   label?: string;
   startAdornment?: React.ReactNode;
   endAdornment?: React.ReactNode;
@@ -7239,19 +7451,23 @@ ItemSeparator.displayName = "ItemSeparator";
 
 const Item = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> &
-    VariantProps<typeof itemVariants> & {
-      asChild?: boolean;
-      disabled?: boolean;
-      /** If true, the ripple effect on click will be disabled. */
-      disableRipple?: boolean;
-      /** Callback fired when the item is pressed for 500ms. */
-      onLongPress?: (
-        event:
-          | React.PointerEvent<HTMLDivElement>
-          | React.MouseEvent<HTMLDivElement>
-      ) => void;
-    }
+  React.HTMLAttributes<HTMLDivElement> & {
+    variant?: "primary" | "secondary" | "ghost";
+    size?: "sm" | "md" | "lg";
+    padding?: "none" | "sm" | "md" | "lg";
+    shape?: "full" | "minimal" | "sharp";
+    direction?: "horizontal" | "vertical";
+    asChild?: boolean;
+    disabled?: boolean;
+    /** If true, the ripple effect on click will be disabled. */
+    disableRipple?: boolean;
+    /** Callback fired when the item is pressed for 500ms. */
+    onLongPress?: (
+      event:
+        | React.PointerEvent<HTMLDivElement>
+        | React.MouseEvent<HTMLDivElement>
+    ) => void;
+  }
 >(
   (
     {
@@ -7338,7 +7554,10 @@ Item.displayName = "Item";
 
 const ItemMedia = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof itemMediaVariants>
+  React.HTMLAttributes<HTMLDivElement> & {
+    variant?: "default" | "icon" | "avatar";
+    shape?: "full" | "minimal" | "sharp";
+  }
 >(({ className, variant, shape = "minimal", ...props }, ref) => {
   const { size: contextSize, direction } = useItemContext();
   return (
@@ -9938,7 +10157,7 @@ This section contains the source code for the `select` component and its corresp
 
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { Check, ChevronDown } from "lucide-react";
 import React, { createContext, useContext, useRef, useState } from "react";
@@ -10091,9 +10310,9 @@ const Select: React.FC<SelectProps> = ({
 interface SelectTriggerProps
   extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> {
   error?: string;
-  variant?: VariantProps<typeof selectTriggerVariants>["variant"];
-  shape?: VariantProps<typeof selectTriggerVariants>["shape"];
-  size?: VariantProps<typeof selectTriggerVariants>["size"];
+  variant?: "primary" | "secondary";
+  shape?: "full" | "minimal" | "sharp";
+  size?: "sm" | "md" | "lg";
 }
 
 const SelectTrigger = React.forwardRef<
@@ -10296,8 +10515,10 @@ const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
 // --- MAIN WRAPPER COMPONENT ---
 
 interface SelectWrapperProps
-  extends Omit<SelectProps, "children" | "onChange">,
-    VariantProps<typeof selectTriggerVariants> {
+  extends Omit<SelectProps, "children" | "onChange"> {
+  variant?: "primary" | "secondary";
+  shape?: "full" | "minimal" | "sharp";
+  size?: "sm" | "md" | "lg";
   label?: string;
   error?: string;
   placeholder?: string;
@@ -10472,14 +10693,14 @@ SelectInput.displayName = "SelectInput";
 
 export {
   Select,
-  SelectGroup,
-  SelectValue,
-  SelectTrigger,
   SelectContent,
-  SelectLabel,
-  SelectItem,
-  SelectSeparator,
+  SelectGroup,
   SelectInput,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
 };
 ```
 
@@ -13162,6 +13383,7 @@ const barThumbHaloVariants = cva(
 
 // --- Context to pass props down to thumbs ---
 type SliderContextProps = VariantProps<typeof sliderTrackVariants>;
+
 const SliderContext = createContext<SliderContextProps | null>(null);
 const useSliderContext = () => {
   const context = useContext(SliderContext);
@@ -13251,8 +13473,11 @@ BarThumb.displayName = "BarThumb";
 
 // --- Main Slider Component ---
 
-type SliderProps = React.ComponentPropsWithoutRef<typeof RadixSlider.Root> &
-  VariantProps<typeof sliderTrackVariants>;
+type SliderProps = React.ComponentPropsWithoutRef<typeof RadixSlider.Root> & {
+  variant?: "linear" | "bar";
+  direction?: "horizontal" | "vertical";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
+};
 
 const Slider = React.forwardRef<
   React.ElementRef<typeof RadixSlider.Root>,
@@ -13696,6 +13921,7 @@ import React, {
 import { AppBar, type AppBarSharedProps } from "../appbar";
 import { IconButton } from "../icon-button";
 import { STACK_TRANSITIONS } from "./transitions";
+import { clsx } from "clsx";
 
 // --- INLINED TYPE DEFINITIONS (from types.ts) ---
 
@@ -13756,7 +13982,10 @@ export interface StackNavigationState<
 // Options for each screen
 export interface StackScreenOptions {
   title?: string;
-  headerTitle?: React.ReactNode | ((props: {}) => React.ReactNode);
+  headerTitle?:
+    | React.ReactNode
+    // biome-ignore lint/suspicious/noExplicitAny: This allows the function to be generic
+    | ((props: { navigation: NavigationProp<any> }) => React.ReactNode);
   headerShown?: boolean;
   headerLeft?: (props: { canGoBack: boolean }) => React.ReactNode;
   headerRight?: (props: { canGoBack: boolean }) => React.ReactNode;
@@ -13770,12 +13999,20 @@ export interface StackScreenOptions {
     | "fade"
     | "zoom-fade"
     | "flip"
+    | "fade-from-right"
+    | "fade-from-left"
+    | "fade-from-top"
+    | "fade-from-bottom"
     | "slide-from-left"
     | "slide-from-right"
     | "slide-from-top"
     | "slide-from-bottom"
     // biome-ignore lint/suspicious/noExplicitAny: Variants can be complex
     | { variants: any; transition: any };
+  /** An optional className to apply to the screen's container div. */
+  pageClassName?: string;
+  /** If false, the header's title and adornment fade/slide transitions are disabled. @default true */
+  headerAnimationEnabled?: boolean;
 }
 
 export interface StackScreenComponent<
@@ -13874,20 +14111,21 @@ const Header = <T extends Record<string, object | undefined>>({
   if (options.headerShown === false) return null;
 
   const title = options.headerTitle || options.title || screen.name;
+  const headerAnimationEnabled = options.headerAnimationEnabled ?? true;
 
   const contentAnimation: Variants = {
     initial: { opacity: 0.2, y: -5 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0.2, y: 5 },
   };
-  const contentTransition: Transition = { duration: 0.12, ease: "easeInOut" };
+  const contentTransition: Transition = headerAnimationEnabled
+    ? { duration: 0.12, ease: "easeInOut" }
+    : { duration: 0 };
 
   return (
     <AppBar
       {...options.appBarProps}
-      // --- MODIFICATION: Pass the routeKey to AppBar ---
       routeKey={routeKey}
-      // --- END MODIFICATION ---
       scrollContainerRef={scrollContainerRef}
       appBarColor={options.headerStyle?.backgroundColor || "card"}
       startAdornment={
@@ -13934,7 +14172,9 @@ const Header = <T extends Record<string, object | undefined>>({
           exit="exit"
           className="truncate"
         >
-          {typeof title === "function" ? title({}) : (title as React.ReactNode)}
+          {typeof title === "function"
+            ? title({ navigation })
+            : (title as React.ReactNode)}
         </motion.div>
       </AnimatePresence>
     </AppBar>
@@ -14120,7 +14360,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           onExitComplete={() => handleAnimationComplete(true)}
         >
           {state.routes.map((route, index) => {
-            // --- FIX STARTS HERE ---
             const screenConfig = screens[route.name as string];
 
             if (!screenConfig) {
@@ -14131,10 +14370,19 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                   route.name
                 )}" /> component?`
               );
-              return null; // Render nothing to prevent the crash
+              return null;
             }
             const Component = screenConfig.component;
-            // --- FIX ENDS HERE ---
+
+            // --- Get options for the specific screen being rendered ---
+            const screenOptions =
+              typeof screenConfig.options === "function"
+                ? screenConfig.options({
+                    route: route as RouteProp<T, keyof T>,
+                  })
+                : screenConfig.options || {};
+            const pageClassName = screenOptions.pageClassName;
+            // --- End Change ---
 
             const isActive = index === state.index;
             const variantName = isActive ? "center" : "behind";
@@ -14157,19 +14405,12 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                   zIndex: index,
                   willChange: "transform, opacity",
                 }}
-                className="absolute inset-x-0 bottom-0 top-0 bg-graphite-background"
+                // --- Apply the new className ---
+                className={clsx(
+                  "absolute inset-x-0 bottom-0 top-0 bg-graphite-background",
+                  pageClassName
+                )}
               >
-                {typeof activeAnimationOption === "string" &&
-                  activeAnimationOption.startsWith("slide") && (
-                    <motion.div
-                      className="pointer-events-none absolute inset-0 shadow-[ -5px_0px_25px_rgba(0,0,0,0.12)]"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: isActive ? 1 : 0 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  )}
-
                 <NavigationContext.Provider value={navigation}>
                   {/* @ts-ignore */}
                   <RouteContext.Provider value={route}>
@@ -14377,6 +14618,10 @@ type AnimationStackParamList = {
   None: undefined;
   Fade: undefined;
   ZoomFade: undefined;
+  FadeRight: undefined;
+  FadeLeft: undefined;
+  FadeTop: undefined;
+  FadeBottom: undefined;
   Flip: undefined;
   SlideRight: undefined;
   SlideBottom: undefined;
@@ -14389,35 +14634,54 @@ const MainScreen = () => {
   const navigation = useNavigation<AnimationStackParamList>();
 
   return (
-    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
-      <Typography variant="h4">Animation Presets</Typography>
-      <div className="flex flex-col gap-4 mt-4">
-        <Button onClick={() => navigation.push("None")}>
+    <ElasticScrollArea
+      scrollbarVisibility="hidden"
+      className="pt-[70px]"
+      ref={navigation.scrollContainerRef}
+    >
+      <div className="box-border p-4 flex flex-col gap-4 mt-4">
+        <Typography variant="h4">Animation Presets</Typography>
+        <Button className="w-fit" onClick={() => navigation.push("None")}>
           Push with 'None'
         </Button>
-        <Button onClick={() => navigation.push("Fade")}>
+        <Button className="w-fit" onClick={() => navigation.push("Fade")}>
           Push with 'Fade'
         </Button>
-        <Button onClick={() => navigation.push("ZoomFade")}>
+        <Button className="w-fit" onClick={() => navigation.push("ZoomFade")}>
           Push with 'ZoomFade'
         </Button>
-        <Button onClick={() => navigation.push("Flip")}>
+        <Button className="w-fit" onClick={() => navigation.push("FadeRight")}>
+          Push with 'Fade From Right'
+        </Button>
+        <Button className="w-fit" onClick={() => navigation.push("FadeLeft")}>
+          Push with 'Fade From Left'
+        </Button>
+        <Button className="w-fit" onClick={() => navigation.push("FadeTop")}>
+          Push with 'Fade From Top'
+        </Button>
+        <Button className="w-fit" onClick={() => navigation.push("FadeBottom")}>
+          Push with 'Fade From Bottom'
+        </Button>
+        <Button className="w-fit" onClick={() => navigation.push("Flip")}>
           Push with 'Flip'
         </Button>
-        <Button onClick={() => navigation.push("SlideRight")}>
+        <Button className="w-fit" onClick={() => navigation.push("SlideRight")}>
           Push with 'Slide From Right' (defualt)
         </Button>
-        <Button onClick={() => navigation.push("SlideBottom")}>
+        <Button
+          className="w-fit"
+          onClick={() => navigation.push("SlideBottom")}
+        >
           Push with 'Slide from Bottom'
         </Button>
-        <Button onClick={() => navigation.push("SlideLeft")}>
+        <Button className="w-fit" onClick={() => navigation.push("SlideLeft")}>
           Push with 'Slide from Left'
         </Button>
-        <Button onClick={() => navigation.push("SlideTop")}>
+        <Button className="w-fit" onClick={() => navigation.push("SlideTop")}>
           Push with 'Slide from Top'
         </Button>
       </div>
-    </div>
+    </ElasticScrollArea>
   );
 };
 
@@ -14463,6 +14727,27 @@ export const TransitionPresets: StoryObj = {
         options={{ animation: "zoom-fade" }}
       />
       <AnimationStack.Screen
+        name="FadeRight"
+        component={GenericScreen}
+        options={{ animation: "fade-from-right" }}
+      />
+      <AnimationStack.Screen
+        name="FadeLeft"
+        component={GenericScreen}
+        options={{ animation: "fade-from-left" }}
+      />
+      <AnimationStack.Screen
+        name="FadeTop"
+        component={GenericScreen}
+        options={{ animation: "fade-from-top" }}
+      />
+      <AnimationStack.Screen
+        name="FadeBottom"
+        component={GenericScreen}
+        options={{ animation: "fade-from-bottom" }}
+      />
+
+      <AnimationStack.Screen
         name="Flip"
         component={GenericScreen}
         options={{ animation: "flip" }}
@@ -14470,12 +14755,17 @@ export const TransitionPresets: StoryObj = {
       <AnimationStack.Screen
         name="SlideRight"
         component={GenericScreen}
-        options={{ animation: "default" }}
+        options={{
+          animation: "default",
+          pageClassName: "shadow-md",
+        }}
       />
       <AnimationStack.Screen
         name="SlideBottom"
         component={GenericScreen}
-        options={{ animation: "slide-from-bottom" }}
+        options={{
+          animation: "slide-from-bottom",
+        }}
       />
       <AnimationStack.Screen
         name="SlideLeft"
@@ -14512,7 +14802,7 @@ const InboxScreen = () => {
   const navigation = useNavigation<MailStackParamList>();
   const { scrollContainerRef } = useNavigation();
   return (
-    <ElasticScrollArea className="" ref={scrollContainerRef}>
+    <ElasticScrollArea scrollbarVisibility="hidden" ref={scrollContainerRef}>
       <div className="pt-[120px] p-4">
         {emails.map((email) => (
           <Item
@@ -14608,7 +14898,7 @@ This section contains the source code for the `switch` component and its corresp
 
 **Component Source (`src\lib\components\switch\index.tsx`)**
 ```tsx
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React from "react";
 
@@ -14666,8 +14956,9 @@ const translateMap: Record<"sm" | "md" | "lg", string> = {
 };
 
 export interface SwitchProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">, // Omit the conflicting 'size' prop
-    VariantProps<typeof switchTrackVariants> {
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
   label?: string;
 }
 
@@ -14826,16 +15117,15 @@ This section contains the source code for the `table` component and its correspo
 "use client";
 
 import {
-  flexRender,
   type ColumnDef,
+  flexRender,
   type Row,
   type Table as TanstackTable,
 } from "@tanstack/react-table";
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { createContext, useContext, useMemo } from "react";
-import { Card, type CardProps } from "../card";
 
 // --- Type Augmentation (Unchanged) ---
 declare module "@tanstack/react-table" {
@@ -14976,8 +15266,7 @@ TableRow.displayName = "Table.Row";
 // --- 4. ROOT COMPONENT (Refactored with Custom Render Prop) ---
 
 export interface TableRootProps<TData>
-  extends React.HTMLAttributes<HTMLTableElement>,
-    VariantProps<typeof tableVariants> {
+  extends React.HTMLAttributes<HTMLTableElement> {
   table: TanstackTable<TData>;
   responsiveLayout?: ResponsiveLayout;
   breakpoint?: "sm" | "md" | "lg";
@@ -16248,7 +16537,7 @@ This section contains the source code for the `taskbar` component and its corres
 
 **Component Source (`src\lib\components\taskbar\index.tsx`)**
 ```tsx
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { Copy, Minus, Square, X } from "lucide-react";
 import React, { useRef } from "react";
@@ -16346,9 +16635,10 @@ const WindowButton = React.forwardRef<HTMLButtonElement, WindowButtonProps>(
 WindowButton.displayName = "WindowButton";
 
 // --- Component Props ---
-export interface TaskbarProps
-  extends React.HTMLAttributes<HTMLElement>,
-    VariantProps<typeof taskbarVariants> {
+export interface TaskbarProps extends React.HTMLAttributes<HTMLElement> {
+  variant?: "transparent" | "card" | "secondary";
+  bordered?: boolean;
+  size?: "sm" | "md" | "lg";
   /** Content to render at the start of the taskbar (e.g., app icon, title). */
   startAdornment?: React.ReactNode;
   /** Content to render in the center (e.g., navigation menu). */
@@ -16362,7 +16652,6 @@ export interface TaskbarProps
   /** Callback fired when the close button is clicked. */
   onClose?: () => void;
 }
-
 // --- Main Component ---
 export const Taskbar = React.forwardRef<HTMLElement, TaskbarProps>(
   (
@@ -16740,7 +17029,7 @@ This section contains the source code for the `textarea` component and its corre
 
 **Component Source (`src\lib\components\textarea\index.tsx`)**
 ```tsx
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { useEffect, useImperativeHandle, useRef } from "react";
 
@@ -16834,13 +17123,14 @@ const textAreaWrapperVariants = cva(
 );
 
 export interface TextAreaProps
-  extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "size">,
-    VariantProps<typeof textAreaWrapperVariants> {
+  extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "size"> {
+  variant?: "primary" | "secondary" | "minimal";
+  shape?: "full" | "minimal" | "sharp";
+  size?: "sm" | "md" | "lg";
   label?: string;
   error?: string;
   wrapperClassName?: string;
 }
-
 export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
   (
     {
@@ -17294,7 +17584,6 @@ This section contains the source code for the `time-picker` component and its co
 
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { format } from "date-fns";
 import { animate } from "framer-motion";
@@ -17487,10 +17776,11 @@ const TimePickerPanel: React.FC<TimePickerPanelProps> = ({
 // @ts-ignore
 export interface TimePickerProps
   extends Omit<
-      React.ButtonHTMLAttributes<HTMLButtonElement>,
-      "value" | "onChange" | "size"
-    >,
-    VariantProps<typeof inputWrapperVariants> {
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    "value" | "onChange" | "size"
+  > {
+  shape?: "full" | "minimal" | "sharp";
+  size?: "sm" | "md" | "lg";
   label?: string;
   error?: string;
   placeholder?: string;
@@ -18071,7 +18361,7 @@ import {
 } from "@floating-ui/react";
 // 2. Import the new hooks from the library
 import { useLongPress, useMediaQuery } from "@uidotdev/usehooks";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, {
   cloneElement,
@@ -18109,10 +18399,11 @@ const tooltipVariants = cva("font-semibold relative z-50", {
   },
 });
 
-export interface TooltipProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof tooltipVariants> {}
-
+export interface TooltipProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "primary" | "secondary";
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
+}
 // Context type remains unchanged
 interface TooltipContextType {
   isOpen: boolean;
@@ -18696,35 +18987,106 @@ export const Polymorphic: Story = {
 ## React Context
 
 
-### Source: `src\lib\context\List.context.ts`
+### Source: `src\lib\context\index.ts`
 
 ```ts
-import { createContext } from 'react'
+export * from './ThemeProvider'
+```
 
-export interface ListContextProps {
-  // Selection Mode
-  isSelectionMode: boolean
-  setIsSelectionMode: (value: boolean) => void
-  selectedItems: Set<string | number>
-  toggleSelection: (id: string | number) => void
-  isSelectable: boolean
 
-  // Reorder Mode
-  isReorderable: boolean
+### Source: `src\lib\context\ThemeProvider.tsx`
 
-  // --- NEW STYLING PROPS ---
-  variant: 'primary' | 'secondary'
-  shape: 'full' | 'minimal' | 'sharp'
-  size: 'sm' | 'md' | 'lg'
+```tsx
+"use client";
+
+import type React from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+
+type Theme = "dark" | "light" | "system";
+
+interface ThemeProviderState {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
 }
 
-export const ListContext = createContext<ListContextProps | null>(null)
+const initialState: ThemeProviderState = {
+  theme: "system",
+  setTheme: () => null,
+};
+
+const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
+
+interface ThemeProviderProps {
+  children: React.ReactNode;
+  defaultTheme?: Theme;
+  storageKey?: string;
+}
+
+export function ThemeProvider({
+  children,
+  defaultTheme = "system",
+  storageKey = "chesai-ui-theme",
+  ...props
+}: ThemeProviderProps) {
+  const [theme, setTheme] = useState<Theme>(
+    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+  );
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove("theme-light", "theme-dark");
+
+    if (theme === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
+        ? "dark"
+        : "light";
+
+      root.classList.add(`theme-${systemTheme}`);
+      return;
+    }
+
+    root.classList.add(`theme-${theme}`);
+  }, [theme]);
+
+  const value = {
+    theme,
+    setTheme: (newTheme: Theme) => {
+      localStorage.setItem(storageKey, newTheme);
+      setTheme(newTheme);
+    },
+  };
+
+  return (
+    <ThemeProviderContext.Provider {...props} value={value}>
+      {children}
+    </ThemeProviderContext.Provider>
+  );
+}
+
+export const useTheme = () => {
+  const context = useContext(ThemeProviderContext);
+  if (context === undefined) {
+    throw new Error("useTheme must be used within a ThemeProvider");
+  }
+  return context;
+};
 ```
 
 
 ---
 
 ## Custom Hooks
+
+
+### Source: `src\lib\hooks\index.ts`
+
+```ts
+export * from './use-calender'
+export * from './use-time-picker'
+export * from './useAppBar'
+export * from './useShallowRouter'
+```
 
 
 ### Source: `src\lib\hooks\use-calender.ts`
@@ -18864,9 +19226,9 @@ export const useTimePicker = (initialDate: Date) => {
 ```
 
 
-### Source: `src\lib\hooks\useAppBar.tsx`
+### Source: `src\lib\hooks\useAppBar.ts`
 
-```tsx
+```ts
 import {
   type MotionStyle,
   useMotionValue,
@@ -18874,24 +19236,24 @@ import {
   useScroll,
   useSpring,
   useTransform,
-} from "framer-motion";
-import { useEffect, useLayoutEffect, useRef, useState } from "react"; // Import useEffect
-import type { AppBarSharedProps } from "../components/appbar";
+} from 'framer-motion'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react' // Import useEffect
+import type { AppBarSharedProps } from '../components/appbar'
 
 // --- HOOK DEFINITION ---
-export type UseAppBarOptions = AppBarSharedProps;
+export type UseAppBarOptions = AppBarSharedProps
 
 export const useAppBar = (
   options: UseAppBarOptions & {
-    appBarColor?: "background" | "card" | "primary" | "secondary";
-  }
+    appBarColor?: 'background' | 'card' | 'primary' | 'secondary'
+  },
 ) => {
   const {
-    scrollBehavior = "sticky",
+    scrollBehavior = 'sticky',
     animatedBehavior = [],
-    animatedColor = "secondary",
-    appBarColor = "card",
-    size = "md",
+    animatedColor = 'secondary',
+    appBarColor = 'card',
+    size = 'md',
     largeHeaderContent,
     smallHeaderContent,
     stickyHideTarget,
@@ -18902,165 +19264,127 @@ export const useAppBar = (
     foldBorderRadius = 24,
     // --- MODIFICATION: Destructure the new routeKey prop ---
     routeKey,
-  } = options;
+  } = options
 
   // --- REFS & STATE ---
-  const mainRowRef = useRef<HTMLDivElement>(null);
-  const largeHeaderRef = useRef<HTMLDivElement>(null);
+  const mainRowRef = useRef<HTMLDivElement>(null)
+  const largeHeaderRef = useRef<HTMLDivElement>(null)
 
-  const [isScrolled, setIsScrolled] = useState(false);
-  const { scrollY } = useScroll({ container: scrollContainerRef });
-  const headerY = useMotionValue(0);
+  const [isScrolled, setIsScrolled] = useState(false)
+  const { scrollY } = useScroll({ container: scrollContainerRef })
+  const headerY = useMotionValue(0)
 
   const [measuredHeights, setMeasuredHeights] = useState({
-    mainRow: size === "lg" ? largeHeaderRowHeight : normalHeaderRowHeight,
+    mainRow: size === 'lg' ? largeHeaderRowHeight : normalHeaderRowHeight,
     largeContent: 0,
-  });
+  })
 
   // --- BEHAVIOR LOGIC ---
-  const isCollapsible =
-    size === "lg" && !!largeHeaderContent && !!smallHeaderContent;
-  const shouldRenderLargeContent = size === "lg" && !!largeHeaderContent;
+  const isCollapsible = size === 'lg' && !!largeHeaderContent && !!smallHeaderContent
+  const shouldRenderLargeContent = size === 'lg' && !!largeHeaderContent
 
   // --- MEASUREMENT EFFECTS ---
   useLayoutEffect(() => {
-    const measuredMainRow = mainRowRef.current?.offsetHeight;
-    const measuredLargeContent = largeHeaderRef.current?.offsetHeight;
+    const measuredMainRow = mainRowRef.current?.offsetHeight
+    const measuredLargeContent = largeHeaderRef.current?.offsetHeight
     if (
       (measuredMainRow && measuredMainRow !== measuredHeights.mainRow) ||
-      (measuredLargeContent !== undefined &&
-        measuredLargeContent !== measuredHeights.largeContent)
+      (measuredLargeContent !== undefined && measuredLargeContent !== measuredHeights.largeContent)
     ) {
       setMeasuredHeights({
         mainRow: measuredMainRow || measuredHeights.mainRow,
         largeContent: measuredLargeContent || 0,
-      });
+      })
     }
-  });
+  })
 
   // --- MODIFICATION: Add useEffect to reset AppBar position on route change ---
   useEffect(() => {
     // Reset the header's vertical position whenever the route changes.
     // This ensures the new screen's AppBar is always visible on mount.
-    headerY.set(0);
-  }, [routeKey, headerY]);
+    headerY.set(0)
+  }, [routeKey, headerY])
   // --- END MODIFICATION ---
 
   // --- ANIMATION LOGIC ---
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    setIsScrolled(latest > 10);
+  useMotionValueEvent(scrollY, 'change', latest => {
+    setIsScrolled(latest > 10)
 
-    if (scrollBehavior === "conditionally-sticky") {
-      const { mainRow, largeContent } = measuredHeights;
-      const collapseDistance = isCollapsible ? largeContent : 0;
+    if (scrollBehavior === 'conditionally-sticky') {
+      const { mainRow, largeContent } = measuredHeights
+      const collapseDistance = isCollapsible ? largeContent : 0
 
-      let heightToHide: number;
-      if (stickyHideTarget === "full-appbar" && size === "lg") {
-        heightToHide = mainRow + largeContent;
-      } else if (stickyHideTarget === "main-row") {
-        heightToHide = isCollapsible ? normalHeaderRowHeight : mainRow;
+      let heightToHide: number
+      if (stickyHideTarget === 'full-appbar' && size === 'lg') {
+        heightToHide = mainRow + largeContent
+      } else if (stickyHideTarget === 'main-row') {
+        heightToHide = isCollapsible ? normalHeaderRowHeight : mainRow
       } else {
-        heightToHide = isCollapsible
-          ? normalHeaderRowHeight
-          : mainRow + largeContent;
+        heightToHide = isCollapsible ? normalHeaderRowHeight : mainRow + largeContent
       }
 
-      const scrollPastCollapse = latest - collapseDistance;
+      const scrollPastCollapse = latest - collapseDistance
       if (scrollPastCollapse <= 0) {
-        headerY.set(0);
-        return;
+        headerY.set(0)
+        return
       }
 
-      const previous = scrollY.getPrevious() ?? 0;
-      const previousScrollPastCollapse = Math.max(
-        0,
-        previous - collapseDistance
-      );
-      const delta = scrollPastCollapse - previousScrollPastCollapse;
-      const newHeaderY = headerY.get() - delta;
+      const previous = scrollY.getPrevious() ?? 0
+      const previousScrollPastCollapse = Math.max(0, previous - collapseDistance)
+      const delta = scrollPastCollapse - previousScrollPastCollapse
+      const newHeaderY = headerY.get() - delta
 
-      const clampedHeaderY = Math.max(-heightToHide, Math.min(newHeaderY, 0));
-      headerY.set(clampedHeaderY);
+      const clampedHeaderY = Math.max(-heightToHide, Math.min(newHeaderY, 0))
+      headerY.set(clampedHeaderY)
     } else {
-      headerY.set(0);
+      headerY.set(0)
     }
-  });
+  })
 
   // --- DERIVED ANIMATION VALUES ---
-  const shouldAnimateColor = animatedBehavior.includes("appbar-color");
-  const shouldFold = animatedBehavior.includes("fold");
-  const shouldAnimateShadow = animatedBehavior.includes("shadow");
+  const shouldAnimateColor = animatedBehavior.includes('appbar-color')
+  const shouldFold = animatedBehavior.includes('fold')
+  const shouldAnimateShadow = animatedBehavior.includes('shadow')
 
-  const finalColor =
-    shouldAnimateColor && isScrolled ? animatedColor : appBarColor;
-  const finalShadow: "md" | "none" =
-    shouldAnimateShadow && isScrolled ? "md" : "none";
+  const finalColor = shouldAnimateColor && isScrolled ? animatedColor : appBarColor
+  const finalShadow: 'md' | 'none' = shouldAnimateShadow && isScrolled ? 'md' : 'none'
 
-  const animatedBorderRadius = useTransform(
-    scrollY,
-    [0, foldAnimationDistance],
-    [0, foldBorderRadius],
-    { clamp: true }
-  );
+  const animatedBorderRadius = useTransform(scrollY, [0, foldAnimationDistance], [0, foldBorderRadius], { clamp: true })
 
-  const collapseAnimDistance = measuredHeights.largeContent;
-  const measuredLargeRowHeight = measuredHeights.mainRow;
-  const totalExpandedHeight = measuredLargeRowHeight + collapseAnimDistance;
+  const collapseAnimDistance = measuredHeights.largeContent
+  const measuredLargeRowHeight = measuredHeights.mainRow
+  const totalExpandedHeight = measuredLargeRowHeight + collapseAnimDistance
 
   const animatedTotalHeight = useTransform(
     scrollY,
     [0, collapseAnimDistance],
     [totalExpandedHeight, normalHeaderRowHeight],
-    { clamp: true }
-  );
+    { clamp: true },
+  )
   const smoothAnimatedTotalHeight = useSpring(animatedTotalHeight, {
     stiffness: 300,
     damping: 30,
     mass: 0.5,
-  });
+  })
 
   const animatedMainRowHeight = useTransform(
     scrollY,
     [0, collapseAnimDistance],
     [measuredLargeRowHeight, normalHeaderRowHeight],
-    { clamp: true }
-  );
-  const headerRowHeight = isCollapsible
-    ? animatedMainRowHeight
-    : measuredHeights.mainRow;
+    { clamp: true },
+  )
+  const headerRowHeight = isCollapsible ? animatedMainRowHeight : measuredHeights.mainRow
 
-  const largeHeaderOpacity = useTransform(
-    scrollY,
-    [0, collapseAnimDistance * 0.75],
-    [1, 0],
-    { clamp: true }
-  );
-  const largeHeaderY = useTransform(
-    scrollY,
-    [0, collapseAnimDistance],
-    [0, -40],
-    { clamp: true }
-  );
+  const largeHeaderOpacity = useTransform(scrollY, [0, collapseAnimDistance * 0.75], [1, 0], { clamp: true })
+  const largeHeaderY = useTransform(scrollY, [0, collapseAnimDistance], [0, -40], { clamp: true })
 
-  const titleCrossFadeStart = collapseAnimDistance * 0.4;
-  const titleCrossFadeEnd = collapseAnimDistance * 0.9;
+  const titleCrossFadeStart = collapseAnimDistance * 0.4
+  const titleCrossFadeEnd = collapseAnimDistance * 0.9
 
-  const childrenOpacity = useTransform(
-    scrollY,
-    [titleCrossFadeStart, titleCrossFadeEnd],
-    [1, 0],
-    { clamp: true }
-  );
-  const smallHeaderOpacity = useTransform(
-    scrollY,
-    [titleCrossFadeStart, titleCrossFadeEnd],
-    [0, 1],
-    { clamp: true }
-  );
+  const childrenOpacity = useTransform(scrollY, [titleCrossFadeStart, titleCrossFadeEnd], [1, 0], { clamp: true })
+  const smallHeaderOpacity = useTransform(scrollY, [titleCrossFadeStart, titleCrossFadeEnd], [0, 1], { clamp: true })
 
-  const contentPaddingTop = shouldRenderLargeContent
-    ? totalExpandedHeight + 10
-    : measuredHeights.mainRow + 20;
+  const contentPaddingTop = shouldRenderLargeContent ? totalExpandedHeight + 10 : measuredHeights.mainRow + 20
 
   return {
     isScrolled,
@@ -19082,7 +19406,7 @@ export const useAppBar = (
       style: {
         opacity: isCollapsible ? largeHeaderOpacity : 1,
         y: isCollapsible ? largeHeaderY : 0,
-        pointerEvents: isScrolled && isCollapsible ? "none" : "auto",
+        pointerEvents: isScrolled && isCollapsible ? 'none' : 'auto',
       } as MotionStyle,
     },
     childrenContainerProps: {
@@ -19095,14 +19419,14 @@ export const useAppBar = (
     finalShadow,
     isCollapsible,
     shouldRenderLargeContent,
-  };
-};
+  }
+}
 ```
 
 
-### Source: `src\lib\hooks\useShallowRouter.tsx`
+### Source: `src\lib\hooks\useShallowRouter.ts`
 
-```tsx
+```ts
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // --- TYPE DEFINITIONS (Fix for TypeScript errors) ---
@@ -19356,7 +19680,6 @@ export default useShallowRouter;
 
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
-
 @theme {
   /*
   |--------------------------------------------------------------------------

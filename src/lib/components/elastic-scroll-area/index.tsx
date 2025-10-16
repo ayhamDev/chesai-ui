@@ -31,7 +31,7 @@ const SNAP_BACK_STIFFNESS = 300;
 const SNAP_BACK_DAMPING = 30;
 const DEFAULT_PULL_THRESHOLD = 80;
 
-// --- TYPE DEFINITIONS ---
+// --- TYPE DEFINITIONS (MODIFIED) ---
 interface RefreshIndicatorProps {
   pullProgress: MotionValue<number>;
   isRefreshing: boolean;
@@ -43,11 +43,23 @@ export interface ElasticScrollAreaProps
   orientation?: "vertical" | "horizontal";
   elasticity?: boolean;
   dampingFactor?: number;
-  scrollbarVisibility?: "auto" | "always" | "scroll";
+  /**
+   * Controls scrollbar visibility.
+   * `auto`: Default browser behavior.
+   * `always`/`visible`: Always visible.
+   * `scroll`: Visible only when scrolling.
+   * `hidden`: Never visible.
+   * @default "auto"
+   */
+  scrollbarVisibility?: "auto" | "always" | "scroll" | "hidden" | "visible";
   pullToRefresh?: boolean;
   onRefresh?: () => Promise<unknown>;
   pullThreshold?: number;
   RefreshIndicatorComponent?: ComponentType<RefreshIndicatorProps>;
+  /** Callback fired when the user scrolls up. */
+  onScrollUp?: () => void;
+  /** Callback fired when the user scrolls down. */
+  onScrollDown?: () => void;
 }
 
 // --- DEFAULT REFRESH INDICATOR ---
@@ -286,6 +298,8 @@ const ElasticScrollAreaRoot = forwardRef<
       onRefresh,
       pullThreshold = DEFAULT_PULL_THRESHOLD,
       RefreshIndicatorComponent = DefaultRefreshIndicator,
+      onScrollUp,
+      onScrollDown,
       ...props
     },
     ref
@@ -320,6 +334,27 @@ const ElasticScrollAreaRoot = forwardRef<
       [0, 1]
     );
 
+    const lastScrollTop = useRef(0);
+    const handleScroll = useCallback(
+      (event: React.UIEvent<HTMLDivElement>) => {
+        const currentScrollTop = event.currentTarget.scrollTop;
+        const scrollDelta = currentScrollTop - lastScrollTop.current;
+
+        // Prevent firing on small jitters or bounce-back
+        if (Math.abs(scrollDelta) < 5) return;
+
+        if (scrollDelta > 0) {
+          onScrollDown?.();
+        } else {
+          onScrollUp?.();
+        }
+
+        // Update last scroll position, clamping at 0 for iOS bounce.
+        lastScrollTop.current = Math.max(0, currentScrollTop);
+      },
+      [onScrollDown, onScrollUp]
+    );
+
     return (
       <ScrollAreaPrimitive.Root
         className={clsx("relative h-full w-full overflow-hidden!", className)}
@@ -350,6 +385,7 @@ const ElasticScrollAreaRoot = forwardRef<
             ref={localViewportRef}
             className="h-full w-full rounded-[inherit]"
             style={{ touchAction: isVertical ? "pan-y" : "pan-x" }}
+            onScroll={onScrollUp || onScrollDown ? handleScroll : undefined}
           >
             {children}
           </ScrollAreaPrimitive.Viewport>
@@ -369,7 +405,7 @@ const ElasticScrollAreaRoot = forwardRef<
 );
 ElasticScrollAreaRoot.displayName = "ElasticScrollArea";
 
-// --- STYLED SUB-COMPONENTS ---
+// --- STYLED SUB-COMPONENTS (MODIFIED) ---
 const ScrollBar = forwardRef<
   ElementRef<typeof ScrollAreaPrimitive.Scrollbar>,
   ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Scrollbar> & {
@@ -395,7 +431,10 @@ const ScrollBar = forwardRef<
         orientation === "horizontal" &&
           "h-2.5 border-t border-t-transparent p-[1px]",
         {
-          "opacity-100": scrollbarVisibility === "always",
+          "opacity-100":
+            scrollbarVisibility === "always" ||
+            scrollbarVisibility === "visible",
+          hidden: scrollbarVisibility === "hidden",
           "data-[state=hidden]:opacity-0": scrollbarVisibility === "scroll",
           "opacity-0 data-[state=visible]:opacity-100":
             scrollbarVisibility === "auto",

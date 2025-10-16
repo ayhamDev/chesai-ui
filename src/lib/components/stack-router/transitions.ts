@@ -6,15 +6,6 @@ const EASING = {
   // NEW: A smoother, more modern iOS curve inspired by SwiftUI's default animation.
   // This provides a gentle acceleration and a long, graceful deceleration.
   iOS: cubicBezier(0.32, 0.72, 0, 1),
-
-  // OLD: A very aggressive, fast-starting curve. Good for snappy feedback but can feel less fluid.
-  // Google Material - balanced and predictable
-  material: cubicBezier(0.4, 0, 0.2, 1),
-
-  // You might have these defined elsewhere, kept for compatibility with the original file
-  emphasized: cubicBezier(0.4, 0, 0.2, 1), // Assuming a value
-  silk: cubicBezier(0.25, 1, 0.5, 1), // Assuming a value
-  snappy: cubicBezier(0.34, 1.56, 0.64, 1), // Assuming a value
 }
 
 // Optimized duration constants
@@ -43,7 +34,7 @@ const modal: Transition = {
 
 const fade: Transition = {
   type: 'tween',
-  ease: EASING.silk,
+  ease: EASING.iOS,
   duration: DURATION.base,
 }
 
@@ -55,10 +46,15 @@ export type TransitionPresets =
   | 'none'
   | 'fade'
   | 'zoom-fade'
+  | 'fade-from-right'
+  | 'fade-from-left'
+  | 'fade-from-top'
+  | 'fade-from-bottom'
   | 'slide-from-bottom'
   | 'slide-from-top'
   | 'slide-from-left'
   | 'flip'
+
 export const STACK_TRANSITIONS: Record<TransitionPresets, StackAnimation> = {
   /**
    * Default: Apple-inspired slide animation
@@ -69,11 +65,71 @@ export const STACK_TRANSITIONS: Record<TransitionPresets, StackAnimation> = {
     variants: {
       enter: { x: '100%', opacity: 1 },
       center: { x: 0, opacity: 1, scale: 1 },
-      behind: { x: '-30%', opacity: 1, scale: 0.9 },
+      behind: { x: '-30%', opacity: 0.9, scale: 0.9 },
       exit: { x: '100%', opacity: 1, scale: 1 },
       hidden: { opacity: 0, x: 0, transition: instant },
     },
     transition: navigation,
+  },
+
+  /**
+   * Fade from Right: A directional fade, subtler than a full slide.
+   * Best for: "Next" or "detail" views that are less hierarchical.
+   */
+  'fade-from-right': {
+    variants: {
+      enter: { x: '100%', opacity: 0 },
+      center: { x: 0, opacity: 1 },
+      behind: { x: '-75%', opacity: 0 },
+      exit: { x: '100%', opacity: 1 },
+      hidden: { opacity: 0, x: 0, transition: instant },
+    },
+    transition: navigation,
+  },
+
+  /**
+   * Fade from Left: A directional fade, reversing the right-side animation.
+   * Best for: "Back" or "dismiss" actions that need a subtler feel than a full slide.
+   */
+  'fade-from-left': {
+    variants: {
+      enter: { x: '-100%', opacity: 0 },
+      center: { x: 0, opacity: 1 },
+      behind: { x: '75%', opacity: 0 },
+      exit: { x: '-100%', opacity: 1 },
+      hidden: { opacity: 0, x: 0, transition: instant },
+    },
+    transition: navigation,
+  },
+
+  /**
+   * Fade from Bottom: A directional fade for modal-like presentations.
+   * Best for: Gentle appearance of sheets or overlays from the bottom.
+   */
+  'fade-from-bottom': {
+    variants: {
+      enter: { y: '100%', opacity: 0 },
+      center: { y: 0, opacity: 1 },
+      behind: { y: '-25%', opacity: 0 },
+      exit: { y: '100%', opacity: 1 },
+      hidden: { opacity: 0, y: 0, transition: instant },
+    },
+    transition: modal,
+  },
+
+  /**
+   * Fade from Top: A directional fade for alerts or notifications.
+   * Best for: Less intrusive notifications appearing from the top.
+   */
+  'fade-from-top': {
+    variants: {
+      enter: { y: '-100%', opacity: 0 },
+      center: { y: 0, opacity: 1 },
+      behind: { y: '25%', opacity: 0 },
+      exit: { y: '-100%', opacity: 1 },
+      hidden: { opacity: 0, y: 0, transition: instant },
+    },
+    transition: modal,
   },
 
   /**
@@ -85,7 +141,7 @@ export const STACK_TRANSITIONS: Record<TransitionPresets, StackAnimation> = {
     variants: {
       enter: { y: '100%', opacity: 1 },
       center: { y: 0, opacity: 1 },
-      behind: { y: 0, opacity: 0.6, scale: 0.96 },
+      behind: { y: 0, opacity: 0.6, scale: 0.9 },
       exit: { y: '100%', opacity: 1 },
       hidden: { opacity: 0, y: 0, transition: instant },
     },
@@ -215,9 +271,6 @@ export const TIMING_PRESETS = {
   modal,
   fade,
   instant,
-  lightning: { type: 'tween' as const, ease: EASING.snappy, duration: DURATION.fast },
-  cinematic: { type: 'tween' as const, ease: EASING.silk, duration: DURATION.slow },
-  micro: { type: 'tween' as const, ease: EASING.snappy, duration: DURATION.micro },
 }
 
 /**
