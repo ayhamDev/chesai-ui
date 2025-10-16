@@ -83,8 +83,10 @@ export interface StackScreenOptions {
   title?: string;
   headerTitle?:
     | React.ReactNode
-    // biome-ignore lint/suspicious/noExplicitAny: This allows the function to be generic
-    | ((props: { navigation: NavigationProp<any> }) => React.ReactNode);
+    | ((props: {
+        navigation: NavigationProp<any>;
+        route: RouteProp<any, any>; // <-- Pass route here too
+      }) => React.ReactNode);
   headerShown?: boolean;
   headerLeft?: (props: { canGoBack: boolean }) => React.ReactNode;
   headerRight?: (props: { canGoBack: boolean }) => React.ReactNode;
@@ -106,11 +108,8 @@ export interface StackScreenOptions {
     | "slide-from-right"
     | "slide-from-top"
     | "slide-from-bottom"
-    // biome-ignore lint/suspicious/noExplicitAny: Variants can be complex
     | { variants: any; transition: any };
-  /** An optional className to apply to the screen's container div. */
   pageClassName?: string;
-  /** If false, the header's title and adornment fade/slide transitions are disabled. @default true */
   headerAnimationEnabled?: boolean;
 }
 
@@ -194,22 +193,23 @@ const HeaderRight = <T extends Record<string, object | undefined>>({
 
 // --- MODIFIED: Internal Header Component ---
 const Header = <T extends Record<string, object | undefined>>({
-  screen,
+  options,
+  screenName,
   navigation,
+  route,
   scrollContainerRef,
   routeKey,
 }: {
-  screen: StackScreenComponent<T, keyof T>["props"] | undefined;
+  options: StackScreenOptions;
+  screenName?: keyof T;
   navigation: NavigationProp<T>;
+  route: RouteProp<T, keyof T>;
   scrollContainerRef: React.RefObject<HTMLElement | null>;
   routeKey: string;
 }) => {
-  if (!screen) return null;
-
-  const options = (screen.options || {}) as StackScreenOptions;
   if (options.headerShown === false) return null;
 
-  const title = options.headerTitle || options.title || screen.name;
+  const title = options.headerTitle || options.title || screenName;
   const headerAnimationEnabled = options.headerAnimationEnabled ?? true;
 
   const contentAnimation: Variants = {
@@ -272,7 +272,7 @@ const Header = <T extends Record<string, object | undefined>>({
           className="truncate"
         >
           {typeof title === "function"
-            ? title({ navigation })
+            ? title({ navigation, route }) // Pass route to headerTitle function
             : (title as React.ReactNode)}
         </motion.div>
       </AnimatePresence>
@@ -354,12 +354,16 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
   const currentRoute = state.routes[state.index];
   const screen = screens[currentRoute.name as string];
 
+  // --- THIS IS THE KEY FIX ---
+  // Resolve options ONCE here, and pass the resulting object down.
   const activeScreenOptions =
     typeof screen?.options === "function"
       ? screen.options({
           route: currentRoute as RouteProp<T, keyof T>,
         })
       : screen?.options || {};
+  // --- END OF FIX ---
+
   const activeAnimationOption = activeScreenOptions.animation || "default";
   const activeAnimationConfig =
     typeof activeAnimationOption === "string"
@@ -447,9 +451,12 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-graphite-background">
+      {/* Pass the RESOLVED options object to the header */}
       <Header
-        screen={screen}
+        options={activeScreenOptions}
+        screenName={screen?.name}
         navigation={navigation}
+        route={currentRoute as RouteProp<T, keyof T>}
         scrollContainerRef={scrollContainerRef}
         routeKey={currentRoute.key}
       />
@@ -473,7 +480,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
             }
             const Component = screenConfig.component;
 
-            // --- Get options for the specific screen being rendered ---
             const screenOptions =
               typeof screenConfig.options === "function"
                 ? screenConfig.options({
@@ -481,7 +487,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                   })
                 : screenConfig.options || {};
             const pageClassName = screenOptions.pageClassName;
-            // --- End Change ---
 
             const isActive = index === state.index;
             const variantName = isActive ? "center" : "behind";
@@ -504,7 +509,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                   zIndex: index,
                   willChange: "transform, opacity",
                 }}
-                // --- Apply the new className ---
                 className={clsx(
                   "absolute inset-x-0 bottom-0 top-0 bg-graphite-background",
                   pageClassName

@@ -313,9 +313,7 @@ export const TransitionPresets: StoryObj = {
       <AnimationStack.Screen
         name="SlideBottom"
         component={GenericScreen}
-        options={{
-          animation: "slide-from-bottom",
-        }}
+        options={{ animation: "slide-from-bottom" }}
       />
       <AnimationStack.Screen
         name="SlideLeft"
