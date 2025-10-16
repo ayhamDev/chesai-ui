@@ -128,8 +128,9 @@ const ArticleScreen = () => {
   );
 };
 const SettingsScreen = () => {
+  const navigation = useNavigation<HeaderStackParamList>();
   return (
-    <div className="p-6 pt-6">
+    <div className="p-6 pt-6" ref={navigation.scrollContainerRef}>
       <Typography variant="h4">Settings</Typography>
       <Typography variant="p">This screen has no header.</Typography>
     </div>
@@ -244,6 +245,14 @@ const GenericScreen = ({ route }: { route: RouteProp<any, any> }) => {
       <Typography variant="p">
         This screen transitioned using its specified animation preset.
       </Typography>
+      <Button
+        className="mt-4"
+        variant="primary"
+        size={"sm"}
+        onClick={() => navigation.push(route.name)}
+      >
+        Push More
+      </Button>
       <Button
         className="mt-4"
         variant="secondary"
@@ -375,10 +384,11 @@ const InboxScreen = () => {
   );
 };
 const EmailScreen = () => {
+  const navigation = useNavigation<MailStackParamList>();
   const route = useRoute<MailStackParamList, "Email">();
   const email = emails.find((e) => e.id === route.params.emailId);
   return (
-    <div className="p-6 pt-[70px]">
+    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
       <Typography variant="h4">{email?.subject}</Typography>
       <Typography variant="muted" className="!mt-2">
         From: {email?.from}

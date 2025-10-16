@@ -3,15 +3,19 @@ import {
   Archive,
   ArrowLeft,
   Delete,
+  Home,
   MoreVertical,
   Pencil,
   Search,
+  Settings,
   Star,
 } from "lucide-react";
 import { useRef } from "react";
 import { useAppBar } from "../../hooks/useAppBar";
 import { AppBar } from "../appbar";
 import { Avatar } from "../avatar";
+import { Button } from "../button";
+import { ButtonGroup } from "../button-group";
 import DeviceFrame from "../device";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
@@ -23,6 +27,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "../item";
+import { createStackNavigator, useNavigation } from "../stack-router";
 import { Typography } from "../typography";
 import { LayoutRouter, useLayoutRouter } from "./index";
 
@@ -307,5 +312,157 @@ export const MailClientApp: Story = {
         </LayoutRouter.Screen>
       ))}
     </LayoutRouter>
+  ),
+};
+
+// --- NEW STORY: INTEGRATING WITH STACK ROUTER ---
+
+// 1. Define Param Lists and Routers
+type AppStackParamList = {
+  Main: undefined;
+  Settings: undefined;
+};
+const AppStack = createStackNavigator<AppStackParamList>();
+
+const photoData = [
+  {
+    id: "photo-1",
+    src: "https://images.unsplash.com/photo-1517088613037-7a895121b6b5?w=500&q=80",
+  },
+  {
+    id: "photo-2",
+    src: "https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=500&q=80",
+  },
+  {
+    id: "photo-3",
+    src: "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=500&q=80",
+  },
+  {
+    id: "photo-4",
+    src: "https://images.unsplash.com/photo-1583337130417-2346a1be2a21?w=500&q=80",
+  },
+];
+
+// 2. Define Screens
+const PhotoGridScreen = () => (
+  <div className="p-4 grid grid-cols-2 gap-4">
+    {photoData.map((photo) => (
+      <LayoutRouter.Link
+        key={photo.id}
+        id={photo.id}
+        className="cursor-pointer"
+      >
+        <LayoutRouter.SharedElement tag="photo-image">
+          <img
+            src={photo.src}
+            alt={`Photo ${photo.id}`}
+            className="w-full h-48 object-cover rounded-lg"
+          />
+        </LayoutRouter.SharedElement>
+      </LayoutRouter.Link>
+    ))}
+  </div>
+);
+
+const PhotoDetailScreen = ({ photo }: { photo: (typeof photoData)[0] }) => {
+  const { goBack } = useLayoutRouter();
+  return (
+    <div className="h-full bg-graphite-background flex flex-col">
+      <AppBar
+        appBarColor="card"
+        startAdornment={
+          <IconButton variant="ghost" onClick={goBack}>
+            <ArrowLeft />
+          </IconButton>
+        }
+      >
+        <Typography variant="h4">Photo Detail</Typography>
+      </AppBar>
+      <div className="flex-1 p-4 flex flex-col justify-center items-center">
+        <LayoutRouter.SharedElement tag="photo-image">
+          <img
+            src={photo.src}
+            alt={`Photo ${photo.id}`}
+            className="w-full max-w-sm rounded-xl object-contain"
+          />
+        </LayoutRouter.SharedElement>
+        <Typography variant="p" className="mt-4">
+          Details for photo {photo.id}.
+        </Typography>
+      </div>
+    </div>
+  );
+};
+
+const MainScreen = () => {
+  const stackNavigation = useNavigation<AppStackParamList>();
+  return (
+    <div className="h-full flex flex-col">
+      <AppBar appBarColor="card">
+        <Typography variant="h4">Main Screen</Typography>
+      </AppBar>
+      <div className="flex-1 overflow-hidden">
+        <LayoutRouter duration={0.4}>
+          <LayoutRouter.List>
+            <PhotoGridScreen />
+          </LayoutRouter.List>
+          {photoData.map((photo) => (
+            <LayoutRouter.Screen key={photo.id} id={photo.id}>
+              <PhotoDetailScreen photo={photo} />
+            </LayoutRouter.Screen>
+          ))}
+        </LayoutRouter>
+      </div>
+      <div className="p-2 border-t border-graphite-border bg-graphite-card">
+        <ButtonGroup shape="minimal" className="w-full">
+          <Button variant="primary" size="sm">
+            <Home className="mr-2 h-4 w-4" />
+            Home
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => stackNavigation.push("Settings")}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Settings
+          </Button>
+        </ButtonGroup>
+      </div>
+    </div>
+  );
+};
+
+const SettingsScreen = () => {
+  const navigation = useNavigation();
+  return (
+    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
+      <Typography variant="h3">Settings</Typography>
+      <Typography variant="p">
+        This is a separate screen managed by the top-level StackRouter.
+      </Typography>
+    </div>
+  );
+};
+
+export const IntegratingWithStackRouter: Story = {
+  name: "Integrating with StackRouter",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "This example shows how to nest a `LayoutRouter` inside a `StackRouter`. The `StackRouter` handles primary navigation (e.g., between 'Main' and 'Settings'), while the `LayoutRouter` inside the 'Main' screen handles a shared-element transition for a photo gallery.",
+      },
+    },
+  },
+  render: () => (
+    <AppStack.Navigator initialRouteName="Main">
+      <AppStack.Screen
+        name="Main"
+        component={MainScreen}
+        options={{ headerShown: false }}
+      />
+      <AppStack.Screen name="Settings" component={SettingsScreen} />
+    </AppStack.Navigator>
   ),
 };

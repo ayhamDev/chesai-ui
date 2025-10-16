@@ -62,7 +62,7 @@ const LayoutRouterRoot = ({
   duration = defaultDuration,
   easing = defaultEasing,
 }: LayoutRouterRootProps) => {
-  // --- NEW: HISTORY-BASED STATE MANAGEMENT ---
+  // --- MODIFIED: HISTORY-BASED STATE MANAGEMENT ---
   const [stack, setStack] = useState<string[]>(
     () => (typeof window !== "undefined" && window.history.state?.stack) || []
   );
@@ -70,16 +70,20 @@ const LayoutRouterRoot = ({
   const selectedId = stack.length > 0 ? stack[stack.length - 1] : null;
 
   useLayoutEffect(() => {
-    // Set initial history state if it doesn't exist
+    // Set initial history state, merging with any existing state (from a parent router)
     if (typeof window !== "undefined" && !window.history.state?.stack) {
-      window.history.replaceState({ stack }, "");
+      window.history.replaceState({ ...window.history.state, stack }, "");
     }
   }, [stack]);
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
+      // When history changes, check if our state is present and update
       if (event.state && Array.isArray(event.state.stack)) {
         setStack(event.state.stack);
+      } else if (event.state === null || event.state?.stack === undefined) {
+        // This handles backing out of the nested router entirely
+        setStack([]);
       }
     };
     window.addEventListener("popstate", handlePopState);
@@ -91,10 +95,15 @@ const LayoutRouterRoot = ({
       selectedId,
       navigate: (id: string) => {
         const newStack = [...stack, id];
-        window.history.pushState({ stack: newStack }, "");
+        // Merge the new stack into the existing history state
+        window.history.pushState(
+          { ...window.history.state, stack: newStack },
+          ""
+        );
         setStack(newStack);
       },
       goBack: () => {
+        // This will now correctly trigger the popstate event for all routers
         window.history.back();
       },
     }),

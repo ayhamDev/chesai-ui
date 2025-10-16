@@ -335,7 +335,8 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
   useLayoutEffect(() => {
     if (typeof window !== "undefined" && !window.history.state?.routes) {
-      window.history.replaceState(state, "");
+      // --- FIX: Merge with existing state instead of replacing ---
+      window.history.replaceState({ ...window.history.state, ...state }, "");
     }
   }, [state]);
 
@@ -384,7 +385,8 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        window.history.pushState(newState, "");
+        // --- FIX: Merge with existing state instead of replacing ---
+        window.history.pushState({ ...window.history.state, ...newState }, "");
         setState(newState);
       },
       push: (name, params) => {
@@ -397,7 +399,8 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        window.history.pushState(newState, "");
+        // --- FIX: Merge with existing state instead of replacing ---
+        window.history.pushState({ ...window.history.state, ...newState }, "");
         setState(newState);
       },
       replace: (name, params) => {
@@ -411,7 +414,11 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: newRoutes.length - 1,
           routes: newRoutes,
         };
-        window.history.replaceState(newState, "");
+        // --- FIX: Merge with existing state instead of replacing ---
+        window.history.replaceState(
+          { ...window.history.state, ...newState },
+          ""
+        );
         setState(newState);
       },
       goBack: () => {
