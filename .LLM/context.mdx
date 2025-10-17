@@ -8330,7 +8330,6 @@ const LayoutRouterRoot = ({
   duration = defaultDuration,
   easing = defaultEasing,
 }: LayoutRouterRootProps) => {
-  // --- MODIFIED: HISTORY-BASED STATE MANAGEMENT ---
   const [stack, setStack] = useState<string[]>(
     () => (typeof window !== "undefined" && window.history.state?.stack) || []
   );
@@ -8338,7 +8337,6 @@ const LayoutRouterRoot = ({
   const selectedId = stack.length > 0 ? stack[stack.length - 1] : null;
 
   useLayoutEffect(() => {
-    // Set initial history state, merging with any existing state (from a parent router)
     if (typeof window !== "undefined" && !window.history.state?.stack) {
       window.history.replaceState({ ...window.history.state, stack }, "");
     }
@@ -8346,11 +8344,9 @@ const LayoutRouterRoot = ({
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      // When history changes, check if our state is present and update
       if (event.state && Array.isArray(event.state.stack)) {
         setStack(event.state.stack);
       } else if (event.state === null || event.state?.stack === undefined) {
-        // This handles backing out of the nested router entirely
         setStack([]);
       }
     };
@@ -8363,7 +8359,6 @@ const LayoutRouterRoot = ({
       selectedId,
       navigate: (id: string) => {
         const newStack = [...stack, id];
-        // Merge the new stack into the existing history state
         window.history.pushState(
           { ...window.history.state, stack: newStack },
           ""
@@ -8371,13 +8366,23 @@ const LayoutRouterRoot = ({
         setStack(newStack);
       },
       goBack: () => {
-        // This will now correctly trigger the popstate event for all routers
         window.history.back();
       },
     }),
     [selectedId, stack]
   );
-  // --- END: HISTORY-BASED STATE MANAGEMENT ---
+
+  // --- NEW: Escape Key Listener ---
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && selectedId) {
+        navigationValue.goBack();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedId, navigationValue]);
+  // --- END NEW ---
 
   const configValue = useMemo(
     () => ({
@@ -8470,21 +8475,46 @@ const LayoutRouterSharedElement = ({
 };
 LayoutRouterSharedElement.displayName = "LayoutRouter.SharedElement";
 
+// --- MODIFIED: LayoutRouterScreen ---
 const LayoutRouterScreen = ({
   id,
   children,
+  presentation = "fullscreen",
 }: {
   id: string;
   children: ReactNode;
+  presentation?: "fullscreen" | "modal";
 }) => {
   const { transition } = useContext(LayoutRouterConfigContext);
+  const { goBack } = useLayoutRouter();
+
+  const containerClasses =
+    presentation === "fullscreen"
+      ? "absolute inset-0 z-50 pointer-events-auto"
+      : "fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto";
+
+  const contentClasses =
+    presentation === "fullscreen"
+      ? "w-full h-full bg-graphite-background"
+      : "w-full max-w-lg rounded-2xl bg-graphite-card shadow-2xl overflow-hidden";
+
   return (
     <LayoutIdContext.Provider value={{ baseId: id }}>
-      {/* This div is the fullscreen container */}
-      <div className="absolute inset-0 z-50 pointer-events-none">
+      <div className={containerClasses}>
+        {/* Backdrop for modal presentation */}
+        {presentation === "modal" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-black/50"
+            onClick={goBack}
+          />
+        )}
         <motion.div
           layoutId={`card-${id}`}
-          className="w-full h-full pointer-events-auto bg-graphite-background" // Ensure it has a background
+          className={contentClasses}
           transition={transition}
           style={{ willChange: "transform, opacity" }}
         >
@@ -8495,6 +8525,7 @@ const LayoutRouterScreen = ({
   );
 };
 LayoutRouterScreen.displayName = "LayoutRouter.Screen";
+// --- END MODIFICATION ---
 
 export const LayoutRouter = Object.assign(LayoutRouterRoot, {
   List: LayoutRouterList,
@@ -8542,7 +8573,6 @@ import { LayoutRouter, useLayoutRouter } from "./index";
 const meta: Meta<typeof LayoutRouter> = {
   title: "Components/Navigators/LayoutRouter",
   component: LayoutRouter,
-  // ... (rest of meta config is unchanged)
   subcomponents: {
     List: LayoutRouter.List,
     Link: LayoutRouter.Link,
@@ -8555,7 +8585,7 @@ const meta: Meta<typeof LayoutRouter> = {
     docs: {
       description: {
         component:
-          "A declarative router for creating multi-element shared layout transitions. This version supports browser history and fullscreen transitions, demonstrated with a full mail client UI.",
+          "A declarative router for creating multi-element shared layout transitions. This version supports browser history and multiple presentation modes (fullscreen, modal), demonstrated with a full mail client UI.",
       },
     },
   },
@@ -8581,7 +8611,7 @@ const meta: Meta<typeof LayoutRouter> = {
 export default meta;
 type Story = StoryObj;
 
-// --- Sample Data (Unchanged) ---
+// --- Sample Data ---
 const sampleEmails = [
   {
     id: "email-1",
@@ -8589,7 +8619,6 @@ const sampleEmails = [
     avatar: "https://i.pravatar.cc/150?img=1",
     subject: "Project Update & Next Steps",
     preview: "Hey team, just wanted to give a quick update...",
-    timestamp: "2m ago",
     fullBody: "...",
   },
   {
@@ -8598,39 +8627,26 @@ const sampleEmails = [
     avatar: "https://i.pravatar.cc/150?img=2",
     subject: "Lunch Plans?",
     preview: "Anyone up for lunch today? I'm craving tacos.",
-    timestamp: "15m ago",
-    fullBody: "...",
-  },
-  {
-    id: "email-3",
-    sender: "Charlie Enderson",
-    avatar: "https://i.pravatar.cc/150?img=3",
-    subject: "Design Feedback Required",
-    preview: "Hi, I've just pushed the latest mockups...",
-    timestamp: "1h ago",
-    fullBody: "...",
-  },
-  {
-    id: "email-4",
-    sender: "Diana Prince",
-    avatar: "https://i.pravatar.cc/150?img=4",
-    subject: "Re: Q3 Budget",
-    preview: "Thanks for sending that over, I'll take a look.",
-    timestamp: "3h ago",
-    fullBody: "...",
-  },
-  {
-    id: "email-5",
-    sender: "Ethan Hunt",
-    avatar: "https://i.pravatar.cc/150?img=5",
-    subject: "Your Mission, Should You Choose to Accept It",
-    preview: "This message will self-destruct in 5 seconds.",
-    timestamp: "Yesterday",
     fullBody: "...",
   },
 ];
 
-// --- Reusable UI Components for the Story ---
+const galleryData = [
+  {
+    id: "img-1",
+    src: "https://images.unsplash.com/photo-1517088613037-7a895121b6b5?w=500&q=80",
+    title: "Vibrant Chameleon",
+    author: "Photos by Lanty",
+  },
+  {
+    id: "img-2",
+    src: "https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=500&q=80",
+    title: "Mountain Reflection",
+    author: "Quino Al",
+  },
+];
+
+// --- Reusable UI Components for the Stories ---
 
 const MailListItem = ({ email }: { email: (typeof sampleEmails)[0] }) => (
   <Item variant="secondary" shape="minimal" padding="sm">
@@ -8640,19 +8656,9 @@ const MailListItem = ({ email }: { email: (typeof sampleEmails)[0] }) => (
       </LayoutRouter.SharedElement>
     </ItemMedia>
     <ItemContent>
-      <div className="flex justify-between items-start">
-        <LayoutRouter.SharedElement tag="sender">
-          <ItemTitle>{email.sender}</ItemTitle>
-        </LayoutRouter.SharedElement>
-        <LayoutRouter.SharedElement tag="timestamp">
-          <Typography
-            variant="muted"
-            className="!mt-0 !text-xs whitespace-nowrap"
-          >
-            {email.timestamp}
-          </Typography>
-        </LayoutRouter.SharedElement>
-      </div>
+      <LayoutRouter.SharedElement tag="sender">
+        <ItemTitle>{email.sender}</ItemTitle>
+      </LayoutRouter.SharedElement>
       <LayoutRouter.SharedElement tag="subject">
         <ItemDescription className="font-semibold !text-graphite-foreground/90">
           {email.subject}
@@ -8680,131 +8686,53 @@ const MailDetailScreen = ({ email }: { email: (typeof sampleEmails)[0] }) => {
             <ArrowLeft />
           </IconButton>
         }
-        endAdornments={[
-          <IconButton
-            key="archive"
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label="Archive"
-          >
-            <Archive size={20} />
-          </IconButton>,
-          <IconButton
-            key="delete"
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label="Delete"
-          >
-            <Delete size={20} />
-          </IconButton>,
-          <IconButton
-            key="more"
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label="More options"
-          >
-            <MoreVertical size={20} />
-          </IconButton>,
-        ]}
       />
-
-      <ElasticScrollArea className="flex-1">
-        <div className="p-6 pt-2">
-          <LayoutRouter.SharedElement tag="subject">
-            <Typography variant="h3" className="mb-6">
-              {email.subject}
-            </Typography>
-          </LayoutRouter.SharedElement>
-
-          <div className="flex items-center gap-4">
-            <LayoutRouter.SharedElement tag="avatar">
-              <Avatar
-                size="lg"
-                src={email.avatar}
-                fallback={email.sender.slice(0, 2)}
-              />
-            </LayoutRouter.SharedElement>
-            <div className="flex-1">
-              <LayoutRouter.SharedElement tag="sender">
-                <Typography variant="large">{email.sender}</Typography>
-              </LayoutRouter.SharedElement>
-              <Typography variant="muted" className="!mt-0">
-                to me
-              </Typography>
-            </div>
-            <LayoutRouter.SharedElement tag="timestamp">
-              <Typography variant="muted" className="!mt-0 !text-xs">
-                {email.timestamp}
-              </Typography>
-            </LayoutRouter.SharedElement>
-            <IconButton variant="ghost" size="sm" aria-label="Favorite">
-              <Star size={20} />
-            </IconButton>
-          </div>
-          <Typography variant="p" className="mt-8">
-            {email.fullBody} {email.fullBody} {email.fullBody}
+      <div className="p-6 pt-2">
+        <LayoutRouter.SharedElement tag="subject">
+          <Typography variant="h3" className="mb-6">
+            {email.subject}
           </Typography>
-        </div>
-      </ElasticScrollArea>
-    </div>
-  );
-};
-
-const InboxScreen = () => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const appBarProps = {
-    scrollContainerRef: scrollRef,
-    size: "lg" as const,
-    scrollBehavior: "conditionally-sticky" as const,
-    animatedBehavior: ["shadow"] as Array<"shadow">,
-    appBarColor: "card" as const,
-    largeHeaderRowHeight: 50,
-  };
-  const { contentPaddingTop } = useAppBar(appBarProps);
-
-  return (
-    <div className="w-full h-full relative bg-graphite-background flex flex-col">
-      <AppBar
-        {...appBarProps}
-        children={<Typography variant="h4">Inbox</Typography>}
-        endAdornments={[
-          <IconButton key="compose" variant="ghost" aria-label="Compose">
-            <Pencil size={20} />
-          </IconButton>,
-        ]}
-        largeHeaderContent={
-          <Input
-            variant="secondary"
-            shape="full"
-            startAdornment={<Search className="h-5 w-5 text-gray-500" />}
-            placeholder="Search mail..."
-          />
-        }
-      />
-      <ElasticScrollArea ref={scrollRef} className="flex-1">
-        <div style={{ paddingTop: contentPaddingTop }}>
-          <div className="p-2 flex flex-col gap-2">
-            {sampleEmails.map((email) => (
-              <LayoutRouter.Link
-                key={email.id}
-                id={email.id}
-                className="cursor-pointer"
-              >
-                <MailListItem email={email} />
-              </LayoutRouter.Link>
-            ))}
+        </LayoutRouter.SharedElement>
+        <div className="flex items-center gap-4">
+          <LayoutRouter.SharedElement tag="avatar">
+            <Avatar
+              size="lg"
+              src={email.avatar}
+              fallback={email.sender.slice(0, 2)}
+            />
+          </LayoutRouter.SharedElement>
+          <div className="flex-1">
+            <LayoutRouter.SharedElement tag="sender">
+              <Typography variant="large">{email.sender}</Typography>
+            </LayoutRouter.SharedElement>
           </div>
         </div>
-      </ElasticScrollArea>
+      </div>
     </div>
   );
 };
 
-export const MailClientApp: Story = {
-  name: "Mail Client App",
+const InboxScreen = () => (
+  <div className="w-full h-full relative bg-graphite-background flex flex-col">
+    <AppBar appBarColor="card">
+      <Typography variant="h4">Inbox</Typography>
+    </AppBar>
+    <div className="p-2 flex flex-col gap-2">
+      {sampleEmails.map((email) => (
+        <LayoutRouter.Link
+          key={email.id}
+          id={email.id}
+          className="cursor-pointer"
+        >
+          <MailListItem email={email} />
+        </LayoutRouter.Link>
+      ))}
+    </div>
+  </div>
+);
+
+export const FullscreenPresentation: Story = {
+  name: "1. Fullscreen Presentation (Default)",
   args: {
     duration: 0.5,
   },
@@ -8813,9 +8741,12 @@ export const MailClientApp: Story = {
       <LayoutRouter.List>
         <InboxScreen />
       </LayoutRouter.List>
-
       {sampleEmails.map((email) => (
-        <LayoutRouter.Screen key={email.id} id={email.id}>
+        <LayoutRouter.Screen
+          key={email.id}
+          id={email.id}
+          presentation="fullscreen"
+        >
           <MailDetailScreen email={email} />
         </LayoutRouter.Screen>
       ))}
@@ -8823,48 +8754,7 @@ export const MailClientApp: Story = {
   ),
 };
 
-// --- NEW IMAGE GALLERY STORY ---
-
-const galleryData = [
-  {
-    id: "img-1",
-    src: "https://images.unsplash.com/photo-1517088613037-7a895121b6b5?w=500&q=80",
-    title: "Vibrant Chameleon",
-    author: "Photos by Lanty",
-  },
-  {
-    id: "img-2",
-    src: "https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=500&q=80",
-    title: "Mountain Reflection",
-    author: "Quino Al",
-  },
-  {
-    id: "img-3",
-    src: "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=500&q=80",
-    title: "Cool Cat",
-    author: "Manja Vitolic",
-  },
-  {
-    id: "img-4",
-    src: "https://images.unsplash.com/photo-1583337130417-2346a1be2a21?w=500&q=80",
-    title: "Happy Dog",
-    author: "Karsten Winegeart",
-  },
-  {
-    id: "img-5",
-    src: "https://images.unsplash.com/photo-1574224252329-0017c66f5614?w=500&q=80",
-    title: "Architectural Lines",
-    author: "Dmitry Schemelev",
-  },
-  {
-    id: "img-6",
-    src: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=500&q=80",
-    title: "Museum Hall",
-    author: "Massimo Virgilio",
-  },
-];
-
-// Reusable component for a grid item
+// --- NEW: Modal Presentation Story ---
 const GalleryGridItem = ({ item }: { item: (typeof galleryData)[0] }) => (
   <LayoutRouter.Link id={item.id} className="cursor-pointer group">
     <div className="relative overflow-hidden rounded-xl aspect-square">
@@ -8886,65 +8776,32 @@ const GalleryGridItem = ({ item }: { item: (typeof galleryData)[0] }) => (
   </LayoutRouter.Link>
 );
 
-// Reusable component for the gallery list screen
-const GalleryGridScreen = () => {
-  return (
-    <div className="h-full flex flex-col bg-graphite-background">
-      <AppBar appBarColor="card">
-        <Typography variant="h4">Image Gallery</Typography>
-      </AppBar>
-      <ElasticScrollArea className="flex-1">
-        <div className="p-2 grid grid-cols-2 gap-2">
-          {galleryData.map((item) => (
-            <GalleryGridItem key={item.id} item={item} />
-          ))}
-        </div>
-      </ElasticScrollArea>
-    </div>
-  );
-};
-
-// Reusable component for the image detail screen
-const GalleryDetailScreen = ({ item }: { item: (typeof galleryData)[0] }) => {
+const ModalDetailScreen = ({ item }: { item: (typeof galleryData)[0] }) => {
   const { goBack } = useLayoutRouter();
   return (
-    <div className="h-full flex flex-col bg-graphite-background">
-      <AppBar
-        appBarColor="card"
-        startAdornment={
-          <IconButton variant="ghost" onClick={goBack}>
-            <ArrowLeft />
-          </IconButton>
-        }
-      />
-      <ElasticScrollArea className="flex-1">
-        <div className="p-4">
-          <LayoutRouter.SharedElement tag="image">
-            <img
-              src={item.src}
-              alt={item.title}
-              className="w-full h-auto rounded-2xl object-contain shadow-xl"
-            />
-          </LayoutRouter.SharedElement>
-          <div className="mt-4">
-            <LayoutRouter.SharedElement tag="title">
-              <Typography variant="h3">{item.title}</Typography>
-            </LayoutRouter.SharedElement>
-            <Typography variant="muted">By {item.author}</Typography>
-          </div>
-          <Typography variant="p">
-            This is where a detailed description of the image would go. The
-            transition you just saw was powered by Framer Motion's `layoutId`,
-            orchestrated by the `LayoutRouter`.
-          </Typography>
-        </div>
-      </ElasticScrollArea>
+    <div className="p-4 flex flex-col">
+      <LayoutRouter.SharedElement tag="image">
+        <img
+          src={item.src}
+          alt={item.title}
+          className="w-full h-[400px] rounded-lg object-cover"
+        />
+      </LayoutRouter.SharedElement>
+      <div className="mt-4">
+        <LayoutRouter.SharedElement tag="title">
+          <Typography variant="h4">{item.title}</Typography>
+        </LayoutRouter.SharedElement>
+        <Typography variant="muted">By {item.author}</Typography>
+        <Button onClick={goBack} className="mt-4" size="sm">
+          Close
+        </Button>
+      </div>
     </div>
   );
 };
 
-export const ImageGallery: Story = {
-  name: "Image Gallery",
+export const ModalPresentation: Story = {
+  name: "2. Modal Presentation",
   args: {
     duration: 0.4,
   },
@@ -8952,104 +8809,38 @@ export const ImageGallery: Story = {
     docs: {
       description: {
         story:
-          "A classic example of a shared element transition. Clicking a grid item animates both the image and its title into a full-screen detail view. This is achieved by wrapping the corresponding elements in `<LayoutRouter.SharedElement>` with a matching `tag` prop.",
+          "Set `presentation='modal'` on a `<LayoutRouter.Screen>` to make it appear as a floating modal. The backdrop can be clicked to dismiss it, and the 'Escape' key also works.",
       },
     },
   },
   render: (args) => (
     <LayoutRouter {...args}>
       <LayoutRouter.List>
-        <GalleryGridScreen />
+        <div className="h-full flex flex-col bg-graphite-background">
+          <AppBar appBarColor="card">
+            <Typography variant="h4">Modal Gallery</Typography>
+          </AppBar>
+          <div className="p-2 grid grid-cols-2 gap-2">
+            {galleryData.map((item) => (
+              <GalleryGridItem key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
       </LayoutRouter.List>
 
       {galleryData.map((item) => (
-        <LayoutRouter.Screen key={item.id} id={item.id}>
-          <GalleryDetailScreen item={item} />
+        <LayoutRouter.Screen key={item.id} id={item.id} presentation="modal">
+          <ModalDetailScreen item={item} />
         </LayoutRouter.Screen>
       ))}
     </LayoutRouter>
   ),
 };
 
-// --- NEW STORY: INTEGRATING WITH STACK ROUTER ---
-
-// 1. Define Param Lists and Routers
-type AppStackParamList = {
-  Main: undefined;
-  Settings: undefined;
-};
+// ... (Rest of the stories like IntegratingWithStackRouter remain unchanged)
+// --- INTEGRATING WITH STACK ROUTER ---
+type AppStackParamList = { Main: undefined; Settings: undefined };
 const AppStack = createStackNavigator<AppStackParamList>();
-
-const photoData = [
-  {
-    id: "photo-1",
-    src: "https://images.unsplash.com/photo-1517088613037-7a895121b6b5?w=500&q=80",
-  },
-  {
-    id: "photo-2",
-    src: "https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=500&q=80",
-  },
-  {
-    id: "photo-3",
-    src: "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=500&q=80",
-  },
-  {
-    id: "photo-4",
-    src: "https://images.unsplash.com/photo-1583337130417-2346a1be2a21?w=500&q=80",
-  },
-];
-
-// 2. Define Screens
-const PhotoGridScreen = () => (
-  <div className="p-4 grid grid-cols-2 gap-4">
-    {photoData.map((photo) => (
-      <LayoutRouter.Link
-        key={photo.id}
-        id={photo.id}
-        className="cursor-pointer"
-      >
-        <LayoutRouter.SharedElement tag="photo-image">
-          <img
-            src={photo.src}
-            alt={`Photo ${photo.id}`}
-            className="w-full h-48 object-cover rounded-lg"
-          />
-        </LayoutRouter.SharedElement>
-      </LayoutRouter.Link>
-    ))}
-  </div>
-);
-
-const PhotoDetailScreen = ({ photo }: { photo: (typeof photoData)[0] }) => {
-  const { goBack } = useLayoutRouter();
-  return (
-    <div className="h-full bg-graphite-background flex flex-col">
-      <AppBar
-        appBarColor="card"
-        startAdornment={
-          <IconButton variant="ghost" onClick={goBack}>
-            <ArrowLeft />
-          </IconButton>
-        }
-      >
-        <Typography variant="h4">Photo Detail</Typography>
-      </AppBar>
-      <div className="flex-1 p-4 flex flex-col justify-center items-center">
-        <LayoutRouter.SharedElement tag="photo-image">
-          <img
-            src={photo.src}
-            alt={`Photo ${photo.id}`}
-            className="w-full max-w-sm rounded-xl object-contain"
-          />
-        </LayoutRouter.SharedElement>
-        <Typography variant="p" className="mt-4">
-          Details for photo {photo.id}.
-        </Typography>
-      </div>
-    </div>
-  );
-};
-
 const MainScreen = () => {
   const stackNavigation = useNavigation<AppStackParamList>();
   return (
@@ -9060,11 +8851,19 @@ const MainScreen = () => {
       <div className="flex-1 overflow-hidden">
         <LayoutRouter duration={0.4}>
           <LayoutRouter.List>
-            <PhotoGridScreen />
+            <div className="p-4 grid grid-cols-2 gap-4">
+              {galleryData.map((item) => (
+                <GalleryGridItem key={item.id} item={item} />
+              ))}
+            </div>
           </LayoutRouter.List>
-          {photoData.map((photo) => (
-            <LayoutRouter.Screen key={photo.id} id={photo.id}>
-              <PhotoDetailScreen photo={photo} />
+          {galleryData.map((item) => (
+            <LayoutRouter.Screen
+              key={item.id}
+              id={item.id}
+              presentation="modal"
+            >
+              <ModalDetailScreen item={item} />
             </LayoutRouter.Screen>
           ))}
         </LayoutRouter>
@@ -9072,7 +8871,6 @@ const MainScreen = () => {
       <div className="p-2 border-t border-graphite-border bg-graphite-card">
         <ButtonGroup shape="minimal" className="w-full">
           <Button variant="primary" size="sm">
-            <Home className="mr-2 h-4 w-4" />
             Home
           </Button>
           <Button
@@ -9080,7 +8878,6 @@ const MainScreen = () => {
             size="sm"
             onClick={() => stackNavigation.push("Settings")}
           >
-            <Settings className="mr-2 h-4 w-4" />
             Settings
           </Button>
         </ButtonGroup>
@@ -9088,28 +8885,13 @@ const MainScreen = () => {
     </div>
   );
 };
-
-const SettingsScreen = () => {
-  return (
-    <div className="p-6 pt-[70px]">
-      <Typography variant="h3">Settings</Typography>
-      <Typography variant="p">
-        This is a separate screen managed by the top-level StackRouter.
-      </Typography>
-    </div>
-  );
-};
-
+const SettingsScreen = () => (
+  <div className="p-6 pt-[70px]">
+    <Typography variant="h3">Settings</Typography>
+  </div>
+);
 export const IntegratingWithStackRouter: Story = {
-  name: "Integrating with StackRouter",
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "This example shows how to nest a `LayoutRouter` inside a `StackRouter`. The `StackRouter` handles primary navigation (e.g., between 'Main' and 'Settings'), while the `LayoutRouter` inside the 'Main' screen handles a shared-element transition for a photo gallery.",
-      },
-    },
-  },
+  name: "3. Integrating with StackRouter",
   render: () => (
     <AppStack.Navigator initialRouteName="Main">
       <AppStack.Screen
@@ -14850,7 +14632,7 @@ export interface StackScreenOptions {
     | React.ReactNode
     | ((props: {
         navigation: NavigationProp<any>;
-        route: RouteProp<any, any>; // <-- Pass route here too
+        route: RouteProp<any, any>;
       }) => React.ReactNode);
   headerShown?: boolean;
   headerLeft?: (props: { canGoBack: boolean }) => React.ReactNode;
@@ -14956,7 +14738,6 @@ const HeaderRight = <T extends Record<string, object | undefined>>({
   return null;
 };
 
-// --- MODIFIED: Internal Header Component ---
 const Header = <T extends Record<string, object | undefined>>({
   options,
   screenName,
@@ -15037,7 +14818,7 @@ const Header = <T extends Record<string, object | undefined>>({
           className="truncate"
         >
           {typeof title === "function"
-            ? title({ navigation, route }) // Pass route to headerTitle function
+            ? title({ navigation, route })
             : (title as React.ReactNode)}
         </motion.div>
       </AnimatePresence>
@@ -15046,16 +14827,24 @@ const Header = <T extends Record<string, object | undefined>>({
 };
 
 // --- Main Navigator Logic ---
+// --- MODIFICATION: Added screenOptions to props ---
 interface StackNavigatorProps<T extends Record<string, object | undefined>> {
   initialRouteName: keyof T;
   children:
     | React.ReactElement<StackScreenComponent<T, keyof T>["props"]>
     | React.ReactElement<StackScreenComponent<T, keyof T>["props"]>[];
+  screenOptions?:
+    | StackScreenOptions
+    | ((props: {
+        route: RouteProp<T, keyof T>;
+        navigation: NavigationProp<T>;
+      }) => StackScreenOptions);
 }
 
 const StackNavigator = <T extends Record<string, object | undefined>>({
   initialRouteName,
   children,
+  screenOptions: globalScreenOptions, // --- MODIFICATION: Destructure global options
 }: StackNavigatorProps<T>) => {
   const screens = useMemo(() => {
     const screenConfig: Record<
@@ -15100,7 +14889,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
   useLayoutEffect(() => {
     if (typeof window !== "undefined" && !window.history.state?.routes) {
-      // --- FIX: Merge with existing state instead of replacing ---
       window.history.replaceState({ ...window.history.state, ...state }, "");
     }
   }, [state]);
@@ -15117,24 +14905,8 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
   }, []);
 
   const scrollContainerRef = useRef<HTMLElement | null>(null);
-  const currentRoute = state.routes[state.index];
+  const currentRoute = state.routes[state.index] as RouteProp<T, keyof T>;
   const screen = screens[currentRoute.name as string];
-
-  // --- THIS IS THE KEY FIX ---
-  // Resolve options ONCE here, and pass the resulting object down.
-  const activeScreenOptions =
-    typeof screen?.options === "function"
-      ? screen.options({
-          route: currentRoute as RouteProp<T, keyof T>,
-        })
-      : screen?.options || {};
-  // --- END OF FIX ---
-
-  const activeAnimationOption = activeScreenOptions.animation || "default";
-  const activeAnimationConfig =
-    typeof activeAnimationOption === "string"
-      ? STACK_TRANSITIONS[activeAnimationOption] || STACK_TRANSITIONS.default
-      : activeAnimationOption;
 
   const navigation = useMemo((): NavigationProp<T> => {
     const canGoBack = () => state.index > 0;
@@ -15150,7 +14922,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        // --- FIX: Merge with existing state instead of replacing ---
         window.history.pushState({ ...window.history.state, ...newState }, "");
         setState(newState);
       },
@@ -15164,7 +14935,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        // --- FIX: Merge with existing state instead of replacing ---
         window.history.pushState({ ...window.history.state, ...newState }, "");
         setState(newState);
       },
@@ -15179,7 +14949,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: newRoutes.length - 1,
           routes: newRoutes,
         };
-        // --- FIX: Merge with existing state instead of replacing ---
         window.history.replaceState(
           { ...window.history.state, ...newState },
           ""
@@ -15213,6 +14982,41 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     };
   }, [state.index, state.routes, listeners]);
 
+  // --- MODIFICATION: Merge global and local screen options ---
+  const activeScreenOptions = useMemo(() => {
+    const resolvedGlobalOptions =
+      typeof globalScreenOptions === "function"
+        ? globalScreenOptions({ route: currentRoute, navigation })
+        : globalScreenOptions || {};
+
+    const resolvedLocalOptions =
+      typeof screen?.options === "function"
+        ? screen.options({ route: currentRoute })
+        : screen?.options || {};
+
+    // Merge options, with local options overriding global ones.
+    // Also merge nested objects for a better developer experience.
+    return {
+      ...resolvedGlobalOptions,
+      ...resolvedLocalOptions,
+      headerStyle: {
+        ...resolvedGlobalOptions.headerStyle,
+        ...resolvedLocalOptions.headerStyle,
+      },
+      appBarProps: {
+        ...resolvedGlobalOptions.appBarProps,
+        ...resolvedLocalOptions.appBarProps,
+      },
+    };
+  }, [globalScreenOptions, screen?.options, currentRoute, navigation]);
+  // --- END MODIFICATION ---
+
+  const activeAnimationOption = activeScreenOptions.animation || "default";
+  const activeAnimationConfig =
+    typeof activeAnimationOption === "string"
+      ? STACK_TRANSITIONS[activeAnimationOption] || STACK_TRANSITIONS.default
+      : activeAnimationOption;
+
   const handleAnimationStart = (isPop: boolean) => {
     listeners.transitionStart.forEach((cb) => cb({ data: { closing: isPop } }));
   };
@@ -15223,12 +15027,11 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-graphite-background">
-      {/* Pass the RESOLVED options object to the header */}
       <Header
         options={activeScreenOptions}
         screenName={screen?.name}
         navigation={navigation}
-        route={currentRoute as RouteProp<T, keyof T>}
+        route={currentRoute}
         scrollContainerRef={scrollContainerRef}
         routeKey={currentRoute.key}
       />
@@ -15252,13 +15055,26 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
             }
             const Component = screenConfig.component;
 
-            const screenOptions =
+            // --- MODIFICATION: Recalculate options for EACH screen in the stack ---
+            const resolvedGlobalOptions =
+              typeof globalScreenOptions === "function"
+                ? globalScreenOptions({
+                    route: route as RouteProp<T, keyof T>,
+                    navigation,
+                  })
+                : globalScreenOptions || {};
+            const localOptions =
               typeof screenConfig.options === "function"
                 ? screenConfig.options({
                     route: route as RouteProp<T, keyof T>,
                   })
                 : screenConfig.options || {};
-            const pageClassName = screenOptions.pageClassName;
+            const finalOptions = {
+              ...resolvedGlobalOptions,
+              ...localOptions,
+            };
+            const pageClassName = finalOptions.pageClassName;
+            // --- END MODIFICATION ---
 
             const isActive = index === state.index;
             const variantName = isActive ? "center" : "behind";
@@ -15728,7 +15544,12 @@ const EmailScreen = () => {
 export const FullAppExample: StoryObj = {
   name: "4. Full App Example (Mail Client)",
   render: () => (
-    <MailStack.Navigator initialRouteName="Inbox">
+    <MailStack.Navigator
+      screenOptions={{
+        animation: "fade-from-bottom",
+      }}
+      initialRouteName="Inbox"
+    >
       <MailStack.Screen
         name="Inbox"
         component={InboxScreen}
@@ -15766,7 +15587,6 @@ export const FullAppExample: StoryObj = {
           route: RouteProp<MailStackParamList, "Email">;
         }) => ({
           title: route.params.subject,
-          animation: "default",
         })}
       />
     </MailStack.Navigator>

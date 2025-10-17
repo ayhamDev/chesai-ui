@@ -403,7 +403,12 @@ const EmailScreen = () => {
 export const FullAppExample: StoryObj = {
   name: "4. Full App Example (Mail Client)",
   render: () => (
-    <MailStack.Navigator initialRouteName="Inbox">
+    <MailStack.Navigator
+      screenOptions={{
+        animation: "fade-from-bottom",
+      }}
+      initialRouteName="Inbox"
+    >
       <MailStack.Screen
         name="Inbox"
         component={InboxScreen}
@@ -441,7 +446,6 @@ export const FullAppExample: StoryObj = {
           route: RouteProp<MailStackParamList, "Email">;
         }) => ({
           title: route.params.subject,
-          animation: "default",
         })}
       />
     </MailStack.Navigator>

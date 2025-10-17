@@ -62,7 +62,6 @@ const LayoutRouterRoot = ({
   duration = defaultDuration,
   easing = defaultEasing,
 }: LayoutRouterRootProps) => {
-  // --- MODIFIED: HISTORY-BASED STATE MANAGEMENT ---
   const [stack, setStack] = useState<string[]>(
     () => (typeof window !== "undefined" && window.history.state?.stack) || []
   );
@@ -70,7 +69,6 @@ const LayoutRouterRoot = ({
   const selectedId = stack.length > 0 ? stack[stack.length - 1] : null;
 
   useLayoutEffect(() => {
-    // Set initial history state, merging with any existing state (from a parent router)
     if (typeof window !== "undefined" && !window.history.state?.stack) {
       window.history.replaceState({ ...window.history.state, stack }, "");
     }
@@ -78,11 +76,9 @@ const LayoutRouterRoot = ({
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      // When history changes, check if our state is present and update
       if (event.state && Array.isArray(event.state.stack)) {
         setStack(event.state.stack);
       } else if (event.state === null || event.state?.stack === undefined) {
-        // This handles backing out of the nested router entirely
         setStack([]);
       }
     };
@@ -95,7 +91,6 @@ const LayoutRouterRoot = ({
       selectedId,
       navigate: (id: string) => {
         const newStack = [...stack, id];
-        // Merge the new stack into the existing history state
         window.history.pushState(
           { ...window.history.state, stack: newStack },
           ""
@@ -103,13 +98,23 @@ const LayoutRouterRoot = ({
         setStack(newStack);
       },
       goBack: () => {
-        // This will now correctly trigger the popstate event for all routers
         window.history.back();
       },
     }),
     [selectedId, stack]
   );
-  // --- END: HISTORY-BASED STATE MANAGEMENT ---
+
+  // --- NEW: Escape Key Listener ---
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && selectedId) {
+        navigationValue.goBack();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedId, navigationValue]);
+  // --- END NEW ---
 
   const configValue = useMemo(
     () => ({
@@ -202,21 +207,46 @@ const LayoutRouterSharedElement = ({
 };
 LayoutRouterSharedElement.displayName = "LayoutRouter.SharedElement";
 
+// --- MODIFIED: LayoutRouterScreen ---
 const LayoutRouterScreen = ({
   id,
   children,
+  presentation = "fullscreen",
 }: {
   id: string;
   children: ReactNode;
+  presentation?: "fullscreen" | "modal";
 }) => {
   const { transition } = useContext(LayoutRouterConfigContext);
+  const { goBack } = useLayoutRouter();
+
+  const containerClasses =
+    presentation === "fullscreen"
+      ? "absolute inset-0 z-50 pointer-events-auto"
+      : "fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto";
+
+  const contentClasses =
+    presentation === "fullscreen"
+      ? "w-full h-full bg-graphite-background"
+      : "w-full max-w-lg rounded-2xl bg-graphite-card shadow-2xl overflow-hidden";
+
   return (
     <LayoutIdContext.Provider value={{ baseId: id }}>
-      {/* This div is the fullscreen container */}
-      <div className="absolute inset-0 z-50 pointer-events-none">
+      <div className={containerClasses}>
+        {/* Backdrop for modal presentation */}
+        {presentation === "modal" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-black/50"
+            onClick={goBack}
+          />
+        )}
         <motion.div
           layoutId={`card-${id}`}
-          className="w-full h-full pointer-events-auto bg-graphite-background" // Ensure it has a background
+          className={contentClasses}
           transition={transition}
           style={{ willChange: "transform, opacity" }}
         >
@@ -227,6 +257,7 @@ const LayoutRouterScreen = ({
   );
 };
 LayoutRouterScreen.displayName = "LayoutRouter.Screen";
+// --- END MODIFICATION ---
 
 export const LayoutRouter = Object.assign(LayoutRouterRoot, {
   List: LayoutRouterList,

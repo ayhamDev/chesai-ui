@@ -6,6 +6,44 @@ const EASING = {
   // NEW: A smoother, more modern iOS curve inspired by SwiftUI's default animation.
   // This provides a gentle acceleration and a long, graceful deceleration.
   iOS: cubicBezier(0.32, 0.72, 0, 1),
+  // Buttery smooth material design curve - perfect for most UI animations
+  material: cubicBezier(0.4, 0, 0.2, 1),
+
+  // Snappy and confident - great for quick interactions and micro-animations
+  snappy: cubicBezier(0.45, 0, 0.55, 1),
+
+  // Bouncy and playful - adds personality to entrances and success states
+  bouncy: cubicBezier(0.68, -0.55, 0.265, 1.55),
+
+  // Fluid and organic - mimics natural motion with elastic deceleration
+  fluid: cubicBezier(0.22, 1, 0.36, 1),
+
+  // Elegant and refined - subtle sophistication for premium interfaces
+  elegant: cubicBezier(0.25, 0.46, 0.45, 0.94),
+
+  // Swift and energetic - conveys speed and responsiveness
+  swift: cubicBezier(0.55, 0, 0.1, 1),
+
+  // Gentle and calming - perfect for backgrounds and ambient animations
+  gentle: cubicBezier(0.33, 1, 0.68, 1),
+
+  // Sharp and precise - technical feel for data visualizations
+  sharp: cubicBezier(0.85, 0, 0.15, 1),
+
+  // Luxurious and slow - high-end feel with dramatic deceleration
+  luxe: cubicBezier(0.19, 1, 0.22, 1),
+
+  // Spring-like physics simulation - natural elastic bounce
+  spring: cubicBezier(0.175, 0.885, 0.32, 1.275),
+
+  // Anticipation - slight pullback before moving (game-like feel)
+  anticipate: cubicBezier(0.6, -0.28, 0.735, 0.045),
+
+  // Overshoot - goes past target then settles (playful emphasis)
+  overshoot: cubicBezier(0.175, 0.885, 0.32, 1.2),
+
+  // Cinematic - dramatic and theatrical timing
+  cinematic: cubicBezier(0.83, 0, 0.17, 1),
 }
 
 // Optimized duration constants

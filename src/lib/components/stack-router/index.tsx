@@ -85,7 +85,7 @@ export interface StackScreenOptions {
     | React.ReactNode
     | ((props: {
         navigation: NavigationProp<any>;
-        route: RouteProp<any, any>; // <-- Pass route here too
+        route: RouteProp<any, any>;
       }) => React.ReactNode);
   headerShown?: boolean;
   headerLeft?: (props: { canGoBack: boolean }) => React.ReactNode;
@@ -191,7 +191,6 @@ const HeaderRight = <T extends Record<string, object | undefined>>({
   return null;
 };
 
-// --- MODIFIED: Internal Header Component ---
 const Header = <T extends Record<string, object | undefined>>({
   options,
   screenName,
@@ -272,7 +271,7 @@ const Header = <T extends Record<string, object | undefined>>({
           className="truncate"
         >
           {typeof title === "function"
-            ? title({ navigation, route }) // Pass route to headerTitle function
+            ? title({ navigation, route })
             : (title as React.ReactNode)}
         </motion.div>
       </AnimatePresence>
@@ -281,16 +280,24 @@ const Header = <T extends Record<string, object | undefined>>({
 };
 
 // --- Main Navigator Logic ---
+// --- MODIFICATION: Added screenOptions to props ---
 interface StackNavigatorProps<T extends Record<string, object | undefined>> {
   initialRouteName: keyof T;
   children:
     | React.ReactElement<StackScreenComponent<T, keyof T>["props"]>
     | React.ReactElement<StackScreenComponent<T, keyof T>["props"]>[];
+  screenOptions?:
+    | StackScreenOptions
+    | ((props: {
+        route: RouteProp<T, keyof T>;
+        navigation: NavigationProp<T>;
+      }) => StackScreenOptions);
 }
 
 const StackNavigator = <T extends Record<string, object | undefined>>({
   initialRouteName,
   children,
+  screenOptions: globalScreenOptions, // --- MODIFICATION: Destructure global options
 }: StackNavigatorProps<T>) => {
   const screens = useMemo(() => {
     const screenConfig: Record<
@@ -335,7 +342,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
   useLayoutEffect(() => {
     if (typeof window !== "undefined" && !window.history.state?.routes) {
-      // --- FIX: Merge with existing state instead of replacing ---
       window.history.replaceState({ ...window.history.state, ...state }, "");
     }
   }, [state]);
@@ -352,24 +358,8 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
   }, []);
 
   const scrollContainerRef = useRef<HTMLElement | null>(null);
-  const currentRoute = state.routes[state.index];
+  const currentRoute = state.routes[state.index] as RouteProp<T, keyof T>;
   const screen = screens[currentRoute.name as string];
-
-  // --- THIS IS THE KEY FIX ---
-  // Resolve options ONCE here, and pass the resulting object down.
-  const activeScreenOptions =
-    typeof screen?.options === "function"
-      ? screen.options({
-          route: currentRoute as RouteProp<T, keyof T>,
-        })
-      : screen?.options || {};
-  // --- END OF FIX ---
-
-  const activeAnimationOption = activeScreenOptions.animation || "default";
-  const activeAnimationConfig =
-    typeof activeAnimationOption === "string"
-      ? STACK_TRANSITIONS[activeAnimationOption] || STACK_TRANSITIONS.default
-      : activeAnimationOption;
 
   const navigation = useMemo((): NavigationProp<T> => {
     const canGoBack = () => state.index > 0;
@@ -385,7 +375,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        // --- FIX: Merge with existing state instead of replacing ---
         window.history.pushState({ ...window.history.state, ...newState }, "");
         setState(newState);
       },
@@ -399,7 +388,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        // --- FIX: Merge with existing state instead of replacing ---
         window.history.pushState({ ...window.history.state, ...newState }, "");
         setState(newState);
       },
@@ -414,7 +402,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: newRoutes.length - 1,
           routes: newRoutes,
         };
-        // --- FIX: Merge with existing state instead of replacing ---
         window.history.replaceState(
           { ...window.history.state, ...newState },
           ""
@@ -448,6 +435,41 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     };
   }, [state.index, state.routes, listeners]);
 
+  // --- MODIFICATION: Merge global and local screen options ---
+  const activeScreenOptions = useMemo(() => {
+    const resolvedGlobalOptions =
+      typeof globalScreenOptions === "function"
+        ? globalScreenOptions({ route: currentRoute, navigation })
+        : globalScreenOptions || {};
+
+    const resolvedLocalOptions =
+      typeof screen?.options === "function"
+        ? screen.options({ route: currentRoute })
+        : screen?.options || {};
+
+    // Merge options, with local options overriding global ones.
+    // Also merge nested objects for a better developer experience.
+    return {
+      ...resolvedGlobalOptions,
+      ...resolvedLocalOptions,
+      headerStyle: {
+        ...resolvedGlobalOptions.headerStyle,
+        ...resolvedLocalOptions.headerStyle,
+      },
+      appBarProps: {
+        ...resolvedGlobalOptions.appBarProps,
+        ...resolvedLocalOptions.appBarProps,
+      },
+    };
+  }, [globalScreenOptions, screen?.options, currentRoute, navigation]);
+  // --- END MODIFICATION ---
+
+  const activeAnimationOption = activeScreenOptions.animation || "default";
+  const activeAnimationConfig =
+    typeof activeAnimationOption === "string"
+      ? STACK_TRANSITIONS[activeAnimationOption] || STACK_TRANSITIONS.default
+      : activeAnimationOption;
+
   const handleAnimationStart = (isPop: boolean) => {
     listeners.transitionStart.forEach((cb) => cb({ data: { closing: isPop } }));
   };
@@ -458,12 +480,11 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-graphite-background">
-      {/* Pass the RESOLVED options object to the header */}
       <Header
         options={activeScreenOptions}
         screenName={screen?.name}
         navigation={navigation}
-        route={currentRoute as RouteProp<T, keyof T>}
+        route={currentRoute}
         scrollContainerRef={scrollContainerRef}
         routeKey={currentRoute.key}
       />
@@ -487,13 +508,26 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
             }
             const Component = screenConfig.component;
 
-            const screenOptions =
+            // --- MODIFICATION: Recalculate options for EACH screen in the stack ---
+            const resolvedGlobalOptions =
+              typeof globalScreenOptions === "function"
+                ? globalScreenOptions({
+                    route: route as RouteProp<T, keyof T>,
+                    navigation,
+                  })
+                : globalScreenOptions || {};
+            const localOptions =
               typeof screenConfig.options === "function"
                 ? screenConfig.options({
                     route: route as RouteProp<T, keyof T>,
                   })
                 : screenConfig.options || {};
-            const pageClassName = screenOptions.pageClassName;
+            const finalOptions = {
+              ...resolvedGlobalOptions,
+              ...localOptions,
+            };
+            const pageClassName = finalOptions.pageClassName;
+            // --- END MODIFICATION ---
 
             const isActive = index === state.index;
             const variantName = isActive ? "center" : "behind";
