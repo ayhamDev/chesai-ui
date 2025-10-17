@@ -8330,7 +8330,7 @@ const LayoutRouterRoot = ({
   duration = defaultDuration,
   easing = defaultEasing,
 }: LayoutRouterRootProps) => {
-  // --- NEW: HISTORY-BASED STATE MANAGEMENT ---
+  // --- MODIFIED: HISTORY-BASED STATE MANAGEMENT ---
   const [stack, setStack] = useState<string[]>(
     () => (typeof window !== "undefined" && window.history.state?.stack) || []
   );
@@ -8338,16 +8338,20 @@ const LayoutRouterRoot = ({
   const selectedId = stack.length > 0 ? stack[stack.length - 1] : null;
 
   useLayoutEffect(() => {
-    // Set initial history state if it doesn't exist
+    // Set initial history state, merging with any existing state (from a parent router)
     if (typeof window !== "undefined" && !window.history.state?.stack) {
-      window.history.replaceState({ stack }, "");
+      window.history.replaceState({ ...window.history.state, stack }, "");
     }
   }, [stack]);
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
+      // When history changes, check if our state is present and update
       if (event.state && Array.isArray(event.state.stack)) {
         setStack(event.state.stack);
+      } else if (event.state === null || event.state?.stack === undefined) {
+        // This handles backing out of the nested router entirely
+        setStack([]);
       }
     };
     window.addEventListener("popstate", handlePopState);
@@ -8359,10 +8363,15 @@ const LayoutRouterRoot = ({
       selectedId,
       navigate: (id: string) => {
         const newStack = [...stack, id];
-        window.history.pushState({ stack: newStack }, "");
+        // Merge the new stack into the existing history state
+        window.history.pushState(
+          { ...window.history.state, stack: newStack },
+          ""
+        );
         setStack(newStack);
       },
       goBack: () => {
+        // This will now correctly trigger the popstate event for all routers
         window.history.back();
       },
     }),
@@ -8472,7 +8481,7 @@ const LayoutRouterScreen = ({
   return (
     <LayoutIdContext.Provider value={{ baseId: id }}>
       {/* This div is the fullscreen container */}
-      <div className="fixed inset-0 z-50 pointer-events-none">
+      <div className="absolute inset-0 z-50 pointer-events-none">
         <motion.div
           layoutId={`card-${id}`}
           className="w-full h-full pointer-events-auto bg-graphite-background" // Ensure it has a background
@@ -8502,15 +8511,19 @@ import {
   Archive,
   ArrowLeft,
   Delete,
+  Home,
   MoreVertical,
   Pencil,
   Search,
+  Settings,
   Star,
 } from "lucide-react";
 import { useRef } from "react";
 import { useAppBar } from "../../hooks/useAppBar";
 import { AppBar } from "../appbar";
 import { Avatar } from "../avatar";
+import { Button } from "../button";
+import { ButtonGroup } from "../button-group";
 import DeviceFrame from "../device";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
@@ -8522,6 +8535,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "../item";
+import { createStackNavigator, useNavigation } from "../stack-router";
 import { Typography } from "../typography";
 import { LayoutRouter, useLayoutRouter } from "./index";
 
@@ -8806,6 +8820,305 @@ export const MailClientApp: Story = {
         </LayoutRouter.Screen>
       ))}
     </LayoutRouter>
+  ),
+};
+
+// --- NEW IMAGE GALLERY STORY ---
+
+const galleryData = [
+  {
+    id: "img-1",
+    src: "https://images.unsplash.com/photo-1517088613037-7a895121b6b5?w=500&q=80",
+    title: "Vibrant Chameleon",
+    author: "Photos by Lanty",
+  },
+  {
+    id: "img-2",
+    src: "https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=500&q=80",
+    title: "Mountain Reflection",
+    author: "Quino Al",
+  },
+  {
+    id: "img-3",
+    src: "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=500&q=80",
+    title: "Cool Cat",
+    author: "Manja Vitolic",
+  },
+  {
+    id: "img-4",
+    src: "https://images.unsplash.com/photo-1583337130417-2346a1be2a21?w=500&q=80",
+    title: "Happy Dog",
+    author: "Karsten Winegeart",
+  },
+  {
+    id: "img-5",
+    src: "https://images.unsplash.com/photo-1574224252329-0017c66f5614?w=500&q=80",
+    title: "Architectural Lines",
+    author: "Dmitry Schemelev",
+  },
+  {
+    id: "img-6",
+    src: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=500&q=80",
+    title: "Museum Hall",
+    author: "Massimo Virgilio",
+  },
+];
+
+// Reusable component for a grid item
+const GalleryGridItem = ({ item }: { item: (typeof galleryData)[0] }) => (
+  <LayoutRouter.Link id={item.id} className="cursor-pointer group">
+    <div className="relative overflow-hidden rounded-xl aspect-square">
+      <LayoutRouter.SharedElement tag="image">
+        <img
+          src={item.src}
+          alt={item.title}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      </LayoutRouter.SharedElement>
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+        <LayoutRouter.SharedElement tag="title">
+          <Typography as="h3" className="font-bold text-white">
+            {item.title}
+          </Typography>
+        </LayoutRouter.SharedElement>
+      </div>
+    </div>
+  </LayoutRouter.Link>
+);
+
+// Reusable component for the gallery list screen
+const GalleryGridScreen = () => {
+  return (
+    <div className="h-full flex flex-col bg-graphite-background">
+      <AppBar appBarColor="card">
+        <Typography variant="h4">Image Gallery</Typography>
+      </AppBar>
+      <ElasticScrollArea className="flex-1">
+        <div className="p-2 grid grid-cols-2 gap-2">
+          {galleryData.map((item) => (
+            <GalleryGridItem key={item.id} item={item} />
+          ))}
+        </div>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+// Reusable component for the image detail screen
+const GalleryDetailScreen = ({ item }: { item: (typeof galleryData)[0] }) => {
+  const { goBack } = useLayoutRouter();
+  return (
+    <div className="h-full flex flex-col bg-graphite-background">
+      <AppBar
+        appBarColor="card"
+        startAdornment={
+          <IconButton variant="ghost" onClick={goBack}>
+            <ArrowLeft />
+          </IconButton>
+        }
+      />
+      <ElasticScrollArea className="flex-1">
+        <div className="p-4">
+          <LayoutRouter.SharedElement tag="image">
+            <img
+              src={item.src}
+              alt={item.title}
+              className="w-full h-auto rounded-2xl object-contain shadow-xl"
+            />
+          </LayoutRouter.SharedElement>
+          <div className="mt-4">
+            <LayoutRouter.SharedElement tag="title">
+              <Typography variant="h3">{item.title}</Typography>
+            </LayoutRouter.SharedElement>
+            <Typography variant="muted">By {item.author}</Typography>
+          </div>
+          <Typography variant="p">
+            This is where a detailed description of the image would go. The
+            transition you just saw was powered by Framer Motion's `layoutId`,
+            orchestrated by the `LayoutRouter`.
+          </Typography>
+        </div>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+export const ImageGallery: Story = {
+  name: "Image Gallery",
+  args: {
+    duration: 0.4,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A classic example of a shared element transition. Clicking a grid item animates both the image and its title into a full-screen detail view. This is achieved by wrapping the corresponding elements in `<LayoutRouter.SharedElement>` with a matching `tag` prop.",
+      },
+    },
+  },
+  render: (args) => (
+    <LayoutRouter {...args}>
+      <LayoutRouter.List>
+        <GalleryGridScreen />
+      </LayoutRouter.List>
+
+      {galleryData.map((item) => (
+        <LayoutRouter.Screen key={item.id} id={item.id}>
+          <GalleryDetailScreen item={item} />
+        </LayoutRouter.Screen>
+      ))}
+    </LayoutRouter>
+  ),
+};
+
+// --- NEW STORY: INTEGRATING WITH STACK ROUTER ---
+
+// 1. Define Param Lists and Routers
+type AppStackParamList = {
+  Main: undefined;
+  Settings: undefined;
+};
+const AppStack = createStackNavigator<AppStackParamList>();
+
+const photoData = [
+  {
+    id: "photo-1",
+    src: "https://images.unsplash.com/photo-1517088613037-7a895121b6b5?w=500&q=80",
+  },
+  {
+    id: "photo-2",
+    src: "https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=500&q=80",
+  },
+  {
+    id: "photo-3",
+    src: "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=500&q=80",
+  },
+  {
+    id: "photo-4",
+    src: "https://images.unsplash.com/photo-1583337130417-2346a1be2a21?w=500&q=80",
+  },
+];
+
+// 2. Define Screens
+const PhotoGridScreen = () => (
+  <div className="p-4 grid grid-cols-2 gap-4">
+    {photoData.map((photo) => (
+      <LayoutRouter.Link
+        key={photo.id}
+        id={photo.id}
+        className="cursor-pointer"
+      >
+        <LayoutRouter.SharedElement tag="photo-image">
+          <img
+            src={photo.src}
+            alt={`Photo ${photo.id}`}
+            className="w-full h-48 object-cover rounded-lg"
+          />
+        </LayoutRouter.SharedElement>
+      </LayoutRouter.Link>
+    ))}
+  </div>
+);
+
+const PhotoDetailScreen = ({ photo }: { photo: (typeof photoData)[0] }) => {
+  const { goBack } = useLayoutRouter();
+  return (
+    <div className="h-full bg-graphite-background flex flex-col">
+      <AppBar
+        appBarColor="card"
+        startAdornment={
+          <IconButton variant="ghost" onClick={goBack}>
+            <ArrowLeft />
+          </IconButton>
+        }
+      >
+        <Typography variant="h4">Photo Detail</Typography>
+      </AppBar>
+      <div className="flex-1 p-4 flex flex-col justify-center items-center">
+        <LayoutRouter.SharedElement tag="photo-image">
+          <img
+            src={photo.src}
+            alt={`Photo ${photo.id}`}
+            className="w-full max-w-sm rounded-xl object-contain"
+          />
+        </LayoutRouter.SharedElement>
+        <Typography variant="p" className="mt-4">
+          Details for photo {photo.id}.
+        </Typography>
+      </div>
+    </div>
+  );
+};
+
+const MainScreen = () => {
+  const stackNavigation = useNavigation<AppStackParamList>();
+  return (
+    <div className="h-full flex flex-col">
+      <AppBar appBarColor="card">
+        <Typography variant="h4">Main Screen</Typography>
+      </AppBar>
+      <div className="flex-1 overflow-hidden">
+        <LayoutRouter duration={0.4}>
+          <LayoutRouter.List>
+            <PhotoGridScreen />
+          </LayoutRouter.List>
+          {photoData.map((photo) => (
+            <LayoutRouter.Screen key={photo.id} id={photo.id}>
+              <PhotoDetailScreen photo={photo} />
+            </LayoutRouter.Screen>
+          ))}
+        </LayoutRouter>
+      </div>
+      <div className="p-2 border-t border-graphite-border bg-graphite-card">
+        <ButtonGroup shape="minimal" className="w-full">
+          <Button variant="primary" size="sm">
+            <Home className="mr-2 h-4 w-4" />
+            Home
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => stackNavigation.push("Settings")}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Settings
+          </Button>
+        </ButtonGroup>
+      </div>
+    </div>
+  );
+};
+
+const SettingsScreen = () => {
+  return (
+    <div className="p-6 pt-[70px]">
+      <Typography variant="h3">Settings</Typography>
+      <Typography variant="p">
+        This is a separate screen managed by the top-level StackRouter.
+      </Typography>
+    </div>
+  );
+};
+
+export const IntegratingWithStackRouter: Story = {
+  name: "Integrating with StackRouter",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "This example shows how to nest a `LayoutRouter` inside a `StackRouter`. The `StackRouter` handles primary navigation (e.g., between 'Main' and 'Settings'), while the `LayoutRouter` inside the 'Main' screen handles a shared-element transition for a photo gallery.",
+      },
+    },
+  },
+  render: () => (
+    <AppStack.Navigator initialRouteName="Main">
+      <AppStack.Screen
+        name="Main"
+        component={MainScreen}
+        options={{ headerShown: false }}
+      />
+      <AppStack.Screen name="Settings" component={SettingsScreen} />
+    </AppStack.Navigator>
   ),
 };
 ```
@@ -14787,7 +15100,8 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
   useLayoutEffect(() => {
     if (typeof window !== "undefined" && !window.history.state?.routes) {
-      window.history.replaceState(state, "");
+      // --- FIX: Merge with existing state instead of replacing ---
+      window.history.replaceState({ ...window.history.state, ...state }, "");
     }
   }, [state]);
 
@@ -14836,7 +15150,8 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        window.history.pushState(newState, "");
+        // --- FIX: Merge with existing state instead of replacing ---
+        window.history.pushState({ ...window.history.state, ...newState }, "");
         setState(newState);
       },
       push: (name, params) => {
@@ -14849,7 +15164,8 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        window.history.pushState(newState, "");
+        // --- FIX: Merge with existing state instead of replacing ---
+        window.history.pushState({ ...window.history.state, ...newState }, "");
         setState(newState);
       },
       replace: (name, params) => {
@@ -14863,7 +15179,11 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: newRoutes.length - 1,
           routes: newRoutes,
         };
-        window.history.replaceState(newState, "");
+        // --- FIX: Merge with existing state instead of replacing ---
+        window.history.replaceState(
+          { ...window.history.state, ...newState },
+          ""
+        );
         setState(newState);
       },
       goBack: () => {
@@ -15133,8 +15453,9 @@ const ArticleScreen = () => {
   );
 };
 const SettingsScreen = () => {
+  const navigation = useNavigation<HeaderStackParamList>();
   return (
-    <div className="p-6 pt-6">
+    <div className="p-6 pt-6" ref={navigation.scrollContainerRef}>
       <Typography variant="h4">Settings</Typography>
       <Typography variant="p">This screen has no header.</Typography>
     </div>
@@ -15249,6 +15570,14 @@ const GenericScreen = ({ route }: { route: RouteProp<any, any> }) => {
       <Typography variant="p">
         This screen transitioned using its specified animation preset.
       </Typography>
+      <Button
+        className="mt-4"
+        variant="primary"
+        size={"sm"}
+        onClick={() => navigation.push(route.name)}
+      >
+        Push More
+      </Button>
       <Button
         className="mt-4"
         variant="secondary"
@@ -15380,10 +15709,11 @@ const InboxScreen = () => {
   );
 };
 const EmailScreen = () => {
+  const navigation = useNavigation<MailStackParamList>();
   const route = useRoute<MailStackParamList, "Email">();
   const email = emails.find((e) => e.id === route.params.emailId);
   return (
-    <div className="p-6 pt-[70px]">
+    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
       <Typography variant="h4">{email?.subject}</Typography>
       <Typography variant="muted" className="!mt-2">
         From: {email?.from}

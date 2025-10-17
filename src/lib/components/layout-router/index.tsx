@@ -213,7 +213,7 @@ const LayoutRouterScreen = ({
   return (
     <LayoutIdContext.Provider value={{ baseId: id }}>
       {/* This div is the fullscreen container */}
-      <div className="fixed inset-0 z-50 pointer-events-none">
+      <div className="absolute inset-0 z-50 pointer-events-none">
         <motion.div
           layoutId={`card-${id}`}
           className="w-full h-full pointer-events-auto bg-graphite-background" // Ensure it has a background

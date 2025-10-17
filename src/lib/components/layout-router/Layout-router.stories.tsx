@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
   Archive,
   ArrowLeft,
+  Bell,
+  Cast,
   Delete,
   Home,
   MoreVertical,
@@ -9,6 +11,7 @@ import {
   Search,
   Settings,
   Star,
+  ThumbsUp,
 } from "lucide-react";
 import { useRef } from "react";
 import { useAppBar } from "../../hooks/useAppBar";
@@ -315,15 +318,358 @@ export const MailClientApp: Story = {
   ),
 };
 
-// --- NEW STORY: INTEGRATING WITH STACK ROUTER ---
+// --- IMAGE GALLERY STORY (Unchanged) ---
 
-// 1. Define Param Lists and Routers
+const galleryData = [
+  {
+    id: "img-1",
+    src: "https://images.unsplash.com/photo-1517088613037-7a895121b6b5?w=500&q=80",
+    title: "Vibrant Chameleon",
+    author: "Photos by Lanty",
+  },
+  {
+    id: "img-2",
+    src: "https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=500&q=80",
+    title: "Mountain Reflection",
+    author: "Quino Al",
+  },
+  {
+    id: "img-3",
+    src: "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=500&q=80",
+    title: "Cool Cat",
+    author: "Manja Vitolic",
+  },
+  {
+    id: "img-4",
+    src: "https://images.unsplash.com/photo-1583337130417-2346a1be2a21?w=500&q=80",
+    title: "Happy Dog",
+    author: "Karsten Winegeart",
+  },
+  {
+    id: "img-5",
+    src: "https://images.unsplash.com/photo-1574224252329-0017c66f5614?w=500&q=80",
+    title: "Architectural Lines",
+    author: "Dmitry Schemelev",
+  },
+  {
+    id: "img-6",
+    src: "https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=500&q=80",
+    title: "Museum Hall",
+    author: "Massimo Virgilio",
+  },
+];
+
+const GalleryGridItem = ({ item }: { item: (typeof galleryData)[0] }) => (
+  <LayoutRouter.Link id={item.id} className="cursor-pointer group">
+    <div className="relative overflow-hidden rounded-xl aspect-square">
+      <LayoutRouter.SharedElement tag="image">
+        <img
+          src={item.src}
+          alt={item.title}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      </LayoutRouter.SharedElement>
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+        <LayoutRouter.SharedElement tag="title">
+          <Typography as="h3" className="font-bold text-white">
+            {item.title}
+          </Typography>
+        </LayoutRouter.SharedElement>
+      </div>
+    </div>
+  </LayoutRouter.Link>
+);
+
+const GalleryGridScreen = () => {
+  return (
+    <div className="h-full flex flex-col bg-graphite-background">
+      <AppBar appBarColor="card">
+        <Typography variant="h4">Image Gallery</Typography>
+      </AppBar>
+      <ElasticScrollArea className="flex-1">
+        <div className="p-2 grid grid-cols-2 gap-2">
+          {galleryData.map((item) => (
+            <GalleryGridItem key={item.id} item={item} />
+          ))}
+        </div>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+const GalleryDetailScreen = ({ item }: { item: (typeof galleryData)[0] }) => {
+  const { goBack } = useLayoutRouter();
+  return (
+    <div className="h-full flex flex-col bg-graphite-background">
+      <AppBar
+        appBarColor="card"
+        startAdornment={
+          <IconButton variant="ghost" onClick={goBack}>
+            <ArrowLeft />
+          </IconButton>
+        }
+      />
+      <ElasticScrollArea className="flex-1">
+        <div className="p-4">
+          <LayoutRouter.SharedElement tag="image">
+            <img
+              src={item.src}
+              alt={item.title}
+              className="w-full h-auto rounded-2xl object-contain shadow-xl"
+            />
+          </LayoutRouter.SharedElement>
+          <div className="mt-4">
+            <LayoutRouter.SharedElement tag="title">
+              <Typography variant="h3">{item.title}</Typography>
+            </LayoutRouter.SharedElement>
+            <Typography variant="muted">By {item.author}</Typography>
+          </div>
+          <Typography variant="p">
+            This is where a detailed description of the image would go. The
+            transition you just saw was powered by Framer Motion's `layoutId`,
+            orchestrated by the `LayoutRouter`.
+          </Typography>
+        </div>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+export const ImageGallery: Story = {
+  name: "Image Gallery",
+  args: {
+    duration: 0.4,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A classic example of a shared element transition. Clicking a grid item animates both the image and its title into a full-screen detail view. This is achieved by wrapping the corresponding elements in `<LayoutRouter.SharedElement>` with a matching `tag` prop.",
+      },
+    },
+  },
+  render: (args) => (
+    <LayoutRouter {...args}>
+      <LayoutRouter.List>
+        <GalleryGridScreen />
+      </LayoutRouter.List>
+
+      {galleryData.map((item) => (
+        <LayoutRouter.Screen key={item.id} id={item.id}>
+          <GalleryDetailScreen item={item} />
+        </LayoutRouter.Screen>
+      ))}
+    </LayoutRouter>
+  ),
+};
+
+// --- NEW: YOUTUBE CLONE STORY ---
+const youtubeData = [
+  {
+    id: "yt-1",
+    thumbnailSrc:
+      "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=500&q=80",
+    title: "Designing the Future of UI/UX",
+    channelName: "DesignCourse",
+    channelAvatar: "https://i.pravatar.cc/150?img=10",
+    views: "1.2M views",
+    timestamp: "2 weeks ago",
+  },
+  {
+    id: "yt-2",
+    thumbnailSrc:
+      "https://images.unsplash.com/photo-1521302200774-534b4b4334c9?w=500&q=80",
+    title: "A Culinary Journey Through Italy",
+    channelName: "FoodTraveler",
+    channelAvatar: "https://i.pravatar.cc/150?img=11",
+    views: "890K views",
+    timestamp: "1 month ago",
+  },
+  {
+    id: "yt-3",
+    thumbnailSrc:
+      "https://images.unsplash.com/photo-1542037104857-e93b0fe5758c?w=500&q=80",
+    title: "Mastering Analog Photography",
+    channelName: "AnalogLife",
+    channelAvatar: "https://i.pravatar.cc/150?img=12",
+    views: "45K views",
+    timestamp: "3 days ago",
+  },
+  {
+    id: "yt-4",
+    thumbnailSrc:
+      "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=500&q=80",
+    title: "Into the Wild: A Hiking Documentary",
+    channelName: "NatureExplorer",
+    channelAvatar: "https://i.pravatar.cc/150?img=14",
+    views: "3.5M views",
+    timestamp: "6 months ago",
+  },
+];
+
+const VideoCard = ({ video }: { video: (typeof youtubeData)[0] }) => (
+  <LayoutRouter.Link id={video.id} className="cursor-pointer group">
+    <div className="flex flex-col gap-3">
+      <LayoutRouter.SharedElement tag="video-thumbnail">
+        <img
+          src={video.thumbnailSrc}
+          alt={video.title}
+          className="w-full aspect-video object-cover rounded-xl"
+        />
+      </LayoutRouter.SharedElement>
+      <div className="flex items-start gap-3 px-2">
+        <LayoutRouter.SharedElement tag="channel-avatar">
+          <Avatar src={video.channelAvatar} size="sm" />
+        </LayoutRouter.SharedElement>
+        <div className="flex flex-col">
+          <LayoutRouter.SharedElement tag="video-title">
+            <Typography className="font-bold line-clamp-2">
+              {video.title}
+            </Typography>
+          </LayoutRouter.SharedElement>
+          <LayoutRouter.SharedElement tag="channel-info">
+            <Typography variant="muted" className="!mt-0">
+              {video.channelName} • {video.views} • {video.timestamp}
+            </Typography>
+          </LayoutRouter.SharedElement>
+        </div>
+      </div>
+    </div>
+  </LayoutRouter.Link>
+);
+
+const YouTubeHomeScreen = () => (
+  <div className="h-full flex flex-col bg-graphite-background">
+    <AppBar
+      appBarColor="card"
+      startAdornment={
+        <Typography variant="h4" className="font-bold text-red-500">
+          YouTube
+        </Typography>
+      }
+      endAdornments={[
+        <IconButton key="cast" variant="ghost">
+          <Cast size={20} />
+        </IconButton>,
+        <IconButton key="notifications" variant="ghost">
+          <Bell size={20} />
+        </IconButton>,
+        <IconButton key="search" variant="ghost">
+          <Search size={20} />
+        </IconButton>,
+      ]}
+    />
+    <ElasticScrollArea className="flex-1">
+      <div className="p-4 grid grid-cols-1 gap-6">
+        {youtubeData.map((video) => (
+          <VideoCard key={video.id} video={video} />
+        ))}
+      </div>
+    </ElasticScrollArea>
+  </div>
+);
+
+const VideoDetailScreen = ({ video }: { video: (typeof youtubeData)[0] }) => {
+  const { goBack } = useLayoutRouter();
+  return (
+    <div className="h-full flex flex-col bg-graphite-background">
+      <AppBar
+        appBarColor="card"
+        startAdornment={
+          <IconButton variant="ghost" onClick={goBack}>
+            <ArrowLeft />
+          </IconButton>
+        }
+      />
+      <ElasticScrollArea className="flex-1">
+        <div className="flex flex-col">
+          <LayoutRouter.SharedElement tag="video-thumbnail">
+            <img
+              src={video.thumbnailSrc}
+              alt={video.title}
+              className="w-full aspect-video object-cover"
+            />
+          </LayoutRouter.SharedElement>
+          <div className="p-4 flex flex-col gap-4">
+            <LayoutRouter.SharedElement tag="video-title">
+              <Typography variant="h4">{video.title}</Typography>
+            </LayoutRouter.SharedElement>
+            <LayoutRouter.SharedElement tag="channel-info">
+              <Typography variant="muted" className="!mt-0">
+                {video.views} • {video.timestamp}
+              </Typography>
+            </LayoutRouter.SharedElement>
+
+            <div className="flex items-center gap-3">
+              <LayoutRouter.SharedElement tag="channel-avatar">
+                <Avatar src={video.channelAvatar} size="sm" />
+              </LayoutRouter.SharedElement>
+              <Typography className="font-bold flex-1">
+                {video.channelName}
+              </Typography>
+              <Button size="sm" shape="full">
+                Subscribe
+              </Button>
+            </div>
+            <ButtonGroup shape="full" className="w-full">
+              <Button size="sm" variant="secondary">
+                <ThumbsUp className="mr-2 h-4 w-4" />
+                12K
+              </Button>
+              <Button size="sm" variant="secondary">
+                Share
+              </Button>
+              <Button size="sm" variant="secondary">
+                Download
+              </Button>
+            </ButtonGroup>
+            <div className="h-96 rounded-lg bg-graphite-secondary p-4">
+              <Typography variant="small" className="font-bold">
+                Comments section...
+              </Typography>
+            </div>
+          </div>
+        </div>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+export const YouTubeClone: Story = {
+  name: "YouTube Clone",
+  args: {
+    duration: 0.6,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A YouTube-style UI demonstrating how multiple shared elements (`video-thumbnail`, `video-title`, `channel-avatar`, etc.) can be animated together to create a seamless transition from a list view to a detail view.",
+      },
+    },
+  },
+  render: (args) => (
+    <LayoutRouter {...args}>
+      <LayoutRouter.List>
+        <YouTubeHomeScreen />
+      </LayoutRouter.List>
+      {youtubeData.map((video) => (
+        <LayoutRouter.Screen key={video.id} id={video.id}>
+          <VideoDetailScreen video={video} />
+        </LayoutRouter.Screen>
+      ))}
+    </LayoutRouter>
+  ),
+};
+
+// --- INTEGRATING WITH STACK ROUTER (Unchanged) ---
+
+const AppStack = createStackNavigator<AppStackParamList>();
+
 type AppStackParamList = {
   Main: undefined;
   Settings: undefined;
 };
-const AppStack = createStackNavigator<AppStackParamList>();
-
 const photoData = [
   {
     id: "photo-1",
@@ -343,7 +689,6 @@ const photoData = [
   },
 ];
 
-// 2. Define Screens
 const PhotoGridScreen = () => (
   <div className="p-4 grid grid-cols-2 gap-4">
     {photoData.map((photo) => (
