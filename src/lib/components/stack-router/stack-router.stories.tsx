@@ -9,7 +9,6 @@ import { Item, ItemContent, ItemTitle } from "../item";
 import { Typography } from "../typography";
 import { createStackNavigator, useNavigation, useRoute } from "./index";
 import type { RouteProp } from "./types";
-
 const meta: Meta = {
   title: "Components/Navigators/StackRouter",
   component: undefined, // Component is a factory, not a single element
@@ -24,11 +23,13 @@ const meta: Meta = {
     },
   },
   decorators: [
-    (Story) => (
-      <DeviceFrame>
-        <Story />
-      </DeviceFrame>
-    ),
+    (Story) => {
+      return (
+        <DeviceFrame>
+          <Story />
+        </DeviceFrame>
+      );
+    },
   ],
 };
 export default meta;

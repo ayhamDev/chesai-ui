@@ -8272,7 +8272,11 @@ import {
   AnimatePresence,
   motion,
   type Easing,
+  type PanInfo,
   type Transition,
+  useMotionValue,
+  useTransform,
+  animate,
 } from "framer-motion";
 import React, {
   createContext,
@@ -8309,6 +8313,15 @@ interface LayoutIdContextType {
   baseId: string;
 }
 const LayoutIdContext = createContext<LayoutIdContextType | null>(null);
+
+// --- NEW: CONTEXT FOR DISMISS GESTURE CONTROL ---
+interface DismissibleContextType {
+  setIsAtTop: (isAtTop: boolean) => void;
+}
+export const DismissibleContext = createContext<DismissibleContextType | null>(
+  null
+);
+// --- END NEW CONTEXT ---
 
 // --- HOOKS ---
 export const useLayoutRouter = () => {
@@ -8372,7 +8385,6 @@ const LayoutRouterRoot = ({
     [selectedId, stack]
   );
 
-  // --- NEW: Escape Key Listener ---
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && selectedId) {
@@ -8382,7 +8394,6 @@ const LayoutRouterRoot = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedId, navigationValue]);
-  // --- END NEW ---
 
   const configValue = useMemo(
     () => ({
@@ -8475,18 +8486,47 @@ const LayoutRouterSharedElement = ({
 };
 LayoutRouterSharedElement.displayName = "LayoutRouter.SharedElement";
 
-// --- MODIFIED: LayoutRouterScreen ---
 const LayoutRouterScreen = ({
   id,
   children,
   presentation = "fullscreen",
+  dismissible = false,
+  dismissDirection = "y",
 }: {
   id: string;
   children: ReactNode;
   presentation?: "fullscreen" | "modal";
+  dismissible?: boolean;
+  dismissDirection?: "x" | "y";
 }) => {
   const { transition } = useContext(LayoutRouterConfigContext);
   const { goBack } = useLayoutRouter();
+
+  // --- NEW: State for scroll lock ---
+  const [isAtTop, setIsAtTop] = useState(true);
+  const dismissibleContextValue = useMemo(() => ({ setIsAtTop }), []);
+  // --- END NEW ---
+
+  const dragAxis = useMotionValue(0);
+  const DISMISS_THRESHOLD = 150;
+  const VELOCITY_THRESHOLD = 500;
+
+  const handleDragEnd = (event: MouseEvent | TouchEvent, info: PanInfo) => {
+    const offset = dismissDirection === "y" ? info.offset.y : info.offset.x;
+    const velocity =
+      dismissDirection === "y" ? info.velocity.y : info.velocity.x;
+
+    if (offset > DISMISS_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
+      goBack();
+    } else {
+      animate(dragAxis, 0, { type: "spring", stiffness: 400, damping: 40 });
+    }
+  };
+
+  const scale = useTransform(dragAxis, [0, 400], [1, 0.85], { clamp: true });
+  const backdropOpacity = useTransform(dragAxis, [0, 300], [1, 0], {
+    clamp: true,
+  });
 
   const containerClasses =
     presentation === "fullscreen"
@@ -8501,7 +8541,6 @@ const LayoutRouterScreen = ({
   return (
     <LayoutIdContext.Provider value={{ baseId: id }}>
       <div className={containerClasses}>
-        {/* Backdrop for modal presentation */}
         {presentation === "modal" && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -8509,23 +8548,42 @@ const LayoutRouterScreen = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="absolute inset-0 bg-black/50"
-            onClick={goBack}
+            onClick={!dismissible ? goBack : undefined}
+            style={{
+              opacity: dismissible ? backdropOpacity : undefined,
+              willChange: "opacity",
+            }}
           />
         )}
-        <motion.div
-          layoutId={`card-${id}`}
-          className={contentClasses}
-          transition={transition}
-          style={{ willChange: "transform, opacity" }}
-        >
-          {children}
-        </motion.div>
+        <DismissibleContext.Provider value={dismissibleContextValue}>
+          <motion.div
+            layoutId={`card-${id}`}
+            className={contentClasses}
+            transition={transition}
+            // --- MODIFIED: drag prop is now conditional ---
+            drag={dismissible && isAtTop ? dismissDirection : false}
+            dragConstraints={{
+              top: dismissDirection === "y" ? 0 : 0,
+              bottom: dismissDirection === "y" ? Infinity : 0,
+              left: dismissDirection === "x" ? 0 : 0,
+              right: dismissDirection === "x" ? Infinity : 0,
+            }}
+            dragElastic={0.1}
+            onDragEnd={dismissible ? handleDragEnd : undefined}
+            style={{
+              willChange: "transform, opacity",
+              scale: dismissible ? scale : undefined,
+              [dismissDirection]: dragAxis,
+            }}
+          >
+            {children}
+          </motion.div>
+        </DismissibleContext.Provider>
       </div>
     </LayoutIdContext.Provider>
   );
 };
 LayoutRouterScreen.displayName = "LayoutRouter.Screen";
-// --- END MODIFICATION ---
 
 export const LayoutRouter = Object.assign(LayoutRouterRoot, {
   List: LayoutRouterList,
@@ -8538,19 +8596,8 @@ export const LayoutRouter = Object.assign(LayoutRouterRoot, {
 **Storybook Stories (`Layout-router.stories.tsx`)**
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  Archive,
-  ArrowLeft,
-  Delete,
-  Home,
-  MoreVertical,
-  Pencil,
-  Search,
-  Settings,
-  Star,
-} from "lucide-react";
-import { useRef } from "react";
-import { useAppBar } from "../../hooks/useAppBar";
+import { ArrowLeft } from "lucide-react";
+import React, { useContext, useEffect, useRef } from "react";
 import { AppBar } from "../appbar";
 import { Avatar } from "../avatar";
 import { Button } from "../button";
@@ -8558,7 +8605,6 @@ import { ButtonGroup } from "../button-group";
 import DeviceFrame from "../device";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
-import { Input } from "../input";
 import {
   Item,
   ItemContent,
@@ -8568,7 +8614,7 @@ import {
 } from "../item";
 import { createStackNavigator, useNavigation } from "../stack-router";
 import { Typography } from "../typography";
-import { LayoutRouter, useLayoutRouter } from "./index";
+import { DismissibleContext, LayoutRouter, useLayoutRouter } from "./index";
 
 const meta: Meta<typeof LayoutRouter> = {
   title: "Components/Navigators/LayoutRouter",
@@ -8585,7 +8631,7 @@ const meta: Meta<typeof LayoutRouter> = {
     docs: {
       description: {
         component:
-          "A declarative router for creating multi-element shared layout transitions. This version supports browser history and multiple presentation modes (fullscreen, modal), demonstrated with a full mail client UI.",
+          "A declarative router for creating multi-element shared layout transitions. This version supports browser history, multiple presentation modes (fullscreen, modal), and interactive gesture-based dismissal.",
       },
     },
   },
@@ -8597,6 +8643,18 @@ const meta: Meta<typeof LayoutRouter> = {
     easing: {
       control: "object",
       description: "An array of 4 numbers for a cubic bezier easing curve.",
+    },
+    dismissible: {
+      control: "boolean",
+      description: "Enable swipe-to-dismiss gesture on the screen.",
+      table: { category: "Screen Props" },
+    },
+    dismissDirection: {
+      control: "select",
+      options: ["x", "y"],
+      description: "The axis for the dismiss gesture.",
+      table: { category: "Screen Props" },
+      if: { arg: "dismissible" },
     },
   },
   decorators: [
@@ -8611,7 +8669,40 @@ const meta: Meta<typeof LayoutRouter> = {
 export default meta;
 type Story = StoryObj;
 
-// --- Sample Data ---
+// --- Helper Components & Data ---
+
+/**
+ * A wrapper for ElasticScrollArea that reports its scroll position
+ * to a parent Dismissible Screen to enable/disable drag gestures.
+ */
+const DismissibleScrollArea = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<typeof ElasticScrollArea>
+>((props, ref) => {
+  const context = useContext(DismissibleContext);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  React.useImperativeHandle(ref, () => scrollRef.current!);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !context) return;
+
+    const handleScroll = () => {
+      // If scrollTop is 0, we're at the top.
+      context.setIsAtTop(el.scrollTop === 0);
+    };
+
+    el.addEventListener("scroll", handleScroll);
+    // Initial check
+    handleScroll();
+
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, [context]);
+
+  return <ElasticScrollArea ref={scrollRef} {...props} />;
+});
+
 const sampleEmails = [
   {
     id: "email-1",
@@ -8619,7 +8710,7 @@ const sampleEmails = [
     avatar: "https://i.pravatar.cc/150?img=1",
     subject: "Project Update & Next Steps",
     preview: "Hey team, just wanted to give a quick update...",
-    fullBody: "...",
+    body: "Here is a much longer body of text to ensure that the content is scrollable. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. This will allow us to test the scroll lock functionality.",
   },
   {
     id: "email-2",
@@ -8627,7 +8718,7 @@ const sampleEmails = [
     avatar: "https://i.pravatar.cc/150?img=2",
     subject: "Lunch Plans?",
     preview: "Anyone up for lunch today? I'm craving tacos.",
-    fullBody: "...",
+    body: "Tacos sound great! Let's meet at the usual spot at 12:30 PM. I'll invite the rest of the team. This content is also here to demonstrate scrolling.",
   },
 ];
 
@@ -8645,8 +8736,6 @@ const galleryData = [
     author: "Quino Al",
   },
 ];
-
-// --- Reusable UI Components for the Stories ---
 
 const MailListItem = ({ email }: { email: (typeof sampleEmails)[0] }) => (
   <Item variant="secondary" shape="minimal" padding="sm">
@@ -8669,49 +8758,6 @@ const MailListItem = ({ email }: { email: (typeof sampleEmails)[0] }) => (
   </Item>
 );
 
-const MailDetailScreen = ({ email }: { email: (typeof sampleEmails)[0] }) => {
-  const { goBack } = useLayoutRouter();
-  return (
-    <div className="overflow-hidden h-full flex flex-col bg-graphite-card">
-      <AppBar
-        appBarColor="card"
-        startAdornment={
-          <IconButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={goBack}
-            aria-label="Go back"
-          >
-            <ArrowLeft />
-          </IconButton>
-        }
-      />
-      <div className="p-6 pt-2">
-        <LayoutRouter.SharedElement tag="subject">
-          <Typography variant="h3" className="mb-6">
-            {email.subject}
-          </Typography>
-        </LayoutRouter.SharedElement>
-        <div className="flex items-center gap-4">
-          <LayoutRouter.SharedElement tag="avatar">
-            <Avatar
-              size="lg"
-              src={email.avatar}
-              fallback={email.sender.slice(0, 2)}
-            />
-          </LayoutRouter.SharedElement>
-          <div className="flex-1">
-            <LayoutRouter.SharedElement tag="sender">
-              <Typography variant="large">{email.sender}</Typography>
-            </LayoutRouter.SharedElement>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const InboxScreen = () => (
   <div className="w-full h-full relative bg-graphite-background flex flex-col">
     <AppBar appBarColor="card">
@@ -8731,30 +8777,6 @@ const InboxScreen = () => (
   </div>
 );
 
-export const FullscreenPresentation: Story = {
-  name: "1. Fullscreen Presentation (Default)",
-  args: {
-    duration: 0.5,
-  },
-  render: (args) => (
-    <LayoutRouter {...args}>
-      <LayoutRouter.List>
-        <InboxScreen />
-      </LayoutRouter.List>
-      {sampleEmails.map((email) => (
-        <LayoutRouter.Screen
-          key={email.id}
-          id={email.id}
-          presentation="fullscreen"
-        >
-          <MailDetailScreen email={email} />
-        </LayoutRouter.Screen>
-      ))}
-    </LayoutRouter>
-  ),
-};
-
-// --- NEW: Modal Presentation Story ---
 const GalleryGridItem = ({ item }: { item: (typeof galleryData)[0] }) => (
   <LayoutRouter.Link id={item.id} className="cursor-pointer group">
     <div className="relative overflow-hidden rounded-xl aspect-square">
@@ -8800,18 +8822,54 @@ const ModalDetailScreen = ({ item }: { item: (typeof galleryData)[0] }) => {
   );
 };
 
+// --- Stories ---
+
+export const FullscreenPresentation: Story = {
+  name: "1. Fullscreen Presentation (Default)",
+  args: {
+    duration: 0.5,
+  },
+  render: (args) => (
+    <LayoutRouter {...args}>
+      <LayoutRouter.List>
+        <InboxScreen />
+      </LayoutRouter.List>
+      {sampleEmails.map((email) => (
+        <LayoutRouter.Screen
+          key={email.id}
+          id={email.id}
+          presentation="fullscreen"
+        >
+          {/* This screen is NOT dismissible and has no scroll lock */}
+          <div className="overflow-hidden h-full flex flex-col bg-graphite-card">
+            <AppBar
+              appBarColor="card"
+              startAdornment={
+                <IconButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={useLayoutRouter().goBack}
+                  aria-label="Go back"
+                >
+                  <ArrowLeft />
+                </IconButton>
+              }
+            />
+            <div className="p-6 pt-2">
+              <Typography variant="p">{email.body}</Typography>
+            </div>
+          </div>
+        </LayoutRouter.Screen>
+      ))}
+    </LayoutRouter>
+  ),
+};
+
 export const ModalPresentation: Story = {
   name: "2. Modal Presentation",
   args: {
     duration: 0.4,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Set `presentation='modal'` on a `<LayoutRouter.Screen>` to make it appear as a floating modal. The backdrop can be clicked to dismiss it, and the 'Escape' key also works.",
-      },
-    },
   },
   render: (args) => (
     <LayoutRouter {...args}>
@@ -8827,7 +8885,6 @@ export const ModalPresentation: Story = {
           </div>
         </div>
       </LayoutRouter.List>
-
       {galleryData.map((item) => (
         <LayoutRouter.Screen key={item.id} id={item.id} presentation="modal">
           <ModalDetailScreen item={item} />
@@ -8837,8 +8894,128 @@ export const ModalPresentation: Story = {
   ),
 };
 
-// ... (Rest of the stories like IntegratingWithStackRouter remain unchanged)
-// --- INTEGRATING WITH STACK ROUTER ---
+export const DismissibleModalPresentation: Story = {
+  name: "3. Dismissible Modal",
+  args: {
+    duration: 0.4,
+    dismissible: true,
+    dismissDirection: "y",
+  },
+  render: (args) => (
+    <LayoutRouter {...args}>
+      <LayoutRouter.List>
+        <div className="h-full flex flex-col bg-graphite-background">
+          <AppBar appBarColor="card">
+            <Typography variant="h4">Dismissible Gallery</Typography>
+          </AppBar>
+          <div className="p-2 grid grid-cols-2 gap-2">
+            {galleryData.map((item) => (
+              <GalleryGridItem key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
+      </LayoutRouter.List>
+      {galleryData.map((item) => (
+        <LayoutRouter.Screen
+          key={item.id}
+          id={item.id}
+          presentation="modal"
+          dismissible={args.dismissible}
+          dismissDirection={args.dismissDirection}
+        >
+          <ModalDetailScreen item={item} />
+        </LayoutRouter.Screen>
+      ))}
+    </LayoutRouter>
+  ),
+};
+
+const DismissibleScrollScreen = ({
+  email,
+}: {
+  email: (typeof sampleEmails)[0];
+}) => {
+  const { goBack } = useLayoutRouter();
+  return (
+    <div className="overflow-hidden h-full flex flex-col bg-graphite-card">
+      <AppBar
+        appBarColor="card"
+        startAdornment={
+          <IconButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={goBack}
+            aria-label="Go back"
+          >
+            <ArrowLeft />
+          </IconButton>
+        }
+      />
+      <DismissibleScrollArea>
+        <div className="p-6 pt-2">
+          <LayoutRouter.SharedElement tag="subject">
+            <Typography variant="h3" className="mb-6">
+              {email.subject}
+            </Typography>
+          </LayoutRouter.SharedElement>
+          <div className="flex items-center gap-4 mb-4">
+            <LayoutRouter.SharedElement tag="avatar">
+              <Avatar
+                size="lg"
+                src={email.avatar}
+                fallback={email.sender.slice(0, 2)}
+              />
+            </LayoutRouter.SharedElement>
+            <div className="flex-1">
+              <LayoutRouter.SharedElement tag="sender">
+                <Typography variant="large">{email.sender}</Typography>
+              </LayoutRouter.SharedElement>
+            </div>
+          </div>
+          <Typography variant="p">{email.body}</Typography>
+          <Typography variant="p">{email.body}</Typography>
+        </div>
+      </DismissibleScrollArea>
+    </div>
+  );
+};
+
+export const DismissibleWithScroll: Story = {
+  name: "4. Dismissible with Scrolling",
+  args: {
+    duration: 0.5,
+    dismissible: true,
+    dismissDirection: "y",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "This story demonstrates the 'scroll lock' pattern. You can scroll the content of the screen freely. The swipe-to-dismiss gesture will only activate when you are scrolled to the very top of the content.",
+      },
+    },
+  },
+  render: (args) => (
+    <LayoutRouter {...args}>
+      <LayoutRouter.List>
+        <InboxScreen />
+      </LayoutRouter.List>
+      {sampleEmails.map((email) => (
+        <LayoutRouter.Screen
+          key={email.id}
+          id={email.id}
+          presentation="fullscreen"
+          dismissible={args.dismissible}
+          dismissDirection={args.dismissDirection}
+        >
+          <DismissibleScrollScreen email={email} />
+        </LayoutRouter.Screen>
+      ))}
+    </LayoutRouter>
+  ),
+};
+
 type AppStackParamList = { Main: undefined; Settings: undefined };
 const AppStack = createStackNavigator<AppStackParamList>();
 const MainScreen = () => {
@@ -8885,13 +9062,9 @@ const MainScreen = () => {
     </div>
   );
 };
-const SettingsScreen = () => (
-  <div className="p-6 pt-[70px]">
-    <Typography variant="h3">Settings</Typography>
-  </div>
-);
+
 export const IntegratingWithStackRouter: Story = {
-  name: "3. Integrating with StackRouter",
+  name: "5. Integrating with StackRouter",
   render: () => (
     <AppStack.Navigator initialRouteName="Main">
       <AppStack.Screen
@@ -8899,7 +9072,14 @@ export const IntegratingWithStackRouter: Story = {
         component={MainScreen}
         options={{ headerShown: false }}
       />
-      <AppStack.Screen name="Settings" component={SettingsScreen} />
+      <AppStack.Screen
+        name="Settings"
+        component={({ navigation }) => (
+          <div className="p-4" ref={navigation.scrollContainerRef}>
+            <Typography variant="h4">Settings Page</Typography>
+          </div>
+        )}
+      />
     </AppStack.Navigator>
   ),
 };
@@ -11994,7 +12174,7 @@ const SheetContext = createContext<SheetContextProps>({
 const useSheetContext = () => useContext(SheetContext);
 
 // --- MODIFIED: Root Component ---
-// Added the `forceBottomSheet` prop.
+// Added the `forceSideSheet` prop.
 type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
@@ -12004,14 +12184,21 @@ type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
    * overriding the responsive behavior on desktop viewports.
    * @default false
    */
-  forceBottomSheet?: boolean; // --- THIS IS THE NEW PROP ---
+  forceBottomSheet?: boolean;
+  /**
+   * If true, the sheet will always render as a side sheet,
+   * overriding the responsive behavior on mobile viewports.
+   * @default false
+   */
+  forceSideSheet?: boolean; // --- THIS IS THE NEW PROP ---
 };
 
 const SheetRoot: React.FC<SheetProps> = ({
   mode = "normal",
   shape = "full",
   side = "right",
-  forceBottomSheet = false, // --- NEW PROP WITH DEFAULT ---
+  forceBottomSheet = false,
+  forceSideSheet = false, // --- NEW PROP WITH DEFAULT ---
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
@@ -12020,10 +12207,11 @@ const SheetRoot: React.FC<SheetProps> = ({
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   // --- MODIFIED LOGIC ---
-  // Determine if we should render as a side sheet. This is only true if:
-  // 1. The viewport is desktop-sized.
-  // 2. The `forceBottomSheet` prop is false.
-  const renderAsSideSheet = isDesktop && !forceBottomSheet;
+  // Determine if we should render as a side sheet. This is true if:
+  // 1. `forceSideSheet` is explicitly true.
+  // OR
+  // 2. The viewport is desktop-sized AND `forceBottomSheet` is not true.
+  const renderAsSideSheet = forceSideSheet || (isDesktop && !forceBottomSheet);
 
   const direction = renderAsSideSheet ? side : "bottom";
   // --- END OF MODIFIED LOGIC ---
@@ -12351,6 +12539,13 @@ const meta: Meta<typeof Sheet> = {
       description:
         "If true, forces the component to render as a bottom sheet on all screen sizes.",
     },
+    // --- NEW PROP DOCUMENTATION ---
+    forceSideSheet: {
+      control: "boolean",
+      description:
+        "If true, forces the component to render as a side sheet on all screen sizes.",
+    },
+    // --- END ---
     // Vaul-specific props
     snapPoints: {
       control: "object",
@@ -12409,7 +12604,7 @@ export const ResponsiveBehavior: Story = {
     },
   },
   render: (args) => (
-    <div className="flex p-12 items-center justify-center bg-graphite-background">
+    <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
       <Sheet {...args}>
         <Sheet.Trigger asChild>
           <Button>Open Sheet</Button>
@@ -12458,11 +12653,36 @@ export const ForceBottomSheet: Story = {
   render: (args) => <ResponsiveBehavior.render {...args} />,
 };
 
+// --- NEW STORY ---
+export const ForceSideSheet: Story = {
+  name: "3. Force Side Sheet on Mobile",
+  args: {
+    ...ResponsiveBehavior.args,
+    forceSideSheet: true,
+    side: "left",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Set `forceSideSheet={true}` to override the responsive behavior and always render a side sheet, even on small screens. This is useful for main navigation drawers that need to be consistent across all devices.",
+      },
+    },
+    // Set a mobile viewport to demonstrate the override
+    viewport: {
+      defaultViewport: "mobile1",
+    },
+  },
+  render: (args) => <ResponsiveBehavior.render {...args} />,
+};
+// --- END ---
+
 export const SideSheetLeft: Story = {
-  name: "3. Side Sheet (Left)",
+  name: "4. Side Sheet (Left)",
   args: {
     ...ResponsiveBehavior.args,
     side: "left",
+    forceSideSheet: true
   },
   parameters: {
     docs: {
@@ -12476,7 +12696,7 @@ export const SideSheetLeft: Story = {
 };
 
 export const DetachedMode: Story = {
-  name: "4. Detached Mode",
+  name: "5. Detached Mode",
   args: {
     ...ResponsiveBehavior.args,
     mode: "detached",
@@ -12493,7 +12713,7 @@ export const DetachedMode: Story = {
 };
 
 export const WithSnappingPoints: Story = {
-  name: "5. With Snapping Points",
+  name: "6. With Snapping Points",
   args: {
     snapPoints: [0.3, 0.7, 1],
     fadeFromIndex: 0,
@@ -12508,7 +12728,7 @@ export const WithSnappingPoints: Story = {
     },
   },
   render: (args) => (
-    <div className="flex p-12 items-center justify-center bg-graphite-background">
+    <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
       <Sheet {...args}>
         <Sheet.Trigger asChild>
           <Button>Open Snapping Sheet</Button>
@@ -12523,7 +12743,7 @@ export const WithSnappingPoints: Story = {
 };
 
 export const ControlledSnapping: Story = {
-  name: "6. Controlled Snapping",
+  name: "7. Controlled Snapping",
   args: {
     snapPoints: ["300px", 1],
     fadeFromIndex: 0,
@@ -12542,7 +12762,7 @@ export const ControlledSnapping: Story = {
       string | number | null
     >(args.snapPoints![0]);
     return (
-      <div className="flex p-12 flex-col items-center justify-center gap-4 bg-graphite-background">
+      <div className="flex h-[500px] w-full flex-col items-center justify-center gap-4 bg-graphite-background p-12">
         <Typography variant="large">External Controls</Typography>
 
         <Sheet
@@ -12645,6 +12865,10 @@ import React, {
   useState,
 } from "react";
 import useRipple from "use-ripple-hook";
+import {
+  ElasticScrollArea,
+  type ElasticScrollAreaProps,
+} from "../elastic-scroll-area";
 import { Typography } from "../typography";
 
 // --- 1. TYPE DEFINITIONS & CONTEXT (UNIFIED) ---
@@ -12652,6 +12876,7 @@ import { Typography } from "../typography";
 type DesktopVariant = "permanent" | "modal";
 type MobileVariant = "modal" | "push";
 type SidebarSide = "left" | "right";
+type SidebarVariant = "primary" | "secondary" | "card";
 
 interface SidebarContextProps {
   // State
@@ -12665,7 +12890,7 @@ interface SidebarContextProps {
   side: SidebarSide;
   collapsible: boolean;
   indicatorId: string;
-  variant: "primary" | "secondary";
+  variant: SidebarVariant;
   // For Gestures
   sidebarX: MotionValue<number>;
   expandedWidth: number;
@@ -12704,6 +12929,7 @@ const containerVariants = cva("flex h-full flex-col", {
     variant: {
       primary: "bg-graphite-primary text-graphite-primaryForeground",
       secondary: "bg-graphite-secondary text-graphite-foreground",
+      card: "bg-graphite-card text-graphite-foreground",
     },
   },
   defaultVariants: {
@@ -12718,26 +12944,37 @@ const primaryActionVariants = cva(
       variant: {
         primary: "bg-graphite-primary text-graphite-primaryForeground",
         secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
+        card: "bg-graphite-secondary text-graphite-secondaryForeground",
       },
       isExpanded: {
-        true: "rounded-2xl h-14 px-5",
-        false: "rounded-2xl h-14 w-14",
+        true: "h-14 px-5",
+        false: "h-14 w-14",
+      },
+      shape: {
+        full: "rounded-2xl",
+        minimal: "rounded-2xl",
+        sharp: "rounded-none",
       },
     },
     defaultVariants: {
       variant: "secondary",
+      shape: "minimal",
     },
   }
 );
 
 const navItemVariants = cva(
-  "relative flex items-center w-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+  "relative flex items-center w-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 gap-3",
   {
     variants: {
+      variant: {
+        primary: "",
+        secondary: "",
+        card: "",
+      },
       isActive: {
-        true: "font-semibold text-graphite-primary",
-        false:
-          "text-graphite-foreground/70 hover:text-graphite-foreground/90 hover:bg-black/5",
+        true: "font-semibold",
+        false: "",
       },
       isExpanded: {
         true: "justify-start px-5",
@@ -12754,11 +12991,36 @@ const navItemVariants = cva(
         sharp: "rounded-none",
       },
     },
+    compoundVariants: [
+      {
+        variant: ["secondary", "card"],
+        isActive: false,
+        className:
+          "text-graphite-foreground/70 hover:text-graphite-foreground/90 hover:bg-black/5",
+      },
+      {
+        variant: ["secondary", "card"],
+        isActive: true,
+        className: "text-graphite-primary",
+      },
+      {
+        variant: "primary",
+        isActive: false,
+        className:
+          "text-graphite-primaryForeground/70 hover:text-graphite-primaryForeground/90 hover:bg-white/5",
+      },
+      {
+        variant: "primary",
+        isActive: true,
+        className: "text-graphite-primaryForeground",
+      },
+    ],
     defaultVariants: {
       isActive: false,
       isExpanded: false,
       size: "md",
       shape: "full",
+      variant: "secondary",
     },
   }
 );
@@ -12778,6 +13040,8 @@ interface SidebarProps {
   mobileVariant?: MobileVariant;
   side?: SidebarSide;
   collapsible?: boolean;
+  expandedWidth?: number;
+  collapsedWidth?: number;
 }
 
 const SidebarRoot: React.FC<SidebarProps> = ({
@@ -12791,6 +13055,8 @@ const SidebarRoot: React.FC<SidebarProps> = ({
   mobileVariant = "modal",
   side = "left",
   collapsible = true,
+  expandedWidth = 280,
+  collapsedWidth = 80,
 }) => {
   const [sidebarContainer, mainContent] = React.Children.toArray(children) as [
     React.ReactElement<SidebarContainerProps>,
@@ -12807,7 +13073,6 @@ const SidebarRoot: React.FC<SidebarProps> = ({
 
   const handleOpenChange = isControlled ? onOpenChange : setUncontrolledOpen;
 
-  const expandedWidth = 280;
   const closedX = side === "left" ? -expandedWidth : expandedWidth;
   const sidebarX = useMotionValue(isOpen ? 0 : closedX);
 
@@ -12821,7 +13086,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
         mass: 1,
       });
     }
-  }, [isOpen, isDesktop, closedX, sidebarX]);
+  }, [isOpen, isDesktop, closedX, sidebarX, expandedWidth]);
 
   const pushX = useTransform(sidebarX, (latestX) => {
     if (isDesktop || mobileVariant !== "push") return 0;
@@ -12889,7 +13154,6 @@ const SidebarRoot: React.FC<SidebarProps> = ({
     ]
   );
 
-  const collapsedWidth = 80;
   const sidebarWidth = isOpen ? expandedWidth : collapsedWidth;
 
   return (
@@ -12904,7 +13168,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
           >
             {desktopVariant === "permanent" && (
               <motion.div
-                style={{ transform: "translateZ(0)" }}
+                style={{ willChange: "width" }}
                 animate={{ width: sidebarWidth }}
                 transition={{ type: "spring", stiffness: 400, damping: 40 }}
               >
@@ -12917,8 +13181,8 @@ const SidebarRoot: React.FC<SidebarProps> = ({
           <>
             {!isDesktop && mobileVariant === "modal" && (
               <motion.div
-                className="fixed inset-0 z-[10000] bg-black/40"
-                style={{ opacity: overlayOpacity }}
+                className="fixed inset-0 z-[100] bg-black/40"
+                style={{ opacity: overlayOpacity, willChange: "opacity" }}
                 onClick={() => handleOpenChange(false)}
                 initial={{ pointerEvents: "none" }}
                 animate={{ pointerEvents: isOpen ? "auto" : "none" }}
@@ -12929,8 +13193,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
               className="h-full"
               style={{
                 x: pushX,
-                transform: "translateZ(0)",
-                // NEW: Add touchAction style to prevent conflicts
+                willChange: "transform",
                 touchAction: isOpen ? "none" : "pan-y",
               }}
             >
@@ -12949,7 +13212,7 @@ SidebarRoot.displayName = "Sidebar";
 interface SidebarContainerProps {
   children: React.ReactNode;
   className?: string;
-  variant?: "primary" | "secondary";
+  variant?: SidebarVariant;
 }
 const SidebarContainer = React.memo(
   React.forwardRef<HTMLElement, SidebarContainerProps>(
@@ -13004,12 +13267,12 @@ const SidebarContainer = React.memo(
           key={`sidebar-${mobileVariant}`}
           drag="x"
           onDragEnd={handleDragEnd}
-          style={{ x: sidebarX, transform: "translateZ(0)" }}
+          style={{ x: sidebarX, willChange: "transform" }}
           dragConstraints={{
             left: side === "left" ? -expandedWidth : 0,
             right: side === "left" ? 0 : expandedWidth,
           }}
-          dragElastic={{ left: 0.1, right: 0.1 }}
+          dragElastic={0} // Disable over-dragging
           className={clsx(
             containerVariants({ variant }),
             "fixed top-0 bottom-0 z-[100] flex h-screen flex-col",
@@ -13042,12 +13305,12 @@ SidebarHeader.displayName = "Sidebar.Header";
 interface PrimaryActionProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon: React.ReactNode;
-  variant?: "primary" | "secondary";
+  shape?: "full" | "minimal" | "sharp";
 }
 const SidebarPrimaryAction = React.memo(
   React.forwardRef<HTMLButtonElement, PrimaryActionProps>(
-    ({ children, icon, variant = "secondary", className, ...props }, ref) => {
-      const { isExpanded } = useSidebar();
+    ({ children, icon, shape = "minimal", className, ...props }, ref) => {
+      const { isExpanded, variant } = useSidebar();
       return (
         <div className="px-3 py-2">
           {/* @ts-ignore */}
@@ -13058,8 +13321,10 @@ const SidebarPrimaryAction = React.memo(
             className={primaryActionVariants({
               variant,
               isExpanded,
+              shape,
               className,
             })}
+            style={{ willChange: "width" }}
             {...props}
           >
             <motion.span layout="position" className="flex-shrink-0">
@@ -13068,15 +13333,12 @@ const SidebarPrimaryAction = React.memo(
             <AnimatePresence>
               {isExpanded && (
                 <motion.div
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{
-                    opacity: 1,
-                    width: "auto",
-                    marginLeft: "0.75rem",
-                    transition: { delay: 0.1 },
-                  }}
-                  exit={{ opacity: 0, width: 0, marginLeft: 0 }}
-                  className="overflow-hidden whitespace-nowrap"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  style={{ willChange: "transform, opacity" }}
+                  className="overflow-hidden whitespace-nowrap ml-3"
                 >
                   {children}
                 </motion.div>
@@ -13090,7 +13352,9 @@ const SidebarPrimaryAction = React.memo(
 );
 SidebarPrimaryAction.displayName = "Sidebar.PrimaryAction";
 
-interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
+interface SidebarNavProps
+  extends Omit<React.HTMLAttributes<HTMLElement>, "onScroll">,
+    Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
 }
@@ -13101,16 +13365,29 @@ const SidebarNav = React.memo(
     className,
     size = "md",
     shape = "full",
+    elasticity,
+    dampingFactor,
+    scrollbarVisibility,
+    pullToRefresh,
+    onRefresh,
+    pullThreshold,
     ...props
   }: SidebarNavProps) => {
     return (
       <SidebarNavContext.Provider value={{ size, shape }}>
-        <nav
-          className={clsx("flex-1 space-y-1 px-3 py-2", className)}
-          {...props}
+        <ElasticScrollArea
+          className="flex-1"
+          elasticity={elasticity}
+          dampingFactor={dampingFactor}
+          scrollbarVisibility={scrollbarVisibility}
+          pullToRefresh={pullToRefresh}
+          onRefresh={onRefresh}
+          pullThreshold={pullThreshold}
         >
-          {children}
-        </nav>
+          <nav className={clsx("space-y-1 px-3 py-2", className)} {...props}>
+            {children}
+          </nav>
+        </ElasticScrollArea>
       </SidebarNavContext.Provider>
     );
   }
@@ -13178,6 +13455,7 @@ const SidebarItem = React.memo(
           onPointerDown={event}
           onClick={() => handleItemPress(itemKey)}
           className={navItemVariants({
+            variant,
             isActive,
             isExpanded,
             size,
@@ -13189,8 +13467,14 @@ const SidebarItem = React.memo(
           {isActive && (
             <motion.div
               layoutId={indicatorId}
-              className="absolute inset-0 z-0 bg-graphite-primary/10"
-              style={{ borderRadius: shapeToBorderRadius[shape] }}
+              className={clsx(
+                "absolute inset-0 z-0 transition-[border-radius] duration-200",
+                variant === "primary" ? "bg-white/10" : "bg-graphite-primary/10"
+              )}
+              style={{
+                borderRadius: shapeToBorderRadius[shape],
+                willChange: "transform",
+              }}
               transition={{ type: "spring", stiffness: 500, damping: 40 }}
             />
           )}
@@ -13198,20 +13482,13 @@ const SidebarItem = React.memo(
           <AnimatePresence initial={false}>
             {isExpanded && (
               <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{
-                  opacity: 1,
-                  width: "auto",
-                  marginLeft: "0.75rem",
-                  transition: { delay: 0.1, duration: 0.2 },
-                }}
-                exit={{
-                  opacity: 0,
-                  width: 0,
-                  marginLeft: 0,
-                  transition: { duration: 0.1 },
-                }}
-                className="relative z-10 flex-1 text-left overflow-hidden whitespace-nowrap"
+                key="text"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                style={{ willChange: "transform, opacity" }}
+                className="relative z-10 flex-1 text-left  overflow-hidden whitespace-nowrap"
               >
                 {children}
               </motion.div>
@@ -13242,7 +13519,7 @@ SidebarFooter.displayName = "Sidebar.Footer";
 const SidebarSeparator = React.memo(
   (props: React.HTMLAttributes<HTMLHRElement>) => (
     <hr
-      className={clsx("my-2 border-graphite-border/60", props.className)}
+      className={clsx("my-2", "border-graphite-border/60", props.className)}
       {...props}
     />
   )
@@ -13251,7 +13528,7 @@ SidebarSeparator.displayName = "Sidebar.Separator";
 
 const SidebarSectionHeader = React.memo(
   (props: React.HTMLAttributes<HTMLDivElement>) => {
-    const { isExpanded } = useSidebar();
+    const { isExpanded, variant } = useSidebar();
     return (
       <AnimatePresence>
         {isExpanded && (
@@ -13259,12 +13536,16 @@ const SidebarSectionHeader = React.memo(
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            style={{ willChange: "height, opacity" }}
             className="overflow-hidden"
           >
             <Typography
               variant="small"
               className={clsx(
-                "px-5 py-2 font-bold text-graphite-primary",
+                "px-5 py-2 font-bold",
+                variant === "primary"
+                  ? "text-graphite-primaryForeground/70"
+                  : "text-graphite-primary",
                 props.className
               )}
               {...props}
@@ -13313,7 +13594,7 @@ const SidebarDragHandle = React.memo(() => {
       )}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={{ left: 0.1, right: 0.1 }}
+      dragElastic={0} // Disable over-dragging
       onDragEnd={handleDragEnd}
       onDrag={(e, info) => {
         const isDraggingCorrectly =
@@ -13380,7 +13661,7 @@ import {
   Trash2,
   User,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { AppBar } from "../appbar";
 import { Badge } from "../badge";
 import { ElasticScrollArea } from "../elastic-scroll-area";
@@ -13390,7 +13671,19 @@ import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { Sidebar, useSidebar } from "./index";
 
-const meta: Meta<typeof Sidebar> = {
+// --- TYPE FIX: Combine props for Storybook controls ---
+type StoryProps = React.ComponentProps<typeof Sidebar> &
+  Pick<React.ComponentProps<typeof Sidebar.Container>, "variant"> &
+  Pick<
+    React.ComponentProps<typeof Sidebar.Nav>,
+    | "shape"
+    | "elasticity"
+    | "pullToRefresh"
+    | "onRefresh"
+    | "scrollbarVisibility"
+  >;
+
+const meta: Meta<StoryProps> = {
   title: "Components/Navigators/Sidebar",
   component: Sidebar,
   tags: ["autodocs"],
@@ -13427,15 +13720,50 @@ const meta: Meta<typeof Sidebar> = {
       control: "boolean",
       description: "Initial open state for uncontrolled components.",
     },
+    variant: {
+      control: "select",
+      options: ["primary", "secondary", "card"],
+      description: "The color scheme of the sidebar.",
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+      description: "The border-radius of the navigation items.",
+    },
+    expandedWidth: {
+      control: { type: "number", min: 200, max: 500, step: 10 },
+      description: "The width of the sidebar when expanded.",
+    },
+    collapsedWidth: {
+      control: { type: "number", min: 50, max: 150, step: 5 },
+      description: "The width of the sidebar when collapsed (on desktop).",
+    },
     activeItem: { control: false },
     onItemPress: { action: "itemPressed" },
     isOpen: { control: false },
     onOpenChange: { action: "openChange" },
+    elasticity: {
+      control: "boolean",
+      table: { category: "Elastic Scroll Props" },
+    },
+    pullToRefresh: {
+      control: "boolean",
+      table: { category: "Elastic Scroll Props" },
+    },
+    onRefresh: {
+      action: "refreshed",
+      table: { category: "Elastic Scroll Props" },
+    },
+    scrollbarVisibility: {
+      control: "select",
+      options: ["auto", "always", "scroll", "hidden"],
+      table: { category: "Elastic Scroll Props" },
+    },
   },
 };
 
 export default meta;
-type Story = StoryObj<typeof Sidebar>;
+type Story = StoryObj<StoryProps>;
 
 // --- Helper Components for Stories ---
 
@@ -13446,6 +13774,12 @@ const navItems = [
   { key: "drafts", label: "Drafts", icon: <File size={20} /> },
   { key: "archive", label: "Archive", icon: <Archive size={20} /> },
   { key: "trash", label: "Trash", icon: <Trash2 size={20} /> },
+  { key: "spam", label: "Spam", icon: <File size={20} /> },
+  { key: "all_mail", label: "All Mail", icon: <File size={20} /> },
+  { key: "important", label: "Important", icon: <File size={20} /> },
+  { key: "social", label: "Social", icon: <File size={20} /> },
+  { key: "promotions", label: "Promotions", icon: <File size={20} /> },
+  { key: "forums", label: "Forums", icon: <File size={20} /> },
 ];
 
 const labelItems = [
@@ -13458,61 +13792,67 @@ const CustomSidebarHeader = () => {
   const { isDesktop, collapsible, toggle, side } = useSidebar();
   return (
     <Sidebar.Header className={side === "right" ? "flex-row-reverse" : ""}>
-      <div className="flex justify-center items-center pt-4">
-        {isDesktop && collapsible && (
-          <IconButton variant="ghost" size="sm" onClick={toggle}>
-            <Menu />
-          </IconButton>
-        )}
-      </div>
-
-      {/* You can add a logo or title here */}
+      {isDesktop && collapsible && (
+        <IconButton variant="ghost" size="sm" onClick={toggle}>
+          <Menu />
+        </IconButton>
+      )}
     </Sidebar.Header>
   );
 };
 
-const SidebarContents = () => (
+const SidebarContents = ({
+  shape = "full",
+  ...scrollProps
+}: { shape?: "full" | "minimal" | "sharp" } & Partial<
+  React.ComponentProps<typeof Sidebar.Nav>
+>) => (
   <>
     <CustomSidebarHeader />
-    <Sidebar.PrimaryAction icon={<Pencil size={24} />}>
+    <Sidebar.PrimaryAction icon={<Pencil size={24} />} shape={shape}>
       Compose
     </Sidebar.PrimaryAction>
-    <Sidebar.Nav>
-      <ElasticScrollArea>
-        {navItems.map((item) => (
-          <Sidebar.Item
-            key={item.key}
-            itemKey={item.key}
-            icon={item.icon}
-            endAdornment={
-              item.count ? (
-                <Badge shape="full" variant="secondary">
-                  {item.count}
-                </Badge>
-              ) : null
-            }
-          >
-            {item.label}
-          </Sidebar.Item>
-        ))}
-        <Sidebar.Separator />
-        <Sidebar.SectionHeader>Labels</Sidebar.SectionHeader>
-        {labelItems.map((item) => (
-          <Sidebar.Item
-            key={item.key}
-            itemKey={item.key}
-            icon={<File size={20} />}
-          >
-            {item.label}
-          </Sidebar.Item>
-        ))}
-      </ElasticScrollArea>
+    <Sidebar.Nav shape={shape} {...scrollProps}>
+      {navItems.map((item) => (
+        <Sidebar.Item
+          key={item.key}
+          itemKey={item.key}
+          icon={item.icon}
+          endAdornment={
+            item.count ? (
+              <Badge
+                shape="full"
+                variant={item.count > 0 ? "secondary" : undefined}
+              >
+                {item.count}
+              </Badge>
+            ) : null
+          }
+        >
+          {item.label}
+        </Sidebar.Item>
+      ))}
+      <Sidebar.Separator />
+      <Sidebar.SectionHeader>Labels</Sidebar.SectionHeader>
+      {labelItems.map((item) => (
+        <Sidebar.Item
+          key={item.key}
+          itemKey={item.key}
+          icon={<File size={20} />}
+        >
+          {item.label}
+        </Sidebar.Item>
+      ))}
     </Sidebar.Nav>
     <Sidebar.Footer>
-      <Sidebar.Item itemKey="profile" icon={<User size={20} />}>
+      <Sidebar.Item itemKey="profile" icon={<User size={20} />} shape={shape}>
         Profile
       </Sidebar.Item>
-      <Sidebar.Item itemKey="settings" icon={<Settings size={20} />}>
+      <Sidebar.Item
+        itemKey="settings"
+        icon={<Settings size={20} />}
+        shape={shape}
+      >
         Settings
       </Sidebar.Item>
     </Sidebar.Footer>
@@ -13548,7 +13888,7 @@ const MainContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
   );
 };
 
-const RenderWithRouter = (args: any) => {
+const RenderWithRouter = (args: StoryProps) => {
   const { path, push } = useRouter();
   const activeItem = path === "/" ? "inbox" : path.substring(1);
   const [isOpen, setIsOpen] = useState(args.defaultOpen);
@@ -13561,8 +13901,14 @@ const RenderWithRouter = (args: any) => {
       isOpen={isOpen}
       onOpenChange={setIsOpen}
     >
-      <Sidebar.Container>
-        <SidebarContents />
+      <Sidebar.Container variant={args.variant}>
+        <SidebarContents
+          shape={args.shape}
+          elasticity={args.elasticity}
+          pullToRefresh={args.pullToRefresh}
+          onRefresh={args.onRefresh}
+          scrollbarVisibility={args.scrollbarVisibility}
+        />
       </Sidebar.Container>
       <Sidebar.Content>
         <MainContent onMenuClick={() => setIsOpen(!isOpen)} />
@@ -13587,8 +13933,28 @@ export const DesktopExpanded: Story = {
   ),
 };
 
+const simulateRefresh = () =>
+  new Promise((resolve) => setTimeout(resolve, 2000));
+
+export const ScrollableAndRefreshable: Story = {
+  name: "2. Scrollable & Refreshable Nav",
+  args: {
+    ...DesktopExpanded.args,
+    defaultOpen: true,
+    elasticity: true,
+    pullToRefresh: true,
+    onRefresh: simulateRefresh,
+    scrollbarVisibility: "auto",
+  },
+  render: (args) => (
+    <ShallowRouter>
+      <RenderWithRouter {...args} />
+    </ShallowRouter>
+  ),
+};
+
 export const DesktopCollapsed: Story = {
-  name: "2. Desktop (Collapsed by Default)",
+  name: "3. Desktop (Collapsed by Default)",
   args: {
     ...DesktopExpanded.args,
     defaultOpen: false,
@@ -13601,11 +13967,12 @@ export const DesktopCollapsed: Story = {
 };
 
 export const MobileModal: Story = {
-  name: "3. Mobile (Modal Drawer)",
+  name: "4. Mobile (Modal Drawer)",
   args: {
     mobileVariant: "modal",
     side: "left",
     defaultOpen: false,
+    elasticity: true,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
@@ -13618,20 +13985,15 @@ export const MobileModal: Story = {
 };
 
 export const MobilePush: Story = {
-  name: "4. Mobile (Push Drawer)",
+  name: "5. Mobile (Push Drawer)",
   args: {
     mobileVariant: "push",
     side: "left",
     defaultOpen: false,
+    elasticity: true,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
-    docs: {
-      description: {
-        story:
-          "The 'push' variant moves the main content aside to reveal the sidebar, creating a different spatial relationship.",
-      },
-    },
   },
   render: (args) => (
     <ShallowRouter>
@@ -13640,19 +14002,12 @@ export const MobilePush: Story = {
   ),
 };
 
-export const RightSide: Story = {
-  name: "5. Right Side Variant",
+export const VariantsAndShapes: Story = {
+  name: "6. Variants and Shapes",
   args: {
     ...DesktopExpanded.args,
-    side: "right",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The `side` prop works for all variants on both desktop and mobile.",
-      },
-    },
+    variant: "primary",
+    shape: "minimal",
   },
   render: (args) => (
     <ShallowRouter>
@@ -13661,100 +14016,21 @@ export const RightSide: Story = {
   ),
 };
 
-export const ControlledState: Story = {
-  name: "6. Controlled State",
+export const CustomWidths: Story = {
+  name: "7. Custom Widths",
   args: {
     ...DesktopExpanded.args,
-  },
-  render: function Render(args) {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-      <ShallowRouter>
-        <div className="absolute top-4 right-4 z-10">
-          <button
-            type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-full"
-          >
-            Toggle Sidebar
-          </button>
-        </div>
-        <RenderWithRouter {...args} isOpen={isOpen} onOpenChange={setIsOpen} />
-      </ShallowRouter>
-    );
-  },
-};
-
-const shortNavItems = [
-  { key: "inbox", label: "Inbox", icon: <Inbox size={20} /> },
-  { key: "sent", label: "Sent", icon: <Send size={20} /> },
-  { key: "favorites", label: "Favorites", icon: <Star size={20} /> },
-];
-
-export const ItemVariants: Story = {
-  name: "7. Item Variants (Size & Shape)",
-  args: {
-    ...DesktopExpanded.args,
-    defaultOpen: true,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The `size` and `shape` of `Sidebar.Item` components can be controlled by props on the parent `<Sidebar.Nav>`. Props on an individual item will override the parent.",
-      },
-    },
+    expandedWidth: 350,
+    collapsedWidth: 100,
   },
   render: (args) => (
     <ShallowRouter>
-      <Sidebar
-        {...args}
-        activeItem="inbox"
-        onItemPress={() => {}}
-        isOpen={args.isOpen}
-        onOpenChange={args.onOpenChange}
-      >
-        <Sidebar.Container>
-          <CustomSidebarHeader />
-          <Sidebar.SectionHeader>Small, Minimal</Sidebar.SectionHeader>
-          <Sidebar.Nav size="sm" shape="minimal">
-            {shortNavItems.map((item) => (
-              <Sidebar.Item key={item.key} itemKey={item.key} icon={item.icon}>
-                {item.label}
-              </Sidebar.Item>
-            ))}
-          </Sidebar.Nav>
-          <Sidebar.Separator />
-          <Sidebar.SectionHeader>Large, Sharp</Sidebar.SectionHeader>
-          <Sidebar.Nav size="lg" shape="sharp">
-            {shortNavItems.map((item) => (
-              <Sidebar.Item key={item.key} itemKey={item.key} icon={item.icon}>
-                {item.label}
-              </Sidebar.Item>
-            ))}
-            <Sidebar.Item
-              itemKey="override"
-              icon={<Archive size={20} />}
-              shape="full"
-            >
-              Override
-            </Sidebar.Item>
-          </Sidebar.Nav>
-        </Sidebar.Container>
-        <Sidebar.Content>
-          <div className="p-6">
-            <Typography variant="h1">Item Variants</Typography>
-            <Typography variant="p">
-              The sidebar on the left demonstrates different sizes and shapes
-              for navigation items.
-            </Typography>
-          </div>
-        </Sidebar.Content>
-      </Sidebar>
+      <RenderWithRouter {...args} />
     </ShallowRouter>
   ),
 };
 
+// ... Full App Layout story remains a great example ...
 const AppLayoutContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { path } = useRouter();
@@ -13806,6 +14082,7 @@ const AppLayoutContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 30 }).map((_, i) => (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: Static demo content
                 key={i}
                 className="h-48 rounded-2xl bg-black/5 flex items-center justify-center"
               >
@@ -13824,7 +14101,7 @@ const AppLayoutContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
   );
 };
 
-const FullAppLayoutRenderer = (args: any) => {
+const FullAppLayoutRenderer = (args: StoryProps) => {
   const { path, push } = useRouter();
   const activeItem = path === "/" ? "inbox" : path.substring(1);
   const [isOpen, setIsOpen] = useState(args.defaultOpen ?? true);
@@ -13837,8 +14114,8 @@ const FullAppLayoutRenderer = (args: any) => {
       isOpen={isOpen}
       onOpenChange={setIsOpen}
     >
-      <Sidebar.Container>
-        <SidebarContents />
+      <Sidebar.Container variant={args.variant}>
+        <SidebarContents shape={args.shape} />
       </Sidebar.Container>
       <Sidebar.Content>
         <AppLayoutContent onMenuClick={() => setIsOpen(!isOpen)} />
@@ -13852,14 +14129,6 @@ export const FullAppLayout: Story = {
   args: {
     ...DesktopExpanded.args,
     mobileVariant: "push",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "This story demonstrates a complete application layout, integrating `Sidebar` with a large, collapsible `AppBar` and a scrollable content area powered by `ElasticScrollArea`. The key is passing the `scrollRef` from the scroll area to the `AppBar` to synchronize their behavior.",
-      },
-    },
   },
   render: (args) => (
     <ShallowRouter>
@@ -20429,6 +20698,13 @@ export default useShallowRouter;
   --color-graphite-cardForeground: hsl(0 0% 9%);
   --color-graphite-border: hsl(0 0% 93%);            /* #EDEDED */
   --color-graphite-ring: hsl(0 0% 9%);
+  --color-sidebar: var(--color-graphite-card);
+  --color-sidebar-foreground: var(--color-graphite-cardForeground);
+  --color-sidebar-border: var(--color-graphite-border);
+  --color-sidebar-accent: var(--color-graphite-secondary);
+  --color-sidebar-accent-foreground: var(--color-graphite-secondaryForeground);
+  --color-sidebar-ring: var(--color-graphite-ring);
+
 
   /*
   |--------------------------------------------------------------------------
@@ -20627,6 +20903,28 @@ export default useShallowRouter;
     opacity: 0;
   }
 }
+
+  /* --- NEW: Animations for Skeleton and Collapsible --- */
+  @keyframes pulse {
+    50% {
+      opacity: .5;
+    }
+  }
+
+  @keyframes collapsible-down {
+    from { height: 0; }
+    to { height: var(--radix-collapsible-content-height); }
+  }
+
+  @keyframes collapsible-up {
+    from { height: var(--radix-collapsible-content-height); }
+    to { height: 0; }
+  }
+
+  /* --- NEW: Animation Utilities --- */
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-collapsible-down: collapsible-down 200ms ease-out;
+  --animate-collapsible-up: collapsible-up 200ms ease-out;
 
 /* Add these new utilities to your --animate-* list */
 --animate-accordion-down: accordion-down 200ms cubic-bezier(0.87, 0, 0.13, 1) forwards;

@@ -22,6 +22,10 @@ import React, {
   useState,
 } from "react";
 import useRipple from "use-ripple-hook";
+import {
+  ElasticScrollArea,
+  type ElasticScrollAreaProps,
+} from "../elastic-scroll-area";
 import { Typography } from "../typography";
 
 // --- 1. TYPE DEFINITIONS & CONTEXT (UNIFIED) ---
@@ -29,6 +33,7 @@ import { Typography } from "../typography";
 type DesktopVariant = "permanent" | "modal";
 type MobileVariant = "modal" | "push";
 type SidebarSide = "left" | "right";
+type SidebarVariant = "primary" | "secondary" | "card";
 
 interface SidebarContextProps {
   // State
@@ -42,7 +47,7 @@ interface SidebarContextProps {
   side: SidebarSide;
   collapsible: boolean;
   indicatorId: string;
-  variant: "primary" | "secondary";
+  variant: SidebarVariant;
   // For Gestures
   sidebarX: MotionValue<number>;
   expandedWidth: number;
@@ -81,6 +86,7 @@ const containerVariants = cva("flex h-full flex-col", {
     variant: {
       primary: "bg-graphite-primary text-graphite-primaryForeground",
       secondary: "bg-graphite-secondary text-graphite-foreground",
+      card: "bg-graphite-card text-graphite-foreground",
     },
   },
   defaultVariants: {
@@ -95,26 +101,37 @@ const primaryActionVariants = cva(
       variant: {
         primary: "bg-graphite-primary text-graphite-primaryForeground",
         secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
+        card: "bg-graphite-secondary text-graphite-secondaryForeground",
       },
       isExpanded: {
-        true: "rounded-2xl h-14 px-5",
-        false: "rounded-2xl h-14 w-14",
+        true: "h-14 px-5",
+        false: "h-14 w-14",
+      },
+      shape: {
+        full: "rounded-2xl",
+        minimal: "rounded-2xl",
+        sharp: "rounded-none",
       },
     },
     defaultVariants: {
       variant: "secondary",
+      shape: "minimal",
     },
   }
 );
 
 const navItemVariants = cva(
-  "relative flex items-center w-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+  "relative flex items-center w-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 gap-3",
   {
     variants: {
+      variant: {
+        primary: "",
+        secondary: "",
+        card: "",
+      },
       isActive: {
-        true: "font-semibold text-graphite-primary",
-        false:
-          "text-graphite-foreground/70 hover:text-graphite-foreground/90 hover:bg-black/5",
+        true: "font-semibold",
+        false: "",
       },
       isExpanded: {
         true: "justify-start px-5",
@@ -131,11 +148,36 @@ const navItemVariants = cva(
         sharp: "rounded-none",
       },
     },
+    compoundVariants: [
+      {
+        variant: ["secondary", "card"],
+        isActive: false,
+        className:
+          "text-graphite-foreground/70 hover:text-graphite-foreground/90 hover:bg-black/5",
+      },
+      {
+        variant: ["secondary", "card"],
+        isActive: true,
+        className: "text-graphite-primary",
+      },
+      {
+        variant: "primary",
+        isActive: false,
+        className:
+          "text-graphite-primaryForeground/70 hover:text-graphite-primaryForeground/90 hover:bg-white/5",
+      },
+      {
+        variant: "primary",
+        isActive: true,
+        className: "text-graphite-primaryForeground",
+      },
+    ],
     defaultVariants: {
       isActive: false,
       isExpanded: false,
       size: "md",
       shape: "full",
+      variant: "secondary",
     },
   }
 );
@@ -155,6 +197,8 @@ interface SidebarProps {
   mobileVariant?: MobileVariant;
   side?: SidebarSide;
   collapsible?: boolean;
+  expandedWidth?: number;
+  collapsedWidth?: number;
 }
 
 const SidebarRoot: React.FC<SidebarProps> = ({
@@ -168,6 +212,8 @@ const SidebarRoot: React.FC<SidebarProps> = ({
   mobileVariant = "modal",
   side = "left",
   collapsible = true,
+  expandedWidth = 280,
+  collapsedWidth = 80,
 }) => {
   const [sidebarContainer, mainContent] = React.Children.toArray(children) as [
     React.ReactElement<SidebarContainerProps>,
@@ -184,7 +230,6 @@ const SidebarRoot: React.FC<SidebarProps> = ({
 
   const handleOpenChange = isControlled ? onOpenChange : setUncontrolledOpen;
 
-  const expandedWidth = 280;
   const closedX = side === "left" ? -expandedWidth : expandedWidth;
   const sidebarX = useMotionValue(isOpen ? 0 : closedX);
 
@@ -198,7 +243,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
         mass: 1,
       });
     }
-  }, [isOpen, isDesktop, closedX, sidebarX]);
+  }, [isOpen, isDesktop, closedX, sidebarX, expandedWidth]);
 
   const pushX = useTransform(sidebarX, (latestX) => {
     if (isDesktop || mobileVariant !== "push") return 0;
@@ -266,7 +311,6 @@ const SidebarRoot: React.FC<SidebarProps> = ({
     ]
   );
 
-  const collapsedWidth = 80;
   const sidebarWidth = isOpen ? expandedWidth : collapsedWidth;
 
   return (
@@ -281,7 +325,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
           >
             {desktopVariant === "permanent" && (
               <motion.div
-                style={{ transform: "translateZ(0)" }}
+                style={{ willChange: "width" }}
                 animate={{ width: sidebarWidth }}
                 transition={{ type: "spring", stiffness: 400, damping: 40 }}
               >
@@ -294,8 +338,8 @@ const SidebarRoot: React.FC<SidebarProps> = ({
           <>
             {!isDesktop && mobileVariant === "modal" && (
               <motion.div
-                className="fixed inset-0 z-[10000] bg-black/40"
-                style={{ opacity: overlayOpacity }}
+                className="fixed inset-0 z-[100] bg-black/40"
+                style={{ opacity: overlayOpacity, willChange: "opacity" }}
                 onClick={() => handleOpenChange(false)}
                 initial={{ pointerEvents: "none" }}
                 animate={{ pointerEvents: isOpen ? "auto" : "none" }}
@@ -306,8 +350,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
               className="h-full"
               style={{
                 x: pushX,
-                transform: "translateZ(0)",
-                // NEW: Add touchAction style to prevent conflicts
+                willChange: "transform",
                 touchAction: isOpen ? "none" : "pan-y",
               }}
             >
@@ -326,7 +369,7 @@ SidebarRoot.displayName = "Sidebar";
 interface SidebarContainerProps {
   children: React.ReactNode;
   className?: string;
-  variant?: "primary" | "secondary";
+  variant?: SidebarVariant;
 }
 const SidebarContainer = React.memo(
   React.forwardRef<HTMLElement, SidebarContainerProps>(
@@ -381,12 +424,12 @@ const SidebarContainer = React.memo(
           key={`sidebar-${mobileVariant}`}
           drag="x"
           onDragEnd={handleDragEnd}
-          style={{ x: sidebarX, transform: "translateZ(0)" }}
+          style={{ x: sidebarX, willChange: "transform" }}
           dragConstraints={{
             left: side === "left" ? -expandedWidth : 0,
             right: side === "left" ? 0 : expandedWidth,
           }}
-          dragElastic={{ left: 0.1, right: 0.1 }}
+          dragElastic={0} // Disable over-dragging
           className={clsx(
             containerVariants({ variant }),
             "fixed top-0 bottom-0 z-[100] flex h-screen flex-col",
@@ -419,12 +462,12 @@ SidebarHeader.displayName = "Sidebar.Header";
 interface PrimaryActionProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon: React.ReactNode;
-  variant?: "primary" | "secondary";
+  shape?: "full" | "minimal" | "sharp";
 }
 const SidebarPrimaryAction = React.memo(
   React.forwardRef<HTMLButtonElement, PrimaryActionProps>(
-    ({ children, icon, variant = "secondary", className, ...props }, ref) => {
-      const { isExpanded } = useSidebar();
+    ({ children, icon, shape = "minimal", className, ...props }, ref) => {
+      const { isExpanded, variant } = useSidebar();
       return (
         <div className="px-3 py-2">
           {/* @ts-ignore */}
@@ -435,8 +478,10 @@ const SidebarPrimaryAction = React.memo(
             className={primaryActionVariants({
               variant,
               isExpanded,
+              shape,
               className,
             })}
+            style={{ willChange: "width" }}
             {...props}
           >
             <motion.span layout="position" className="flex-shrink-0">
@@ -445,15 +490,12 @@ const SidebarPrimaryAction = React.memo(
             <AnimatePresence>
               {isExpanded && (
                 <motion.div
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{
-                    opacity: 1,
-                    width: "auto",
-                    marginLeft: "0.75rem",
-                    transition: { delay: 0.1 },
-                  }}
-                  exit={{ opacity: 0, width: 0, marginLeft: 0 }}
-                  className="overflow-hidden whitespace-nowrap"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  style={{ willChange: "transform, opacity" }}
+                  className="overflow-hidden whitespace-nowrap ml-3"
                 >
                   {children}
                 </motion.div>
@@ -467,7 +509,9 @@ const SidebarPrimaryAction = React.memo(
 );
 SidebarPrimaryAction.displayName = "Sidebar.PrimaryAction";
 
-interface SidebarNavProps extends React.HTMLAttributes<HTMLElement> {
+interface SidebarNavProps
+  extends Omit<React.HTMLAttributes<HTMLElement>, "onScroll">,
+    Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
 }
@@ -478,16 +522,29 @@ const SidebarNav = React.memo(
     className,
     size = "md",
     shape = "full",
+    elasticity,
+    dampingFactor,
+    scrollbarVisibility,
+    pullToRefresh,
+    onRefresh,
+    pullThreshold,
     ...props
   }: SidebarNavProps) => {
     return (
       <SidebarNavContext.Provider value={{ size, shape }}>
-        <nav
-          className={clsx("flex-1 space-y-1 px-3 py-2", className)}
-          {...props}
+        <ElasticScrollArea
+          className="flex-1"
+          elasticity={elasticity}
+          dampingFactor={dampingFactor}
+          scrollbarVisibility={scrollbarVisibility}
+          pullToRefresh={pullToRefresh}
+          onRefresh={onRefresh}
+          pullThreshold={pullThreshold}
         >
-          {children}
-        </nav>
+          <nav className={clsx("space-y-1 px-3 py-2", className)} {...props}>
+            {children}
+          </nav>
+        </ElasticScrollArea>
       </SidebarNavContext.Provider>
     );
   }
@@ -555,6 +612,7 @@ const SidebarItem = React.memo(
           onPointerDown={event}
           onClick={() => handleItemPress(itemKey)}
           className={navItemVariants({
+            variant,
             isActive,
             isExpanded,
             size,
@@ -566,8 +624,14 @@ const SidebarItem = React.memo(
           {isActive && (
             <motion.div
               layoutId={indicatorId}
-              className="absolute inset-0 z-0 bg-graphite-primary/10"
-              style={{ borderRadius: shapeToBorderRadius[shape] }}
+              className={clsx(
+                "absolute inset-0 z-0 transition-[border-radius] duration-200",
+                variant === "primary" ? "bg-white/10" : "bg-graphite-primary/10"
+              )}
+              style={{
+                borderRadius: shapeToBorderRadius[shape],
+                willChange: "transform",
+              }}
               transition={{ type: "spring", stiffness: 500, damping: 40 }}
             />
           )}
@@ -575,20 +639,13 @@ const SidebarItem = React.memo(
           <AnimatePresence initial={false}>
             {isExpanded && (
               <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{
-                  opacity: 1,
-                  width: "auto",
-                  marginLeft: "0.75rem",
-                  transition: { delay: 0.1, duration: 0.2 },
-                }}
-                exit={{
-                  opacity: 0,
-                  width: 0,
-                  marginLeft: 0,
-                  transition: { duration: 0.1 },
-                }}
-                className="relative z-10 flex-1 text-left overflow-hidden whitespace-nowrap"
+                key="text"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                style={{ willChange: "transform, opacity" }}
+                className="relative z-10 flex-1 text-left  overflow-hidden whitespace-nowrap"
               >
                 {children}
               </motion.div>
@@ -619,7 +676,7 @@ SidebarFooter.displayName = "Sidebar.Footer";
 const SidebarSeparator = React.memo(
   (props: React.HTMLAttributes<HTMLHRElement>) => (
     <hr
-      className={clsx("my-2 border-graphite-border/60", props.className)}
+      className={clsx("my-2", "border-graphite-border/60", props.className)}
       {...props}
     />
   )
@@ -628,7 +685,7 @@ SidebarSeparator.displayName = "Sidebar.Separator";
 
 const SidebarSectionHeader = React.memo(
   (props: React.HTMLAttributes<HTMLDivElement>) => {
-    const { isExpanded } = useSidebar();
+    const { isExpanded, variant } = useSidebar();
     return (
       <AnimatePresence>
         {isExpanded && (
@@ -636,12 +693,16 @@ const SidebarSectionHeader = React.memo(
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            style={{ willChange: "height, opacity" }}
             className="overflow-hidden"
           >
             <Typography
               variant="small"
               className={clsx(
-                "px-5 py-2 font-bold text-graphite-primary",
+                "px-5 py-2 font-bold",
+                variant === "primary"
+                  ? "text-graphite-primaryForeground/70"
+                  : "text-graphite-primary",
                 props.className
               )}
               {...props}
@@ -690,7 +751,7 @@ const SidebarDragHandle = React.memo(() => {
       )}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={{ left: 0.1, right: 0.1 }}
+      dragElastic={0} // Disable over-dragging
       onDragEnd={handleDragEnd}
       onDrag={(e, info) => {
         const isDraggingCorrectly =

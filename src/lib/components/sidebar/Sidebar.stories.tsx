@@ -12,7 +12,7 @@ import {
   Trash2,
   User,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { AppBar } from "../appbar";
 import { Badge } from "../badge";
 import { ElasticScrollArea } from "../elastic-scroll-area";
@@ -22,7 +22,19 @@ import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { Sidebar, useSidebar } from "./index";
 
-const meta: Meta<typeof Sidebar> = {
+// --- TYPE FIX: Combine props for Storybook controls ---
+type StoryProps = React.ComponentProps<typeof Sidebar> &
+  Pick<React.ComponentProps<typeof Sidebar.Container>, "variant"> &
+  Pick<
+    React.ComponentProps<typeof Sidebar.Nav>,
+    | "shape"
+    | "elasticity"
+    | "pullToRefresh"
+    | "onRefresh"
+    | "scrollbarVisibility"
+  >;
+
+const meta: Meta<StoryProps> = {
   title: "Components/Navigators/Sidebar",
   component: Sidebar,
   tags: ["autodocs"],
@@ -59,15 +71,50 @@ const meta: Meta<typeof Sidebar> = {
       control: "boolean",
       description: "Initial open state for uncontrolled components.",
     },
+    variant: {
+      control: "select",
+      options: ["primary", "secondary", "card"],
+      description: "The color scheme of the sidebar.",
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+      description: "The border-radius of the navigation items.",
+    },
+    expandedWidth: {
+      control: { type: "number", min: 200, max: 500, step: 10 },
+      description: "The width of the sidebar when expanded.",
+    },
+    collapsedWidth: {
+      control: { type: "number", min: 50, max: 150, step: 5 },
+      description: "The width of the sidebar when collapsed (on desktop).",
+    },
     activeItem: { control: false },
     onItemPress: { action: "itemPressed" },
     isOpen: { control: false },
     onOpenChange: { action: "openChange" },
+    elasticity: {
+      control: "boolean",
+      table: { category: "Elastic Scroll Props" },
+    },
+    pullToRefresh: {
+      control: "boolean",
+      table: { category: "Elastic Scroll Props" },
+    },
+    onRefresh: {
+      action: "refreshed",
+      table: { category: "Elastic Scroll Props" },
+    },
+    scrollbarVisibility: {
+      control: "select",
+      options: ["auto", "always", "scroll", "hidden"],
+      table: { category: "Elastic Scroll Props" },
+    },
   },
 };
 
 export default meta;
-type Story = StoryObj<typeof Sidebar>;
+type Story = StoryObj<StoryProps>;
 
 // --- Helper Components for Stories ---
 
@@ -78,6 +125,12 @@ const navItems = [
   { key: "drafts", label: "Drafts", icon: <File size={20} /> },
   { key: "archive", label: "Archive", icon: <Archive size={20} /> },
   { key: "trash", label: "Trash", icon: <Trash2 size={20} /> },
+  { key: "spam", label: "Spam", icon: <File size={20} /> },
+  { key: "all_mail", label: "All Mail", icon: <File size={20} /> },
+  { key: "important", label: "Important", icon: <File size={20} /> },
+  { key: "social", label: "Social", icon: <File size={20} /> },
+  { key: "promotions", label: "Promotions", icon: <File size={20} /> },
+  { key: "forums", label: "Forums", icon: <File size={20} /> },
 ];
 
 const labelItems = [
@@ -90,61 +143,67 @@ const CustomSidebarHeader = () => {
   const { isDesktop, collapsible, toggle, side } = useSidebar();
   return (
     <Sidebar.Header className={side === "right" ? "flex-row-reverse" : ""}>
-      <div className="flex justify-center items-center pt-4">
-        {isDesktop && collapsible && (
-          <IconButton variant="ghost" size="sm" onClick={toggle}>
-            <Menu />
-          </IconButton>
-        )}
-      </div>
-
-      {/* You can add a logo or title here */}
+      {isDesktop && collapsible && (
+        <IconButton variant="ghost" size="sm" onClick={toggle}>
+          <Menu />
+        </IconButton>
+      )}
     </Sidebar.Header>
   );
 };
 
-const SidebarContents = () => (
+const SidebarContents = ({
+  shape = "full",
+  ...scrollProps
+}: { shape?: "full" | "minimal" | "sharp" } & Partial<
+  React.ComponentProps<typeof Sidebar.Nav>
+>) => (
   <>
     <CustomSidebarHeader />
-    <Sidebar.PrimaryAction icon={<Pencil size={24} />}>
+    <Sidebar.PrimaryAction icon={<Pencil size={24} />} shape={shape}>
       Compose
     </Sidebar.PrimaryAction>
-    <Sidebar.Nav>
-      <ElasticScrollArea>
-        {navItems.map((item) => (
-          <Sidebar.Item
-            key={item.key}
-            itemKey={item.key}
-            icon={item.icon}
-            endAdornment={
-              item.count ? (
-                <Badge shape="full" variant="secondary">
-                  {item.count}
-                </Badge>
-              ) : null
-            }
-          >
-            {item.label}
-          </Sidebar.Item>
-        ))}
-        <Sidebar.Separator />
-        <Sidebar.SectionHeader>Labels</Sidebar.SectionHeader>
-        {labelItems.map((item) => (
-          <Sidebar.Item
-            key={item.key}
-            itemKey={item.key}
-            icon={<File size={20} />}
-          >
-            {item.label}
-          </Sidebar.Item>
-        ))}
-      </ElasticScrollArea>
+    <Sidebar.Nav shape={shape} {...scrollProps}>
+      {navItems.map((item) => (
+        <Sidebar.Item
+          key={item.key}
+          itemKey={item.key}
+          icon={item.icon}
+          endAdornment={
+            item.count ? (
+              <Badge
+                shape="full"
+                variant={item.count > 0 ? "secondary" : undefined}
+              >
+                {item.count}
+              </Badge>
+            ) : null
+          }
+        >
+          {item.label}
+        </Sidebar.Item>
+      ))}
+      <Sidebar.Separator />
+      <Sidebar.SectionHeader>Labels</Sidebar.SectionHeader>
+      {labelItems.map((item) => (
+        <Sidebar.Item
+          key={item.key}
+          itemKey={item.key}
+          icon={<File size={20} />}
+        >
+          {item.label}
+        </Sidebar.Item>
+      ))}
     </Sidebar.Nav>
     <Sidebar.Footer>
-      <Sidebar.Item itemKey="profile" icon={<User size={20} />}>
+      <Sidebar.Item itemKey="profile" icon={<User size={20} />} shape={shape}>
         Profile
       </Sidebar.Item>
-      <Sidebar.Item itemKey="settings" icon={<Settings size={20} />}>
+      <Sidebar.Item
+        itemKey="settings"
+        icon={<Settings size={20} />}
+        shape={shape}
+      >
         Settings
       </Sidebar.Item>
     </Sidebar.Footer>
@@ -180,7 +239,7 @@ const MainContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
   );
 };
 
-const RenderWithRouter = (args: any) => {
+const RenderWithRouter = (args: StoryProps) => {
   const { path, push } = useRouter();
   const activeItem = path === "/" ? "inbox" : path.substring(1);
   const [isOpen, setIsOpen] = useState(args.defaultOpen);
@@ -193,8 +252,14 @@ const RenderWithRouter = (args: any) => {
       isOpen={isOpen}
       onOpenChange={setIsOpen}
     >
-      <Sidebar.Container>
-        <SidebarContents />
+      <Sidebar.Container variant={args.variant}>
+        <SidebarContents
+          shape={args.shape}
+          elasticity={args.elasticity}
+          pullToRefresh={args.pullToRefresh}
+          onRefresh={args.onRefresh}
+          scrollbarVisibility={args.scrollbarVisibility}
+        />
       </Sidebar.Container>
       <Sidebar.Content>
         <MainContent onMenuClick={() => setIsOpen(!isOpen)} />
@@ -219,8 +284,28 @@ export const DesktopExpanded: Story = {
   ),
 };
 
+const simulateRefresh = () =>
+  new Promise((resolve) => setTimeout(resolve, 2000));
+
+export const ScrollableAndRefreshable: Story = {
+  name: "2. Scrollable & Refreshable Nav",
+  args: {
+    ...DesktopExpanded.args,
+    defaultOpen: true,
+    elasticity: true,
+    pullToRefresh: true,
+    onRefresh: simulateRefresh,
+    scrollbarVisibility: "auto",
+  },
+  render: (args) => (
+    <ShallowRouter>
+      <RenderWithRouter {...args} />
+    </ShallowRouter>
+  ),
+};
+
 export const DesktopCollapsed: Story = {
-  name: "2. Desktop (Collapsed by Default)",
+  name: "3. Desktop (Collapsed by Default)",
   args: {
     ...DesktopExpanded.args,
     defaultOpen: false,
@@ -233,11 +318,12 @@ export const DesktopCollapsed: Story = {
 };
 
 export const MobileModal: Story = {
-  name: "3. Mobile (Modal Drawer)",
+  name: "4. Mobile (Modal Drawer)",
   args: {
     mobileVariant: "modal",
     side: "left",
     defaultOpen: false,
+    elasticity: true,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
@@ -250,20 +336,15 @@ export const MobileModal: Story = {
 };
 
 export const MobilePush: Story = {
-  name: "4. Mobile (Push Drawer)",
+  name: "5. Mobile (Push Drawer)",
   args: {
     mobileVariant: "push",
     side: "left",
     defaultOpen: false,
+    elasticity: true,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
-    docs: {
-      description: {
-        story:
-          "The 'push' variant moves the main content aside to reveal the sidebar, creating a different spatial relationship.",
-      },
-    },
   },
   render: (args) => (
     <ShallowRouter>
@@ -272,19 +353,12 @@ export const MobilePush: Story = {
   ),
 };
 
-export const RightSide: Story = {
-  name: "5. Right Side Variant",
+export const VariantsAndShapes: Story = {
+  name: "6. Variants and Shapes",
   args: {
     ...DesktopExpanded.args,
-    side: "right",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The `side` prop works for all variants on both desktop and mobile.",
-      },
-    },
+    variant: "primary",
+    shape: "minimal",
   },
   render: (args) => (
     <ShallowRouter>
@@ -293,100 +367,21 @@ export const RightSide: Story = {
   ),
 };
 
-export const ControlledState: Story = {
-  name: "6. Controlled State",
+export const CustomWidths: Story = {
+  name: "7. Custom Widths",
   args: {
     ...DesktopExpanded.args,
-  },
-  render: function Render(args) {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-      <ShallowRouter>
-        <div className="absolute top-4 right-4 z-10">
-          <button
-            type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            className="px-4 py-2 bg-blue-500 text-white rounded-full"
-          >
-            Toggle Sidebar
-          </button>
-        </div>
-        <RenderWithRouter {...args} isOpen={isOpen} onOpenChange={setIsOpen} />
-      </ShallowRouter>
-    );
-  },
-};
-
-const shortNavItems = [
-  { key: "inbox", label: "Inbox", icon: <Inbox size={20} /> },
-  { key: "sent", label: "Sent", icon: <Send size={20} /> },
-  { key: "favorites", label: "Favorites", icon: <Star size={20} /> },
-];
-
-export const ItemVariants: Story = {
-  name: "7. Item Variants (Size & Shape)",
-  args: {
-    ...DesktopExpanded.args,
-    defaultOpen: true,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The `size` and `shape` of `Sidebar.Item` components can be controlled by props on the parent `<Sidebar.Nav>`. Props on an individual item will override the parent.",
-      },
-    },
+    expandedWidth: 350,
+    collapsedWidth: 100,
   },
   render: (args) => (
     <ShallowRouter>
-      <Sidebar
-        {...args}
-        activeItem="inbox"
-        onItemPress={() => {}}
-        isOpen={args.isOpen}
-        onOpenChange={args.onOpenChange}
-      >
-        <Sidebar.Container>
-          <CustomSidebarHeader />
-          <Sidebar.SectionHeader>Small, Minimal</Sidebar.SectionHeader>
-          <Sidebar.Nav size="sm" shape="minimal">
-            {shortNavItems.map((item) => (
-              <Sidebar.Item key={item.key} itemKey={item.key} icon={item.icon}>
-                {item.label}
-              </Sidebar.Item>
-            ))}
-          </Sidebar.Nav>
-          <Sidebar.Separator />
-          <Sidebar.SectionHeader>Large, Sharp</Sidebar.SectionHeader>
-          <Sidebar.Nav size="lg" shape="sharp">
-            {shortNavItems.map((item) => (
-              <Sidebar.Item key={item.key} itemKey={item.key} icon={item.icon}>
-                {item.label}
-              </Sidebar.Item>
-            ))}
-            <Sidebar.Item
-              itemKey="override"
-              icon={<Archive size={20} />}
-              shape="full"
-            >
-              Override
-            </Sidebar.Item>
-          </Sidebar.Nav>
-        </Sidebar.Container>
-        <Sidebar.Content>
-          <div className="p-6">
-            <Typography variant="h1">Item Variants</Typography>
-            <Typography variant="p">
-              The sidebar on the left demonstrates different sizes and shapes
-              for navigation items.
-            </Typography>
-          </div>
-        </Sidebar.Content>
-      </Sidebar>
+      <RenderWithRouter {...args} />
     </ShallowRouter>
   ),
 };
 
+// ... Full App Layout story remains a great example ...
 const AppLayoutContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { path } = useRouter();
@@ -438,6 +433,7 @@ const AppLayoutContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 30 }).map((_, i) => (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: Static demo content
                 key={i}
                 className="h-48 rounded-2xl bg-black/5 flex items-center justify-center"
               >
@@ -456,7 +452,7 @@ const AppLayoutContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
   );
 };
 
-const FullAppLayoutRenderer = (args: any) => {
+const FullAppLayoutRenderer = (args: StoryProps) => {
   const { path, push } = useRouter();
   const activeItem = path === "/" ? "inbox" : path.substring(1);
   const [isOpen, setIsOpen] = useState(args.defaultOpen ?? true);
@@ -469,8 +465,8 @@ const FullAppLayoutRenderer = (args: any) => {
       isOpen={isOpen}
       onOpenChange={setIsOpen}
     >
-      <Sidebar.Container>
-        <SidebarContents />
+      <Sidebar.Container variant={args.variant}>
+        <SidebarContents shape={args.shape} />
       </Sidebar.Container>
       <Sidebar.Content>
         <AppLayoutContent onMenuClick={() => setIsOpen(!isOpen)} />
@@ -484,14 +480,6 @@ export const FullAppLayout: Story = {
   args: {
     ...DesktopExpanded.args,
     mobileVariant: "push",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "This story demonstrates a complete application layout, integrating `Sidebar` with a large, collapsible `AppBar` and a scrollable content area powered by `ElasticScrollArea`. The key is passing the `scrollRef` from the scroll area to the `AppBar` to synchronize their behavior.",
-      },
-    },
   },
   render: (args) => (
     <ShallowRouter>

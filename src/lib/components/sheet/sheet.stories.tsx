@@ -41,6 +41,13 @@ const meta: Meta<typeof Sheet> = {
       description:
         "If true, forces the component to render as a bottom sheet on all screen sizes.",
     },
+    // --- NEW PROP DOCUMENTATION ---
+    forceSideSheet: {
+      control: "boolean",
+      description:
+        "If true, forces the component to render as a side sheet on all screen sizes.",
+    },
+    // --- END ---
     // Vaul-specific props
     snapPoints: {
       control: "object",
@@ -99,7 +106,7 @@ export const ResponsiveBehavior: Story = {
     },
   },
   render: (args) => (
-    <div className="flex p-12 items-center justify-center bg-graphite-background">
+    <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
       <Sheet {...args}>
         <Sheet.Trigger asChild>
           <Button>Open Sheet</Button>
@@ -148,11 +155,36 @@ export const ForceBottomSheet: Story = {
   render: (args) => <ResponsiveBehavior.render {...args} />,
 };
 
+// --- NEW STORY ---
+export const ForceSideSheet: Story = {
+  name: "3. Force Side Sheet on Mobile",
+  args: {
+    ...ResponsiveBehavior.args,
+    forceSideSheet: true,
+    side: "left",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Set `forceSideSheet={true}` to override the responsive behavior and always render a side sheet, even on small screens. This is useful for main navigation drawers that need to be consistent across all devices.",
+      },
+    },
+    // Set a mobile viewport to demonstrate the override
+    viewport: {
+      defaultViewport: "mobile1",
+    },
+  },
+  render: (args) => <ResponsiveBehavior.render {...args} />,
+};
+// --- END ---
+
 export const SideSheetLeft: Story = {
-  name: "3. Side Sheet (Left)",
+  name: "4. Side Sheet (Left)",
   args: {
     ...ResponsiveBehavior.args,
     side: "left",
+    forceSideSheet: true
   },
   parameters: {
     docs: {
@@ -166,7 +198,7 @@ export const SideSheetLeft: Story = {
 };
 
 export const DetachedMode: Story = {
-  name: "4. Detached Mode",
+  name: "5. Detached Mode",
   args: {
     ...ResponsiveBehavior.args,
     mode: "detached",
@@ -183,7 +215,7 @@ export const DetachedMode: Story = {
 };
 
 export const WithSnappingPoints: Story = {
-  name: "5. With Snapping Points",
+  name: "6. With Snapping Points",
   args: {
     snapPoints: [0.3, 0.7, 1],
     fadeFromIndex: 0,
@@ -198,7 +230,7 @@ export const WithSnappingPoints: Story = {
     },
   },
   render: (args) => (
-    <div className="flex p-12 items-center justify-center bg-graphite-background">
+    <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
       <Sheet {...args}>
         <Sheet.Trigger asChild>
           <Button>Open Snapping Sheet</Button>
@@ -213,7 +245,7 @@ export const WithSnappingPoints: Story = {
 };
 
 export const ControlledSnapping: Story = {
-  name: "6. Controlled Snapping",
+  name: "7. Controlled Snapping",
   args: {
     snapPoints: ["300px", 1],
     fadeFromIndex: 0,
@@ -232,7 +264,7 @@ export const ControlledSnapping: Story = {
       string | number | null
     >(args.snapPoints![0]);
     return (
-      <div className="flex p-12 flex-col items-center justify-center gap-4 bg-graphite-background">
+      <div className="flex h-[500px] w-full flex-col items-center justify-center gap-4 bg-graphite-background p-12">
         <Typography variant="large">External Controls</Typography>
 
         <Sheet

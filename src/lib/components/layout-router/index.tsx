@@ -1,9 +1,13 @@
 "use client";
 
 import {
+  animate,
   AnimatePresence,
   motion,
+  useMotionValue,
+  useTransform,
   type Easing,
+  type PanInfo,
   type Transition,
 } from "framer-motion";
 import React, {
@@ -41,6 +45,15 @@ interface LayoutIdContextType {
   baseId: string;
 }
 const LayoutIdContext = createContext<LayoutIdContextType | null>(null);
+
+// --- NEW: CONTEXT FOR DISMISS GESTURE CONTROL ---
+interface DismissibleContextType {
+  setIsAtTop: (isAtTop: boolean) => void;
+}
+export const DismissibleContext = createContext<DismissibleContextType | null>(
+  null
+);
+// --- END NEW CONTEXT ---
 
 // --- HOOKS ---
 export const useLayoutRouter = () => {
@@ -104,7 +117,6 @@ const LayoutRouterRoot = ({
     [selectedId, stack]
   );
 
-  // --- NEW: Escape Key Listener ---
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && selectedId) {
@@ -114,7 +126,6 @@ const LayoutRouterRoot = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedId, navigationValue]);
-  // --- END NEW ---
 
   const configValue = useMemo(
     () => ({
@@ -207,18 +218,47 @@ const LayoutRouterSharedElement = ({
 };
 LayoutRouterSharedElement.displayName = "LayoutRouter.SharedElement";
 
-// --- MODIFIED: LayoutRouterScreen ---
 const LayoutRouterScreen = ({
   id,
   children,
   presentation = "fullscreen",
+  dismissible = false,
+  dismissDirection = "y",
 }: {
   id: string;
   children: ReactNode;
   presentation?: "fullscreen" | "modal";
+  dismissible?: boolean;
+  dismissDirection?: "x" | "y";
 }) => {
   const { transition } = useContext(LayoutRouterConfigContext);
   const { goBack } = useLayoutRouter();
+
+  // --- NEW: State for scroll lock ---
+  const [isAtTop, setIsAtTop] = useState(true);
+  const dismissibleContextValue = useMemo(() => ({ setIsAtTop }), []);
+  // --- END NEW ---
+
+  const dragAxis = useMotionValue(0);
+  const DISMISS_THRESHOLD = 150;
+  const VELOCITY_THRESHOLD = 500;
+
+  const handleDragEnd = (event: MouseEvent | TouchEvent, info: PanInfo) => {
+    const offset = dismissDirection === "y" ? info.offset.y : info.offset.x;
+    const velocity =
+      dismissDirection === "y" ? info.velocity.y : info.velocity.x;
+
+    if (offset > DISMISS_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
+      goBack();
+    } else {
+      animate(dragAxis, 0, { type: "spring", stiffness: 400, damping: 40 });
+    }
+  };
+
+  const scale = useTransform(dragAxis, [0, 400], [1, 0.85], { clamp: true });
+  const backdropOpacity = useTransform(dragAxis, [0, 300], [1, 0], {
+    clamp: true,
+  });
 
   const containerClasses =
     presentation === "fullscreen"
@@ -233,7 +273,6 @@ const LayoutRouterScreen = ({
   return (
     <LayoutIdContext.Provider value={{ baseId: id }}>
       <div className={containerClasses}>
-        {/* Backdrop for modal presentation */}
         {presentation === "modal" && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -241,23 +280,42 @@ const LayoutRouterScreen = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="absolute inset-0 bg-black/50"
-            onClick={goBack}
+            onClick={!dismissible ? goBack : undefined}
+            style={{
+              opacity: dismissible ? backdropOpacity : undefined,
+              willChange: "opacity",
+            }}
           />
         )}
-        <motion.div
-          layoutId={`card-${id}`}
-          className={contentClasses}
-          transition={transition}
-          style={{ willChange: "transform, opacity" }}
-        >
-          {children}
-        </motion.div>
+        <DismissibleContext.Provider value={dismissibleContextValue}>
+          <motion.div
+            layoutId={`card-${id}`}
+            className={contentClasses}
+            transition={transition}
+            // --- MODIFIED: drag prop is now conditional ---
+            drag={dismissible && isAtTop ? dismissDirection : false}
+            dragConstraints={{
+              top: dismissDirection === "y" ? 0 : 0,
+              bottom: dismissDirection === "y" ? Infinity : 0,
+              left: dismissDirection === "x" ? 0 : 0,
+              right: dismissDirection === "x" ? Infinity : 0,
+            }}
+            dragElastic={0.1}
+            onDragEnd={dismissible ? handleDragEnd : undefined}
+            style={{
+              willChange: "transform, opacity",
+              scale: dismissible ? scale : undefined,
+              [dismissDirection]: dragAxis,
+            }}
+          >
+            {children}
+          </motion.div>
+        </DismissibleContext.Provider>
       </div>
     </LayoutIdContext.Provider>
   );
 };
 LayoutRouterScreen.displayName = "LayoutRouter.Screen";
-// --- END MODIFICATION ---
 
 export const LayoutRouter = Object.assign(LayoutRouterRoot, {
   List: LayoutRouterList,

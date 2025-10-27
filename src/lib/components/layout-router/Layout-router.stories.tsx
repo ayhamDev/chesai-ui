@@ -1,17 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  Archive,
-  ArrowLeft,
-  Delete,
-  Home,
-  MoreVertical,
-  Pencil,
-  Search,
-  Settings,
-  Star,
-} from "lucide-react";
-import { useRef } from "react";
-import { useAppBar } from "../../hooks/useAppBar";
+import { ArrowLeft } from "lucide-react";
+import React, { useContext, useEffect, useRef } from "react";
 import { AppBar } from "../appbar";
 import { Avatar } from "../avatar";
 import { Button } from "../button";
@@ -19,7 +8,6 @@ import { ButtonGroup } from "../button-group";
 import DeviceFrame from "../device";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
-import { Input } from "../input";
 import {
   Item,
   ItemContent,
@@ -29,7 +17,7 @@ import {
 } from "../item";
 import { createStackNavigator, useNavigation } from "../stack-router";
 import { Typography } from "../typography";
-import { LayoutRouter, useLayoutRouter } from "./index";
+import { DismissibleContext, LayoutRouter, useLayoutRouter } from "./index";
 
 const meta: Meta<typeof LayoutRouter> = {
   title: "Components/Navigators/LayoutRouter",
@@ -46,7 +34,7 @@ const meta: Meta<typeof LayoutRouter> = {
     docs: {
       description: {
         component:
-          "A declarative router for creating multi-element shared layout transitions. This version supports browser history and multiple presentation modes (fullscreen, modal), demonstrated with a full mail client UI.",
+          "A declarative router for creating multi-element shared layout transitions. This version supports browser history, multiple presentation modes (fullscreen, modal), and interactive gesture-based dismissal.",
       },
     },
   },
@@ -58,6 +46,18 @@ const meta: Meta<typeof LayoutRouter> = {
     easing: {
       control: "object",
       description: "An array of 4 numbers for a cubic bezier easing curve.",
+    },
+    dismissible: {
+      control: "boolean",
+      description: "Enable swipe-to-dismiss gesture on the screen.",
+      table: { category: "Screen Props" },
+    },
+    dismissDirection: {
+      control: "select",
+      options: ["x", "y"],
+      description: "The axis for the dismiss gesture.",
+      table: { category: "Screen Props" },
+      if: { arg: "dismissible" },
     },
   },
   decorators: [
@@ -72,7 +72,40 @@ const meta: Meta<typeof LayoutRouter> = {
 export default meta;
 type Story = StoryObj;
 
-// --- Sample Data ---
+// --- Helper Components & Data ---
+
+/**
+ * A wrapper for ElasticScrollArea that reports its scroll position
+ * to a parent Dismissible Screen to enable/disable drag gestures.
+ */
+const DismissibleScrollArea = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<typeof ElasticScrollArea>
+>((props, ref) => {
+  const context = useContext(DismissibleContext);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  React.useImperativeHandle(ref, () => scrollRef.current!);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !context) return;
+
+    const handleScroll = () => {
+      // If scrollTop is 0, we're at the top.
+      context.setIsAtTop(el.scrollTop === 0);
+    };
+
+    el.addEventListener("scroll", handleScroll);
+    // Initial check
+    handleScroll();
+
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, [context]);
+
+  return <ElasticScrollArea ref={scrollRef} {...props} />;
+});
+
 const sampleEmails = [
   {
     id: "email-1",
@@ -80,7 +113,7 @@ const sampleEmails = [
     avatar: "https://i.pravatar.cc/150?img=1",
     subject: "Project Update & Next Steps",
     preview: "Hey team, just wanted to give a quick update...",
-    fullBody: "...",
+    body: "Here is a much longer body of text to ensure that the content is scrollable. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. This will allow us to test the scroll lock functionality.",
   },
   {
     id: "email-2",
@@ -88,7 +121,7 @@ const sampleEmails = [
     avatar: "https://i.pravatar.cc/150?img=2",
     subject: "Lunch Plans?",
     preview: "Anyone up for lunch today? I'm craving tacos.",
-    fullBody: "...",
+    body: "Tacos sound great! Let's meet at the usual spot at 12:30 PM. I'll invite the rest of the team. This content is also here to demonstrate scrolling.",
   },
 ];
 
@@ -106,8 +139,6 @@ const galleryData = [
     author: "Quino Al",
   },
 ];
-
-// --- Reusable UI Components for the Stories ---
 
 const MailListItem = ({ email }: { email: (typeof sampleEmails)[0] }) => (
   <Item variant="secondary" shape="minimal" padding="sm">
@@ -130,49 +161,6 @@ const MailListItem = ({ email }: { email: (typeof sampleEmails)[0] }) => (
   </Item>
 );
 
-const MailDetailScreen = ({ email }: { email: (typeof sampleEmails)[0] }) => {
-  const { goBack } = useLayoutRouter();
-  return (
-    <div className="overflow-hidden h-full flex flex-col bg-graphite-card">
-      <AppBar
-        appBarColor="card"
-        startAdornment={
-          <IconButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={goBack}
-            aria-label="Go back"
-          >
-            <ArrowLeft />
-          </IconButton>
-        }
-      />
-      <div className="p-6 pt-2">
-        <LayoutRouter.SharedElement tag="subject">
-          <Typography variant="h3" className="mb-6">
-            {email.subject}
-          </Typography>
-        </LayoutRouter.SharedElement>
-        <div className="flex items-center gap-4">
-          <LayoutRouter.SharedElement tag="avatar">
-            <Avatar
-              size="lg"
-              src={email.avatar}
-              fallback={email.sender.slice(0, 2)}
-            />
-          </LayoutRouter.SharedElement>
-          <div className="flex-1">
-            <LayoutRouter.SharedElement tag="sender">
-              <Typography variant="large">{email.sender}</Typography>
-            </LayoutRouter.SharedElement>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const InboxScreen = () => (
   <div className="w-full h-full relative bg-graphite-background flex flex-col">
     <AppBar appBarColor="card">
@@ -192,30 +180,6 @@ const InboxScreen = () => (
   </div>
 );
 
-export const FullscreenPresentation: Story = {
-  name: "1. Fullscreen Presentation (Default)",
-  args: {
-    duration: 0.5,
-  },
-  render: (args) => (
-    <LayoutRouter {...args}>
-      <LayoutRouter.List>
-        <InboxScreen />
-      </LayoutRouter.List>
-      {sampleEmails.map((email) => (
-        <LayoutRouter.Screen
-          key={email.id}
-          id={email.id}
-          presentation="fullscreen"
-        >
-          <MailDetailScreen email={email} />
-        </LayoutRouter.Screen>
-      ))}
-    </LayoutRouter>
-  ),
-};
-
-// --- NEW: Modal Presentation Story ---
 const GalleryGridItem = ({ item }: { item: (typeof galleryData)[0] }) => (
   <LayoutRouter.Link id={item.id} className="cursor-pointer group">
     <div className="relative overflow-hidden rounded-xl aspect-square">
@@ -261,18 +225,54 @@ const ModalDetailScreen = ({ item }: { item: (typeof galleryData)[0] }) => {
   );
 };
 
+// --- Stories ---
+
+export const FullscreenPresentation: Story = {
+  name: "1. Fullscreen Presentation (Default)",
+  args: {
+    duration: 5.5,
+  },
+  render: (args) => (
+    <LayoutRouter {...args}>
+      <LayoutRouter.List>
+        <InboxScreen />
+      </LayoutRouter.List>
+      {sampleEmails.map((email) => (
+        <LayoutRouter.Screen
+          key={email.id}
+          id={email.id}
+          presentation="fullscreen"
+        >
+          {/* This screen is NOT dismissible and has no scroll lock */}
+          <div className="overflow-hidden h-full flex flex-col bg-graphite-card">
+            <AppBar
+              appBarColor="card"
+              startAdornment={
+                <IconButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={useLayoutRouter().goBack}
+                  aria-label="Go back"
+                >
+                  <ArrowLeft />
+                </IconButton>
+              }
+            />
+            <div className="p-6 pt-2">
+              <Typography variant="p">{email.body}</Typography>
+            </div>
+          </div>
+        </LayoutRouter.Screen>
+      ))}
+    </LayoutRouter>
+  ),
+};
+
 export const ModalPresentation: Story = {
   name: "2. Modal Presentation",
   args: {
     duration: 0.4,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Set `presentation='modal'` on a `<LayoutRouter.Screen>` to make it appear as a floating modal. The backdrop can be clicked to dismiss it, and the 'Escape' key also works.",
-      },
-    },
   },
   render: (args) => (
     <LayoutRouter {...args}>
@@ -288,7 +288,6 @@ export const ModalPresentation: Story = {
           </div>
         </div>
       </LayoutRouter.List>
-
       {galleryData.map((item) => (
         <LayoutRouter.Screen key={item.id} id={item.id} presentation="modal">
           <ModalDetailScreen item={item} />
@@ -298,8 +297,128 @@ export const ModalPresentation: Story = {
   ),
 };
 
-// ... (Rest of the stories like IntegratingWithStackRouter remain unchanged)
-// --- INTEGRATING WITH STACK ROUTER ---
+export const DismissibleModalPresentation: Story = {
+  name: "3. Dismissible Modal",
+  args: {
+    duration: 0.4,
+    dismissible: true,
+    dismissDirection: "y",
+  },
+  render: (args) => (
+    <LayoutRouter {...args}>
+      <LayoutRouter.List>
+        <div className="h-full flex flex-col bg-graphite-background">
+          <AppBar appBarColor="card">
+            <Typography variant="h4">Dismissible Gallery</Typography>
+          </AppBar>
+          <div className="p-2 grid grid-cols-2 gap-2">
+            {galleryData.map((item) => (
+              <GalleryGridItem key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
+      </LayoutRouter.List>
+      {galleryData.map((item) => (
+        <LayoutRouter.Screen
+          key={item.id}
+          id={item.id}
+          presentation="modal"
+          dismissible={args.dismissible}
+          dismissDirection={args.dismissDirection}
+        >
+          <ModalDetailScreen item={item} />
+        </LayoutRouter.Screen>
+      ))}
+    </LayoutRouter>
+  ),
+};
+
+const DismissibleScrollScreen = ({
+  email,
+}: {
+  email: (typeof sampleEmails)[0];
+}) => {
+  const { goBack } = useLayoutRouter();
+  return (
+    <div className="overflow-hidden h-full flex flex-col bg-graphite-card">
+      <AppBar
+        appBarColor="card"
+        startAdornment={
+          <IconButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={goBack}
+            aria-label="Go back"
+          >
+            <ArrowLeft />
+          </IconButton>
+        }
+      />
+      <DismissibleScrollArea>
+        <div className="p-6 pt-2">
+          <LayoutRouter.SharedElement tag="subject">
+            <Typography variant="h3" className="mb-6">
+              {email.subject}
+            </Typography>
+          </LayoutRouter.SharedElement>
+          <div className="flex items-center gap-4 mb-4">
+            <LayoutRouter.SharedElement tag="avatar">
+              <Avatar
+                size="lg"
+                src={email.avatar}
+                fallback={email.sender.slice(0, 2)}
+              />
+            </LayoutRouter.SharedElement>
+            <div className="flex-1">
+              <LayoutRouter.SharedElement tag="sender">
+                <Typography variant="large">{email.sender}</Typography>
+              </LayoutRouter.SharedElement>
+            </div>
+          </div>
+          <Typography variant="p">{email.body}</Typography>
+          <Typography variant="p">{email.body}</Typography>
+        </div>
+      </DismissibleScrollArea>
+    </div>
+  );
+};
+
+export const DismissibleWithScroll: Story = {
+  name: "4. Dismissible with Scrolling",
+  args: {
+    duration: 5.5,
+    dismissible: true,
+    dismissDirection: "y",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "This story demonstrates the 'scroll lock' pattern. You can scroll the content of the screen freely. The swipe-to-dismiss gesture will only activate when you are scrolled to the very top of the content.",
+      },
+    },
+  },
+  render: (args) => (
+    <LayoutRouter {...args}>
+      <LayoutRouter.List>
+        <InboxScreen />
+      </LayoutRouter.List>
+      {sampleEmails.map((email) => (
+        <LayoutRouter.Screen
+          key={email.id}
+          id={email.id}
+          presentation="fullscreen"
+          dismissible={args.dismissible}
+          dismissDirection={args.dismissDirection}
+        >
+          <DismissibleScrollScreen email={email} />
+        </LayoutRouter.Screen>
+      ))}
+    </LayoutRouter>
+  ),
+};
+
 type AppStackParamList = { Main: undefined; Settings: undefined };
 const AppStack = createStackNavigator<AppStackParamList>();
 const MainScreen = () => {
@@ -346,13 +465,9 @@ const MainScreen = () => {
     </div>
   );
 };
-const SettingsScreen = () => (
-  <div className="p-6 pt-[70px]">
-    <Typography variant="h3">Settings</Typography>
-  </div>
-);
+
 export const IntegratingWithStackRouter: Story = {
-  name: "3. Integrating with StackRouter",
+  name: "5. Integrating with StackRouter",
   render: () => (
     <AppStack.Navigator initialRouteName="Main">
       <AppStack.Screen
@@ -360,7 +475,14 @@ export const IntegratingWithStackRouter: Story = {
         component={MainScreen}
         options={{ headerShown: false }}
       />
-      <AppStack.Screen name="Settings" component={SettingsScreen} />
+      <AppStack.Screen
+        name="Settings"
+        component={({ navigation }) => (
+          <div className="p-4" ref={navigation.scrollContainerRef}>
+            <Typography variant="h4">Settings Page</Typography>
+          </div>
+        )}
+      />
     </AppStack.Navigator>
   ),
 };

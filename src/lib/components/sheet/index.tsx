@@ -24,7 +24,7 @@ const SheetContext = createContext<SheetContextProps>({
 const useSheetContext = () => useContext(SheetContext);
 
 // --- MODIFIED: Root Component ---
-// Added the `forceBottomSheet` prop.
+// Added the `forceSideSheet` prop.
 type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
@@ -34,14 +34,21 @@ type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
    * overriding the responsive behavior on desktop viewports.
    * @default false
    */
-  forceBottomSheet?: boolean; // --- THIS IS THE NEW PROP ---
+  forceBottomSheet?: boolean;
+  /**
+   * If true, the sheet will always render as a side sheet,
+   * overriding the responsive behavior on mobile viewports.
+   * @default false
+   */
+  forceSideSheet?: boolean; // --- THIS IS THE NEW PROP ---
 };
 
 const SheetRoot: React.FC<SheetProps> = ({
   mode = "normal",
   shape = "full",
   side = "right",
-  forceBottomSheet = false, // --- NEW PROP WITH DEFAULT ---
+  forceBottomSheet = false,
+  forceSideSheet = false, // --- NEW PROP WITH DEFAULT ---
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
@@ -50,10 +57,11 @@ const SheetRoot: React.FC<SheetProps> = ({
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   // --- MODIFIED LOGIC ---
-  // Determine if we should render as a side sheet. This is only true if:
-  // 1. The viewport is desktop-sized.
-  // 2. The `forceBottomSheet` prop is false.
-  const renderAsSideSheet = isDesktop && !forceBottomSheet;
+  // Determine if we should render as a side sheet. This is true if:
+  // 1. `forceSideSheet` is explicitly true.
+  // OR
+  // 2. The viewport is desktop-sized AND `forceBottomSheet` is not true.
+  const renderAsSideSheet = forceSideSheet || (isDesktop && !forceBottomSheet);
 
   const direction = renderAsSideSheet ? side : "bottom";
   // --- END OF MODIFIED LOGIC ---

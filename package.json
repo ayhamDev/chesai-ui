@@ -47,5 +47,9 @@
   "trustedDependencies": [
     "@tailwindcss/oxide",
     "esbuild"
-  ]
+  ],
+  "dependencies": {
+    "@capacitor/app": "^7.1.0",
+    "@radix-ui/react-separator": "^1.1.7"
+  }
 }
