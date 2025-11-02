@@ -47,7 +47,7 @@ const MenubarRoot: React.FC<MenubarProps> = ({
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-menubar-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-graphite-border bg-graphite-card p-1.5",
+    "border border-graphite-border bg-graphite-card text-graphite-foreground p-1.5",
     "shadow-md",
   ],
   {
@@ -79,7 +79,7 @@ const MenubarTrigger = React.forwardRef<
   <RadixMenubar.Trigger
     ref={ref}
     className={clsx(
-      "flex cursor-pointer select-none items-center rounded-md px-3 py-1.5 text-sm font-semibold outline-none",
+      "flex cursor-pointer select-none items-center rounded-md px-3 py-1.5 text-sm font-semibold outline-none text-graphite-foreground",
       "transition-colors duration-150 ease-in-out",
       "hover:bg-graphite-secondary focus:bg-graphite-secondary",
       "data-[state=open]:bg-graphite-secondary"

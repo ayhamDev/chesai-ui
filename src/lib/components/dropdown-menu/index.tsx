@@ -46,7 +46,7 @@ const DropdownMenuRadioGroup = RadixDropdownMenu.RadioGroup;
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-graphite-border bg-graphite-card p-1.5",
+    "border border-graphite-border bg-graphite-card text-graphite-foreground p-1.5",
     "shadow-md",
   ],
   {
@@ -98,7 +98,6 @@ const DropdownMenuItem = React.forwardRef<
     inset?: boolean;
   }
 >(({ className, inset, ...props }, ref) => {
-  // MODIFICATION: Get shape from context
   const { shape } = useDropdownMenuContext();
   const localRef = React.useRef<HTMLDivElement>(null);
   const [ripple, event] = useRipple({
@@ -113,7 +112,6 @@ const DropdownMenuItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        // ORIGINAL STYLES ARE PRESERVED
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden",
         "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
         "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
@@ -121,7 +119,6 @@ const DropdownMenuItem = React.forwardRef<
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
-        // MODIFICATION: Add logic to override radius only when needed
         shape === "sharp" && "!rounded-none",
         className
       )}
@@ -136,7 +133,6 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.CheckboxItem>
 >(({ className, children, ...props }, ref) => {
-  // MODIFICATION: Get shape from context
   const { shape } = useDropdownMenuContext();
   const localRef = React.useRef<HTMLDivElement>(null);
   const [ripple, event] = useRipple({
@@ -151,13 +147,11 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        // ORIGINAL STYLES ARE PRESERVED
         "relative flex cursor-pointer select-none items-center rounded-lg py-2.5 pl-8 pr-3 text-sm outline-none overflow-hidden",
         "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
         "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
         "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
-        // MODIFICATION: Add logic to override radius only when needed
         shape === "sharp" && "!rounded-none",
         className
       )}
@@ -180,7 +174,6 @@ const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.RadioItem>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.RadioItem>
 >(({ className, children, ...props }, ref) => {
-  // MODIFICATION: Get shape from context
   const { shape } = useDropdownMenuContext();
   const localRef = React.useRef<HTMLDivElement>(null);
   const [ripple, event] = useRipple({
@@ -195,13 +188,11 @@ const DropdownMenuRadioItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        // ORIGINAL STYLES ARE PRESERVED
         "relative flex cursor-pointer select-none items-center rounded-lg py-2.5 pl-8 pr-3 text-sm outline-none overflow-hidden",
         "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
         "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
         "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
-        // MODIFICATION: Add logic to override radius only when needed
         shape === "sharp" && "!rounded-none",
         className
       )}
@@ -225,7 +216,6 @@ const DropdownMenuSubTrigger = React.forwardRef<
     inset?: boolean;
   }
 >(({ className, children, inset, ...props }, ref) => {
-  // MODIFICATION: Get shape from context
   const { shape } = useDropdownMenuContext();
   const localRef = React.useRef<HTMLDivElement>(null);
   const [ripple, event] = useRipple({
@@ -240,7 +230,6 @@ const DropdownMenuSubTrigger = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        // ORIGINAL STYLES ARE PRESERVED
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden",
         "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
         "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary",
@@ -248,7 +237,6 @@ const DropdownMenuSubTrigger = React.forwardRef<
         "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
-        // MODIFICATION: Add logic to override radius only when needed
         shape === "sharp" && "!rounded-none",
         className
       )}

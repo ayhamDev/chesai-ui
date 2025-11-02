@@ -227,48 +227,6 @@ const ModalDetailScreen = ({ item }: { item: (typeof galleryData)[0] }) => {
 
 // --- Stories ---
 
-export const FullscreenPresentation: Story = {
-  name: "1. Fullscreen Presentation (Default)",
-  args: {
-    duration: 5.5,
-  },
-  render: (args) => (
-    <LayoutRouter {...args}>
-      <LayoutRouter.List>
-        <InboxScreen />
-      </LayoutRouter.List>
-      {sampleEmails.map((email) => (
-        <LayoutRouter.Screen
-          key={email.id}
-          id={email.id}
-          presentation="fullscreen"
-        >
-          {/* This screen is NOT dismissible and has no scroll lock */}
-          <div className="overflow-hidden h-full flex flex-col bg-graphite-card">
-            <AppBar
-              appBarColor="card"
-              startAdornment={
-                <IconButton
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={useLayoutRouter().goBack}
-                  aria-label="Go back"
-                >
-                  <ArrowLeft />
-                </IconButton>
-              }
-            />
-            <div className="p-6 pt-2">
-              <Typography variant="p">{email.body}</Typography>
-            </div>
-          </div>
-        </LayoutRouter.Screen>
-      ))}
-    </LayoutRouter>
-  ),
-};
-
 export const ModalPresentation: Story = {
   name: "2. Modal Presentation",
   args: {

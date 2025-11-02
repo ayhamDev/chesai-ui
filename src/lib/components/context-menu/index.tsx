@@ -27,7 +27,7 @@ const useContextMenuContext = () => useContext(ContextMenuContext);
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-graphite-border bg-graphite-card p-1.5",
+    "border border-graphite-border bg-graphite-card text-graphite-foreground p-1.5",
     "shadow-md",
   ],
   {

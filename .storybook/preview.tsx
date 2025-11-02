@@ -15,7 +15,7 @@ const preview: Preview = {
       stylePreview: true,
       // Optional: You can customize the Storybook UI theme as well
       dark: { ...themes.dark, appBg: "#121212" },
-      light: { ...themes.normal, appBg: "#FDFBFA" },
+      light: { ...themes.dark, appBg: "#121212" },
     },
 
     actions: { argTypesRegex: "^on[A-Z].*" },

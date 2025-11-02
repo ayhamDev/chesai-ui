@@ -1,18 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import {
-  Cloud,
   CreditCard,
-  Github,
-  LifeBuoy,
   LogOut,
   Mail,
   MessageSquare,
-  Plus,
   PlusCircle,
   Settings,
   User,
   UserPlus,
-  Users,
 } from "lucide-react";
 import { useState } from "react";
 import { Menubar } from "./index";
