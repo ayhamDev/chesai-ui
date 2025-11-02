@@ -253,6 +253,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   style={{
                     willChange: "transform, opacity",
                     backfaceVisibility: "hidden",
+                    transform: "translate3d(0, 0, 0)",
                   }}
                 >
                   {isFullscreen ? (
@@ -263,6 +264,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                       variants={materialContentVariants}
                       style={{
                         willChange: "opacity",
+                        transform: "translate3d(0, 0, 0)",
                       }}
                     >
                       {children}
@@ -311,13 +313,12 @@ const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       className={clsx(
-        variant === "basic" &&
-          "flex flex-col space-y-1.5 text-center sm:text-left",
+        variant === "basic" && "flex flex-col space-y-1.5 text-left",
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row items-center justify-between",
           "px-6 py-4 sm:px-8 sm:py-6",
-          "bg-white",
-          "border-b border-gray-200/60",
+          "bg-graphite-card",
+          "border-b border-graphite-border",
         ],
         props.className
       )}
@@ -338,12 +339,12 @@ const DialogFooter = (props: HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       className={clsx(
-        variant === "basic" && "mt-6 flex gap-2 sm:justify-end",
+        variant === "basic" && "mt-6 flex gap-2 justify-end",
         variant === "fullscreen" && [
-          "flex flex-shrink-0 flex-row justify-end gap-3",
+          "flex flex-shrink-0 flex-row gap-3",
           "px-6 py-4 sm:px-8 sm:py-6",
-          "bg-white",
-          "border-t border-gray-200/60",
+          "bg-graphite-card",
+          "border-t border-graphite-border",
         ],
         props.className
       )}
@@ -364,7 +365,7 @@ const DialogTitle = forwardRef<
   HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
   const { titleId, variant } = useDialogContext();
-  return <Typography ref={ref} variant="h3" id={titleId} {...props} />;
+  return <Typography ref={ref} id={titleId} variant="h3" {...props} />;
 });
 DialogTitle.displayName = "DialogTitle";
 
@@ -377,7 +378,6 @@ const DialogDescription = forwardRef<
 });
 DialogDescription.displayName = "DialogDescription";
 
-// --- MODIFIED: DialogBody now integrates ElasticScrollArea ---
 export interface DialogBodyProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "dir">,
     Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {}
@@ -402,7 +402,7 @@ const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
           ref={ref}
           className={clsx(
             "flex-1 pt-0!",
-            "px-6 py-4 sm:px-8 sm:py-6",
+            "px-6 py-4 sm:px-8 sm:py-6 transition-all",
             className
           )}
           elasticity={elasticity}

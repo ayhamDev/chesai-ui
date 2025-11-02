@@ -3,12 +3,10 @@ import { clsx } from "clsx";
 import React, { useEffect, useImperativeHandle, useRef } from "react";
 
 const textAreaWrapperVariants = cva(
-  // FIX: Removed `px-4` and `border-2` from the base class.
   "flex items-start transition-all duration-200 w-full",
   {
     variants: {
       variant: {
-        // FIX: Added `border-2` and `px-4` to the variants that need them.
         primary: "bg-graphite-card border-2 px-4",
         secondary: "bg-graphite-secondary border-2 px-4",
         minimal: "bg-transparent p-0",
@@ -126,23 +124,17 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
     const hasError = !!error;
     const [isFocused, setIsFocused] = React.useState(false);
 
-    // Create a local ref to manage the textarea DOM element
     const localRef = useRef<HTMLTextAreaElement>(null);
-    // Bridge the forwarded ref with our local ref
     useImperativeHandle(ref, () => localRef.current!);
 
-    // Function to resize the textarea
     const resizeTextArea = () => {
       const textArea = localRef.current;
       if (textArea) {
-        // Temporarily reset height to allow scrollHeight to be calculated correctly
         textArea.style.height = "auto";
-        // Set the height to match the content's scroll height
         textArea.style.height = `${textArea.scrollHeight}px`;
       }
     };
 
-    // Resize on initial mount and when the value prop changes programmatically
     useEffect(() => {
       resizeTextArea();
     }, [value]);
@@ -157,10 +149,8 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       onBlur?.(e);
     };
 
-    // Wrap the onChange handler to trigger resize on every input
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       resizeTextArea();
-      // Forward the event to the original onChange handler if it exists
       onChange?.(e);
     };
 
@@ -169,7 +159,7 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
         {label && (
           <label
             htmlFor={textAreaId}
-            className="block text-sm font-medium text-graphite-primary"
+            className="block text-sm font-medium text-graphite-foreground"
           >
             {label}
           </label>
@@ -189,17 +179,15 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
             id={textAreaId}
             ref={localRef}
             disabled={disabled}
-            rows={rows} // Set the initial row height
+            rows={rows}
             onFocus={handleFocus}
             onBlur={handleBlur}
             onChange={handleChange}
             value={value}
             className={clsx(
-              // `resize-none` is important for auto-sizing to work smoothly
-              // `overflow-hidden` prevents the scrollbar from flashing during resize
-              "w-full flex-1 bg-transparent focus:outline-none resize-none overflow-hidden",
+              "w-full flex-1 bg-transparent focus:outline-none resize-none overflow-hidden text-graphite-foreground",
+              "placeholder:text-graphite-foreground/60",
               "disabled:cursor-not-allowed",
-              variant === "secondary" && "placeholder:text-gray-500",
               className
             )}
             {...props}

@@ -40,12 +40,11 @@ const InputOTPSlot = React.forwardRef<
     <div
       ref={ref}
       className={clsx(
-        // --- THEME ALIGNED STYLES ---
-        "relative flex h-12 w-12 items-center justify-center border-y border-r border-graphite-border text-base font-semibold transition-all",
-        "first:rounded-l-2xl first:border-l last:rounded-r-2xl", // Matches 'minimal' shape
+        "relative flex h-12 w-12 items-center justify-center border-y-2 border-r-2 border-graphite-border text-base font-semibold transition-all text-graphite-foreground",
+        "first:rounded-l-2xl first:border-l-2 last:rounded-r-2xl",
+        "bg-graphite-card", // Ensure it has a background
         isActive &&
           "z-10 border-graphite-border ring-2 ring-graphite-ring ring-offset-2 ring-offset-graphite-background",
-        // --- END OF THEME ALIGNED STYLES ---
         className
       )}
       {...props}
@@ -53,7 +52,6 @@ const InputOTPSlot = React.forwardRef<
       {char}
       {hasFakeCaret && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          {/* Use theme's primary color for the caret */}
           <div className="h-4 w-px animate-caret-blink bg-graphite-primary duration-1000" />
         </div>
       )}
@@ -67,7 +65,6 @@ const InputOTPSeparator = React.forwardRef<
   React.ComponentPropsWithoutRef<"div">
 >(({ ...props }, ref) => (
   <div ref={ref} role="separator" {...props}>
-    {/* Use theme's foreground color for the separator */}
     <Dot className="text-graphite-foreground" />
   </div>
 ));

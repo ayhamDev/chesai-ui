@@ -34,7 +34,7 @@ const useSelectContext = () => useContext(SelectContext);
 
 // --- CVA VARIANTS ---
 const selectTriggerVariants = cva(
-  "flex items-center justify-between transition-all duration-200 w-full px-4 border-2 text-left",
+  "flex items-center justify-between transition-all duration-200 w-full px-4 border-2 text-left text-graphite-foreground [&_[data-placeholder]]:text-graphite-foreground/70",
   {
     variants: {
       variant: {
@@ -216,7 +216,6 @@ const SelectContent = React.forwardRef<
         <SelectPrimitive.Viewport
           className={clsx(
             "p-1",
-            // Only apply max-height and fade mask for popper position (which supports scrolling)
             position === "popper" && [
               "max-h-64",
               "[mask-image:linear-gradient(to_bottom,transparent,black_1rem,black_calc(100%-1rem),transparent)]",
@@ -259,7 +258,7 @@ const SelectItem = React.forwardRef<
     >
       <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <Check className="h-4 w-4" />
+          <Check className="h-4 w-4 text-graphite-primary" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText className="truncate">
@@ -348,7 +347,7 @@ const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
       <span className="relative z-10 flex items-center w-full">
         {isSelected && (
           <span className="absolute -left-6 flex h-3.5 w-3.5 items-center justify-center">
-            <Check className="h-4 w-4" />
+            <Check className="h-4 w-4 text-graphite-primary" />
           </span>
         )}
         <span className="truncate">{item.label}</span>
@@ -399,7 +398,6 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
     const [tempValue, setTempValue] = useState(value);
     const selectId = id || uniqueId;
 
-    // --- Mobile Dialog Version ---
     if (isMobile && contentPosition === "popper") {
       const handleOpenChange = (open: boolean) => {
         if (open) {
@@ -421,7 +419,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
       return (
         <div className="w-full flex flex-col gap-2">
           {label && (
-            <div className="block text-sm font-medium text-graphite-primary">
+            <div className="block text-sm font-medium text-graphite-foreground">
               {label}
             </div>
           )}
@@ -432,13 +430,17 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
                 type="button"
                 id={selectId}
                 disabled={disabled}
-                className={selectTriggerVariants({
-                  variant,
-                  shape,
-                  size,
-                  isErrored: !!error,
-                  disabled,
-                })}
+                className={clsx(
+                  selectTriggerVariants({
+                    variant,
+                    shape,
+                    size,
+                    isErrored: !!error,
+                    disabled,
+                  }),
+                  className
+                )}
+                {...props}
               >
                 <span className="truncate">{displayLabel}</span>
                 <ChevronDown className="h-4 w-4 opacity-50" />
@@ -486,13 +488,12 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
       );
     }
 
-    // --- Desktop Popover / Item-Aligned Version ---
     return (
       <div className="w-full flex flex-col gap-2">
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-sm font-medium text-graphite-primary"
+            className="block text-sm font-medium text-graphite-foreground"
           >
             {label}
           </label>

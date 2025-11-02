@@ -27,7 +27,7 @@ const switchTrackVariants = cva(
 
 // CVA for the thumb (the moving circle)
 const switchThumbVariants = cva(
-  "absolute bg-white transition-transform duration-200 ease-ios shadow-lg",
+  "absolute bg-graphite-card transition-transform duration-200 ease-ios shadow-lg",
   {
     variants: {
       size: {
