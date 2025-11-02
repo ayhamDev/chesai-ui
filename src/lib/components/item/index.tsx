@@ -165,7 +165,7 @@ const Item = React.forwardRef<
 
     const [, event] = useRipple({
       ref: localRef,
-      color: "rgba(0, 0, 0, 0.1)",
+      color: "var(--color-ripple-light)",
       duration: 400,
       disabled: disabled || disableRipple,
     });
@@ -281,7 +281,7 @@ const ItemTitle = React.forwardRef<
       ref={ref}
       data-slot="item-title"
       className={clsx(
-        "flex w-fit items-center gap-2 text-base font-semibold leading-snug truncate",
+        "flex w-fit items-center gap-2 text-base font-semibold leading-snug text-graphite-foreground",
         direction === "vertical" && "justify-center",
         className
       )}

@@ -66,6 +66,7 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
       disabled,
       icon,
       isExtended,
+      style,
       ...props
     },
     ref
@@ -101,6 +102,10 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
           fabVariants({ variant, size, shape, className }), // Pass variant to CVA
           !isExtended && "justify-center"
         )}
+        style={{
+          willChange: "transform, opacity",
+          ...style,
+        }}
         ref={localRef}
         onPointerDown={event}
         disabled={disabled}

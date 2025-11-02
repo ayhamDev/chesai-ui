@@ -104,7 +104,7 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
         <button
           type="button"
           onClick={handleHeaderClick}
-          className="text-base font-semibold hover:bg-graphite-secondary px-2 py-1 rounded-lg transition-colors"
+          className="text-base font-semibold hover:bg-graphite-secondary text-graphite-foreground px-2 py-1 rounded-lg transition-colors"
         >
           {currentView === "day" && format(cursorDate, "MMMM yyyy")}
           {currentView === "month" && format(cursorDate, "yyyy")}
@@ -181,7 +181,7 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
                       onClick={() => handleSelectDay(day)}
                       disabled={!isCurrentMonth}
                       className={clsx(
-                        "w-10 h-10 flex items-center justify-center rounded-full transition-colors text-sm",
+                        "w-10 h-10 flex items-center justify-center rounded-full transition-colors text-sm text-graphite-foreground",
                         "focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-1",
                         !isCurrentMonth && "text-gray-400 pointer-events-none",
                         !isSelected &&
@@ -222,7 +222,7 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
                     type="button"
                     onClick={() => handleSelectMonth(i)}
                     className={clsx(
-                      "h-16 flex items-center justify-center rounded-xl transition-colors text-sm font-semibold",
+                      "h-16 flex items-center justify-center rounded-xl transition-colors text-sm font-semibold text-graphite-foreground ",
                       "focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-1",
                       isSelected
                         ? "bg-graphite-primary text-graphite-primaryForeground"
@@ -262,7 +262,7 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
                     type="button"
                     onClick={() => handleSelectYear(year)}
                     className={clsx(
-                      "h-16 flex items-center justify-center rounded-xl transition-colors text-sm font-semibold",
+                      "h-16 flex items-center justify-center rounded-xl transition-colors text-sm font-semibold text-graphite-foreground",
                       "focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-1",
                       isSelected
                         ? "bg-graphite-primary text-graphite-primaryForeground"

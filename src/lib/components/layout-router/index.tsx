@@ -283,7 +283,7 @@ const LayoutRouterScreen = ({
             onClick={!dismissible ? goBack : undefined}
             style={{
               opacity: dismissible ? backdropOpacity : undefined,
-              willChange: "opacity",
+              willChange: "transform, opacity",
             }}
           />
         )}

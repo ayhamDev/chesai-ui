@@ -242,7 +242,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                     "relative z-10 flex flex-col",
                     isFullscreen
                       ? [
-                          "w-full bg-white shadow-2xl",
+                          "w-full bg-graphite-card shadow-2xl",
                           "h-full sm:max-h-[90vh] sm:w-full sm:max-w-2xl",
                           "sm:rounded-3xl",
                           "overflow-hidden",
@@ -253,7 +253,6 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   style={{
                     willChange: "transform, opacity",
                     backfaceVisibility: "hidden",
-                    transform: "translate3d(0, 0, 0)",
                   }}
                 >
                   {isFullscreen ? (
@@ -264,7 +263,6 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                       variants={materialContentVariants}
                       style={{
                         willChange: "opacity",
-                        transform: "translate3d(0, 0, 0)",
                       }}
                     >
                       {children}
@@ -366,17 +364,7 @@ const DialogTitle = forwardRef<
   HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
   const { titleId, variant } = useDialogContext();
-  return (
-    <h2
-      ref={ref}
-      id={titleId}
-      className={clsx(
-        "font-semibold tracking-tight",
-        variant === "fullscreen" ? "text-2xl sm:text-3xl" : "text-xl"
-      )}
-      {...props}
-    />
-  );
+  return <Typography ref={ref} variant="h3" id={titleId} {...props} />;
 });
 DialogTitle.displayName = "DialogTitle";
 
@@ -414,7 +402,7 @@ const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
           ref={ref}
           className={clsx(
             "flex-1 pt-0!",
-            "px-6 py-4 sm:px-8 sm:py-6 transition-all",
+            "px-6 py-4 sm:px-8 sm:py-6",
             className
           )}
           elasticity={elasticity}

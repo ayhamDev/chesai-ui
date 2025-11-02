@@ -4,7 +4,7 @@ import React from "react";
 
 // CVA for the track (the background)
 const switchTrackVariants = cva(
-  "transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-graphite-ring peer-focus:ring-offset-2 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed bg-graphite-border peer-checked:bg-graphite-primary",
+  "transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-graphite-ring peer-focus:ring-offset-2 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed bg-graphite-border peer-checked:bg-graphite-primary shadow",
   {
     variants: {
       size: {
@@ -27,7 +27,7 @@ const switchTrackVariants = cva(
 
 // CVA for the thumb (the moving circle)
 const switchThumbVariants = cva(
-  "absolute bg-white transition-transform duration-200 ease-in-out shadow-lg",
+  "absolute bg-white transition-transform duration-200 ease-ios shadow-lg",
   {
     variants: {
       size: {

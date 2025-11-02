@@ -2,6 +2,26 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
+.theme-dark  {
+ --color-graphite-primary: hsl(0 0% 98%);            /* #FAFAFA */
+  --color-graphite-primaryForeground: hsl(0 0% 9%);   /* #171717 */
+  --color-graphite-secondary: hsl(0 0% 14%);          /* #242424 */
+  --color-graphite-secondaryForeground: hsl(0 0% 98%); /* #FAFAFA */
+  --color-graphite-background: hsl(0 0% 7%);          /* #121212 */
+  --color-graphite-foreground: hsl(0 0% 98%);         /* #FAFAFA */
+  --color-graphite-card: hsl(0 0% 10%);               /* #1A1A1A */
+  --color-graphite-cardForeground: hsl(0 0% 98%);     /* #FAFAFA */
+  --color-graphite-border: hsl(0 0% 18%);             /* #2E2E2E */
+  --color-graphite-ring: hsl(0 0% 98%);               /* #FAFAFA */
+  --color-sidebar: var(--color-graphite-card);
+  --color-sidebar-foreground: var(--color-graphite-cardForeground);
+  --color-sidebar-border: var(--color-graphite-border);
+  --color-sidebar-accent: var(--color-graphite-secondary);
+  --color-sidebar-accent-foreground: var(--color-graphite-secondaryForeground);
+  --color-sidebar-ring: var(--color-graphite-ring);
+  --color-ripple-dark : rgba(0, 0, 0, 0.1);
+  --color-ripple-light : rgba(255, 255, 255, 0.2);
+}
 @theme {
   /*
   |--------------------------------------------------------------------------
@@ -28,6 +48,10 @@
   --color-sidebar-accent: var(--color-graphite-secondary);
   --color-sidebar-accent-foreground: var(--color-graphite-secondaryForeground);
   --color-sidebar-ring: var(--color-graphite-ring);
+  --color-ripple-light : rgba(0, 0, 0, 0.1);
+  --color-ripple-dark : rgba(255, 255, 255, 0.1);
+
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
 
 
   /*

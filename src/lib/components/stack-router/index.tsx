@@ -4,9 +4,6 @@ import { clsx } from "clsx";
 import {
   AnimatePresence,
   motion,
-  useMotionValue,
-  useTransform,
-  type PanInfo,
   type Transition,
   type Variants,
 } from "framer-motion";
@@ -114,10 +111,6 @@ export interface StackScreenOptions {
     | { variants: any; transition: any };
   pageClassName?: string;
   headerAnimationEnabled?: boolean;
-  gestureEnabled?: boolean; // NEW: Enable/disable gestures
-  gestureDirection?: "horizontal" | "vertical"; // NEW: Gesture direction
-  gestureResponseDistance?: number; // NEW: Distance threshold for gesture
-  gestureVelocityImpact?: number; // NEW: How much velocity affects the gesture
 }
 
 export interface StackScreenComponent<
@@ -346,11 +339,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     transitionEnd: new Set(),
   }).current;
 
-  // NEW: Gesture state
-  const [isGesturing, setIsGesturing] = useState(false);
-  const dragX = useMotionValue(0);
-  const dragY = useMotionValue(0);
-
   useLayoutEffect(() => {
     if (typeof window !== "undefined" && !window.history.state?.routes) {
       window.history.replaceState({ ...window.history.state, ...state }, "");
@@ -477,36 +465,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
       ? STACK_TRANSITIONS[activeAnimationOption] || STACK_TRANSITIONS.default
       : activeAnimationOption;
 
-  // NEW: Gesture configuration
-  const gestureEnabled = activeScreenOptions.gestureEnabled ?? true;
-  const gestureDirection = activeScreenOptions.gestureDirection || "horizontal";
-  const gestureResponseDistance =
-    activeScreenOptions.gestureResponseDistance || 50;
-  const gestureVelocityImpact =
-    activeScreenOptions.gestureVelocityImpact || 0.5;
-
-  // NEW: Handle gesture drag
-  const handleDragEnd = (_: any, info: PanInfo) => {
-    const isHorizontal = gestureDirection === "horizontal";
-    const offset = isHorizontal ? info.offset.x : info.offset.y;
-    const velocity = isHorizontal ? info.velocity.x : info.velocity.y;
-
-    // Calculate if gesture should trigger navigation
-    const shouldNavigateBack =
-      (isHorizontal && offset > gestureResponseDistance) ||
-      (isHorizontal && velocity > 500) ||
-      (!isHorizontal && offset < -gestureResponseDistance) ||
-      (!isHorizontal && velocity < -500);
-
-    if (shouldNavigateBack && navigation.canGoBack()) {
-      navigation.goBack();
-    }
-
-    setIsGesturing(false);
-    dragX.set(0);
-    dragY.set(0);
-  };
-
   const handleAnimationStart = (isPop: boolean) => {
     listeners.transitionStart.forEach((cb) => cb({ data: { closing: isPop } }));
   };
@@ -514,18 +472,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
   const handleAnimationComplete = (isPop: boolean) => {
     listeners.transitionEnd.forEach((cb) => cb({ data: { closing: isPop } }));
   };
-
-  // NEW: Transform for gesture-based navigation
-  const gestureX = useTransform(
-    dragX,
-    [0, 300],
-    [0, gestureDirection === "horizontal" ? 300 : 0]
-  );
-  const gestureY = useTransform(
-    dragY,
-    [-300, 0],
-    [gestureDirection === "vertical" ? -300 : 0, 0]
-  );
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-graphite-background">
@@ -580,31 +526,16 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
             const isPrevious = index === state.index - 1;
             const variantName = isActive ? "center" : "behind";
 
-            // NEW: Apply gesture transforms only to active screen when gesturing
             const style: React.CSSProperties = {
               zIndex: index,
               willChange: "transform, opacity",
             };
 
-            if (
-              isActive &&
-              isGesturing &&
-              gestureEnabled &&
-              navigation.canGoBack()
-            ) {
-              style.x = gestureDirection === "horizontal" ? gestureX : 0;
-              style.y = gestureDirection === "vertical" ? gestureY : 0;
-            }
-
             return (
               <motion.div
                 key={route.key}
                 variants={activeAnimationConfig.variants}
-                transition={
-                  isGesturing
-                    ? { type: "spring", stiffness: 300, damping: 30 }
-                    : activeAnimationConfig.transition
-                }
+                transition={activeAnimationConfig.transition}
                 initial="enter"
                 animate={variantName}
                 exit="exit"
@@ -614,29 +545,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                 onAnimationComplete={
                   isActive ? () => handleAnimationComplete(false) : undefined
                 }
-                // NEW: Add drag handlers only to active screen
-                drag={
-                  isActive && gestureEnabled && navigation.canGoBack()
-                    ? gestureDirection === "horizontal"
-                      ? "x"
-                      : "y"
-                    : false
-                }
-                dragConstraints={
-                  gestureDirection === "horizontal"
-                    ? { left: 0, right: 300 }
-                    : { top: -300, bottom: 0 }
-                }
-                dragElastic={0.2}
-                onDragStart={() => setIsGesturing(true)}
-                onDragEnd={handleDragEnd}
-                onDrag={(_, info) => {
-                  if (gestureDirection === "horizontal") {
-                    dragX.set(info.offset.x);
-                  } else {
-                    dragY.set(info.offset.y);
-                  }
-                }}
                 style={style}
                 className={clsx(
                   "absolute inset-x-0 bottom-0 top-0 bg-graphite-background",

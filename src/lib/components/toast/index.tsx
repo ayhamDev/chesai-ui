@@ -19,7 +19,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           // --- General Toast Styling ---
           toast:
             "group toast group-[.toaster]:bg-graphite-card group-[.toaster]:text-graphite-foreground group-[.toaster]:border-graphite-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-gray-500",
+          description: "group-[.toast]:text-graphite-foreground/80",
 
           // --- Button Styling ---
           actionButton:

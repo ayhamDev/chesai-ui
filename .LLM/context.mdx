@@ -7609,7 +7609,7 @@ const ItemTitle = React.forwardRef<
       ref={ref}
       data-slot="item-title"
       className={clsx(
-        "flex w-fit items-center gap-2 text-base font-semibold leading-snug truncate",
+        "flex w-fit items-center gap-2 text-base font-semibold leading-snug",
         direction === "vertical" && "justify-center",
         className
       )}
@@ -8269,14 +8269,14 @@ This section contains the source code for the `layout-router` component and its 
 "use client";
 
 import {
+  animate,
   AnimatePresence,
   motion,
+  useMotionValue,
+  useTransform,
   type Easing,
   type PanInfo,
   type Transition,
-  useMotionValue,
-  useTransform,
-  animate,
 } from "framer-motion";
 import React, {
   createContext,
@@ -8551,7 +8551,7 @@ const LayoutRouterScreen = ({
             onClick={!dismissible ? goBack : undefined}
             style={{
               opacity: dismissible ? backdropOpacity : undefined,
-              willChange: "opacity",
+              willChange: "transform, opacity",
             }}
           />
         )}
@@ -8827,7 +8827,7 @@ const ModalDetailScreen = ({ item }: { item: (typeof galleryData)[0] }) => {
 export const FullscreenPresentation: Story = {
   name: "1. Fullscreen Presentation (Default)",
   args: {
-    duration: 0.5,
+    duration: 5.5,
   },
   render: (args) => (
     <LayoutRouter {...args}>
@@ -15096,7 +15096,6 @@ const Header = <T extends Record<string, object | undefined>>({
 };
 
 // --- Main Navigator Logic ---
-// --- MODIFICATION: Added screenOptions to props ---
 interface StackNavigatorProps<T extends Record<string, object | undefined>> {
   initialRouteName: keyof T;
   children:
@@ -15113,7 +15112,7 @@ interface StackNavigatorProps<T extends Record<string, object | undefined>> {
 const StackNavigator = <T extends Record<string, object | undefined>>({
   initialRouteName,
   children,
-  screenOptions: globalScreenOptions, // --- MODIFICATION: Destructure global options
+  screenOptions: globalScreenOptions,
 }: StackNavigatorProps<T>) => {
   const screens = useMemo(() => {
     const screenConfig: Record<
@@ -15251,7 +15250,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     };
   }, [state.index, state.routes, listeners]);
 
-  // --- MODIFICATION: Merge global and local screen options ---
   const activeScreenOptions = useMemo(() => {
     const resolvedGlobalOptions =
       typeof globalScreenOptions === "function"
@@ -15263,8 +15261,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         ? screen.options({ route: currentRoute })
         : screen?.options || {};
 
-    // Merge options, with local options overriding global ones.
-    // Also merge nested objects for a better developer experience.
     return {
       ...resolvedGlobalOptions,
       ...resolvedLocalOptions,
@@ -15278,7 +15274,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
       },
     };
   }, [globalScreenOptions, screen?.options, currentRoute, navigation]);
-  // --- END MODIFICATION ---
 
   const activeAnimationOption = activeScreenOptions.animation || "default";
   const activeAnimationConfig =
@@ -15324,7 +15319,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
             }
             const Component = screenConfig.component;
 
-            // --- MODIFICATION: Recalculate options for EACH screen in the stack ---
             const resolvedGlobalOptions =
               typeof globalScreenOptions === "function"
                 ? globalScreenOptions({
@@ -15343,10 +15337,15 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
               ...localOptions,
             };
             const pageClassName = finalOptions.pageClassName;
-            // --- END MODIFICATION ---
 
             const isActive = index === state.index;
+            const isPrevious = index === state.index - 1;
             const variantName = isActive ? "center" : "behind";
+
+            const style: React.CSSProperties = {
+              zIndex: index,
+              willChange: "transform, opacity",
+            };
 
             return (
               <motion.div
@@ -15362,10 +15361,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                 onAnimationComplete={
                   isActive ? () => handleAnimationComplete(false) : undefined
                 }
-                style={{
-                  zIndex: index,
-                  willChange: "transform, opacity",
-                }}
+                style={style}
                 className={clsx(
                   "absolute inset-x-0 bottom-0 top-0 bg-graphite-background",
                   pageClassName
@@ -15419,7 +15415,6 @@ import { Item, ItemContent, ItemTitle } from "../item";
 import { Typography } from "../typography";
 import { createStackNavigator, useNavigation, useRoute } from "./index";
 import type { RouteProp } from "./types";
-
 const meta: Meta = {
   title: "Components/Navigators/StackRouter",
   component: undefined, // Component is a factory, not a single element
@@ -15434,11 +15429,13 @@ const meta: Meta = {
     },
   },
   decorators: [
-    (Story) => (
-      <DeviceFrame>
-        <Story />
-      </DeviceFrame>
-    ),
+    (Story) => {
+      return (
+        <DeviceFrame>
+          <Story />
+        </DeviceFrame>
+      );
+    },
   ],
 };
 export default meta;
@@ -15876,7 +15873,7 @@ import React from "react";
 
 // CVA for the track (the background)
 const switchTrackVariants = cva(
-  "transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-graphite-ring peer-focus:ring-offset-2 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed bg-graphite-border peer-checked:bg-graphite-primary",
+  "transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-graphite-ring peer-focus:ring-offset-2 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed bg-graphite-border peer-checked:bg-graphite-primary shadow",
   {
     variants: {
       size: {
@@ -15899,7 +15896,7 @@ const switchTrackVariants = cva(
 
 // CVA for the thumb (the moving circle)
 const switchThumbVariants = cva(
-  "absolute bg-white transition-transform duration-200 ease-in-out shadow-lg",
+  "absolute bg-white transition-transform duration-200 ease-ios shadow-lg",
   {
     variants: {
       size: {
@@ -20083,6 +20080,7 @@ export const useTheme = () => {
 export * from './use-calender'
 export * from './use-time-picker'
 export * from './useAppBar'
+export * from './useCapacitorBackButton'
 export * from './useShallowRouter'
 ```
 
@@ -20422,6 +20420,53 @@ export const useAppBar = (
 ```
 
 
+### Source: `src\lib\hooks\useCapacitorBackButton.tsx`
+
+```tsx
+import { App } from "@capacitor/app";
+import type { PluginListenerHandle } from "@capacitor/core";
+import { useEffect } from "react";
+
+/**
+ * A self-contained React hook that handles the hardware back button in a
+ * Capacitor app, integrating it seamlessly with any router that uses the
+ * standard browser History API (like chesai-ui's StackRouter).
+ */
+export const useCapacitorBackButton = () => {
+  useEffect(() => {
+    let listenerHandle: PluginListenerHandle | null = null;
+
+    const registerListener = async () => {
+      listenerHandle = await App.addListener("backButton", (event) => {
+        console.log("event");
+
+        // event.canGoBack is a boolean provided by Capacitor, indicating
+        // if the webview's history has pages to go back to.
+        if (event.canGoBack) {
+          // If there's history, go back in the webview.
+          // This will be handled by the stack router.
+          window.history.back();
+        } else {
+          // If there's no history, exit the app.
+          App.exitApp();
+        }
+      });
+    };
+
+    // Register the listener when the component mounts.
+    registerListener();
+
+    // Clean up the listener when the component unmounts.
+    return () => {
+      if (listenerHandle) {
+        listenerHandle.remove();
+      }
+    };
+  }, []); // The empty dependency array ensures this runs only once.
+};
+```
+
+
 ### Source: `src\lib\hooks\useShallowRouter.ts`
 
 ```ts
@@ -20678,6 +20723,24 @@ export default useShallowRouter;
 
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
+.theme-dark * {
+ --color-graphite-primary: hsl(0 0% 98%);            /* #FAFAFA */
+  --color-graphite-primaryForeground: hsl(0 0% 9%);   /* #171717 */
+  --color-graphite-secondary: hsl(0 0% 14%);          /* #242424 */
+  --color-graphite-secondaryForeground: hsl(0 0% 98%); /* #FAFAFA */
+  --color-graphite-background: hsl(0 0% 7%);          /* #121212 */
+  --color-graphite-foreground: hsl(0 0% 98%);         /* #FAFAFA */
+  --color-graphite-card: hsl(0 0% 10%);               /* #1A1A1A */
+  --color-graphite-cardForeground: hsl(0 0% 98%);     /* #FAFAFA */
+  --color-graphite-border: hsl(0 0% 18%);             /* #2E2E2E */
+  --color-graphite-ring: hsl(0 0% 98%);               /* #FAFAFA */
+  --color-sidebar: var(--color-graphite-card);
+  --color-sidebar-foreground: var(--color-graphite-cardForeground);
+  --color-sidebar-border: var(--color-graphite-border);
+  --color-sidebar-accent: var(--color-graphite-secondary);
+  --color-sidebar-accent-foreground: var(--color-graphite-secondaryForeground);
+  --color-sidebar-ring: var(--color-graphite-ring);
+}
 @theme {
   /*
   |--------------------------------------------------------------------------
@@ -20704,6 +20767,8 @@ export default useShallowRouter;
   --color-sidebar-accent: var(--color-graphite-secondary);
   --color-sidebar-accent-foreground: var(--color-graphite-secondaryForeground);
   --color-sidebar-ring: var(--color-graphite-ring);
+
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
 
 
   /*

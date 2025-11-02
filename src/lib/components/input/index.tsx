@@ -9,7 +9,6 @@ export const inputWrapperVariants = cva(
       variant: {
         primary: "bg-graphite-card border-2 px-4",
         secondary: "bg-graphite-secondary border-2 px-4",
-        // MODIFIED: Truly minimal variant with no borders or padding on the wrapper.
         minimal: "bg-transparent p-0",
       },
       shape: {
@@ -29,7 +28,6 @@ export const inputWrapperVariants = cva(
       },
     },
     compoundVariants: [
-      // Primary states
       {
         variant: "primary",
         isErrored: false,
@@ -53,7 +51,6 @@ export const inputWrapperVariants = cva(
         isErrored: true,
         className: "border-red-600",
       },
-      // Secondary states
       {
         variant: "secondary",
         isErrored: false,
@@ -77,8 +74,6 @@ export const inputWrapperVariants = cva(
         isErrored: true,
         className: "border-red-600",
       },
-      // MODIFIED: Remove all focus/error border effects for the minimal variant.
-      // Also ensure it ignores the 'shape' prop by forcing no rounding.
       {
         variant: "minimal",
         className: "rounded-none border-0",
@@ -92,7 +87,6 @@ export const inputWrapperVariants = cva(
   }
 );
 
-// FIX #2: Use VariantProps to remove the unused import warning and keep types in sync.
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
   variant?: "primary" | "secondary" | "minimal";
@@ -145,7 +139,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (type === "number") {
-        // FIX #1: Corrected the syntax error here.
         const { value } = e.currentTarget;
         const allowedKeys = [
           "Backspace",
@@ -218,9 +211,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             className={clsx(
-              "w-full flex-1 bg-transparent focus:outline-none",
+              "w-full flex-1 bg-transparent focus:outline-none text-graphite-foreground",
+              "placeholder:text-graphite-foreground/60",
               "disabled:cursor-not-allowed",
-              variant === "secondary" && "placeholder:text-gray-500",
               className
             )}
             {...props}

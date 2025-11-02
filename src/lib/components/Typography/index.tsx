@@ -1,19 +1,19 @@
 import React from "react";
 
 const variants = {
-  h1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl",
-  h2: "scroll-m-20  text-3xl font-semibold tracking-tight first:mt-0",
-  h3: "scroll-m-20 text-2xl font-semibold tracking-tight",
-  h4: "scroll-m-20 text-xl font-semibold tracking-tight",
-  p: "leading-7 [&:not(:first-child)]:mt-6",
+  h1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-graphite-foreground",
+  h2: "scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0 text-graphite-foreground",
+  h3: "scroll-m-20 text-2xl font-semibold tracking-tight text-graphite-foreground",
+  h4: "scroll-m-20 text-xl font-semibold tracking-tight text-graphite-foreground",
+  p: "leading-7 [&:not(:first-child)]:mt-6 text-graphite-foreground",
   blockquote:
-    "mt-6 border-l-2 border-graphite-primary pl-6 italic text-gray-600",
+    "mt-6 border-l-2 border-graphite-primary pl-6 italic text-graphite-foreground/80",
   highlight:
     "relative rounded bg-graphite-secondary px-[0.3rem] py-[0.2rem] text-sm font-semibold text-graphite-secondaryForeground",
-  lead: "text-xl text-gray-500",
-  large: "text-lg font-semibold",
-  small: "text-sm font-medium leading-none",
-  muted: "text-sm text-gray-500",
+  lead: "text-xl text-graphite-foreground/80",
+  large: "text-lg font-semibold text-graphite-foreground",
+  small: "text-sm font-medium leading-none text-graphite-foreground",
+  muted: "text-sm text-graphite-foreground/70",
 };
 
 const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {
