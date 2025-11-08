@@ -1,7 +1,7 @@
 import { cva } from "class-variance-authority";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react"; // Import Loader from lucide-react
-import React from "react";
+import React, { useState } from "react";
 import useRipple from "use-ripple-hook";
 
 export const iconButtonVariants = cva(
@@ -68,8 +68,8 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
     const rippleColor =
       variant === "primary" || variant === "destructive"
-        ? "rgba(255, 255, 255, 0.4)"
-        : "rgba(0, 0, 0, 0.1)";
+        ? "var(--color-ripple-dark)"
+        : "var(--color-ripple-light)";
     const rippleRef = localRef as React.RefObject<HTMLElement>;
     const [, event] = useRipple({
       ref: rippleRef,
@@ -85,6 +85,8 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       lg: "h-8 w-8",
     };
 
+    const [isPressed, setIsPressed] = useState(false);
+
     return (
       <button
         className={iconButtonVariants({
@@ -98,7 +100,10 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         onPointerDown={(e) => {
           e.stopPropagation();
           event(e);
+          setIsPressed(true);
         }}
+        onPointerUp={() => setIsPressed(false)}
+        onPointerLeave={() => setIsPressed(false)}
         disabled={disabled || isLoading}
         {...props}
       >
@@ -111,7 +116,6 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
               exit={{ opacity: 0, scale: 0.5 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Use lucide-react Loader with animate-spin */}
               <Loader2
                 className={`animate-spin ${loaderSizeMap[size || "md"]}`}
               />
@@ -120,10 +124,14 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
             <motion.span
               key="content"
               initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
+              animate={{
+                opacity: 1,
+                scale: isPressed ? 0.85 : 1,
+                rotate: isPressed ? 3 : 0,
+              }}
               exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.2 }}
-              className="relative z-10"
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+              className="relative z-10 flex items-center justify-center"
             >
               {children}
             </motion.span>

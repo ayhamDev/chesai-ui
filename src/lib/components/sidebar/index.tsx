@@ -77,7 +77,7 @@ interface SidebarNavContextProps {
 
 const SidebarNavContext = createContext<SidebarNavContextProps>({
   size: "md",
-  shape: "full",
+  shape: "minimal",
 });
 
 // --- 2. CVA VARIANTS ---
@@ -509,8 +509,9 @@ const SidebarPrimaryAction = React.memo(
 );
 SidebarPrimaryAction.displayName = "Sidebar.PrimaryAction";
 
+// @ts-ignore
 interface SidebarNavProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, "onScroll">,
+  extends Omit<React.HTMLAttributes<HTMLElement>, "onScroll" | "dir">,
     Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
@@ -596,8 +597,8 @@ const SidebarItem = React.memo(
 
       const rippleColor =
         variant === "primary"
-          ? "rgba(255, 255, 255, 0.1)"
-          : "rgba(0, 0, 0, 0.1)";
+          ? "var(--color-ripple-dark)"
+          : "var(--color-ripple-light)";
 
       const rippleRef = localRef as React.RefObject<HTMLElement>;
       const [, event] = useRipple({

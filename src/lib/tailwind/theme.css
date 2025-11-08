@@ -7,7 +7,7 @@
   --color-graphite-primaryForeground: hsl(0 0% 9%);   /* #171717 */
   --color-graphite-secondary: hsl(0 0% 14%);          /* #242424 */
   --color-graphite-secondaryForeground: hsl(0 0% 98%); /* #FAFAFA */
-  --color-graphite-background: hsl(0 0% 7%);          /* #121212 */
+  --color-graphite-background: hsl(0, 0%, 8%);          /* #121212 */
   --color-graphite-foreground: hsl(0 0% 98%);         /* #FAFAFA */
   --color-graphite-card: hsl(0 0% 10%);               /* #1A1A1A */
   --color-graphite-cardForeground: hsl(0 0% 98%);     /* #FAFAFA */
@@ -34,7 +34,7 @@
   /* Graphite Color Theme Definitions */
   --color-graphite-primary: hsl(0 0% 9%);            /* #171717 */
   --color-graphite-primaryForeground: hsl(0 0% 98%);  /* #FAFAFA */
-  --color-graphite-secondary: hsl(0 0% 96.1%);       /* #F5F5F5 */
+  --color-graphite-secondary: hsl(0 0% 94.1%);       /* #F5F5F5 */
   --color-graphite-secondaryForeground: hsl(0 0% 9%); /* #171717 */
   --color-graphite-background: hsl(33 33% 98%);      /* #FDFBFA */
   --color-graphite-foreground: hsl(0 0% 9%);         /* #171717 */

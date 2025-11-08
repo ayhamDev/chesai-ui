@@ -157,6 +157,8 @@ export const ScrollLayout: Story = {
   name: "2. Responsive: Scroll Layout",
   args: {
     responsiveLayout: "scroll",
+    breakpoint: "sm",
+    stickyCellVariant: "card"
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },

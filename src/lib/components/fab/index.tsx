@@ -77,7 +77,9 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
 
     // Adjust ripple color based on variant
     const rippleColor =
-      variant === "primary" ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.1)";
+      variant === "primary"
+        ? "var(--color-ripple-dark)"
+        : "var(--color-ripple-light)";
 
     const [, event] = useRipple({
       ref: rippleRef,

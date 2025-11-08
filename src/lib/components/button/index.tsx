@@ -76,8 +76,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
     const rippleColor =
       variant === "primary" || variant === "destructive"
-        ? "rgba(255, 255, 255, 0.4)"
-        : "rgba(0, 0, 0, 0.1)";
+        ? "var(--color-ripple-dark)"
+        : "var(--color-ripple-light)";
 
     const rippleRef = localRef as React.RefObject<HTMLElement>;
     const [, event] = useRipple({

@@ -511,25 +511,12 @@ const NewTaskDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} variant="fullscreen">
+    <Dialog open={open} onOpenChange={onOpenChange} variant="basic">
       <DialogContent>
-        <AppBar
-          startAdornment={
-            <DialogClose asChild>
-              <IconButton variant="ghost">
-                <X />
-              </IconButton>
-            </DialogClose>
-          }
-          endAdornments={[
-            <Button key="add" size="sm" onClick={handleAddTask}>
-              Add
-            </Button>,
-          ]}
-        >
-          <Typography variant="h4">New Task</Typography>
-        </AppBar>
-        <DialogBody className="p-4 pt-[70px]">
+        <DialogHeader>
+          <DialogTitle>New Task</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 flex flex-col gap-4">
           <Input
             label="Task Title"
             placeholder="e.g., Finalize Q3 report"
@@ -537,7 +524,10 @@ const NewTaskDialog = ({
             onChange={(e) => setTitle(e.target.value)}
             size="lg"
           />
-        </DialogBody>
+          <Button key="add" size="sm" onClick={handleAddTask}>
+            Add Task
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

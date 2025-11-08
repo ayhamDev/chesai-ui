@@ -135,7 +135,7 @@ const MenubarItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -170,7 +170,7 @@ const MenubarCheckboxItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -210,7 +210,7 @@ const MenubarRadioItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -252,7 +252,7 @@ const MenubarSubTrigger = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);

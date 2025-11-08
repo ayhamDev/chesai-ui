@@ -1,15 +1,16 @@
 {
   "name": "chesai-ui",
-  "private": false,
   "version": "0.1.5",
-  "packageManager": "pnpm@10.12.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/ayhamDev/chesai-ui"
   },
   "main": "./dist/chesai-ui.umd.js",
   "module": "./dist/chesai-ui.es.js",
-  "types": "./dist/index.d.ts",
+  "peerDependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -17,21 +18,6 @@
       "require": "./dist/chesai-ui.umd.js"
     },
     "./styles.css": "./dist/chesai-ui.css"
-  },
-  "scripts": {
-    "dev": "storybook dev -p 8000",
-    "build": "storybook build",
-    "build:lib": "tsc && vite build",
-    "lint": "npx @biomejs/biome lint --write ./src",
-    "format": "npx @biomejs/biome check --write --organize-imports-enabled=true ./src",
-    "test": "vitest",
-    "test:cov": "vitest run --coverage",
-    "prepack": "json -f package.json -I -e \"delete this.devDependencies; delete this.dependencies\"",
-    "gen:context": "bun run ./scripts/context.ts"
-  },
-  "peerDependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0"
   },
   "files": [
     "dist"
@@ -44,12 +30,22 @@
       "biome format --write --no-errors-on-unmatched"
     ]
   },
+  "packageManager": "pnpm@10.12.1",
+  "private": false,
+  "scripts": {
+    "dev": "storybook dev -p 8000",
+    "build": "storybook build",
+    "build:lib": "tsc && vite build",
+    "lint": "npx @biomejs/biome lint --write ./src",
+    "format": "npx @biomejs/biome check --write --organize-imports-enabled=true ./src",
+    "test": "vitest",
+    "test:cov": "vitest run --coverage",
+    "prepack": "json -f package.json -I -e \"delete this.devDependencies; delete this.dependencies\"",
+    "gen:context": "bun run ./scripts/context.ts"
+  },
   "trustedDependencies": [
     "@tailwindcss/oxide",
     "esbuild"
   ],
-  "dependencies": {
-    "@capacitor/app": "^7.1.0",
-    "@radix-ui/react-separator": "^1.1.7"
-  }
+  "types": "./dist/index.d.ts"
 }

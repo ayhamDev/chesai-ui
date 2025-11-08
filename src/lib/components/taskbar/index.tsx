@@ -1,8 +1,8 @@
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
+import { motion } from "framer-motion";
 import { Copy, Minus, Square, X } from "lucide-react";
-import React, { useRef } from "react";
-import useRipple from "use-ripple-hook";
+import React, { useRef, useState } from "react";
 
 // --- CVA Variants ---
 const taskbarVariants = cva(
@@ -63,24 +63,23 @@ interface WindowButtonProps
 const WindowButton = React.forwardRef<HTMLButtonElement, WindowButtonProps>(
   ({ children, variant, size, onClick, ...props }, ref) => {
     const localRef = useRef<HTMLButtonElement>(null);
-    const rippleColor =
-      variant === "close" ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.1)";
-    const [, event] = useRipple({
-      ref: localRef,
-      color: rippleColor,
-      duration: 300,
-    });
 
-    const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+    const [isPressed, setIsPressed] = useState(false);
+
+    const stopPropagation = (
+      e: React.MouseEvent | React.PointerEvent<HTMLButtonElement>
+    ) => e.stopPropagation();
 
     return (
       <button
         ref={localRef}
         data-tauri-drag-region={false}
-        onMouseDown={(e) => {
+        onPointerDown={(e) => {
           stopPropagation(e);
-          event(e);
+          setIsPressed(true);
         }}
+        onPointerUp={() => setIsPressed(false)}
+        onPointerLeave={() => setIsPressed(false)}
         onClick={(e) => {
           stopPropagation(e);
           onClick?.(e);
@@ -88,7 +87,13 @@ const WindowButton = React.forwardRef<HTMLButtonElement, WindowButtonProps>(
         className={windowControlVariants({ variant, size })}
         {...props}
       >
-        {children}
+        <motion.span
+          className="flex items-center justify-center"
+          animate={{ scale: isPressed ? 0.8 : 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 15 }}
+        >
+          {children}
+        </motion.span>
       </button>
     );
   }

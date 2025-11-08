@@ -60,7 +60,8 @@ const tableVariants = cva("w-full text-sm", {
 });
 
 const thVariants = cva(
-  "p-4 font-semibold text-left border-b border-graphite-border",
+  // MODIFICATION: Added text-graphite-foreground for theme awareness
+  "p-4 font-semibold text-left text-graphite-foreground border-b border-graphite-border",
   {
     variants: {
       isFirstSticky: {
@@ -74,17 +75,21 @@ const thVariants = cva(
   }
 );
 
-const tdVariants = cva("p-4 border-b border-graphite-border align-top", {
-  variants: {
-    isFirstSticky: {
-      true: "sticky left-0 z-10",
+const tdVariants = cva(
+  // MODIFICATION: Added text-graphite-foreground for theme awareness
+  "p-4 border-b border-graphite-border align-top text-graphite-foreground",
+  {
+    variants: {
+      isFirstSticky: {
+        true: "sticky left-0 z-10",
+      },
+      stickyCellVariant: {
+        card: "bg-graphite-card",
+        secondary: "bg-graphite-secondary",
+      },
     },
-    stickyCellVariant: {
-      card: "bg-graphite-card",
-      secondary: "bg-graphite-secondary",
-    },
-  },
-});
+  }
+);
 
 // --- 3. SUB-COMPONENTS (Simplified) ---
 

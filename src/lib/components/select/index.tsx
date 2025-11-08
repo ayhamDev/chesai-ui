@@ -216,6 +216,7 @@ const SelectContent = React.forwardRef<
         <SelectPrimitive.Viewport
           className={clsx(
             "p-1",
+            // Only apply max-height and fade mask for popper position (which supports scrolling)
             position === "popper" && [
               "max-h-64",
               "[mask-image:linear-gradient(to_bottom,transparent,black_1rem,black_calc(100%-1rem),transparent)]",
@@ -238,7 +239,9 @@ const SelectItem = React.forwardRef<
   const { shape, variant, size } = useSelectContext();
   const localRef = useRef<HTMLDivElement>(null);
   const rippleColor =
-    variant === "primary" ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)";
+    variant === "primary"
+      ? "var(--color-ripple-light)"
+      : "var(--color-ripple-dark)";
 
   const [, event] = useRipple({
     ref: localRef,
@@ -320,7 +323,9 @@ const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
 }) => {
   const localRef = useRef<HTMLButtonElement>(null);
   const rippleColor =
-    variant === "primary" ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)";
+    variant === "primary"
+      ? "var(--color-ripple-light)"
+      : "var(--color-ripple-dark)";
 
   const [, event] = useRipple({
     ref: localRef,
@@ -371,6 +376,7 @@ interface SelectWrapperProps
   contentPosition?: React.ComponentProps<typeof SelectContent>["position"];
   onValueChange?: (value: string) => void;
   value?: string;
+  className?: string;
 }
 
 const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
@@ -388,6 +394,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
       contentPosition = "item-aligned",
       value,
       onValueChange,
+      className,
       ...props
     },
     ref
@@ -513,6 +520,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
             size={size}
             error={error}
             disabled={disabled}
+            className={className}
           >
             <span className="truncate">
               <SelectValue placeholder={placeholder} />

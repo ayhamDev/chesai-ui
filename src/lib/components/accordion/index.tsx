@@ -122,7 +122,7 @@ const AccordionTrigger = React.forwardRef<
   const localRef = useRef<HTMLButtonElement | null>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(0, 0, 0, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
     disabled: disableRipple, // Pass the new prop to the hook
   });

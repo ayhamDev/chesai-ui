@@ -135,7 +135,7 @@ const ContextMenuItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -163,7 +163,7 @@ const ContextMenuCheckboxItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -194,7 +194,7 @@ const ContextMenuRadioItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -227,7 +227,7 @@ const ContextMenuSubTrigger = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);

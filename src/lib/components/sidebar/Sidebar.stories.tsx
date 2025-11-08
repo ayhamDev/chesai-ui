@@ -22,7 +22,7 @@ import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { Sidebar, useSidebar } from "./index";
 
-// --- TYPE FIX: Combine props for Storybook controls ---
+// --- TYPE DEFINITION FOR STORY PROPS ---
 type StoryProps = React.ComponentProps<typeof Sidebar> &
   Pick<React.ComponentProps<typeof Sidebar.Container>, "variant"> &
   Pick<
@@ -34,6 +34,7 @@ type StoryProps = React.ComponentProps<typeof Sidebar> &
     | "scrollbarVisibility"
   >;
 
+// --- STORYBOOK META CONFIGURATION ---
 const meta: Meta<StoryProps> = {
   title: "Components/Navigators/Sidebar",
   component: Sidebar,
@@ -43,7 +44,7 @@ const meta: Meta<StoryProps> = {
     docs: {
       description: {
         component:
-          "A highly responsive and animated navigation sidebar. It functions as a permanent or collapsible rail on desktop, and a modal or push-style drawer on mobile. Integrates with any routing library via `activeItem` and `onItemPress` props.",
+          "A highly responsive and animated navigation sidebar, inspired by modern native applications. It functions as a permanent or collapsible rail on desktop, and a modal or push-style drawer on mobile. It integrates with any routing library via `activeItem` and `onItemPress` props.",
       },
     },
   },
@@ -93,88 +94,50 @@ const meta: Meta<StoryProps> = {
     onItemPress: { action: "itemPressed" },
     isOpen: { control: false },
     onOpenChange: { action: "openChange" },
-    elasticity: {
-      control: "boolean",
-      table: { category: "Elastic Scroll Props" },
-    },
-    pullToRefresh: {
-      control: "boolean",
-      table: { category: "Elastic Scroll Props" },
-    },
-    onRefresh: {
-      action: "refreshed",
-      table: { category: "Elastic Scroll Props" },
-    },
-    scrollbarVisibility: {
-      control: "select",
-      options: ["auto", "always", "scroll", "hidden"],
-      table: { category: "Elastic Scroll Props" },
-    },
   },
 };
 
 export default meta;
 type Story = StoryObj<StoryProps>;
 
-// --- Helper Components for Stories ---
+// --- HELPER COMPONENTS AND DATA ---
 
-const navItems = [
-  { key: "inbox", label: "Inbox", icon: <Inbox size={20} />, count: 24 },
-  { key: "sent", label: "Sent", icon: <Send size={20} /> },
-  { key: "favorites", label: "Favorites", icon: <Star size={20} /> },
-  { key: "drafts", label: "Drafts", icon: <File size={20} /> },
-  { key: "archive", label: "Archive", icon: <Archive size={20} /> },
-  { key: "trash", label: "Trash", icon: <Trash2 size={20} /> },
-  { key: "spam", label: "Spam", icon: <File size={20} /> },
-  { key: "all_mail", label: "All Mail", icon: <File size={20} /> },
-  { key: "important", label: "Important", icon: <File size={20} /> },
-  { key: "social", label: "Social", icon: <File size={20} /> },
-  { key: "promotions", label: "Promotions", icon: <File size={20} /> },
-  { key: "forums", label: "Forums", icon: <File size={20} /> },
-];
-
-const labelItems = [
-  { key: "work", label: "Work" },
-  { key: "personal", label: "Personal" },
-  { key: "urgent", label: "Urgent" },
-];
-
-const CustomSidebarHeader = () => {
-  const { isDesktop, collapsible, toggle, side } = useSidebar();
-  return (
-    <Sidebar.Header className={side === "right" ? "flex-row-reverse" : ""}>
-      {isDesktop && collapsible && (
-        <IconButton variant="ghost" size="sm" onClick={toggle}>
-          <Menu />
-        </IconButton>
-      )}
-    </Sidebar.Header>
-  );
+const navItems = {
+  main: [
+    { key: "inbox", label: "Inbox", icon: <Inbox size={20} />, count: 24 },
+    { key: "sent", label: "Sent", icon: <Send size={20} /> },
+    { key: "favorites", label: "Favorites", icon: <Star size={20} /> },
+    { key: "drafts", label: "Drafts", icon: <File size={20} /> },
+  ],
+  secondary: [
+    { key: "archive", label: "Archive", icon: <Archive size={20} /> },
+    { key: "trash", label: "Trash", icon: <Trash2 size={20} /> },
+  ],
+  footer: [
+    { key: "profile", label: "Profile", icon: <User size={20} /> },
+    { key: "settings", label: "Settings", icon: <Settings size={20} /> },
+  ],
 };
 
-const SidebarContents = ({
-  shape = "full",
-  ...scrollProps
-}: { shape?: "full" | "minimal" | "sharp" } & Partial<
-  React.ComponentProps<typeof Sidebar.Nav>
->) => (
+const SidebarContents = ({ shape = "minimal" }) => (
   <>
-    <CustomSidebarHeader />
+    <Sidebar.Header>
+      <Typography variant="h4" className="p-4">
+        Mailbox
+      </Typography>
+    </Sidebar.Header>
     <Sidebar.PrimaryAction icon={<Pencil size={24} />} shape={shape}>
       Compose
     </Sidebar.PrimaryAction>
-    <Sidebar.Nav shape={shape} {...scrollProps}>
-      {navItems.map((item) => (
+    <Sidebar.Nav shape={shape}>
+      {navItems.main.map((item) => (
         <Sidebar.Item
           key={item.key}
           itemKey={item.key}
           icon={item.icon}
           endAdornment={
             item.count ? (
-              <Badge
-                shape="full"
-                variant={item.count > 0 ? "secondary" : undefined}
-              >
+              <Badge shape="full" variant="secondary">
                 {item.count}
               </Badge>
             ) : null
@@ -184,62 +147,82 @@ const SidebarContents = ({
         </Sidebar.Item>
       ))}
       <Sidebar.Separator />
-      <Sidebar.SectionHeader>Labels</Sidebar.SectionHeader>
-      {labelItems.map((item) => (
-        <Sidebar.Item
-          key={item.key}
-          itemKey={item.key}
-          icon={<File size={20} />}
-        >
+      <Sidebar.SectionHeader>Folders</Sidebar.SectionHeader>
+      {navItems.secondary.map((item) => (
+        <Sidebar.Item key={item.key} itemKey={item.key} icon={item.icon}>
           {item.label}
         </Sidebar.Item>
       ))}
     </Sidebar.Nav>
     <Sidebar.Footer>
-      <Sidebar.Item itemKey="profile" icon={<User size={20} />} shape={shape}>
-        Profile
-      </Sidebar.Item>
-      <Sidebar.Item
-        itemKey="settings"
-        icon={<Settings size={20} />}
-        shape={shape}
-      >
-        Settings
-      </Sidebar.Item>
+      {navItems.footer.map((item) => (
+        <Sidebar.Item key={item.key} itemKey={item.key} icon={item.icon}>
+          {item.label}
+        </Sidebar.Item>
+      ))}
     </Sidebar.Footer>
   </>
 );
 
-const MainContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
+const AppContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { path } = useRouter();
-  const { isDesktop } = useSidebar();
+  const allItems = [
+    ...navItems.main,
+    ...navItems.secondary,
+    ...navItems.footer,
+  ];
   const item =
-    [...navItems, ...labelItems].find((i) => i.key === path.substring(1)) ||
-    navItems[0];
+    allItems.find((i) => i.key === path.substring(1)) || navItems.main[0];
 
   return (
-    <div className="p-6">
+    <div className="flex h-full flex-col bg-graphite-background">
+      <AppBar
+        scrollContainerRef={scrollRef}
+        size="lg"
+        scrollBehavior="conditionally-sticky"
+        appBarColor="background"
+        animatedBehavior={["shadow"]}
+        startAdornment={
+          <IconButton
+            variant="ghost"
+            aria-label="Toggle Menu"
+            onClick={onMenuClick}
+          >
+            <Menu />
+          </IconButton>
+        }
+        children={
+          <Typography variant="h4" className="truncate font-bold capitalize">
+            {item.label}
+          </Typography>
+        }
+        largeHeaderRowHeight={50}
+        largeHeaderContent={
+          <Input
+            variant="secondary"
+            shape="full"
+            startAdornment={<Search className="h-5 w-5 text-gray-500" />}
+            placeholder={`Search in ${item.label}...`}
+          />
+        }
+      />
       <Sidebar.DragHandle />
-      {!isDesktop && (
-        <IconButton
-          variant="primary"
-          aria-label="Open Menu"
-          onClick={onMenuClick}
-        >
-          <Menu />
-        </IconButton>
-      )}
-      <Typography variant="h1" className="mt-4 capitalize">
-        {item?.label || "Inbox"}
-      </Typography>
-      <Typography variant="lead">
-        This is the main content area for the selected page.
-      </Typography>
+      <ElasticScrollArea ref={scrollRef} className="flex-1 pt-[110px]">
+        <main className="p-6">
+          <div className="grid grid-cols-1 gap-4">
+            {Array.from({ length: 30 }).map((_, i) => (
+              <div key={i} className="h-24 rounded-2xl bg-black/5" />
+            ))}
+          </div>
+        </main>
+      </ElasticScrollArea>
     </div>
   );
 };
 
-const RenderWithRouter = (args: StoryProps) => {
+// --- RENDER FUNCTION FOR STORIES ---
+const RenderApp = (args: StoryProps) => {
   const { path, push } = useRouter();
   const activeItem = path === "/" ? "inbox" : path.substring(1);
   const [isOpen, setIsOpen] = useState(args.defaultOpen);
@@ -253,16 +236,10 @@ const RenderWithRouter = (args: StoryProps) => {
       onOpenChange={setIsOpen}
     >
       <Sidebar.Container variant={args.variant}>
-        <SidebarContents
-          shape={args.shape}
-          elasticity={args.elasticity}
-          pullToRefresh={args.pullToRefresh}
-          onRefresh={args.onRefresh}
-          scrollbarVisibility={args.scrollbarVisibility}
-        />
+        <SidebarContents shape={args.shape} />
       </Sidebar.Container>
       <Sidebar.Content>
-        <MainContent onMenuClick={() => setIsOpen(!isOpen)} />
+        <AppContent onMenuClick={() => setIsOpen(!isOpen)} />
       </Sidebar.Content>
     </Sidebar>
   );
@@ -270,220 +247,142 @@ const RenderWithRouter = (args: StoryProps) => {
 
 // --- STORIES ---
 
-export const DesktopExpanded: Story = {
-  name: "1. Desktop (Expanded & Collapsible)",
+export const Playground: Story = {
+  name: "1. Playground",
   args: {
     desktopVariant: "permanent",
+    mobileVariant: "modal",
+    side: "left",
     collapsible: true,
     defaultOpen: true,
+    variant: "card",
+    shape: "minimal",
+    expandedWidth: 280,
+    collapsedWidth: 80,
   },
   render: (args) => (
     <ShallowRouter>
-      <RenderWithRouter {...args} />
+      <RenderApp {...args} />
     </ShallowRouter>
   ),
 };
 
-const simulateRefresh = () =>
-  new Promise((resolve) => setTimeout(resolve, 2000));
-
-export const ScrollableAndRefreshable: Story = {
-  name: "2. Scrollable & Refreshable Nav",
+export const DesktopPermanent: Story = {
+  name: "2. Desktop (Permanent)",
   args: {
-    ...DesktopExpanded.args,
+    ...Playground.args,
+    collapsible: false,
     defaultOpen: true,
-    elasticity: true,
-    pullToRefresh: true,
-    onRefresh: simulateRefresh,
-    scrollbarVisibility: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A common pattern for large-screen dashboards where the sidebar is always visible and cannot be collapsed. `collapsible` is set to `false`.",
+      },
+    },
   },
   render: (args) => (
     <ShallowRouter>
-      <RenderWithRouter {...args} />
-    </ShallowRouter>
-  ),
-};
-
-export const DesktopCollapsed: Story = {
-  name: "3. Desktop (Collapsed by Default)",
-  args: {
-    ...DesktopExpanded.args,
-    defaultOpen: false,
-  },
-  render: (args) => (
-    <ShallowRouter>
-      <RenderWithRouter {...args} />
+      <RenderApp {...args} />
     </ShallowRouter>
   ),
 };
 
 export const MobileModal: Story = {
-  name: "4. Mobile (Modal Drawer)",
+  name: "3. Mobile (Modal)",
   args: {
+    ...Playground.args,
     mobileVariant: "modal",
-    side: "left",
     defaultOpen: false,
-    elasticity: true,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
+    docs: {
+      description: {
+        story:
+          "On mobile, `modal` is the default. The sidebar slides over the content with a scrim behind it. You can swipe from the edge to open or drag the sidebar itself to close.",
+      },
+    },
   },
   render: (args) => (
     <ShallowRouter>
-      <RenderWithRouter {...args} />
+      <RenderApp {...args} />
     </ShallowRouter>
   ),
 };
 
 export const MobilePush: Story = {
-  name: "5. Mobile (Push Drawer)",
+  name: "4. Mobile (Push)",
   args: {
+    ...Playground.args,
     mobileVariant: "push",
-    side: "left",
     defaultOpen: false,
-    elasticity: true,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
+    docs: {
+      description: {
+        story:
+          "The `push` variant slides the main content aside to reveal the sidebar. This creates a visually connected experience.",
+      },
+    },
   },
   render: (args) => (
     <ShallowRouter>
-      <RenderWithRouter {...args} />
+      <RenderApp {...args} />
     </ShallowRouter>
   ),
 };
 
-export const VariantsAndShapes: Story = {
-  name: "6. Variants and Shapes",
-  args: {
-    ...DesktopExpanded.args,
-    variant: "primary",
-    shape: "minimal",
-  },
-  render: (args) => (
-    <ShallowRouter>
-      <RenderWithRouter {...args} />
-    </ShallowRouter>
-  ),
-};
-
-export const CustomWidths: Story = {
-  name: "7. Custom Widths",
-  args: {
-    ...DesktopExpanded.args,
-    expandedWidth: 350,
-    collapsedWidth: 100,
-  },
-  render: (args) => (
-    <ShallowRouter>
-      <RenderWithRouter {...args} />
-    </ShallowRouter>
-  ),
-};
-
-// ... Full App Layout story remains a great example ...
-const AppLayoutContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const { path } = useRouter();
-  const item =
-    [...navItems, ...labelItems].find((i) => i.key === path.substring(1)) ||
-    navItems[0];
-
-  const pageTitle = item?.label || "Inbox";
-
-  return (
-    <div className="flex h-full flex-col bg-graphite-background">
-      <AppBar
-        size="lg"
-        largeHeaderRowHeight={50}
-        scrollBehavior="conditionally-sticky"
-        appBarColor="background"
-        animatedBehavior={["shadow"]}
-        scrollContainerRef={scrollRef}
-        startAdornment={
-          <IconButton
-            variant="ghost"
-            aria-label="Toggle Menu"
-            onClick={onMenuClick}
-          >
-            <Menu />
-          </IconButton>
-        }
-        children={
-          <Typography variant="h4" className="truncate font-bold">
-            {pageTitle}
-          </Typography>
-        }
-        largeHeaderContent={
-          <Input
+export const ColorVariants: Story = {
+  name: "5. Color Variants",
+  render: () => (
+    <div className="flex h-screen w-full items-stretch">
+      <div className="w-1/3">
+        <ShallowRouter>
+          <RenderApp {...Playground.args} variant="card" defaultOpen={true} />
+        </ShallowRouter>
+      </div>
+      <div className="w-1/3">
+        <ShallowRouter>
+          <RenderApp
+            {...Playground.args}
             variant="secondary"
-            shape="full"
-            startAdornment={<Search className="h-5 w-5 text-gray-500" />}
-            placeholder="Search..."
+            defaultOpen={true}
           />
-        }
-      />
-      <Sidebar.DragHandle />
-
-      <ElasticScrollArea ref={scrollRef} className="flex-1">
-        <main className="p-6 ">
-          <Typography variant="h3" className="mb-4 pt-[100px]">
-            Content for {pageTitle}
-          </Typography>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 30 }).map((_, i) => (
-              <div
-                // biome-ignore lint/suspicious/noArrayIndexKey: Static demo content
-                key={i}
-                className="h-48 rounded-2xl bg-black/5 flex items-center justify-center"
-              >
-                <Typography
-                  variant="small"
-                  className="text-graphite-foreground/50"
-                >
-                  Item {i + 1}
-                </Typography>
-              </div>
-            ))}
-          </div>
-        </main>
-      </ElasticScrollArea>
+        </ShallowRouter>
+      </div>
+      <div className="w-1/3">
+        <ShallowRouter>
+          <RenderApp
+            {...Playground.args}
+            variant="primary"
+            defaultOpen={true}
+          />
+        </ShallowRouter>
+      </div>
     </div>
-  );
+  ),
 };
 
-const FullAppLayoutRenderer = (args: StoryProps) => {
-  const { path, push } = useRouter();
-  const activeItem = path === "/" ? "inbox" : path.substring(1);
-  const [isOpen, setIsOpen] = useState(args.defaultOpen ?? true);
-
-  return (
-    <Sidebar
-      {...args}
-      activeItem={activeItem}
-      onItemPress={(key) => push(`/${key}`)}
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
-    >
-      <Sidebar.Container variant={args.variant}>
-        <SidebarContents shape={args.shape} />
-      </Sidebar.Container>
-      <Sidebar.Content>
-        <AppLayoutContent onMenuClick={() => setIsOpen(!isOpen)} />
-      </Sidebar.Content>
-    </Sidebar>
-  );
-};
-
-export const FullAppLayout: Story = {
-  name: "8. Full App Layout",
+export const RightSide: Story = {
+  name: "6. Right Side",
   args: {
-    ...DesktopExpanded.args,
-    mobileVariant: "push",
+    ...Playground.args,
+    side: "right",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `side` prop can be set to `'right'`. This is useful for secondary navigation, inspector panels, or right-to-left language layouts.",
+      },
+    },
   },
   render: (args) => (
     <ShallowRouter>
-      <FullAppLayoutRenderer {...args} />
+      <RenderApp {...args} />
     </ShallowRouter>
   ),
 };

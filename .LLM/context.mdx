@@ -147,7 +147,7 @@ const AccordionTrigger = React.forwardRef<
   const localRef = useRef<HTMLButtonElement | null>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(0, 0, 0, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
     disabled: disableRipple, // Pass the new prop to the hook
   });
@@ -1409,7 +1409,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   const localRef = useRef<HTMLButtonElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(0, 0, 0, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
 
@@ -2057,8 +2057,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
     const rippleColor =
       variant === "primary" || variant === "destructive"
-        ? "rgba(255, 255, 255, 0.4)"
-        : "rgba(0, 0, 0, 0.1)";
+        ? "var(--color-ripple-dark)"
+        : "var(--color-ripple-light)";
 
     const rippleRef = localRef as React.RefObject<HTMLElement>;
     const [, event] = useRipple({
@@ -2545,6 +2545,7 @@ function Calendar({
           buttonVariants({ variant: "ghost", shape: "full" }),
           "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
         ),
+
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",
         table: "w-full border-collapse space-y-1",
@@ -3127,8 +3128,8 @@ export const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
 
     // Ripple color changes based on the selection state
     const rippleColor = selected
-      ? "rgba(255, 255, 255, 0.3)"
-      : "rgba(0, 0, 0, 0.1)";
+      ? "var(--color-ripple-dark)"
+      : "var(--color-ripple-light)";
 
     const rippleRef = localRef as React.RefObject<HTMLElement>;
     const [, event] = useRipple({
@@ -3281,7 +3282,7 @@ const useContextMenuContext = () => useContext(ContextMenuContext);
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-graphite-border bg-graphite-card p-1.5",
+    "border border-graphite-border bg-graphite-card text-graphite-foreground p-1.5",
     "shadow-md",
   ],
   {
@@ -3389,7 +3390,7 @@ const ContextMenuItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -3417,7 +3418,7 @@ const ContextMenuCheckboxItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -3448,7 +3449,7 @@ const ContextMenuRadioItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -3481,7 +3482,7 @@ const ContextMenuSubTrigger = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -4249,7 +4250,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                     "relative z-10 flex flex-col",
                     isFullscreen
                       ? [
-                          "w-full bg-white shadow-2xl",
+                          "w-full bg-graphite-card shadow-2xl",
                           "h-full sm:max-h-[90vh] sm:w-full sm:max-w-2xl",
                           "sm:rounded-3xl",
                           "overflow-hidden",
@@ -4320,13 +4321,12 @@ const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       className={clsx(
-        variant === "basic" &&
-          "flex flex-col space-y-1.5 text-center sm:text-left",
+        variant === "basic" && "flex flex-col space-y-1.5 text-left",
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row items-center justify-between",
           "px-6 py-4 sm:px-8 sm:py-6",
-          "bg-white",
-          "border-b border-gray-200/60",
+          "bg-graphite-card",
+          "border-b border-graphite-border",
         ],
         props.className
       )}
@@ -4347,12 +4347,12 @@ const DialogFooter = (props: HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       className={clsx(
-        variant === "basic" && "mt-6 flex gap-2 sm:justify-end",
+        variant === "basic" && "mt-6 flex gap-2 justify-end",
         variant === "fullscreen" && [
-          "flex flex-shrink-0 flex-row justify-end gap-3",
+          "flex flex-shrink-0 flex-row gap-3",
           "px-6 py-4 sm:px-8 sm:py-6",
-          "bg-white",
-          "border-t border-gray-200/60",
+          "bg-graphite-card",
+          "border-t border-graphite-border",
         ],
         props.className
       )}
@@ -4373,17 +4373,7 @@ const DialogTitle = forwardRef<
   HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
   const { titleId, variant } = useDialogContext();
-  return (
-    <h2
-      ref={ref}
-      id={titleId}
-      className={clsx(
-        "font-semibold tracking-tight",
-        variant === "fullscreen" ? "text-2xl sm:text-3xl" : "text-xl"
-      )}
-      {...props}
-    />
-  );
+  return <Typography ref={ref} id={titleId} variant="h3" {...props} />;
 });
 DialogTitle.displayName = "DialogTitle";
 
@@ -4396,7 +4386,6 @@ const DialogDescription = forwardRef<
 });
 DialogDescription.displayName = "DialogDescription";
 
-// --- MODIFIED: DialogBody now integrates ElasticScrollArea ---
 export interface DialogBodyProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "dir">,
     Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {}
@@ -4683,7 +4672,7 @@ const DropdownMenuRadioGroup = RadixDropdownMenu.RadioGroup;
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-graphite-border bg-graphite-card p-1.5",
+    "border border-graphite-border bg-graphite-card text-graphite-foreground p-1.5",
     "shadow-md",
   ],
   {
@@ -4735,12 +4724,11 @@ const DropdownMenuItem = React.forwardRef<
     inset?: boolean;
   }
 >(({ className, inset, ...props }, ref) => {
-  // MODIFICATION: Get shape from context
   const { shape } = useDropdownMenuContext();
   const localRef = React.useRef<HTMLDivElement>(null);
   const [ripple, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -4750,7 +4738,6 @@ const DropdownMenuItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        // ORIGINAL STYLES ARE PRESERVED
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden",
         "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
         "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
@@ -4758,7 +4745,6 @@ const DropdownMenuItem = React.forwardRef<
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
-        // MODIFICATION: Add logic to override radius only when needed
         shape === "sharp" && "!rounded-none",
         className
       )}
@@ -4773,12 +4759,11 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.CheckboxItem>
 >(({ className, children, ...props }, ref) => {
-  // MODIFICATION: Get shape from context
   const { shape } = useDropdownMenuContext();
   const localRef = React.useRef<HTMLDivElement>(null);
   const [ripple, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -4788,13 +4773,11 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        // ORIGINAL STYLES ARE PRESERVED
         "relative flex cursor-pointer select-none items-center rounded-lg py-2.5 pl-8 pr-3 text-sm outline-none overflow-hidden",
         "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
         "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
         "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
-        // MODIFICATION: Add logic to override radius only when needed
         shape === "sharp" && "!rounded-none",
         className
       )}
@@ -4817,12 +4800,11 @@ const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.RadioItem>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.RadioItem>
 >(({ className, children, ...props }, ref) => {
-  // MODIFICATION: Get shape from context
   const { shape } = useDropdownMenuContext();
   const localRef = React.useRef<HTMLDivElement>(null);
   const [ripple, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -4832,13 +4814,11 @@ const DropdownMenuRadioItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        // ORIGINAL STYLES ARE PRESERVED
         "relative flex cursor-pointer select-none items-center rounded-lg py-2.5 pl-8 pr-3 text-sm outline-none overflow-hidden",
         "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
         "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
         "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
-        // MODIFICATION: Add logic to override radius only when needed
         shape === "sharp" && "!rounded-none",
         className
       )}
@@ -4862,12 +4842,11 @@ const DropdownMenuSubTrigger = React.forwardRef<
     inset?: boolean;
   }
 >(({ className, children, inset, ...props }, ref) => {
-  // MODIFICATION: Get shape from context
   const { shape } = useDropdownMenuContext();
   const localRef = React.useRef<HTMLDivElement>(null);
   const [ripple, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -4877,7 +4856,6 @@ const DropdownMenuSubTrigger = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        // ORIGINAL STYLES ARE PRESERVED
         "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden",
         "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
         "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary",
@@ -4885,7 +4863,6 @@ const DropdownMenuSubTrigger = React.forwardRef<
         "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
-        // MODIFICATION: Add logic to override radius only when needed
         shape === "sharp" && "!rounded-none",
         className
       )}
@@ -6228,6 +6205,7 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
       disabled,
       icon,
       isExtended,
+      style,
       ...props
     },
     ref
@@ -6238,7 +6216,9 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
 
     // Adjust ripple color based on variant
     const rippleColor =
-      variant === "primary" ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.1)";
+      variant === "primary"
+        ? "var(--color-ripple-dark)"
+        : "var(--color-ripple-light)";
 
     const [, event] = useRipple({
       ref: rippleRef,
@@ -6263,6 +6243,10 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
           fabVariants({ variant, size, shape, className }), // Pass variant to CVA
           !isExtended && "justify-center"
         )}
+        style={{
+          willChange: "transform, opacity",
+          ...style,
+        }}
         ref={localRef}
         onPointerDown={event}
         disabled={disabled}
@@ -6483,7 +6467,7 @@ This section contains the source code for the `icon-button` component and its co
 import { cva } from "class-variance-authority";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react"; // Import Loader from lucide-react
-import React from "react";
+import React, { useState } from "react";
 import useRipple from "use-ripple-hook";
 
 export const iconButtonVariants = cva(
@@ -6550,8 +6534,8 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
     const rippleColor =
       variant === "primary" || variant === "destructive"
-        ? "rgba(255, 255, 255, 0.4)"
-        : "rgba(0, 0, 0, 0.1)";
+        ? "var(--color-ripple-dark)"
+        : "var(--color-ripple-light)";
     const rippleRef = localRef as React.RefObject<HTMLElement>;
     const [, event] = useRipple({
       ref: rippleRef,
@@ -6567,6 +6551,8 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       lg: "h-8 w-8",
     };
 
+    const [isPressed, setIsPressed] = useState(false);
+
     return (
       <button
         className={iconButtonVariants({
@@ -6580,7 +6566,10 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         onPointerDown={(e) => {
           e.stopPropagation();
           event(e);
+          setIsPressed(true);
         }}
+        onPointerUp={() => setIsPressed(false)}
+        onPointerLeave={() => setIsPressed(false)}
         disabled={disabled || isLoading}
         {...props}
       >
@@ -6593,7 +6582,6 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
               exit={{ opacity: 0, scale: 0.5 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Use lucide-react Loader with animate-spin */}
               <Loader2
                 className={`animate-spin ${loaderSizeMap[size || "md"]}`}
               />
@@ -6602,10 +6590,14 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
             <motion.span
               key="content"
               initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
+              animate={{
+                opacity: 1,
+                scale: isPressed ? 0.85 : 1,
+                rotate: isPressed ? 5 : 0,
+              }}
               exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.2 }}
-              className="relative z-10"
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+              className="relative z-10 flex items-center justify-center"
             >
               {children}
             </motion.span>
@@ -6800,7 +6792,6 @@ export const inputWrapperVariants = cva(
       variant: {
         primary: "bg-graphite-card border-2 px-4",
         secondary: "bg-graphite-secondary border-2 px-4",
-        // MODIFIED: Truly minimal variant with no borders or padding on the wrapper.
         minimal: "bg-transparent p-0",
       },
       shape: {
@@ -6820,7 +6811,6 @@ export const inputWrapperVariants = cva(
       },
     },
     compoundVariants: [
-      // Primary states
       {
         variant: "primary",
         isErrored: false,
@@ -6844,7 +6834,6 @@ export const inputWrapperVariants = cva(
         isErrored: true,
         className: "border-red-600",
       },
-      // Secondary states
       {
         variant: "secondary",
         isErrored: false,
@@ -6868,8 +6857,6 @@ export const inputWrapperVariants = cva(
         isErrored: true,
         className: "border-red-600",
       },
-      // MODIFIED: Remove all focus/error border effects for the minimal variant.
-      // Also ensure it ignores the 'shape' prop by forcing no rounding.
       {
         variant: "minimal",
         className: "rounded-none border-0",
@@ -6883,7 +6870,6 @@ export const inputWrapperVariants = cva(
   }
 );
 
-// FIX #2: Use VariantProps to remove the unused import warning and keep types in sync.
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
   variant?: "primary" | "secondary" | "minimal";
@@ -6936,7 +6922,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (type === "number") {
-        // FIX #1: Corrected the syntax error here.
         const { value } = e.currentTarget;
         const allowedKeys = [
           "Backspace",
@@ -7009,9 +6994,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             className={clsx(
-              "w-full flex-1 bg-transparent focus:outline-none",
+              "w-full flex-1 bg-transparent focus:outline-none text-graphite-foreground",
+              "placeholder:text-graphite-foreground/60",
               "disabled:cursor-not-allowed",
-              variant === "secondary" && "placeholder:text-gray-500",
               className
             )}
             {...props}
@@ -7493,7 +7478,7 @@ const Item = React.forwardRef<
 
     const [, event] = useRipple({
       ref: localRef,
-      color: "rgba(0, 0, 0, 0.1)",
+      color: "var(--color-ripple-light)",
       duration: 400,
       disabled: disabled || disableRipple,
     });
@@ -7609,7 +7594,7 @@ const ItemTitle = React.forwardRef<
       ref={ref}
       data-slot="item-title"
       className={clsx(
-        "flex w-fit items-center gap-2 text-base font-semibold leading-snug",
+        "flex w-fit items-center gap-2 text-base font-semibold leading-snug text-graphite-foreground",
         direction === "vertical" && "justify-center",
         className
       )}
@@ -8824,48 +8809,6 @@ const ModalDetailScreen = ({ item }: { item: (typeof galleryData)[0] }) => {
 
 // --- Stories ---
 
-export const FullscreenPresentation: Story = {
-  name: "1. Fullscreen Presentation (Default)",
-  args: {
-    duration: 5.5,
-  },
-  render: (args) => (
-    <LayoutRouter {...args}>
-      <LayoutRouter.List>
-        <InboxScreen />
-      </LayoutRouter.List>
-      {sampleEmails.map((email) => (
-        <LayoutRouter.Screen
-          key={email.id}
-          id={email.id}
-          presentation="fullscreen"
-        >
-          {/* This screen is NOT dismissible and has no scroll lock */}
-          <div className="overflow-hidden h-full flex flex-col bg-graphite-card">
-            <AppBar
-              appBarColor="card"
-              startAdornment={
-                <IconButton
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={useLayoutRouter().goBack}
-                  aria-label="Go back"
-                >
-                  <ArrowLeft />
-                </IconButton>
-              }
-            />
-            <div className="p-6 pt-2">
-              <Typography variant="p">{email.body}</Typography>
-            </div>
-          </div>
-        </LayoutRouter.Screen>
-      ))}
-    </LayoutRouter>
-  ),
-};
-
 export const ModalPresentation: Story = {
   name: "2. Modal Presentation",
   args: {
@@ -9141,7 +9084,7 @@ const MenubarRoot: React.FC<MenubarProps> = ({
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-menubar-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-graphite-border bg-graphite-card p-1.5",
+    "border border-graphite-border bg-graphite-card text-graphite-foreground p-1.5",
     "shadow-md",
   ],
   {
@@ -9173,7 +9116,7 @@ const MenubarTrigger = React.forwardRef<
   <RadixMenubar.Trigger
     ref={ref}
     className={clsx(
-      "flex cursor-pointer select-none items-center rounded-md px-3 py-1.5 text-sm font-semibold outline-none",
+      "flex cursor-pointer select-none items-center rounded-md px-3 py-1.5 text-sm font-semibold outline-none text-graphite-foreground",
       "transition-colors duration-150 ease-in-out",
       "hover:bg-graphite-secondary focus:bg-graphite-secondary",
       "data-[state=open]:bg-graphite-secondary"
@@ -9229,7 +9172,7 @@ const MenubarItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -9264,7 +9207,7 @@ const MenubarCheckboxItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -9304,7 +9247,7 @@ const MenubarRadioItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -9346,7 +9289,7 @@ const MenubarSubTrigger = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "rgba(128, 128, 128, 0.1)",
+    color: "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -9468,19 +9411,14 @@ export const Menubar = Object.assign(MenubarRoot, {
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import {
-  Cloud,
   CreditCard,
-  Github,
-  LifeBuoy,
   LogOut,
   Mail,
   MessageSquare,
-  Plus,
   PlusCircle,
   Settings,
   User,
   UserPlus,
-  Users,
 } from "lucide-react";
 import { useState } from "react";
 import { Menubar } from "./index";
@@ -9857,7 +9795,7 @@ const NavigationMenuContentItem = React.forwardRef<
     useImperativeHandle(ref, () => localRef.current as HTMLAnchorElement);
     const [, event] = useRipple({
       ref: localRef,
-      color: "rgba(0, 0, 0, 0.1)",
+      color: "var(--color-ripple-light)",
       duration: 400,
     });
 
@@ -10188,12 +10126,11 @@ const InputOTPSlot = React.forwardRef<
     <div
       ref={ref}
       className={clsx(
-        // --- THEME ALIGNED STYLES ---
-        "relative flex h-12 w-12 items-center justify-center border-y border-r border-graphite-border text-base font-semibold transition-all",
-        "first:rounded-l-2xl first:border-l last:rounded-r-2xl", // Matches 'minimal' shape
+        "relative flex h-12 w-12 items-center justify-center border-y-2 border-r-2 border-graphite-border text-base font-semibold transition-all text-graphite-foreground",
+        "first:rounded-l-2xl first:border-l-2 last:rounded-r-2xl",
+        "bg-graphite-card", // Ensure it has a background
         isActive &&
           "z-10 border-graphite-border ring-2 ring-graphite-ring ring-offset-2 ring-offset-graphite-background",
-        // --- END OF THEME ALIGNED STYLES ---
         className
       )}
       {...props}
@@ -10201,7 +10138,6 @@ const InputOTPSlot = React.forwardRef<
       {char}
       {hasFakeCaret && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          {/* Use theme's primary color for the caret */}
           <div className="h-4 w-px animate-caret-blink bg-graphite-primary duration-1000" />
         </div>
       )}
@@ -10215,7 +10151,6 @@ const InputOTPSeparator = React.forwardRef<
   React.ComponentPropsWithoutRef<"div">
 >(({ ...props }, ref) => (
   <div ref={ref} role="separator" {...props}>
-    {/* Use theme's foreground color for the separator */}
     <Dot className="text-graphite-foreground" />
   </div>
 ));
@@ -11015,7 +10950,7 @@ const useSelectContext = () => useContext(SelectContext);
 
 // --- CVA VARIANTS ---
 const selectTriggerVariants = cva(
-  "flex items-center justify-between transition-all duration-200 w-full px-4 border-2 text-left",
+  "flex items-center justify-between transition-all duration-200 w-full px-4 border-2 text-left text-graphite-foreground [&_[data-placeholder]]:text-graphite-foreground/70",
   {
     variants: {
       variant: {
@@ -11220,7 +11155,9 @@ const SelectItem = React.forwardRef<
   const { shape, variant, size } = useSelectContext();
   const localRef = useRef<HTMLDivElement>(null);
   const rippleColor =
-    variant === "primary" ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)";
+    variant === "primary"
+      ? "var(--color-ripple-light)"
+      : "var(--color-ripple-dark)";
 
   const [, event] = useRipple({
     ref: localRef,
@@ -11240,7 +11177,7 @@ const SelectItem = React.forwardRef<
     >
       <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <Check className="h-4 w-4" />
+          <Check className="h-4 w-4 text-graphite-primary" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText className="truncate">
@@ -11302,7 +11239,9 @@ const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
 }) => {
   const localRef = useRef<HTMLButtonElement>(null);
   const rippleColor =
-    variant === "primary" ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)";
+    variant === "primary"
+      ? "var(--color-ripple-light)"
+      : "var(--color-ripple-dark)";
 
   const [, event] = useRipple({
     ref: localRef,
@@ -11329,7 +11268,7 @@ const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
       <span className="relative z-10 flex items-center w-full">
         {isSelected && (
           <span className="absolute -left-6 flex h-3.5 w-3.5 items-center justify-center">
-            <Check className="h-4 w-4" />
+            <Check className="h-4 w-4 text-graphite-primary" />
           </span>
         )}
         <span className="truncate">{item.label}</span>
@@ -11353,6 +11292,7 @@ interface SelectWrapperProps
   contentPosition?: React.ComponentProps<typeof SelectContent>["position"];
   onValueChange?: (value: string) => void;
   value?: string;
+  className?: string;
 }
 
 const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
@@ -11370,6 +11310,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
       contentPosition = "item-aligned",
       value,
       onValueChange,
+      className,
       ...props
     },
     ref
@@ -11380,7 +11321,6 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
     const [tempValue, setTempValue] = useState(value);
     const selectId = id || uniqueId;
 
-    // --- Mobile Dialog Version ---
     if (isMobile && contentPosition === "popper") {
       const handleOpenChange = (open: boolean) => {
         if (open) {
@@ -11402,7 +11342,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
       return (
         <div className="w-full flex flex-col gap-2">
           {label && (
-            <div className="block text-sm font-medium text-graphite-primary">
+            <div className="block text-sm font-medium text-graphite-foreground">
               {label}
             </div>
           )}
@@ -11413,13 +11353,17 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
                 type="button"
                 id={selectId}
                 disabled={disabled}
-                className={selectTriggerVariants({
-                  variant,
-                  shape,
-                  size,
-                  isErrored: !!error,
-                  disabled,
-                })}
+                className={clsx(
+                  selectTriggerVariants({
+                    variant,
+                    shape,
+                    size,
+                    isErrored: !!error,
+                    disabled,
+                  }),
+                  className
+                )}
+                {...props}
               >
                 <span className="truncate">{displayLabel}</span>
                 <ChevronDown className="h-4 w-4 opacity-50" />
@@ -11467,13 +11411,12 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
       );
     }
 
-    // --- Desktop Popover / Item-Aligned Version ---
     return (
       <div className="w-full flex flex-col gap-2">
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-sm font-medium text-graphite-primary"
+            className="block text-sm font-medium text-graphite-foreground"
           >
             {label}
           </label>
@@ -11493,6 +11436,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
             size={size}
             error={error}
             disabled={disabled}
+            className={className}
           >
             <span className="truncate">
               <SelectValue placeholder={placeholder} />
@@ -12156,12 +12100,13 @@ import { clsx } from "clsx";
 import React, { createContext, useContext } from "react";
 import { Drawer as VaulDrawer } from "vaul";
 
-// --- Context (Unchanged) ---
+// --- Context ---
 interface SheetContextProps {
   mode: "normal" | "detached";
   shape: "full" | "minimal" | "sharp";
   hasSnapPoints: boolean;
   direction: "top" | "bottom" | "left" | "right";
+  variant: "primary" | "secondary" | "card"; // Added variant
 }
 
 const SheetContext = createContext<SheetContextProps>({
@@ -12169,16 +12114,17 @@ const SheetContext = createContext<SheetContextProps>({
   shape: "full",
   hasSnapPoints: false,
   direction: "bottom",
+  variant: "card", // Added default variant
 });
 
 const useSheetContext = () => useContext(SheetContext);
 
-// --- MODIFIED: Root Component ---
-// Added the `forceSideSheet` prop.
+// --- Root Component ---
 type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
   side?: "left" | "right";
+  variant?: "primary" | "secondary" | "card"; // Added variant prop
   /**
    * If true, the sheet will always render as a bottom sheet,
    * overriding the responsive behavior on desktop viewports.
@@ -12190,15 +12136,16 @@ type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
    * overriding the responsive behavior on mobile viewports.
    * @default false
    */
-  forceSideSheet?: boolean; // --- THIS IS THE NEW PROP ---
+  forceSideSheet?: boolean;
 };
 
 const SheetRoot: React.FC<SheetProps> = ({
   mode = "normal",
   shape = "full",
   side = "right",
+  variant = "card", // Destructure variant prop
   forceBottomSheet = false,
-  forceSideSheet = false, // --- NEW PROP WITH DEFAULT ---
+  forceSideSheet = false,
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
@@ -12206,22 +12153,15 @@ const SheetRoot: React.FC<SheetProps> = ({
 }) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  // --- MODIFIED LOGIC ---
-  // Determine if we should render as a side sheet. This is true if:
-  // 1. `forceSideSheet` is explicitly true.
-  // OR
-  // 2. The viewport is desktop-sized AND `forceBottomSheet` is not true.
   const renderAsSideSheet = forceSideSheet || (isDesktop && !forceBottomSheet);
-
   const direction = renderAsSideSheet ? side : "bottom";
-  // --- END OF MODIFIED LOGIC ---
 
   return (
     <SheetContext.Provider
       value={{
         mode,
         shape,
-        // Disable snap points if we are rendering as a side sheet
+        variant, // Pass variant to context
         hasSnapPoints: renderAsSideSheet
           ? false
           : !!snapPoints && snapPoints.length > 0,
@@ -12231,7 +12171,6 @@ const SheetRoot: React.FC<SheetProps> = ({
       <VaulDrawer.Root
         direction={direction}
         {...props}
-        // Pass snap points only when not rendering as a side sheet
         snapPoints={renderAsSideSheet ? undefined : snapPoints}
         activeSnapPoint={renderAsSideSheet ? undefined : activeSnapPoint}
         setActiveSnapPoint={renderAsSideSheet ? undefined : setActiveSnapPoint}
@@ -12241,19 +12180,24 @@ const SheetRoot: React.FC<SheetProps> = ({
 };
 SheetRoot.displayName = "Sheet";
 
-// --- RE-EXPORTED PRIMITIVES (Unchanged) ---
+// --- RE-EXPORTED PRIMITIVES ---
 const SheetTrigger = VaulDrawer.Trigger;
 const SheetClose = VaulDrawer.Close;
 const SheetPortal = VaulDrawer.Portal;
 const SheetTitle = VaulDrawer.Title;
 const SheetDescription = VaulDrawer.Description;
 
-// --- CONTENT & OTHER COMPONENTS (Unchanged) ---
-// (Your existing SheetContent, SheetHeader, SheetFooter, and SheetGrabber code remains here)
+// --- CVA Variants for Content ---
 const contentVariants = cva(
-  "fixed z-50 flex flex-col bg-graphite-card shadow-lg",
+  "fixed z-50 flex flex-col shadow-lg", // Removed hardcoded background
   {
     variants: {
+      variant: {
+        // Added color variants
+        primary: "bg-graphite-primary text-graphite-primaryForeground",
+        secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
+        card: "bg-graphite-card text-graphite-foreground",
+      },
       side: {
         top: "inset-x-0 top-0",
         bottom: "inset-x-0 bottom-0 max-h-[96%]",
@@ -12391,25 +12335,31 @@ const contentVariants = cva(
       },
     ],
     defaultVariants: {
+      variant: "card", // Added default variant
       shape: "full",
       mode: "normal",
     },
   }
 );
+
+// --- CONTENT & OTHER COMPONENTS ---
 type SheetContentProps = React.ComponentProps<typeof VaulDrawer.Content> &
   VariantProps<typeof contentVariants>;
+
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof VaulDrawer.Content>,
   SheetContentProps
->(({ className, shape: shapeProp, ...props }, ref) => {
+>(({ className, shape: shapeProp, variant: variantProp, ...props }, ref) => {
   const {
     mode,
     shape: shapeContext,
+    variant: variantContext, // Read from context
     hasSnapPoints,
     direction,
   } = useSheetContext();
 
   const shape = shapeProp || shapeContext;
+  const variant = variantProp || variantContext; // Prioritize prop
 
   const style =
     mode === "detached"
@@ -12427,6 +12377,7 @@ const SheetContent = React.forwardRef<
             side: direction,
             mode,
             shape,
+            variant, // Pass variant to CVA
             height: direction === "bottom" && hasSnapPoints ? "snap" : "auto",
           }),
           className
@@ -12437,6 +12388,7 @@ const SheetContent = React.forwardRef<
   );
 });
 SheetContent.displayName = "Sheet.Content";
+
 const SheetHeader = ({
   className,
   ...props
@@ -12450,6 +12402,7 @@ const SheetHeader = ({
   />
 );
 SheetHeader.displayName = "Sheet.Header";
+
 const SheetFooter = ({
   className,
   ...props
@@ -12460,11 +12413,12 @@ const SheetFooter = ({
   />
 );
 SheetFooter.displayName = "Sheet.Footer";
+
 const SheetGrabber = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => {
-  const { direction } = useSheetContext();
+  const { direction, variant } = useSheetContext();
   if (direction !== "bottom") {
     return null;
   }
@@ -12472,7 +12426,11 @@ const SheetGrabber = ({
     <div className="flex-shrink-0 p-4">
       <div
         className={clsx(
-          "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full bg-graphite-foreground/40",
+          "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full",
+          // Adapt grabber color based on variant's foreground
+          variant === "primary"
+            ? "bg-graphite-primaryForeground/40"
+            : "bg-graphite-foreground/40",
           className
         )}
         {...props}
@@ -12498,7 +12456,7 @@ export const Sheet = Object.assign(SheetRoot, {
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import clsx from "clsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../button";
 import { Typography } from "../typography";
 import { Sheet } from "./index"; // Assuming your component file is named index.tsx
@@ -12517,6 +12475,11 @@ const meta: Meta<typeof Sheet> = {
     },
   },
   argTypes: {
+    variant: {
+      control: "select",
+      options: ["primary", "secondary", "card"],
+      description: "The color variant of the sheet.",
+    },
     side: {
       control: "select",
       options: ["left", "right"],
@@ -12539,13 +12502,11 @@ const meta: Meta<typeof Sheet> = {
       description:
         "If true, forces the component to render as a bottom sheet on all screen sizes.",
     },
-    // --- NEW PROP DOCUMENTATION ---
     forceSideSheet: {
       control: "boolean",
       description:
         "If true, forces the component to render as a side sheet on all screen sizes.",
     },
-    // --- END ---
     // Vaul-specific props
     snapPoints: {
       control: "object",
@@ -12653,7 +12614,6 @@ export const ForceBottomSheet: Story = {
   render: (args) => <ResponsiveBehavior.render {...args} />,
 };
 
-// --- NEW STORY ---
 export const ForceSideSheet: Story = {
   name: "3. Force Side Sheet on Mobile",
   args: {
@@ -12675,14 +12635,67 @@ export const ForceSideSheet: Story = {
   },
   render: (args) => <ResponsiveBehavior.render {...args} />,
 };
-// --- END ---
+
+export const ColorVariants: Story = {
+  name: "4. Color Variants",
+  args: {
+    side: "right",
+    forceSideSheet: true, // Force side sheet to better see colors on desktop
+  },
+  render: (args) => (
+    <div className="flex h-[500px] w-full items-center justify-center gap-4 bg-graphite-background p-12">
+      {/* Card Variant */}
+      <Sheet {...args} variant="card">
+        <Sheet.Trigger asChild>
+          <Button>Card (Default)</Button>
+        </Sheet.Trigger>
+        <Sheet.Content>
+          <Sheet.Header>
+            <Sheet.Title>
+              <Typography variant="h3">Card Variant</Typography>
+            </Sheet.Title>
+          </Sheet.Header>
+          <DummyContent />
+        </Sheet.Content>
+      </Sheet>
+      {/* Secondary Variant */}
+      <Sheet {...args} variant="secondary">
+        <Sheet.Trigger asChild>
+          <Button>Secondary</Button>
+        </Sheet.Trigger>
+        <Sheet.Content>
+          <Sheet.Header>
+            <Sheet.Title>
+              <Typography variant="h3">Secondary Variant</Typography>
+            </Sheet.Title>
+          </Sheet.Header>
+          <DummyContent />
+        </Sheet.Content>
+      </Sheet>
+      {/* Primary Variant */}
+      <Sheet {...args} variant="primary">
+        <Sheet.Trigger asChild>
+          <Button>Primary</Button>
+        </Sheet.Trigger>
+        <Sheet.Content>
+          <Sheet.Header>
+            <Sheet.Title>
+              <Typography variant="h3">Primary Variant</Typography>
+            </Sheet.Title>
+          </Sheet.Header>
+          <DummyContent />
+        </Sheet.Content>
+      </Sheet>
+    </div>
+  ),
+};
 
 export const SideSheetLeft: Story = {
-  name: "4. Side Sheet (Left)",
+  name: "5. Side Sheet (Left)",
   args: {
     ...ResponsiveBehavior.args,
     side: "left",
-    forceSideSheet: true
+    forceSideSheet: true,
   },
   parameters: {
     docs: {
@@ -12696,7 +12709,7 @@ export const SideSheetLeft: Story = {
 };
 
 export const DetachedMode: Story = {
-  name: "5. Detached Mode",
+  name: "6. Detached Mode",
   args: {
     ...ResponsiveBehavior.args,
     mode: "detached",
@@ -12713,7 +12726,7 @@ export const DetachedMode: Story = {
 };
 
 export const WithSnappingPoints: Story = {
-  name: "6. With Snapping Points",
+  name: "7. With Snapping Points",
   args: {
     snapPoints: [0.3, 0.7, 1],
     fadeFromIndex: 0,
@@ -12743,7 +12756,7 @@ export const WithSnappingPoints: Story = {
 };
 
 export const ControlledSnapping: Story = {
-  name: "7. Controlled Snapping",
+  name: "8. Controlled Snapping",
   args: {
     snapPoints: ["300px", 1],
     fadeFromIndex: 0,
@@ -12773,6 +12786,102 @@ export const ControlledSnapping: Story = {
           <Sheet.Trigger asChild>
             <Button>Open Controlled Sheet</Button>
           </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Grabber />
+            <Sheet.Header>
+              <Typography variant="h3">
+                Current Snap: {String(activeSnapPoint)}
+              </Typography>
+            </Sheet.Header>
+
+            <div
+              className={clsx(
+                activeSnapPoint === 1 ? "overflow-auto" : "overflow-hidden",
+                "p-4"
+              )}
+            >
+              <Typography>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                Explicabo, eligendi! Voluptates nobis nam animi similique vero
+                tenetur sunt velit? Maxime numquam neque ducimus recusandae quae
+                non laudantium eum officiis nostrum. Cupiditate veritatis facere
+                reiciendis cum fuga iste, ab qui animi culpa ducimus sed
+                molestias? Qui, facilis alias? Ipsum sunt corrupti mollitia
+                libero a quibusdam, rerum dignissimos, quam magni id unde.
+                Quaerat, modi suscipit odio laboriosam alias, eum recusandae
+                quod, aut nobis quidem explicabo impedit optio possimus amet ea.
+                Non odio, placeat vel officia iusto vitae accusamus velit sint
+                quo facere. Est et eius, esse culpa inventore sequi eum soluta
+                perspiciatis illo minima, facilis nobis sed numquam similique.
+                Soluta, ipsa eum enim amet dolorum error nemo at ab. Sit,
+                repudiandae autem. Reiciendis quo eveniet molestias dolore
+                exercitationem? Tenetur deleniti magni facere! Ducimus explicabo
+                alias deleniti perferendis delectus accusamus deserunt tenetur
+                iste dolor ullam, odio aliquid autem aut illum ad officiis
+                vitae. Ipsam repellat neque ab debitis accusantium cupiditate
+                laudantium, rem perferendis mollitia repudiandae architecto
+                voluptatibus laborum et eius nemo iste harum nisi unde
+                asperiores tempora placeat officia esse quia. Vitae, odit? Ipsa,
+                similique rem. Minus eveniet totam quidem quia asperiores
+                nostrum cupiditate corporis error expedita. Consequatur
+                aspernatur, sint eum corporis, nisi earum dicta sed quae
+                molestias sunt ipsa ex magni porro. Distinctio animi facilis
+                doloremque beatae libero laudantium ducimus aliquam molestias,
+                voluptates amet fugiat facere perferendis deserunt harum dicta
+                eveniet quis sed deleniti repellendus veniam ullam reiciendis?
+                Accusantium reprehenderit laudantium nemo. Quod nemo omnis hic
+                optio laudantium saepe magni veniam excepturi, tenetur alias
+                eveniet quibusdam, quidem recusandae quasi? Ipsum error
+                accusamus corporis. Cum nesciunt ab repellat vitae consequatur
+                et qui nemo. Magnam deserunt libero cumque magni ea pariatur,
+                iusto consectetur, natus, ducimus sunt eum! Quisquam aliquid
+                fugit suscipit architecto sunt quas at optio neque porro
+                expedita, placeat dolor perferendis sequi tempora?
+              </Typography>
+            </div>
+          </Sheet.Content>
+        </Sheet>
+      </div>
+    );
+  },
+};
+
+export const AlwaysActive: Story = {
+  name: "9. AlwaysActive (Non Modal)",
+  args: {
+    snapPoints: ["300px", 1],
+    dismissible: false,
+    forceBottomSheet: true,
+    variant: "secondary",
+    fadeFromIndex: 1,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Manually control the snap point from outside the component using the `activeSnapPoint` and `setActiveSnapPoint` props. This only works in bottom sheet mode.",
+      },
+    },
+  },
+
+  render: function Render(args) {
+    const [activeSnapPoint, setActiveSnapPoint] = useState<
+      string | number | null
+    >(args.snapPoints![0]);
+    const [IsModal, setIsModal] = useState(false);
+    useEffect(() => {
+      setIsModal(activeSnapPoint === 1 ? true : false);
+    }, [activeSnapPoint]);
+    return (
+      <div className="flex h-[500px] w-full flex-col items-center justify-center gap-4 bg-graphite-background p-12">
+        <Button>Clickable Even When Sheet Is Open</Button>
+        <Sheet
+          {...args}
+          open={true}
+          modal={false}
+          activeSnapPoint={activeSnapPoint}
+          setActiveSnapPoint={setActiveSnapPoint}
+        >
           <Sheet.Content>
             <Sheet.Grabber />
             <Sheet.Header>
@@ -12920,7 +13029,7 @@ interface SidebarNavContextProps {
 
 const SidebarNavContext = createContext<SidebarNavContextProps>({
   size: "md",
-  shape: "full",
+  shape: "minimal",
 });
 
 // --- 2. CVA VARIANTS ---
@@ -13055,7 +13164,7 @@ const SidebarRoot: React.FC<SidebarProps> = ({
   mobileVariant = "modal",
   side = "left",
   collapsible = true,
-  expandedWidth = 280,
+  expandedWidth = 320,
   collapsedWidth = 80,
 }) => {
   const [sidebarContainer, mainContent] = React.Children.toArray(children) as [
@@ -13352,8 +13461,9 @@ const SidebarPrimaryAction = React.memo(
 );
 SidebarPrimaryAction.displayName = "Sidebar.PrimaryAction";
 
+// @ts-ignore
 interface SidebarNavProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, "onScroll">,
+  extends Omit<React.HTMLAttributes<HTMLElement>, "onScroll" | "dir">,
     Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
@@ -13439,8 +13549,8 @@ const SidebarItem = React.memo(
 
       const rippleColor =
         variant === "primary"
-          ? "rgba(255, 255, 255, 0.1)"
-          : "rgba(0, 0, 0, 0.1)";
+          ? "var(--color-ripple-dark)"
+          : "var(--color-ripple-light)";
 
       const rippleRef = localRef as React.RefObject<HTMLElement>;
       const [, event] = useRipple({
@@ -13468,7 +13578,7 @@ const SidebarItem = React.memo(
             <motion.div
               layoutId={indicatorId}
               className={clsx(
-                "absolute inset-0 z-0 transition-[border-radius] duration-200",
+                "absolute inset-0 z-2 transition-[border-radius] duration-200",
                 variant === "primary" ? "bg-white/10" : "bg-graphite-primary/10"
               )}
               style={{
@@ -13671,7 +13781,7 @@ import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { Sidebar, useSidebar } from "./index";
 
-// --- TYPE FIX: Combine props for Storybook controls ---
+// --- TYPE DEFINITION FOR STORY PROPS ---
 type StoryProps = React.ComponentProps<typeof Sidebar> &
   Pick<React.ComponentProps<typeof Sidebar.Container>, "variant"> &
   Pick<
@@ -13683,6 +13793,7 @@ type StoryProps = React.ComponentProps<typeof Sidebar> &
     | "scrollbarVisibility"
   >;
 
+// --- STORYBOOK META CONFIGURATION ---
 const meta: Meta<StoryProps> = {
   title: "Components/Navigators/Sidebar",
   component: Sidebar,
@@ -13692,7 +13803,7 @@ const meta: Meta<StoryProps> = {
     docs: {
       description: {
         component:
-          "A highly responsive and animated navigation sidebar. It functions as a permanent or collapsible rail on desktop, and a modal or push-style drawer on mobile. Integrates with any routing library via `activeItem` and `onItemPress` props.",
+          "A highly responsive and animated navigation sidebar, inspired by modern native applications. It functions as a permanent or collapsible rail on desktop, and a modal or push-style drawer on mobile. It integrates with any routing library via `activeItem` and `onItemPress` props.",
       },
     },
   },
@@ -13742,88 +13853,50 @@ const meta: Meta<StoryProps> = {
     onItemPress: { action: "itemPressed" },
     isOpen: { control: false },
     onOpenChange: { action: "openChange" },
-    elasticity: {
-      control: "boolean",
-      table: { category: "Elastic Scroll Props" },
-    },
-    pullToRefresh: {
-      control: "boolean",
-      table: { category: "Elastic Scroll Props" },
-    },
-    onRefresh: {
-      action: "refreshed",
-      table: { category: "Elastic Scroll Props" },
-    },
-    scrollbarVisibility: {
-      control: "select",
-      options: ["auto", "always", "scroll", "hidden"],
-      table: { category: "Elastic Scroll Props" },
-    },
   },
 };
 
 export default meta;
 type Story = StoryObj<StoryProps>;
 
-// --- Helper Components for Stories ---
+// --- HELPER COMPONENTS AND DATA ---
 
-const navItems = [
-  { key: "inbox", label: "Inbox", icon: <Inbox size={20} />, count: 24 },
-  { key: "sent", label: "Sent", icon: <Send size={20} /> },
-  { key: "favorites", label: "Favorites", icon: <Star size={20} /> },
-  { key: "drafts", label: "Drafts", icon: <File size={20} /> },
-  { key: "archive", label: "Archive", icon: <Archive size={20} /> },
-  { key: "trash", label: "Trash", icon: <Trash2 size={20} /> },
-  { key: "spam", label: "Spam", icon: <File size={20} /> },
-  { key: "all_mail", label: "All Mail", icon: <File size={20} /> },
-  { key: "important", label: "Important", icon: <File size={20} /> },
-  { key: "social", label: "Social", icon: <File size={20} /> },
-  { key: "promotions", label: "Promotions", icon: <File size={20} /> },
-  { key: "forums", label: "Forums", icon: <File size={20} /> },
-];
-
-const labelItems = [
-  { key: "work", label: "Work" },
-  { key: "personal", label: "Personal" },
-  { key: "urgent", label: "Urgent" },
-];
-
-const CustomSidebarHeader = () => {
-  const { isDesktop, collapsible, toggle, side } = useSidebar();
-  return (
-    <Sidebar.Header className={side === "right" ? "flex-row-reverse" : ""}>
-      {isDesktop && collapsible && (
-        <IconButton variant="ghost" size="sm" onClick={toggle}>
-          <Menu />
-        </IconButton>
-      )}
-    </Sidebar.Header>
-  );
+const navItems = {
+  main: [
+    { key: "inbox", label: "Inbox", icon: <Inbox size={20} />, count: 24 },
+    { key: "sent", label: "Sent", icon: <Send size={20} /> },
+    { key: "favorites", label: "Favorites", icon: <Star size={20} /> },
+    { key: "drafts", label: "Drafts", icon: <File size={20} /> },
+  ],
+  secondary: [
+    { key: "archive", label: "Archive", icon: <Archive size={20} /> },
+    { key: "trash", label: "Trash", icon: <Trash2 size={20} /> },
+  ],
+  footer: [
+    { key: "profile", label: "Profile", icon: <User size={20} /> },
+    { key: "settings", label: "Settings", icon: <Settings size={20} /> },
+  ],
 };
 
-const SidebarContents = ({
-  shape = "full",
-  ...scrollProps
-}: { shape?: "full" | "minimal" | "sharp" } & Partial<
-  React.ComponentProps<typeof Sidebar.Nav>
->) => (
+const SidebarContents = ({ shape = "minimal" }) => (
   <>
-    <CustomSidebarHeader />
+    <Sidebar.Header>
+      <Typography variant="h4" className="p-4">
+        Mailbox
+      </Typography>
+    </Sidebar.Header>
     <Sidebar.PrimaryAction icon={<Pencil size={24} />} shape={shape}>
       Compose
     </Sidebar.PrimaryAction>
-    <Sidebar.Nav shape={shape} {...scrollProps}>
-      {navItems.map((item) => (
+    <Sidebar.Nav shape={shape}>
+      {navItems.main.map((item) => (
         <Sidebar.Item
           key={item.key}
           itemKey={item.key}
           icon={item.icon}
           endAdornment={
             item.count ? (
-              <Badge
-                shape="full"
-                variant={item.count > 0 ? "secondary" : undefined}
-              >
+              <Badge shape="full" variant="secondary">
                 {item.count}
               </Badge>
             ) : null
@@ -13833,62 +13906,82 @@ const SidebarContents = ({
         </Sidebar.Item>
       ))}
       <Sidebar.Separator />
-      <Sidebar.SectionHeader>Labels</Sidebar.SectionHeader>
-      {labelItems.map((item) => (
-        <Sidebar.Item
-          key={item.key}
-          itemKey={item.key}
-          icon={<File size={20} />}
-        >
+      <Sidebar.SectionHeader>Folders</Sidebar.SectionHeader>
+      {navItems.secondary.map((item) => (
+        <Sidebar.Item key={item.key} itemKey={item.key} icon={item.icon}>
           {item.label}
         </Sidebar.Item>
       ))}
     </Sidebar.Nav>
     <Sidebar.Footer>
-      <Sidebar.Item itemKey="profile" icon={<User size={20} />} shape={shape}>
-        Profile
-      </Sidebar.Item>
-      <Sidebar.Item
-        itemKey="settings"
-        icon={<Settings size={20} />}
-        shape={shape}
-      >
-        Settings
-      </Sidebar.Item>
+      {navItems.footer.map((item) => (
+        <Sidebar.Item key={item.key} itemKey={item.key} icon={item.icon}>
+          {item.label}
+        </Sidebar.Item>
+      ))}
     </Sidebar.Footer>
   </>
 );
 
-const MainContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
+const AppContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { path } = useRouter();
-  const { isDesktop } = useSidebar();
+  const allItems = [
+    ...navItems.main,
+    ...navItems.secondary,
+    ...navItems.footer,
+  ];
   const item =
-    [...navItems, ...labelItems].find((i) => i.key === path.substring(1)) ||
-    navItems[0];
+    allItems.find((i) => i.key === path.substring(1)) || navItems.main[0];
 
   return (
-    <div className="p-6">
+    <div className="flex h-full flex-col bg-graphite-background">
+      <AppBar
+        scrollContainerRef={scrollRef}
+        size="lg"
+        scrollBehavior="conditionally-sticky"
+        appBarColor="background"
+        animatedBehavior={["shadow"]}
+        startAdornment={
+          <IconButton
+            variant="ghost"
+            aria-label="Toggle Menu"
+            onClick={onMenuClick}
+          >
+            <Menu />
+          </IconButton>
+        }
+        children={
+          <Typography variant="h4" className="truncate font-bold capitalize">
+            {item.label}
+          </Typography>
+        }
+        largeHeaderRowHeight={50}
+        largeHeaderContent={
+          <Input
+            variant="secondary"
+            shape="full"
+            startAdornment={<Search className="h-5 w-5 text-gray-500" />}
+            placeholder={`Search in ${item.label}...`}
+          />
+        }
+      />
       <Sidebar.DragHandle />
-      {!isDesktop && (
-        <IconButton
-          variant="primary"
-          aria-label="Open Menu"
-          onClick={onMenuClick}
-        >
-          <Menu />
-        </IconButton>
-      )}
-      <Typography variant="h1" className="mt-4 capitalize">
-        {item?.label || "Inbox"}
-      </Typography>
-      <Typography variant="lead">
-        This is the main content area for the selected page.
-      </Typography>
+      <ElasticScrollArea ref={scrollRef} className="flex-1 pt-[110px]">
+        <main className="p-6">
+          <div className="grid grid-cols-1 gap-4">
+            {Array.from({ length: 30 }).map((_, i) => (
+              <div key={i} className="h-24 rounded-2xl bg-black/5" />
+            ))}
+          </div>
+        </main>
+      </ElasticScrollArea>
     </div>
   );
 };
 
-const RenderWithRouter = (args: StoryProps) => {
+// --- RENDER FUNCTION FOR STORIES ---
+const RenderApp = (args: StoryProps) => {
   const { path, push } = useRouter();
   const activeItem = path === "/" ? "inbox" : path.substring(1);
   const [isOpen, setIsOpen] = useState(args.defaultOpen);
@@ -13902,16 +13995,10 @@ const RenderWithRouter = (args: StoryProps) => {
       onOpenChange={setIsOpen}
     >
       <Sidebar.Container variant={args.variant}>
-        <SidebarContents
-          shape={args.shape}
-          elasticity={args.elasticity}
-          pullToRefresh={args.pullToRefresh}
-          onRefresh={args.onRefresh}
-          scrollbarVisibility={args.scrollbarVisibility}
-        />
+        <SidebarContents shape={args.shape} />
       </Sidebar.Container>
       <Sidebar.Content>
-        <MainContent onMenuClick={() => setIsOpen(!isOpen)} />
+        <AppContent onMenuClick={() => setIsOpen(!isOpen)} />
       </Sidebar.Content>
     </Sidebar>
   );
@@ -13919,220 +14006,142 @@ const RenderWithRouter = (args: StoryProps) => {
 
 // --- STORIES ---
 
-export const DesktopExpanded: Story = {
-  name: "1. Desktop (Expanded & Collapsible)",
+export const Playground: Story = {
+  name: "1. Playground",
   args: {
     desktopVariant: "permanent",
+    mobileVariant: "modal",
+    side: "left",
     collapsible: true,
     defaultOpen: true,
+    variant: "card",
+    shape: "minimal",
+    expandedWidth: 280,
+    collapsedWidth: 80,
   },
   render: (args) => (
     <ShallowRouter>
-      <RenderWithRouter {...args} />
+      <RenderApp {...args} />
     </ShallowRouter>
   ),
 };
 
-const simulateRefresh = () =>
-  new Promise((resolve) => setTimeout(resolve, 2000));
-
-export const ScrollableAndRefreshable: Story = {
-  name: "2. Scrollable & Refreshable Nav",
+export const DesktopPermanent: Story = {
+  name: "2. Desktop (Permanent)",
   args: {
-    ...DesktopExpanded.args,
+    ...Playground.args,
+    collapsible: false,
     defaultOpen: true,
-    elasticity: true,
-    pullToRefresh: true,
-    onRefresh: simulateRefresh,
-    scrollbarVisibility: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A common pattern for large-screen dashboards where the sidebar is always visible and cannot be collapsed. `collapsible` is set to `false`.",
+      },
+    },
   },
   render: (args) => (
     <ShallowRouter>
-      <RenderWithRouter {...args} />
-    </ShallowRouter>
-  ),
-};
-
-export const DesktopCollapsed: Story = {
-  name: "3. Desktop (Collapsed by Default)",
-  args: {
-    ...DesktopExpanded.args,
-    defaultOpen: false,
-  },
-  render: (args) => (
-    <ShallowRouter>
-      <RenderWithRouter {...args} />
+      <RenderApp {...args} />
     </ShallowRouter>
   ),
 };
 
 export const MobileModal: Story = {
-  name: "4. Mobile (Modal Drawer)",
+  name: "3. Mobile (Modal)",
   args: {
+    ...Playground.args,
     mobileVariant: "modal",
-    side: "left",
     defaultOpen: false,
-    elasticity: true,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
+    docs: {
+      description: {
+        story:
+          "On mobile, `modal` is the default. The sidebar slides over the content with a scrim behind it. You can swipe from the edge to open or drag the sidebar itself to close.",
+      },
+    },
   },
   render: (args) => (
     <ShallowRouter>
-      <RenderWithRouter {...args} />
+      <RenderApp {...args} />
     </ShallowRouter>
   ),
 };
 
 export const MobilePush: Story = {
-  name: "5. Mobile (Push Drawer)",
+  name: "4. Mobile (Push)",
   args: {
+    ...Playground.args,
     mobileVariant: "push",
-    side: "left",
     defaultOpen: false,
-    elasticity: true,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
+    docs: {
+      description: {
+        story:
+          "The `push` variant slides the main content aside to reveal the sidebar. This creates a visually connected experience.",
+      },
+    },
   },
   render: (args) => (
     <ShallowRouter>
-      <RenderWithRouter {...args} />
+      <RenderApp {...args} />
     </ShallowRouter>
   ),
 };
 
-export const VariantsAndShapes: Story = {
-  name: "6. Variants and Shapes",
-  args: {
-    ...DesktopExpanded.args,
-    variant: "primary",
-    shape: "minimal",
-  },
-  render: (args) => (
-    <ShallowRouter>
-      <RenderWithRouter {...args} />
-    </ShallowRouter>
-  ),
-};
-
-export const CustomWidths: Story = {
-  name: "7. Custom Widths",
-  args: {
-    ...DesktopExpanded.args,
-    expandedWidth: 350,
-    collapsedWidth: 100,
-  },
-  render: (args) => (
-    <ShallowRouter>
-      <RenderWithRouter {...args} />
-    </ShallowRouter>
-  ),
-};
-
-// ... Full App Layout story remains a great example ...
-const AppLayoutContent = ({ onMenuClick }: { onMenuClick: () => void }) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const { path } = useRouter();
-  const item =
-    [...navItems, ...labelItems].find((i) => i.key === path.substring(1)) ||
-    navItems[0];
-
-  const pageTitle = item?.label || "Inbox";
-
-  return (
-    <div className="flex h-full flex-col bg-graphite-background">
-      <AppBar
-        size="lg"
-        largeHeaderRowHeight={50}
-        scrollBehavior="conditionally-sticky"
-        appBarColor="background"
-        animatedBehavior={["shadow"]}
-        scrollContainerRef={scrollRef}
-        startAdornment={
-          <IconButton
-            variant="ghost"
-            aria-label="Toggle Menu"
-            onClick={onMenuClick}
-          >
-            <Menu />
-          </IconButton>
-        }
-        children={
-          <Typography variant="h4" className="truncate font-bold">
-            {pageTitle}
-          </Typography>
-        }
-        largeHeaderContent={
-          <Input
+export const ColorVariants: Story = {
+  name: "5. Color Variants",
+  render: () => (
+    <div className="flex h-screen w-full items-stretch">
+      <div className="w-1/3">
+        <ShallowRouter>
+          <RenderApp {...Playground.args} variant="card" defaultOpen={true} />
+        </ShallowRouter>
+      </div>
+      <div className="w-1/3">
+        <ShallowRouter>
+          <RenderApp
+            {...Playground.args}
             variant="secondary"
-            shape="full"
-            startAdornment={<Search className="h-5 w-5 text-gray-500" />}
-            placeholder="Search..."
+            defaultOpen={true}
           />
-        }
-      />
-      <Sidebar.DragHandle />
-
-      <ElasticScrollArea ref={scrollRef} className="flex-1">
-        <main className="p-6 ">
-          <Typography variant="h3" className="mb-4 pt-[100px]">
-            Content for {pageTitle}
-          </Typography>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 30 }).map((_, i) => (
-              <div
-                // biome-ignore lint/suspicious/noArrayIndexKey: Static demo content
-                key={i}
-                className="h-48 rounded-2xl bg-black/5 flex items-center justify-center"
-              >
-                <Typography
-                  variant="small"
-                  className="text-graphite-foreground/50"
-                >
-                  Item {i + 1}
-                </Typography>
-              </div>
-            ))}
-          </div>
-        </main>
-      </ElasticScrollArea>
+        </ShallowRouter>
+      </div>
+      <div className="w-1/3">
+        <ShallowRouter>
+          <RenderApp
+            {...Playground.args}
+            variant="primary"
+            defaultOpen={true}
+          />
+        </ShallowRouter>
+      </div>
     </div>
-  );
+  ),
 };
 
-const FullAppLayoutRenderer = (args: StoryProps) => {
-  const { path, push } = useRouter();
-  const activeItem = path === "/" ? "inbox" : path.substring(1);
-  const [isOpen, setIsOpen] = useState(args.defaultOpen ?? true);
-
-  return (
-    <Sidebar
-      {...args}
-      activeItem={activeItem}
-      onItemPress={(key) => push(`/${key}`)}
-      isOpen={isOpen}
-      onOpenChange={setIsOpen}
-    >
-      <Sidebar.Container variant={args.variant}>
-        <SidebarContents shape={args.shape} />
-      </Sidebar.Container>
-      <Sidebar.Content>
-        <AppLayoutContent onMenuClick={() => setIsOpen(!isOpen)} />
-      </Sidebar.Content>
-    </Sidebar>
-  );
-};
-
-export const FullAppLayout: Story = {
-  name: "8. Full App Layout",
+export const RightSide: Story = {
+  name: "6. Right Side",
   args: {
-    ...DesktopExpanded.args,
-    mobileVariant: "push",
+    ...Playground.args,
+    side: "right",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `side` prop can be set to `'right'`. This is useful for secondary navigation, inspector panels, or right-to-left language layouts.",
+      },
+    },
   },
   render: (args) => (
     <ShallowRouter>
-      <FullAppLayoutRenderer {...args} />
+      <RenderApp {...args} />
     </ShallowRouter>
   ),
 };
@@ -15896,7 +15905,7 @@ const switchTrackVariants = cva(
 
 // CVA for the thumb (the moving circle)
 const switchThumbVariants = cva(
-  "absolute bg-white transition-transform duration-200 ease-ios shadow-lg",
+  "absolute bg-graphite-card transition-transform duration-200 ease-ios shadow-lg",
   {
     variants: {
       size: {
@@ -16145,7 +16154,8 @@ const tableVariants = cva("w-full text-sm", {
 });
 
 const thVariants = cva(
-  "p-4 font-semibold text-left border-b border-graphite-border",
+  // MODIFICATION: Added text-graphite-foreground for theme awareness
+  "p-4 font-semibold text-left text-graphite-foreground border-b border-graphite-border",
   {
     variants: {
       isFirstSticky: {
@@ -16159,17 +16169,21 @@ const thVariants = cva(
   }
 );
 
-const tdVariants = cva("p-4 border-b border-graphite-border align-top", {
-  variants: {
-    isFirstSticky: {
-      true: "sticky left-0 z-10",
+const tdVariants = cva(
+  // MODIFICATION: Added text-graphite-foreground for theme awareness
+  "p-4 border-b border-graphite-border align-top text-graphite-foreground",
+  {
+    variants: {
+      isFirstSticky: {
+        true: "sticky left-0 z-10",
+      },
+      stickyCellVariant: {
+        card: "bg-graphite-card",
+        secondary: "bg-graphite-secondary",
+      },
     },
-    stickyCellVariant: {
-      card: "bg-graphite-card",
-      secondary: "bg-graphite-secondary",
-    },
-  },
-});
+  }
+);
 
 // --- 3. SUB-COMPONENTS (Simplified) ---
 
@@ -16506,6 +16520,8 @@ export const ScrollLayout: Story = {
   name: "2. Responsive: Scroll Layout",
   args: {
     responsiveLayout: "scroll",
+    breakpoint: "sm",
+    stickyCellVariant: "card"
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
@@ -16866,7 +16882,7 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
     const localRef = React.useRef<HTMLButtonElement>(null);
     const [, event] = useRipple({
       ref: localRef,
-      color: "rgba(0, 0, 0, 0.1)",
+      color: "var(--color-ripple-light)",
       duration: 450,
     });
     React.useImperativeHandle(ref, () => localRef.current!);
@@ -17508,9 +17524,9 @@ This section contains the source code for the `taskbar` component and its corres
 ```tsx
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
+import { motion } from "framer-motion";
 import { Copy, Minus, Square, X } from "lucide-react";
-import React, { useRef } from "react";
-import useRipple from "use-ripple-hook";
+import React, { useRef, useState } from "react";
 
 // --- CVA Variants ---
 const taskbarVariants = cva(
@@ -17571,24 +17587,23 @@ interface WindowButtonProps
 const WindowButton = React.forwardRef<HTMLButtonElement, WindowButtonProps>(
   ({ children, variant, size, onClick, ...props }, ref) => {
     const localRef = useRef<HTMLButtonElement>(null);
-    const rippleColor =
-      variant === "close" ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.1)";
-    const [, event] = useRipple({
-      ref: localRef,
-      color: rippleColor,
-      duration: 300,
-    });
 
-    const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+    const [isPressed, setIsPressed] = useState(false);
+
+    const stopPropagation = (
+      e: React.MouseEvent | React.PointerEvent<HTMLButtonElement>
+    ) => e.stopPropagation();
 
     return (
       <button
         ref={localRef}
         data-tauri-drag-region={false}
-        onMouseDown={(e) => {
+        onPointerDown={(e) => {
           stopPropagation(e);
-          event(e);
+          setIsPressed(true);
         }}
+        onPointerUp={() => setIsPressed(false)}
+        onPointerLeave={() => setIsPressed(false)}
         onClick={(e) => {
           stopPropagation(e);
           onClick?.(e);
@@ -17596,7 +17611,13 @@ const WindowButton = React.forwardRef<HTMLButtonElement, WindowButtonProps>(
         className={windowControlVariants({ variant, size })}
         {...props}
       >
-        {children}
+        <motion.span
+          className="flex items-center justify-center"
+          animate={{ scale: isPressed ? 0.8 : 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 15 }}
+        >
+          {children}
+        </motion.span>
       </button>
     );
   }
@@ -18003,12 +18024,10 @@ import { clsx } from "clsx";
 import React, { useEffect, useImperativeHandle, useRef } from "react";
 
 const textAreaWrapperVariants = cva(
-  // FIX: Removed `px-4` and `border-2` from the base class.
   "flex items-start transition-all duration-200 w-full",
   {
     variants: {
       variant: {
-        // FIX: Added `border-2` and `px-4` to the variants that need them.
         primary: "bg-graphite-card border-2 px-4",
         secondary: "bg-graphite-secondary border-2 px-4",
         minimal: "bg-transparent p-0",
@@ -18126,23 +18145,17 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
     const hasError = !!error;
     const [isFocused, setIsFocused] = React.useState(false);
 
-    // Create a local ref to manage the textarea DOM element
     const localRef = useRef<HTMLTextAreaElement>(null);
-    // Bridge the forwarded ref with our local ref
     useImperativeHandle(ref, () => localRef.current!);
 
-    // Function to resize the textarea
     const resizeTextArea = () => {
       const textArea = localRef.current;
       if (textArea) {
-        // Temporarily reset height to allow scrollHeight to be calculated correctly
         textArea.style.height = "auto";
-        // Set the height to match the content's scroll height
         textArea.style.height = `${textArea.scrollHeight}px`;
       }
     };
 
-    // Resize on initial mount and when the value prop changes programmatically
     useEffect(() => {
       resizeTextArea();
     }, [value]);
@@ -18157,10 +18170,8 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
       onBlur?.(e);
     };
 
-    // Wrap the onChange handler to trigger resize on every input
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       resizeTextArea();
-      // Forward the event to the original onChange handler if it exists
       onChange?.(e);
     };
 
@@ -18169,7 +18180,7 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
         {label && (
           <label
             htmlFor={textAreaId}
-            className="block text-sm font-medium text-graphite-primary"
+            className="block text-sm font-medium text-graphite-foreground"
           >
             {label}
           </label>
@@ -18189,17 +18200,15 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
             id={textAreaId}
             ref={localRef}
             disabled={disabled}
-            rows={rows} // Set the initial row height
+            rows={rows}
             onFocus={handleFocus}
             onBlur={handleBlur}
             onChange={handleChange}
             value={value}
             className={clsx(
-              // `resize-none` is important for auto-sizing to work smoothly
-              // `overflow-hidden` prevents the scrollbar from flashing during resize
-              "w-full flex-1 bg-transparent focus:outline-none resize-none overflow-hidden",
+              "w-full flex-1 bg-transparent focus:outline-none resize-none overflow-hidden text-graphite-foreground",
+              "placeholder:text-graphite-foreground/60",
               "disabled:cursor-not-allowed",
-              variant === "secondary" && "placeholder:text-gray-500",
               className
             )}
             {...props}
@@ -19074,7 +19083,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           // --- General Toast Styling ---
           toast:
             "group toast group-[.toaster]:bg-graphite-card group-[.toaster]:text-graphite-foreground group-[.toaster]:border-graphite-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-gray-500",
+          description: "group-[.toast]:text-graphite-foreground/80",
 
           // --- Button Styling ---
           actionButton:
@@ -19766,19 +19775,19 @@ This section contains the source code for the `typography` component and its cor
 import React from "react";
 
 const variants = {
-  h1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl",
-  h2: "scroll-m-20  text-3xl font-semibold tracking-tight first:mt-0",
-  h3: "scroll-m-20 text-2xl font-semibold tracking-tight",
-  h4: "scroll-m-20 text-xl font-semibold tracking-tight",
-  p: "leading-7 [&:not(:first-child)]:mt-6",
+  h1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-graphite-foreground",
+  h2: "scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0 text-graphite-foreground",
+  h3: "scroll-m-20 text-2xl font-semibold tracking-tight text-graphite-foreground",
+  h4: "scroll-m-20 text-xl font-semibold tracking-tight text-graphite-foreground",
+  p: "leading-7 [&:not(:first-child)]:mt-6 text-graphite-foreground",
   blockquote:
-    "mt-6 border-l-2 border-graphite-primary pl-6 italic text-gray-600",
+    "mt-6 border-l-2 border-graphite-primary pl-6 italic text-graphite-foreground/80",
   highlight:
     "relative rounded bg-graphite-secondary px-[0.3rem] py-[0.2rem] text-sm font-semibold text-graphite-secondaryForeground",
-  lead: "text-xl text-gray-500",
-  large: "text-lg font-semibold",
-  small: "text-sm font-medium leading-none",
-  muted: "text-sm text-gray-500",
+  lead: "text-xl text-graphite-foreground/80",
+  large: "text-lg font-semibold text-graphite-foreground",
+  small: "text-sm font-medium leading-none text-graphite-foreground",
+  muted: "text-sm text-graphite-foreground/70",
 };
 
 const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {
@@ -20723,12 +20732,12 @@ export default useShallowRouter;
 
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
-.theme-dark * {
+.theme-dark  {
  --color-graphite-primary: hsl(0 0% 98%);            /* #FAFAFA */
   --color-graphite-primaryForeground: hsl(0 0% 9%);   /* #171717 */
   --color-graphite-secondary: hsl(0 0% 14%);          /* #242424 */
   --color-graphite-secondaryForeground: hsl(0 0% 98%); /* #FAFAFA */
-  --color-graphite-background: hsl(0 0% 7%);          /* #121212 */
+  --color-graphite-background: hsl(0, 0%, 8%);          /* #121212 */
   --color-graphite-foreground: hsl(0 0% 98%);         /* #FAFAFA */
   --color-graphite-card: hsl(0 0% 10%);               /* #1A1A1A */
   --color-graphite-cardForeground: hsl(0 0% 98%);     /* #FAFAFA */
@@ -20740,6 +20749,8 @@ export default useShallowRouter;
   --color-sidebar-accent: var(--color-graphite-secondary);
   --color-sidebar-accent-foreground: var(--color-graphite-secondaryForeground);
   --color-sidebar-ring: var(--color-graphite-ring);
+  --color-ripple-dark : rgba(0, 0, 0, 0.1);
+  --color-ripple-light : rgba(255, 255, 255, 0.2);
 }
 @theme {
   /*
@@ -20753,7 +20764,7 @@ export default useShallowRouter;
   /* Graphite Color Theme Definitions */
   --color-graphite-primary: hsl(0 0% 9%);            /* #171717 */
   --color-graphite-primaryForeground: hsl(0 0% 98%);  /* #FAFAFA */
-  --color-graphite-secondary: hsl(0 0% 96.1%);       /* #F5F5F5 */
+  --color-graphite-secondary: hsl(0 0% 94.1%);       /* #F5F5F5 */
   --color-graphite-secondaryForeground: hsl(0 0% 9%); /* #171717 */
   --color-graphite-background: hsl(33 33% 98%);      /* #FDFBFA */
   --color-graphite-foreground: hsl(0 0% 9%);         /* #171717 */
@@ -20767,6 +20778,8 @@ export default useShallowRouter;
   --color-sidebar-accent: var(--color-graphite-secondary);
   --color-sidebar-accent-foreground: var(--color-graphite-secondaryForeground);
   --color-sidebar-ring: var(--color-graphite-ring);
+  --color-ripple-light : rgba(0, 0, 0, 0.1);
+  --color-ripple-dark : rgba(255, 255, 255, 0.1);
 
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
 

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import clsx from "clsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../button";
 import { Typography } from "../typography";
 import { Sheet } from "./index"; // Assuming your component file is named index.tsx
@@ -19,6 +19,11 @@ const meta: Meta<typeof Sheet> = {
     },
   },
   argTypes: {
+    variant: {
+      control: "select",
+      options: ["primary", "secondary", "card"],
+      description: "The color variant of the sheet.",
+    },
     side: {
       control: "select",
       options: ["left", "right"],
@@ -41,13 +46,11 @@ const meta: Meta<typeof Sheet> = {
       description:
         "If true, forces the component to render as a bottom sheet on all screen sizes.",
     },
-    // --- NEW PROP DOCUMENTATION ---
     forceSideSheet: {
       control: "boolean",
       description:
         "If true, forces the component to render as a side sheet on all screen sizes.",
     },
-    // --- END ---
     // Vaul-specific props
     snapPoints: {
       control: "object",
@@ -155,7 +158,6 @@ export const ForceBottomSheet: Story = {
   render: (args) => <ResponsiveBehavior.render {...args} />,
 };
 
-// --- NEW STORY ---
 export const ForceSideSheet: Story = {
   name: "3. Force Side Sheet on Mobile",
   args: {
@@ -177,14 +179,67 @@ export const ForceSideSheet: Story = {
   },
   render: (args) => <ResponsiveBehavior.render {...args} />,
 };
-// --- END ---
+
+export const ColorVariants: Story = {
+  name: "4. Color Variants",
+  args: {
+    side: "right",
+    forceSideSheet: true, // Force side sheet to better see colors on desktop
+  },
+  render: (args) => (
+    <div className="flex h-[500px] w-full items-center justify-center gap-4 bg-graphite-background p-12">
+      {/* Card Variant */}
+      <Sheet {...args} variant="card">
+        <Sheet.Trigger asChild>
+          <Button>Card (Default)</Button>
+        </Sheet.Trigger>
+        <Sheet.Content>
+          <Sheet.Header>
+            <Sheet.Title>
+              <Typography variant="h3">Card Variant</Typography>
+            </Sheet.Title>
+          </Sheet.Header>
+          <DummyContent />
+        </Sheet.Content>
+      </Sheet>
+      {/* Secondary Variant */}
+      <Sheet {...args} variant="secondary">
+        <Sheet.Trigger asChild>
+          <Button>Secondary</Button>
+        </Sheet.Trigger>
+        <Sheet.Content>
+          <Sheet.Header>
+            <Sheet.Title>
+              <Typography variant="h3">Secondary Variant</Typography>
+            </Sheet.Title>
+          </Sheet.Header>
+          <DummyContent />
+        </Sheet.Content>
+      </Sheet>
+      {/* Primary Variant */}
+      <Sheet {...args} variant="primary">
+        <Sheet.Trigger asChild>
+          <Button>Primary</Button>
+        </Sheet.Trigger>
+        <Sheet.Content>
+          <Sheet.Header>
+            <Sheet.Title>
+              <Typography variant="h3">Primary Variant</Typography>
+            </Sheet.Title>
+          </Sheet.Header>
+          <DummyContent />
+        </Sheet.Content>
+      </Sheet>
+    </div>
+  ),
+};
 
 export const SideSheetLeft: Story = {
-  name: "4. Side Sheet (Left)",
+  name: "5. Side Sheet (Left)",
   args: {
     ...ResponsiveBehavior.args,
     side: "left",
-    forceSideSheet: true
+    forceSideSheet: true,
   },
   parameters: {
     docs: {
@@ -198,7 +253,7 @@ export const SideSheetLeft: Story = {
 };
 
 export const DetachedMode: Story = {
-  name: "5. Detached Mode",
+  name: "6. Detached Mode",
   args: {
     ...ResponsiveBehavior.args,
     mode: "detached",
@@ -215,7 +270,7 @@ export const DetachedMode: Story = {
 };
 
 export const WithSnappingPoints: Story = {
-  name: "6. With Snapping Points",
+  name: "7. With Snapping Points",
   args: {
     snapPoints: [0.3, 0.7, 1],
     fadeFromIndex: 0,
@@ -245,7 +300,7 @@ export const WithSnappingPoints: Story = {
 };
 
 export const ControlledSnapping: Story = {
-  name: "7. Controlled Snapping",
+  name: "8. Controlled Snapping",
   args: {
     snapPoints: ["300px", 1],
     fadeFromIndex: 0,
@@ -275,6 +330,102 @@ export const ControlledSnapping: Story = {
           <Sheet.Trigger asChild>
             <Button>Open Controlled Sheet</Button>
           </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Grabber />
+            <Sheet.Header>
+              <Typography variant="h3">
+                Current Snap: {String(activeSnapPoint)}
+              </Typography>
+            </Sheet.Header>
+
+            <div
+              className={clsx(
+                activeSnapPoint === 1 ? "overflow-auto" : "overflow-hidden",
+                "p-4"
+              )}
+            >
+              <Typography>
+                Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                Explicabo, eligendi! Voluptates nobis nam animi similique vero
+                tenetur sunt velit? Maxime numquam neque ducimus recusandae quae
+                non laudantium eum officiis nostrum. Cupiditate veritatis facere
+                reiciendis cum fuga iste, ab qui animi culpa ducimus sed
+                molestias? Qui, facilis alias? Ipsum sunt corrupti mollitia
+                libero a quibusdam, rerum dignissimos, quam magni id unde.
+                Quaerat, modi suscipit odio laboriosam alias, eum recusandae
+                quod, aut nobis quidem explicabo impedit optio possimus amet ea.
+                Non odio, placeat vel officia iusto vitae accusamus velit sint
+                quo facere. Est et eius, esse culpa inventore sequi eum soluta
+                perspiciatis illo minima, facilis nobis sed numquam similique.
+                Soluta, ipsa eum enim amet dolorum error nemo at ab. Sit,
+                repudiandae autem. Reiciendis quo eveniet molestias dolore
+                exercitationem? Tenetur deleniti magni facere! Ducimus explicabo
+                alias deleniti perferendis delectus accusamus deserunt tenetur
+                iste dolor ullam, odio aliquid autem aut illum ad officiis
+                vitae. Ipsam repellat neque ab debitis accusantium cupiditate
+                laudantium, rem perferendis mollitia repudiandae architecto
+                voluptatibus laborum et eius nemo iste harum nisi unde
+                asperiores tempora placeat officia esse quia. Vitae, odit? Ipsa,
+                similique rem. Minus eveniet totam quidem quia asperiores
+                nostrum cupiditate corporis error expedita. Consequatur
+                aspernatur, sint eum corporis, nisi earum dicta sed quae
+                molestias sunt ipsa ex magni porro. Distinctio animi facilis
+                doloremque beatae libero laudantium ducimus aliquam molestias,
+                voluptates amet fugiat facere perferendis deserunt harum dicta
+                eveniet quis sed deleniti repellendus veniam ullam reiciendis?
+                Accusantium reprehenderit laudantium nemo. Quod nemo omnis hic
+                optio laudantium saepe magni veniam excepturi, tenetur alias
+                eveniet quibusdam, quidem recusandae quasi? Ipsum error
+                accusamus corporis. Cum nesciunt ab repellat vitae consequatur
+                et qui nemo. Magnam deserunt libero cumque magni ea pariatur,
+                iusto consectetur, natus, ducimus sunt eum! Quisquam aliquid
+                fugit suscipit architecto sunt quas at optio neque porro
+                expedita, placeat dolor perferendis sequi tempora?
+              </Typography>
+            </div>
+          </Sheet.Content>
+        </Sheet>
+      </div>
+    );
+  },
+};
+
+export const AlwaysActive: Story = {
+  name: "9. AlwaysActive (Non Modal)",
+  args: {
+    snapPoints: ["300px", 1],
+    dismissible: false,
+    forceBottomSheet: true,
+    variant: "secondary",
+    fadeFromIndex: 1,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Manually control the snap point from outside the component using the `activeSnapPoint` and `setActiveSnapPoint` props. This only works in bottom sheet mode.",
+      },
+    },
+  },
+
+  render: function Render(args) {
+    const [activeSnapPoint, setActiveSnapPoint] = useState<
+      string | number | null
+    >(args.snapPoints![0]);
+    const [IsModal, setIsModal] = useState(false);
+    useEffect(() => {
+      setIsModal(activeSnapPoint === 1 ? true : false);
+    }, [activeSnapPoint]);
+    return (
+      <div className="flex h-[500px] w-full flex-col items-center justify-center gap-4 bg-graphite-background p-12">
+        <Button>Clickable Even When Sheet Is Open</Button>
+        <Sheet
+          {...args}
+          open={true}
+          modal={false}
+          activeSnapPoint={activeSnapPoint}
+          setActiveSnapPoint={setActiveSnapPoint}
+        >
           <Sheet.Content>
             <Sheet.Grabber />
             <Sheet.Header>

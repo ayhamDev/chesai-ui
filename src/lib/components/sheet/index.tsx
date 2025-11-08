@@ -6,12 +6,13 @@ import { clsx } from "clsx";
 import React, { createContext, useContext } from "react";
 import { Drawer as VaulDrawer } from "vaul";
 
-// --- Context (Unchanged) ---
+// --- Context ---
 interface SheetContextProps {
   mode: "normal" | "detached";
   shape: "full" | "minimal" | "sharp";
   hasSnapPoints: boolean;
   direction: "top" | "bottom" | "left" | "right";
+  variant: "primary" | "secondary" | "card"; // Added variant
 }
 
 const SheetContext = createContext<SheetContextProps>({
@@ -19,16 +20,17 @@ const SheetContext = createContext<SheetContextProps>({
   shape: "full",
   hasSnapPoints: false,
   direction: "bottom",
+  variant: "card", // Added default variant
 });
 
 const useSheetContext = () => useContext(SheetContext);
 
-// --- MODIFIED: Root Component ---
-// Added the `forceSideSheet` prop.
+// --- Root Component ---
 type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
   side?: "left" | "right";
+  variant?: "primary" | "secondary" | "card"; // Added variant prop
   /**
    * If true, the sheet will always render as a bottom sheet,
    * overriding the responsive behavior on desktop viewports.
@@ -40,15 +42,16 @@ type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
    * overriding the responsive behavior on mobile viewports.
    * @default false
    */
-  forceSideSheet?: boolean; // --- THIS IS THE NEW PROP ---
+  forceSideSheet?: boolean;
 };
 
 const SheetRoot: React.FC<SheetProps> = ({
   mode = "normal",
   shape = "full",
   side = "right",
+  variant = "card", // Destructure variant prop
   forceBottomSheet = false,
-  forceSideSheet = false, // --- NEW PROP WITH DEFAULT ---
+  forceSideSheet = false,
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
@@ -56,22 +59,15 @@ const SheetRoot: React.FC<SheetProps> = ({
 }) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  // --- MODIFIED LOGIC ---
-  // Determine if we should render as a side sheet. This is true if:
-  // 1. `forceSideSheet` is explicitly true.
-  // OR
-  // 2. The viewport is desktop-sized AND `forceBottomSheet` is not true.
   const renderAsSideSheet = forceSideSheet || (isDesktop && !forceBottomSheet);
-
   const direction = renderAsSideSheet ? side : "bottom";
-  // --- END OF MODIFIED LOGIC ---
 
   return (
     <SheetContext.Provider
       value={{
         mode,
         shape,
-        // Disable snap points if we are rendering as a side sheet
+        variant, // Pass variant to context
         hasSnapPoints: renderAsSideSheet
           ? false
           : !!snapPoints && snapPoints.length > 0,
@@ -81,7 +77,6 @@ const SheetRoot: React.FC<SheetProps> = ({
       <VaulDrawer.Root
         direction={direction}
         {...props}
-        // Pass snap points only when not rendering as a side sheet
         snapPoints={renderAsSideSheet ? undefined : snapPoints}
         activeSnapPoint={renderAsSideSheet ? undefined : activeSnapPoint}
         setActiveSnapPoint={renderAsSideSheet ? undefined : setActiveSnapPoint}
@@ -91,19 +86,24 @@ const SheetRoot: React.FC<SheetProps> = ({
 };
 SheetRoot.displayName = "Sheet";
 
-// --- RE-EXPORTED PRIMITIVES (Unchanged) ---
+// --- RE-EXPORTED PRIMITIVES ---
 const SheetTrigger = VaulDrawer.Trigger;
 const SheetClose = VaulDrawer.Close;
 const SheetPortal = VaulDrawer.Portal;
 const SheetTitle = VaulDrawer.Title;
 const SheetDescription = VaulDrawer.Description;
 
-// --- CONTENT & OTHER COMPONENTS (Unchanged) ---
-// (Your existing SheetContent, SheetHeader, SheetFooter, and SheetGrabber code remains here)
+// --- CVA Variants for Content ---
 const contentVariants = cva(
-  "fixed z-50 flex flex-col bg-graphite-card shadow-lg",
+  "fixed z-50 flex flex-col shadow-lg", // Removed hardcoded background
   {
     variants: {
+      variant: {
+        // Added color variants
+        primary: "bg-graphite-primary text-graphite-primaryForeground",
+        secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
+        card: "bg-graphite-card text-graphite-foreground",
+      },
       side: {
         top: "inset-x-0 top-0",
         bottom: "inset-x-0 bottom-0 max-h-[96%]",
@@ -241,25 +241,31 @@ const contentVariants = cva(
       },
     ],
     defaultVariants: {
+      variant: "card", // Added default variant
       shape: "full",
       mode: "normal",
     },
   }
 );
+
+// --- CONTENT & OTHER COMPONENTS ---
 type SheetContentProps = React.ComponentProps<typeof VaulDrawer.Content> &
   VariantProps<typeof contentVariants>;
+
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof VaulDrawer.Content>,
   SheetContentProps
->(({ className, shape: shapeProp, ...props }, ref) => {
+>(({ className, shape: shapeProp, variant: variantProp, ...props }, ref) => {
   const {
     mode,
     shape: shapeContext,
+    variant: variantContext, // Read from context
     hasSnapPoints,
     direction,
   } = useSheetContext();
 
   const shape = shapeProp || shapeContext;
+  const variant = variantProp || variantContext; // Prioritize prop
 
   const style =
     mode === "detached"
@@ -277,6 +283,7 @@ const SheetContent = React.forwardRef<
             side: direction,
             mode,
             shape,
+            variant, // Pass variant to CVA
             height: direction === "bottom" && hasSnapPoints ? "snap" : "auto",
           }),
           className
@@ -287,6 +294,7 @@ const SheetContent = React.forwardRef<
   );
 });
 SheetContent.displayName = "Sheet.Content";
+
 const SheetHeader = ({
   className,
   ...props
@@ -300,6 +308,7 @@ const SheetHeader = ({
   />
 );
 SheetHeader.displayName = "Sheet.Header";
+
 const SheetFooter = ({
   className,
   ...props
@@ -310,11 +319,12 @@ const SheetFooter = ({
   />
 );
 SheetFooter.displayName = "Sheet.Footer";
+
 const SheetGrabber = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => {
-  const { direction } = useSheetContext();
+  const { direction, variant } = useSheetContext();
   if (direction !== "bottom") {
     return null;
   }
@@ -322,7 +332,11 @@ const SheetGrabber = ({
     <div className="flex-shrink-0 p-4">
       <div
         className={clsx(
-          "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full bg-graphite-foreground/40",
+          "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full",
+          // Adapt grabber color based on variant's foreground
+          variant === "primary"
+            ? "bg-graphite-primaryForeground/40"
+            : "bg-graphite-foreground/40",
           className
         )}
         {...props}
