@@ -127,7 +127,6 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
               animate={{
                 opacity: 1,
                 scale: isPressed ? 0.85 : 1,
-                rotate: isPressed ? 3 : 0,
               }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ type: "spring", stiffness: 400, damping: 15 }}
