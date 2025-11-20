@@ -228,6 +228,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
     };
 
     const SidebarContent = (
+      // @ts-ignore
       <motion.aside
         ref={ref}
         initial={false}
@@ -588,6 +589,7 @@ const SidebarLabel = ({
   const isCollapsed = !isMobile && state === "collapsed";
 
   return (
+    // @ts-ignore
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: isCollapsed ? 0 : 1, y: 0 }}
