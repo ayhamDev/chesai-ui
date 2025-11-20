@@ -129,7 +129,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
                 scale: isPressed ? 0.85 : 1,
               }}
               exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
               className="relative z-10 flex items-center justify-center"
             >
               {children}

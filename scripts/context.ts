@@ -1,4 +1,4 @@
-import { mkdir, readdir } from 'node:fs/promises'
+import { mkdir, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 
 // --- Configuration ---
@@ -14,7 +14,7 @@ const OUTPUT_FILE = path.join(OUTPUT_DIR, 'context.mdx')
  * - 'title': The markdown heading for this section.
  * - 'path': The absolute path to the directory.
  * - 'type': How to process the directory.
- *   - 'components': Special handling for component folders (component + story).
+ *   - 'components': Special handling for component folders (component + related files + story).
  *   - 'files': Simple handling, grabs all files with matching extensions.
  * - 'extensions': (Only for 'files' type) An array of file extensions to include.
  */
@@ -45,32 +45,45 @@ const CONTEXT_SOURCES = [
 ]
 // ---------------------
 
-// --- Helper Functions (retained from original script) ---
-async function findFileBySuffix(dirPath: string, suffix: string): Promise<string | null> {
+// --- Helper Functions ---
+
+/**
+ * Recursively walks a directory and returns a list of files that match the allowed extensions.
+ */
+async function recursiveFindFiles(dir: string, allowedExtensions: string[]): Promise<string[]> {
+  const files: string[] = []
   try {
-    const files = await readdir(dirPath)
-    const foundFile = files.find(file => file.endsWith(suffix))
-    return foundFile ? path.join(dirPath, foundFile) : null
+    const items = await readdir(dir, { withFileTypes: true })
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name)
+      if (item.isDirectory()) {
+        files.push(...(await recursiveFindFiles(fullPath, allowedExtensions)))
+      } else if (item.isFile() && allowedExtensions.some(ext => item.name.endsWith(ext))) {
+        files.push(fullPath)
+      }
+    }
   } catch {
-    return null
+    // Ignore errors during traversal
   }
+  return files
 }
 
-async function findComponentFile(dirPath: string): Promise<string | null> {
-  try {
-    const files = await readdir(dirPath)
-    const foundFile = files.find(file => file.endsWith('.tsx') && !file.endsWith('.stories.tsx'))
-    return foundFile ? path.join(dirPath, foundFile) : null
-  } catch {
-    return null
-  }
+/**
+ * Finds the main component file (the first .tsx file that isn't a story file)
+ * in a component directory. This is often 'index.tsx' or 'ComponentName.tsx'.
+ */
+async function findMainComponentFile(dirPath: string): Promise<string | null> {
+  const files = await recursiveFindFiles(dirPath, ['.tsx'])
+  // Filter for the main component file (not a story or test file)
+  const mainFile = files.find(file => !file.endsWith('.stories.tsx') && !file.endsWith('.test.tsx'))
+  return mainFile || null
 }
 
 // --- Directory Processors ---
 
 /**
- * Processes a directory of standard component folders, where each sub-folder
- * contains a component file and a story file.
+ * Processes a directory of standard component folders, capturing the main component,
+ * all related source files (.tsx, .ts) within the folder structure, and the story file.
  * @param dirPath The path to the components directory (e.g., 'src/lib/components').
  * @returns An array of formatted MDX blocks.
  */
@@ -84,34 +97,57 @@ async function processComponentDirectory(dirPath: string): Promise<string[]> {
         const componentName = dirent.name
         const componentDirPath = path.join(dirPath, componentName)
 
-        const componentFilePath = await findComponentFile(componentDirPath)
-        const storyFilePath = await findFileBySuffix(componentDirPath, '.stories.tsx')
+        // Find all related source files (including main component)
+        const allSourceFiles = await recursiveFindFiles(componentDirPath, ['.tsx', '.ts'])
 
-        if (componentFilePath && storyFilePath) {
-          const componentCode = await Bun.file(componentFilePath).text()
-          const storyCode = await Bun.file(storyFilePath).text()
+        // Separate stories and other source files
+        const storyFilePath = allSourceFiles.find(file => file.endsWith('.stories.tsx'))
+        const componentFiles = allSourceFiles.filter(file => file !== storyFilePath)
 
-          const block = `
-### Component: \`${componentName}\`
+        // Find the main component file (for the primary title)
+        const mainComponentFilePath = await findMainComponentFile(componentDirPath)
 
-This section contains the source code for the \`${componentName}\` component and its corresponding Storybook stories.
+        if (componentFiles.length > 0) {
+          const blocks: string[] = []
 
-**Component Source (\`${path.relative(process.cwd(), componentFilePath)}\`)**
-\`\`\`tsx
-${componentCode.trim()}
+          // 1. Title Block
+          blocks.push(`\n### Component: \`${componentName}\``)
+          blocks.push(
+            `This section includes all related source files for the \`${componentName}\` component, including nested sub-components (like \`header.tsx\`) and utilities.`,
+          )
+
+          // 2. Component/Related Files Blocks
+          for (const filePath of componentFiles.sort()) {
+            // Sort for consistent output order
+            const fileContent = await Bun.file(filePath).text()
+            const relativePath = path.relative(process.cwd(), filePath)
+            const lang = path.extname(filePath).substring(1)
+
+            blocks.push(`
+**Source File (\`${relativePath}\`)**
+\`\`\`${lang}
+${fileContent.trim()}
 \`\`\`
+`)
+          }
 
+          // 3. Storybook Block (if found)
+          if (storyFilePath) {
+            const storyCode = await Bun.file(storyFilePath).text()
+            blocks.push(`
 **Storybook Stories (\`${path.basename(storyFilePath)}\`)**
 \`\`\`tsx
 ${storyCode.trim()}
 \`\`\`
-`
-          mdxBlocks.push(block)
+`)
+          }
+
+          mdxBlocks.push(blocks.join('\n'))
         }
       }
     }
   } catch (error) {
-    if (error.code !== 'ENOENT') console.error(`Error processing components in ${dirPath}:`, error)
+    if ((error as any).code !== 'ENOENT') console.error(`Error processing components in ${dirPath}:`, error)
   }
   return mdxBlocks
 }
@@ -143,7 +179,7 @@ ${fileContent.trim()}
       }
     }
   } catch (error) {
-    if (error.code !== 'ENOENT') console.error(`Error processing files in ${dirPath}:`, error)
+    if ((error as any).code !== 'ENOENT') console.error(`Error processing files in ${dirPath}:`, error)
   }
   return mdxBlocks
 }
@@ -163,6 +199,7 @@ async function generateAIContext() {
       if (source.type === 'components') {
         sectionBlocks = await processComponentDirectory(source.path)
       } else if (source.type === 'files') {
+        // Note: For generic directories, we still use the non-recursive processor
         sectionBlocks = await processGenericDirectory(source.path, source?.extensions)
       }
 
@@ -184,7 +221,7 @@ async function generateAIContext() {
     await mkdir(OUTPUT_DIR, { recursive: true })
 
     const introPrompt = `
-# AI Prompt Context for chesai-ui Component Library
+# AI Prompt Context for chesai-ui Component Library that is inspired by Material Desgin 3
 
 You are an expert React developer tasked with assisting in the development of the "chesai-ui" library. The following document contains the complete source code for all UI components, hooks, contexts, and styling configurations.
 

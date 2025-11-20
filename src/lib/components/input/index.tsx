@@ -2,6 +2,7 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React from "react";
 
+// 1. No changes to variants
 export const inputWrapperVariants = cva(
   "flex items-center transition-all duration-200 w-full",
   {
@@ -96,13 +97,17 @@ export interface InputProps
   startAdornment?: React.ReactNode;
   endAdornment?: React.ReactNode;
   error?: string;
-  wrapperClassName?: string;
+  // 2. Renamed/Added props for clarity
+  inputClassName?: string; // Applied to the <input> element
+  rootClassName?: string; // Applied to the outer-most wrapping div (holding label+input+error)
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   (
     {
-      className,
+      className, // Now applies to the styled container
+      inputClassName, // Now applies to the input element
+      rootClassName, // Applies to the flex-col wrapper
       id,
       label,
       startAdornment,
@@ -111,7 +116,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       disabled,
       shape,
       size,
-      wrapperClassName,
       variant,
       onFocus,
       onBlur,
@@ -178,7 +182,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     };
 
     return (
-      <div className="w-full flex flex-col gap-2">
+      <div className={clsx("w-full flex flex-col gap-2", rootClassName)}>
         {label && (
           <label
             htmlFor={inputId}
@@ -187,6 +191,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {label}
           </label>
         )}
+
+        {/* Container styling now receives 'className' */}
         <div
           className={inputWrapperVariants({
             variant,
@@ -195,12 +201,14 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             isErrored: hasError,
             isFocused,
             disabled,
-            className: wrapperClassName,
+            className: className,
           })}
         >
           {startAdornment && (
             <div className="flex items-center mr-2">{startAdornment}</div>
           )}
+
+          {/* Input styling now receives 'inputClassName' */}
           <input
             id={inputId}
             ref={ref}
@@ -214,7 +222,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               "w-full flex-1 bg-transparent focus:outline-none text-graphite-foreground",
               "placeholder:text-graphite-foreground/60",
               "disabled:cursor-not-allowed",
-              className
+              inputClassName
             )}
             {...props}
           />

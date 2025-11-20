@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  type ColumnDef,
   flexRender,
   type Row,
   type Table as TanstackTable,
@@ -10,101 +9,88 @@ import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { createContext, useContext, useMemo } from "react";
+import { ContextMenu } from "../context-menu";
+import { Skeleton } from "../skeleton"; // Import Skeleton
 
-// --- Type Augmentation (Unchanged) ---
-declare module "@tanstack/react-table" {
-  interface ColumnMeta<TData, TValue> {
-    isAccordionHeader?: boolean;
-  }
-}
-
-// --- 1. TYPES & CONTEXT (Refactored for new API) ---
-
-export type { ColumnDef };
-
-// The responsive layout options are now simplified.
+// --- Types & Context ---
 type ResponsiveLayout = "scroll" | "custom";
+type TableDensity = "default" | "compact";
 
 interface TableContextProps {
   table: TanstackTable<any>;
   responsiveLayout: ResponsiveLayout;
   isMobile: boolean;
+  density: TableDensity;
+  renderContextMenu?: (row: Row<any>) => React.ReactNode;
 }
 
 const TableContext = createContext<TableContextProps | null>(null);
 
-const useTableContext = <TData,>() => {
-  const context = useContext(
-    TableContext as React.Context<TableContextProps | null>
-  );
+const useTableContext = () => {
+  const context = useContext(TableContext);
   if (!context) {
     throw new Error("Table components must be used within a <Table.Root>");
   }
-  return context as {
-    table: TanstackTable<TData>;
-    responsiveLayout: ResponsiveLayout;
-    isMobile: boolean;
-  };
+  return context;
 };
 
-// --- 2. CVA VARIANTS (Updated for new API) ---
-const tableVariants = cva("w-full text-sm", {
+// --- CVA Variants ---
+const tableContainerVariants = cva(
+  "w-full overflow-hidden rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground"
+);
+
+const tableVariants = cva("w-full text-sm caption-bottom", {
   variants: {
     layout: {
       desktop: "table-auto border-collapse",
       scroll: "table-auto border-collapse",
-      // 'custom' variant will be a flex container for the custom rendered items
       custom: "flex flex-col gap-3",
     },
   },
 });
 
 const thVariants = cva(
-  // MODIFICATION: Added text-graphite-foreground for theme awareness
-  "p-4 font-semibold text-left text-graphite-foreground border-b border-graphite-border",
+  "h-10 px-4 text-left align-middle font-semibold text-graphite-foreground [&:has([role=checkbox])]:pr-0 border-b border-graphite-border bg-graphite-secondary/30",
   {
     variants: {
-      isFirstSticky: {
-        true: "sticky left-0 z-10",
+      density: {
+        default: "py-3",
+        compact: "py-2",
       },
-      stickyCellVariant: {
-        card: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
-      },
+      isFirstSticky: { true: "sticky left-0 z-10 bg-graphite-card" },
     },
   }
+);
+
+const trVariants = cva(
+  "border-b border-graphite-border transition-colors hover:bg-graphite-secondary/40 data-[state=selected]:bg-graphite-secondary/60"
 );
 
 const tdVariants = cva(
-  // MODIFICATION: Added text-graphite-foreground for theme awareness
-  "p-4 border-b border-graphite-border align-top text-graphite-foreground",
+  "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-graphite-foreground",
   {
     variants: {
-      isFirstSticky: {
-        true: "sticky left-0 z-10",
+      density: {
+        default: "py-4",
+        compact: "py-2",
       },
-      stickyCellVariant: {
-        card: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
-      },
+      isFirstSticky: { true: "sticky left-0 z-10 bg-graphite-card" },
     },
   }
 );
 
-// --- 3. SUB-COMPONENTS (Simplified) ---
-
+// --- Sub-Components ---
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
 >(({ className, colIndex, ...props }, ref) => {
-  const { responsiveLayout } = useTableContext();
-  const { stickyCellVariant } = useContext(TableRootContext);
+  const { responsiveLayout, density } = useTableContext();
   const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
 
   return (
     <th
       ref={ref}
-      className={thVariants({ isFirstSticky, stickyCellVariant, className })}
+      className={clsx(thVariants({ density, isFirstSticky }), className)}
       {...props}
     />
   );
@@ -115,14 +101,13 @@ const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
 >(({ className, colIndex, ...props }, ref) => {
-  const { responsiveLayout } = useTableContext();
-  const { stickyCellVariant } = useContext(TableRootContext);
+  const { responsiveLayout, density } = useTableContext();
   const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
 
   return (
     <td
       ref={ref}
-      className={tdVariants({ isFirstSticky, stickyCellVariant, className })}
+      className={clsx(tdVariants({ density, isFirstSticky }), className)}
       {...props}
     />
   );
@@ -136,10 +121,12 @@ const TableRow = <TData extends {}>({
   row: Row<TData>;
   [key: string]: any;
 }) => {
-  // This component now only ever renders a `<tr>`, as the custom logic is handled in the root.
-  return (
+  const { renderContextMenu } = useTableContext();
+
+  const RowContent = (
     <tr
-      className={clsx("hover:bg-graphite-secondary/50", rest.className)}
+      data-state={row.getIsSelected() && "selected"}
+      className={clsx(trVariants(), rest.className)}
       {...rest}
     >
       {row.getVisibleCells().map((cell, cellIndex) => (
@@ -149,111 +136,162 @@ const TableRow = <TData extends {}>({
       ))}
     </tr>
   );
+
+  if (renderContextMenu) {
+    return (
+      <ContextMenu>
+        <ContextMenu.Trigger asChild>{RowContent}</ContextMenu.Trigger>
+        {renderContextMenu(row)}
+      </ContextMenu>
+    );
+  }
+
+  return RowContent;
 };
 TableRow.displayName = "Table.Row";
 
-// --- 4. ROOT COMPONENT (Refactored with Custom Render Prop) ---
-
+// --- Root Component ---
 export interface TableRootProps<TData>
-  extends React.HTMLAttributes<HTMLTableElement> {
+  extends React.HTMLAttributes<HTMLDivElement> {
   table: TanstackTable<TData>;
   responsiveLayout?: ResponsiveLayout;
   breakpoint?: "sm" | "md" | "lg";
-  stickyCellVariant?: "card" | "secondary";
-  /**
-   * A function to render a custom component for each row on mobile viewports.
-   * Required when `responsiveLayout` is set to `'custom'`.
-   * @param row The TanStack Table `row` object.
-   */
+  density?: TableDensity;
   renderMobileRow?: (row: Row<TData>) => React.ReactNode;
+  renderContextMenu?: (row: Row<TData>) => React.ReactNode;
+  /**
+   * If true, renders skeleton rows in the table body.
+   */
+  isLoading?: boolean;
+  /**
+   * Number of skeleton rows to render when loading.
+   * @default 10
+   */
+  skeletonCount?: number;
 }
-
-const TableRootContext = createContext<
-  Pick<TableRootProps<unknown>, "stickyCellVariant">
->({
-  stickyCellVariant: "card",
-});
 
 const TableRoot = <TData extends {}>({
   className,
   table,
   responsiveLayout = "scroll",
   breakpoint = "md",
-  stickyCellVariant = "card",
+  density = "default",
   renderMobileRow,
+  renderContextMenu,
+  isLoading = false,
+  skeletonCount = 10,
   ...props
 }: TableRootProps<TData>) => {
   const breakpointMap = { sm: 640, md: 768, lg: 1024 };
   const isMobile = useMediaQuery(`(max-width: ${breakpointMap[breakpoint]}px)`);
 
   const contextValue = useMemo(
-    () => ({ table, responsiveLayout, isMobile }),
-    [table, responsiveLayout, isMobile]
-  );
-
-  const rootContextValue = useMemo(
-    () => ({ stickyCellVariant }),
-    [stickyCellVariant]
+    () => ({ table, responsiveLayout, isMobile, density, renderContextMenu }),
+    [table, responsiveLayout, isMobile, density, renderContextMenu]
   );
 
   const layout = isMobile ? responsiveLayout : "desktop";
 
-  // --- LOGIC FOR CUSTOM MOBILE RENDERER ---
+  // --- Loading State for Custom Layout ---
+  if (layout === "custom" && isLoading) {
+    return (
+      <div className={tableVariants({ layout, className })} {...props}>
+        {Array.from({ length: skeletonCount }).map((_, index) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
+            key={index}
+            className="w-full h-32 rounded-xl bg-graphite-secondary animate-pulse"
+          />
+        ))}
+      </div>
+    );
+  }
+
   if (layout === "custom") {
     if (!renderMobileRow) {
       throw new Error(
-        "The `renderMobileRow` prop is required when `responsiveLayout` is 'custom'."
+        "renderMobileRow is required when responsiveLayout is 'custom'."
       );
     }
     return (
       <TableContext.Provider value={contextValue}>
         <div className={tableVariants({ layout, className })} {...props}>
-          {table.getRowModel().rows.map((row) => (
-            // The key is now on the root element rendered by the user's function
-            <React.Fragment key={row.id}>{renderMobileRow(row)}</React.Fragment>
-          ))}
+          {table.getRowModel().rows.length > 0 ? (
+            table
+              .getRowModel()
+              .rows.map((row) => (
+                <React.Fragment key={row.id}>
+                  {renderMobileRow(row)}
+                </React.Fragment>
+              ))
+          ) : (
+            <div className="text-center p-8 text-graphite-foreground/70">
+              No results found.
+            </div>
+          )}
         </div>
       </TableContext.Provider>
     );
   }
 
-  // --- LOGIC FOR DESKTOP & SCROLL LAYOUTS ---
   return (
-    <TableRootContext.Provider value={rootContextValue}>
-      <TableContext.Provider value={contextValue}>
-        <div
-          className={clsx(
-            isMobile &&
-              responsiveLayout === "scroll" &&
-              "w-full overflow-x-auto"
-          )}
-        >
-          <table className={tableVariants({ layout, className })} {...props}>
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header, headerIndex) => (
-                    <TableHead key={header.id} colIndex={headerIndex}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
+    <TableContext.Provider value={contextValue}>
+      <div
+        className={clsx(
+          tableContainerVariants(),
+          isMobile && responsiveLayout === "scroll" && "overflow-x-auto",
+          className
+        )}
+        {...props}
+      >
+        <table className={tableVariants({ layout })}>
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header, headerIndex) => (
+                  <TableHead key={header.id} colIndex={headerIndex}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {isLoading ? (
+              // --- Loading Skeletons ---
+              Array.from({ length: skeletonCount }).map((_, rowIndex) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
+                <tr key={rowIndex} className={trVariants()}>
+                  {table.getVisibleLeafColumns().map((column, colIndex) => (
+                    <TableCell key={column.id} colIndex={colIndex}>
+                      <Skeleton className="h-6 w-full" />
+                    </TableCell>
                   ))}
                 </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} row={row} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </TableContext.Provider>
-    </TableRootContext.Provider>
+              ))
+            ) : table.getRowModel().rows.length > 0 ? (
+              table
+                .getRowModel()
+                .rows.map((row) => <TableRow key={row.id} row={row} />)
+            ) : (
+              <tr>
+                <td
+                  colSpan={table.getAllColumns().length}
+                  className="h-24 text-center text-graphite-foreground/70"
+                >
+                  No results.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </TableContext.Provider>
   );
 };
 TableRoot.displayName = "Table";

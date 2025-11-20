@@ -270,7 +270,11 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                       {children}
                     </motion.div>
                   ) : (
-                    <Card shape={shape} className="relative w-full shadow-2xl">
+                    <Card
+                      shape={shape}
+                      padding={"md"}
+                      className="relative w-full shadow-2xl"
+                    >
                       {children}
                     </Card>
                   )}

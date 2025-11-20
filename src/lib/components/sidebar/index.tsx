@@ -1,803 +1,617 @@
 "use client";
 
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import {
-  animate,
-  AnimatePresence,
-  motion,
-  useMotionValue,
-  useTransform,
-  type MotionValue,
-  type PanInfo,
-} from "framer-motion";
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useId,
-  useMemo,
-  useState,
-} from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import React, { createContext, useContext, useRef, useState } from "react";
 import useRipple from "use-ripple-hook";
-import {
-  ElasticScrollArea,
-  type ElasticScrollAreaProps,
-} from "../elastic-scroll-area";
-import { Typography } from "../typography";
+import { IconButton } from "../icon-button";
+import { Sheet } from "../sheet";
+import { EASING } from "../stack-router/transitions";
 
-// --- 1. TYPE DEFINITIONS & CONTEXT (UNIFIED) ---
+// --- Types ---
+type SidebarState = "expanded" | "collapsed";
+type SidebarSize = "sm" | "md" | "lg";
+type SidebarShape = "sharp" | "minimal" | "full";
+type SidebarVariant = "primary" | "secondary" | "ghost";
 
-type DesktopVariant = "permanent" | "modal";
-type MobileVariant = "modal" | "push";
-type SidebarSide = "left" | "right";
-type SidebarVariant = "primary" | "secondary" | "card";
-
+// --- Context ---
 interface SidebarContextProps {
-  // State
-  isDesktop: boolean;
-  isExpanded: boolean;
-  isOpen: boolean;
-  activeItem: string;
-  // Configuration
-  desktopVariant: DesktopVariant;
-  mobileVariant: MobileVariant;
-  side: SidebarSide;
-  collapsible: boolean;
-  indicatorId: string;
-  variant: SidebarVariant;
-  // For Gestures
-  sidebarX: MotionValue<number>;
-  expandedWidth: number;
-  // Actions
-  toggle: () => void;
-  onOpenChange: (isOpen: boolean) => void;
-  handleItemPress: (itemKey: string) => void;
+  state: SidebarState;
+  openMobile: boolean;
+  setOpenMobile: (open: boolean) => void;
+  toggleSidebar: () => void;
+  setSidebarState: (state: SidebarState) => void;
+  isMobile: boolean;
+  size: SidebarSize;
+  shape: SidebarShape;
+  variant: SidebarVariant; // Added variant to context
 }
 
 const SidebarContext = createContext<SidebarContextProps | null>(null);
 
-/**
- * Hook to access sidebar state and actions. Must be used within a <Sidebar> component.
- */
 export const useSidebar = () => {
   const context = useContext(SidebarContext);
   if (!context) {
-    throw new Error("useSidebar must be used within a <Sidebar> component.");
+    throw new Error("useSidebar must be used within a SidebarProvider.");
   }
   return context;
 };
 
-interface SidebarNavContextProps {
-  size: "sm" | "md" | "lg";
-  shape: "full" | "minimal" | "sharp";
-}
-
-const SidebarNavContext = createContext<SidebarNavContextProps>({
-  size: "md",
-  shape: "minimal",
-});
-
-// --- 2. CVA VARIANTS ---
-const containerVariants = cva("flex h-full flex-col", {
-  variants: {
-    variant: {
-      primary: "bg-graphite-primary text-graphite-primaryForeground",
-      secondary: "bg-graphite-secondary text-graphite-foreground",
-      card: "bg-graphite-card text-graphite-foreground",
-    },
-  },
-  defaultVariants: {
-    variant: "secondary",
-  },
-});
-
-const primaryActionVariants = cva(
-  "flex items-center justify-center font-semibold transition-all duration-300 ease-in-out overflow-hidden relative group shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
-  {
-    variants: {
-      variant: {
-        primary: "bg-graphite-primary text-graphite-primaryForeground",
-        secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
-        card: "bg-graphite-secondary text-graphite-secondaryForeground",
-      },
-      isExpanded: {
-        true: "h-14 px-5",
-        false: "h-14 w-14",
-      },
-      shape: {
-        full: "rounded-2xl",
-        minimal: "rounded-2xl",
-        sharp: "rounded-none",
-      },
-    },
-    defaultVariants: {
-      variant: "secondary",
-      shape: "minimal",
-    },
-  }
-);
-
-const navItemVariants = cva(
-  "relative flex items-center w-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 gap-3",
-  {
-    variants: {
-      variant: {
-        primary: "",
-        secondary: "",
-        card: "",
-      },
-      isActive: {
-        true: "font-semibold",
-        false: "",
-      },
-      isExpanded: {
-        true: "justify-start px-5",
-        false: "justify-center px-0",
-      },
-      size: {
-        sm: "h-10 text-sm",
-        md: "h-14 text-base",
-        lg: "h-16 text-lg",
-      },
-      shape: {
-        full: "rounded-full",
-        minimal: "rounded-lg",
-        sharp: "rounded-none",
-      },
-    },
-    compoundVariants: [
-      {
-        variant: ["secondary", "card"],
-        isActive: false,
-        className:
-          "text-graphite-foreground/70 hover:text-graphite-foreground/90 hover:bg-black/5",
-      },
-      {
-        variant: ["secondary", "card"],
-        isActive: true,
-        className: "text-graphite-primary",
-      },
-      {
-        variant: "primary",
-        isActive: false,
-        className:
-          "text-graphite-primaryForeground/70 hover:text-graphite-primaryForeground/90 hover:bg-white/5",
-      },
-      {
-        variant: "primary",
-        isActive: true,
-        className: "text-graphite-primaryForeground",
-      },
-    ],
-    defaultVariants: {
-      isActive: false,
-      isExpanded: false,
-      size: "md",
-      shape: "full",
-      variant: "secondary",
-    },
-  }
-);
-// --- 3. ROOT COMPONENT (UNIFIED STATE) ---
-
-interface SidebarProps {
-  children: [
-    React.ReactElement<SidebarContainerProps>,
-    React.ReactElement<SidebarContentProps>
-  ];
-  activeItem: string;
-  onItemPress: (itemKey: string) => void;
-  isOpen?: boolean;
-  onOpenChange?: (isOpen: boolean) => void;
-  defaultOpen?: boolean;
-  desktopVariant?: DesktopVariant;
-  mobileVariant?: MobileVariant;
-  side?: SidebarSide;
-  collapsible?: boolean;
-  expandedWidth?: number;
-  collapsedWidth?: number;
-}
-
-const SidebarRoot: React.FC<SidebarProps> = ({
+// --- Provider ---
+export const SidebarProvider = ({
   children,
-  activeItem,
-  onItemPress,
-  isOpen: controlledOpen,
-  onOpenChange,
-  defaultOpen = false,
-  desktopVariant = "permanent",
-  mobileVariant = "modal",
-  side = "left",
-  collapsible = true,
-  expandedWidth = 280,
-  collapsedWidth = 80,
-}) => {
-  const [sidebarContainer, mainContent] = React.Children.toArray(children) as [
-    React.ReactElement<SidebarContainerProps>,
-    React.ReactElement<SidebarContentProps>
-  ];
-  const containerVariant = sidebarContainer.props.variant || "secondary";
-
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-  const indicatorId = useId();
-
-  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
-  const isControlled = controlledOpen !== undefined && onOpenChange;
-  const isOpen = isControlled ? controlledOpen : uncontrolledOpen;
-
-  const handleOpenChange = isControlled ? onOpenChange : setUncontrolledOpen;
-
-  const closedX = side === "left" ? -expandedWidth : expandedWidth;
-  const sidebarX = useMotionValue(isOpen ? 0 : closedX);
-
-  useEffect(() => {
-    if (!isDesktop) {
-      const targetX = isOpen ? 0 : closedX;
-      animate(sidebarX, targetX, {
-        type: "spring",
-        stiffness: 500,
-        damping: 50,
-        mass: 1,
-      });
-    }
-  }, [isOpen, isDesktop, closedX, sidebarX, expandedWidth]);
-
-  const pushX = useTransform(sidebarX, (latestX) => {
-    if (isDesktop || mobileVariant !== "push") return 0;
-    if (side === "left") return latestX + expandedWidth;
-    return latestX - expandedWidth;
-  });
-
-  const overlayOpacity = useTransform(
-    sidebarX,
-    side === "left" ? [-expandedWidth, 0] : [expandedWidth, 0],
-    [0, 1]
-  );
-
-  const toggle = useCallback(() => {
-    if (collapsible) {
-      handleOpenChange(!isOpen);
-    }
-  }, [collapsible, isOpen, handleOpenChange]);
-
-  const handleItemPress = useCallback(
-    (itemKey: string) => {
-      onItemPress(itemKey);
-      if (!isDesktop) {
-        setTimeout(() => {
-          handleOpenChange(false);
-        }, 100);
-      }
-    },
-    [isDesktop, onItemPress, handleOpenChange]
-  );
-
-  const contextValue = useMemo(
-    () => ({
-      isDesktop,
-      isExpanded: isDesktop ? isOpen : true,
-      isOpen,
-      activeItem,
-      desktopVariant,
-      mobileVariant,
-      side,
-      collapsible,
-      indicatorId,
-      sidebarX,
-      expandedWidth,
-      variant: containerVariant,
-      toggle,
-      onOpenChange: handleOpenChange,
-      handleItemPress,
-    }),
-    [
-      isDesktop,
-      isOpen,
-      activeItem,
-      desktopVariant,
-      mobileVariant,
-      side,
-      collapsible,
-      indicatorId,
-      sidebarX,
-      expandedWidth,
-      containerVariant,
-      toggle,
-      handleOpenChange,
-      handleItemPress,
-    ]
-  );
-
-  const sidebarWidth = isOpen ? expandedWidth : collapsedWidth;
-
-  return (
-    <SidebarContext.Provider value={contextValue}>
-      <div className="relative h-screen w-full bg-graphite-background overflow-hidden">
-        {isDesktop ? (
-          <div
-            className={clsx(
-              "flex h-full",
-              side === "right" && "flex-row-reverse"
-            )}
-          >
-            {desktopVariant === "permanent" && (
-              <motion.div
-                style={{ willChange: "width" }}
-                animate={{ width: sidebarWidth }}
-                transition={{ type: "spring", stiffness: 400, damping: 40 }}
-              >
-                {sidebarContainer}
-              </motion.div>
-            )}
-            {mainContent}
-          </div>
-        ) : (
-          <>
-            {!isDesktop && mobileVariant === "modal" && (
-              <motion.div
-                className="fixed inset-0 z-[100] bg-black/40"
-                style={{ opacity: overlayOpacity, willChange: "opacity" }}
-                onClick={() => handleOpenChange(false)}
-                initial={{ pointerEvents: "none" }}
-                animate={{ pointerEvents: isOpen ? "auto" : "none" }}
-              />
-            )}
-            {sidebarContainer}
-            <motion.div
-              className="h-full"
-              style={{
-                x: pushX,
-                willChange: "transform",
-                touchAction: isOpen ? "none" : "pan-y",
-              }}
-            >
-              {mainContent}
-            </motion.div>
-          </>
-        )}
-      </div>
-    </SidebarContext.Provider>
-  );
-};
-SidebarRoot.displayName = "Sidebar";
-
-// --- 4. SUB-COMPONENTS ---
-
-interface SidebarContainerProps {
+  defaultOpen = true,
+}: {
   children: React.ReactNode;
-  className?: string;
-  variant?: SidebarVariant;
-}
-const SidebarContainer = React.memo(
-  React.forwardRef<HTMLElement, SidebarContainerProps>(
-    ({ children, className, variant = "secondary" }, ref) => {
-      const {
-        side,
-        isDesktop,
-        mobileVariant,
-        onOpenChange,
-        sidebarX,
-        expandedWidth,
-      } = useSidebar();
+  defaultOpen?: boolean;
+}) => {
+  const [state, setState] = useState<SidebarState>(
+    defaultOpen ? "expanded" : "collapsed"
+  );
+  const [openMobile, setOpenMobile] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
-      if (isDesktop) {
-        return (
-          <aside
-            ref={ref}
-            className={clsx(containerVariants({ variant }), className)}
-          >
-            {children}
-          </aside>
-        );
-      }
-
-      const handleDragEnd = (e: MouseEvent | TouchEvent, info: PanInfo) => {
-        const closedX = side === "left" ? -expandedWidth : expandedWidth;
-        const isClosing =
-          (side === "left" &&
-            (info.offset.x < -50 || info.velocity.x < -500)) ||
-          (side === "right" && (info.offset.x > 50 || info.velocity.x > 500));
-
-        if (isClosing) {
-          animate(sidebarX, closedX, {
-            type: "spring",
-            stiffness: 500,
-            damping: 50,
-            onComplete: () => onOpenChange(false),
-          });
-        } else {
-          animate(sidebarX, 0, {
-            type: "spring",
-            stiffness: 500,
-            damping: 50,
-            onComplete: () => onOpenChange(true),
-          });
-        }
-      };
-
-      return (
-        <motion.aside
-          ref={ref}
-          key={`sidebar-${mobileVariant}`}
-          drag="x"
-          onDragEnd={handleDragEnd}
-          style={{ x: sidebarX, willChange: "transform" }}
-          dragConstraints={{
-            left: side === "left" ? -expandedWidth : 0,
-            right: side === "left" ? 0 : expandedWidth,
-          }}
-          dragElastic={0} // Disable over-dragging
-          className={clsx(
-            containerVariants({ variant }),
-            "fixed top-0 bottom-0 z-[100] flex h-screen flex-col",
-            "w-[280px]",
-            side === "left" ? "left-0" : "right-0",
-            className
-          )}
-        >
-          {children}
-        </motion.aside>
-      );
-    }
-  )
-);
-SidebarContainer.displayName = "Sidebar.Container";
-
-const SidebarHeader = React.memo(
-  (props: React.HTMLAttributes<HTMLDivElement>) => (
-    <div
-      className={clsx(
-        "flex h-16 flex-shrink-0 items-center px-4",
-        props.className
-      )}
-      {...props}
-    />
-  )
-);
-SidebarHeader.displayName = "Sidebar.Header";
-
-interface PrimaryActionProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  icon: React.ReactNode;
-  shape?: "full" | "minimal" | "sharp";
-}
-const SidebarPrimaryAction = React.memo(
-  React.forwardRef<HTMLButtonElement, PrimaryActionProps>(
-    ({ children, icon, shape = "minimal", className, ...props }, ref) => {
-      const { isExpanded, variant } = useSidebar();
-      return (
-        <div className="px-3 py-2">
-          {/* @ts-ignore */}
-          <motion.button
-            ref={ref}
-            layout
-            transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className={primaryActionVariants({
-              variant,
-              isExpanded,
-              shape,
-              className,
-            })}
-            style={{ willChange: "width" }}
-            {...props}
-          >
-            <motion.span layout="position" className="flex-shrink-0">
-              {icon}
-            </motion.span>
-            <AnimatePresence>
-              {isExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  style={{ willChange: "transform, opacity" }}
-                  className="overflow-hidden whitespace-nowrap ml-3"
-                >
-                  {children}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        </div>
-      );
-    }
-  )
-);
-SidebarPrimaryAction.displayName = "Sidebar.PrimaryAction";
-
-// @ts-ignore
-interface SidebarNavProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, "onScroll" | "dir">,
-    Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {
-  size?: "sm" | "md" | "lg";
-  shape?: "full" | "minimal" | "sharp";
-}
-
-const SidebarNav = React.memo(
-  ({
-    children,
-    className,
-    size = "md",
-    shape = "full",
-    elasticity,
-    dampingFactor,
-    scrollbarVisibility,
-    pullToRefresh,
-    onRefresh,
-    pullThreshold,
-    ...props
-  }: SidebarNavProps) => {
-    return (
-      <SidebarNavContext.Provider value={{ size, shape }}>
-        <ElasticScrollArea
-          className="flex-1"
-          elasticity={elasticity}
-          dampingFactor={dampingFactor}
-          scrollbarVisibility={scrollbarVisibility}
-          pullToRefresh={pullToRefresh}
-          onRefresh={onRefresh}
-          pullThreshold={pullThreshold}
-        >
-          <nav className={clsx("space-y-1 px-3 py-2", className)} {...props}>
-            {children}
-          </nav>
-        </ElasticScrollArea>
-      </SidebarNavContext.Provider>
-    );
-  }
-);
-SidebarNav.displayName = "Sidebar.Nav";
-
-interface NavItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  itemKey: string;
-  icon: React.ReactNode;
-  endAdornment?: React.ReactNode;
-  size?: "sm" | "md" | "lg";
-  shape?: "full" | "minimal" | "sharp";
-}
-const SidebarItem = React.memo(
-  React.forwardRef<HTMLButtonElement, NavItemProps>(
-    (
-      {
-        itemKey,
-        icon,
-        children,
-        endAdornment,
-        className,
-        size: propSize,
-        shape: propShape,
-        ...props
-      },
-      ref
-    ) => {
-      const { activeItem, handleItemPress, isExpanded, indicatorId, variant } =
-        useSidebar();
-      const { size: contextSize, shape: contextShape } =
-        useContext(SidebarNavContext);
-
-      const isActive = activeItem === itemKey;
-      const size = propSize || contextSize;
-      const shape = propShape || contextShape;
-
-      const shapeToBorderRadius = {
-        full: 9999,
-        minimal: "0.5rem",
-        sharp: 0,
-      };
-
-      const localRef = React.useRef<HTMLButtonElement>(null);
-      React.useImperativeHandle(
-        ref,
-        () => localRef.current as HTMLButtonElement
-      );
-
-      const rippleColor =
-        variant === "primary"
-          ? "var(--color-ripple-dark)"
-          : "var(--color-ripple-light)";
-
-      const rippleRef = localRef as React.RefObject<HTMLElement>;
-      const [, event] = useRipple({
-        ref: rippleRef,
-        color: rippleColor,
-        duration: 400,
-      });
-
-      return (
-        <button
-          ref={localRef}
-          onPointerDown={event}
-          onClick={() => handleItemPress(itemKey)}
-          className={navItemVariants({
-            variant,
-            isActive,
-            isExpanded,
-            size,
-            shape,
-            className,
-          })}
-          {...props}
-        >
-          {isActive && (
-            <motion.div
-              layoutId={indicatorId}
-              className={clsx(
-                "absolute inset-0 z-0 transition-[border-radius] duration-200",
-                variant === "primary" ? "bg-white/10" : "bg-graphite-primary/10"
-              )}
-              style={{
-                borderRadius: shapeToBorderRadius[shape],
-                willChange: "transform",
-              }}
-              transition={{ type: "spring", stiffness: 500, damping: 40 }}
-            />
-          )}
-          <div className="relative z-10 flex-shrink-0">{icon}</div>
-          <AnimatePresence initial={false}>
-            {isExpanded && (
-              <motion.div
-                key="text"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                style={{ willChange: "transform, opacity" }}
-                className="relative z-10 flex-1 text-left  overflow-hidden whitespace-nowrap"
-              >
-                {children}
-              </motion.div>
-            )}
-          </AnimatePresence>
-          {isExpanded && endAdornment && (
-            <div className="relative z-10 ml-auto flex-shrink-0">
-              {endAdornment}
-            </div>
-          )}
-        </button>
-      );
-    }
-  )
-);
-SidebarItem.displayName = "Sidebar.Item";
-
-const SidebarFooter = React.memo(
-  (props: React.HTMLAttributes<HTMLDivElement>) => (
-    <div
-      className={clsx("mt-auto flex-shrink-0 p-3", props.className)}
-      {...props}
-    />
-  )
-);
-SidebarFooter.displayName = "Sidebar.Footer";
-
-const SidebarSeparator = React.memo(
-  (props: React.HTMLAttributes<HTMLHRElement>) => (
-    <hr
-      className={clsx("my-2", "border-graphite-border/60", props.className)}
-      {...props}
-    />
-  )
-);
-SidebarSeparator.displayName = "Sidebar.Separator";
-
-const SidebarSectionHeader = React.memo(
-  (props: React.HTMLAttributes<HTMLDivElement>) => {
-    const { isExpanded, variant } = useSidebar();
-    return (
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            style={{ willChange: "height, opacity" }}
-            className="overflow-hidden"
-          >
-            <Typography
-              variant="small"
-              className={clsx(
-                "px-5 py-2 font-bold",
-                variant === "primary"
-                  ? "text-graphite-primaryForeground/70"
-                  : "text-graphite-primary",
-                props.className
-              )}
-              {...props}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    );
-  }
-);
-SidebarSectionHeader.displayName = "Sidebar.SectionHeader";
-
-const SidebarDragHandle = React.memo(() => {
-  const { isDesktop, isOpen, onOpenChange, side, sidebarX, expandedWidth } =
-    useSidebar();
-
-  if (isDesktop || isOpen) return null;
-
-  const handleDragEnd = (event: MouseEvent | TouchEvent, info: PanInfo) => {
-    const isOpening =
-      (side === "left" && (info.offset.x > 50 || info.velocity.x > 500)) ||
-      (side === "right" && (info.offset.x < -50 || info.velocity.x < -500));
-
-    if (isOpening) {
-      animate(sidebarX, 0, {
-        type: "spring",
-        stiffness: 500,
-        damping: 50,
-        onComplete: () => onOpenChange(true),
-      });
+  const toggleSidebar = () => {
+    if (isMobile) {
+      setOpenMobile(!openMobile);
     } else {
-      const closedX = side === "left" ? -expandedWidth : expandedWidth;
-      animate(sidebarX, closedX, {
-        type: "spring",
-        stiffness: 500,
-        damping: 50,
-      });
+      setState((prev) => (prev === "expanded" ? "collapsed" : "expanded"));
     }
   };
 
   return (
-    <motion.div
-      className={clsx(
-        "fixed top-0 bottom-0 z-[1000] w-12",
-        side === "left" ? "left-0" : "right-0"
-      )}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0} // Disable over-dragging
-      onDragEnd={handleDragEnd}
-      onDrag={(e, info) => {
-        const isDraggingCorrectly =
-          (side === "left" && info.offset.x > 0) ||
-          (side === "right" && info.offset.x < 0);
-
-        if (isDraggingCorrectly) {
-          sidebarX.set(
-            side === "left"
-              ? info.offset.x - expandedWidth
-              : info.offset.x + expandedWidth
-          );
-        }
+    <SidebarContext.Provider
+      value={{
+        state,
+        openMobile,
+        setOpenMobile,
+        toggleSidebar,
+        setSidebarState: setState,
+        isMobile,
+        size: "md",
+        shape: "minimal",
+        variant: "primary", // Default
       }}
-    />
+    >
+      {children}
+    </SidebarContext.Provider>
   );
-});
-SidebarDragHandle.displayName = "Sidebar.DragHandle";
+};
 
-interface SidebarContentProps extends React.HTMLAttributes<HTMLDivElement> {}
-
-const SidebarContent = React.memo(
-  React.forwardRef<HTMLDivElement, SidebarContentProps>((props, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={clsx("h-full w-full", props.className)}
-        {...props}
-      />
-    );
-  })
+// --- Sidebar Root ---
+const sidebarVariants = cva(
+  "group/sidebar flex flex-col overflow-hidden transition-all duration-300 ease-ios text-graphite-foreground",
+  {
+    variants: {
+      layout: {
+        sidebar: "border-r border-graphite-border",
+        floating: "m-4 border-graphite-border shadow-lg h-[calc(100%-2rem)]",
+        inset: "bg-transparent",
+      },
+      variant: {
+        primary: "bg-graphite-card",
+        secondary: "bg-graphite-secondary",
+        ghost: "bg-transparent",
+      },
+      shape: {
+        sharp: "rounded-none",
+        minimal: "rounded-2xl",
+        full: "rounded-3xl",
+      },
+      overlay: {
+        true: "absolute top-0 left-0 z-50 h-full shadow-xl border-r border-graphite-border",
+        false: "relative h-full",
+      },
+    },
+    defaultVariants: {
+      layout: "sidebar",
+      variant: "primary",
+      shape: "minimal",
+      overlay: false,
+    },
+  }
 );
+
+interface SidebarProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof sidebarVariants> {
+  collapsible?: boolean;
+  /** Width of the sidebar when expanded on desktop. @default "16rem" */
+  width?: string;
+  /** Width of the sidebar when collapsed on desktop. @default "4.5rem" */
+  collapsedWidth?: string;
+  /** Width of the sidebar sheet on mobile. @default "18rem" */
+  mobileWidth?: string;
+  itemSize?: SidebarSize;
+  itemShape?: SidebarShape;
+  /** If true, the sidebar will expand when hovered and collapse when the mouse leaves. */
+  expandOnHover?: boolean;
+  /** If true, the expanded sidebar floats over content. A placeholder is kept for the collapsed width. */
+  overlay?: boolean;
+}
+
+const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
+  (
+    {
+      className,
+      children,
+      layout,
+      variant = "primary",
+      shape,
+      itemSize = "md",
+      itemShape = "minimal",
+      width = "16rem",
+      collapsedWidth = "4.5rem",
+      mobileWidth = "18rem",
+      collapsible = true,
+      expandOnHover = false,
+      overlay = false,
+      ...props
+    },
+    ref
+  ) => {
+    const {
+      state,
+      setSidebarState,
+      toggleSidebar,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+    } = useSidebar();
+    const isCollapsed = state === "collapsed";
+
+    // --- MOBILE RENDERING (SHEET) ---
+    if (isMobile) {
+      return (
+        <Sheet
+          open={openMobile}
+          onOpenChange={setOpenMobile}
+          forceSideSheet
+          side="left"
+        >
+          <Sheet.Content
+            className="p-0"
+            style={{ width: mobileWidth, maxWidth: "100vw" }}
+            aria-describedby={undefined}
+          >
+            <div
+              className={clsx(
+                "flex h-full flex-col",
+                variant === "secondary"
+                  ? "bg-graphite-secondary"
+                  : "bg-graphite-card"
+              )}
+            >
+              {/* Pass context down to sheet children */}
+              <SidebarContext.Provider
+                value={{
+                  state,
+                  openMobile,
+                  setOpenMobile,
+                  toggleSidebar,
+                  setSidebarState,
+                  isMobile,
+                  size: itemSize,
+                  shape: itemShape,
+                  variant,
+                }}
+              >
+                {children}
+              </SidebarContext.Provider>
+            </div>
+          </Sheet.Content>
+        </Sheet>
+      );
+    }
+
+    // --- DESKTOP RENDERING (MOTION ASIDE) ---
+
+    const handleMouseEnter = () => {
+      if (expandOnHover && isCollapsed) {
+        setSidebarState("expanded");
+      }
+    };
+
+    const handleMouseLeave = () => {
+      if (expandOnHover && !isCollapsed) {
+        setSidebarState("collapsed");
+      }
+    };
+
+    const handleBackdropClick = () => {
+      if (overlay && !expandOnHover) {
+        setSidebarState("collapsed");
+      }
+    };
+
+    const SidebarContent = (
+      <motion.aside
+        ref={ref}
+        initial={false}
+        animate={{
+          width: isCollapsed ? collapsedWidth : width,
+        }}
+        transition={{
+          duration: 0.12,
+          ease: EASING.iOS,
+        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={clsx(
+          sidebarVariants({ layout, variant, shape, overlay }),
+          className
+        )}
+        data-state={state}
+        {...props}
+      >
+        {children}
+      </motion.aside>
+    );
+
+    // Update context with props passed to Root
+    const contextValue = {
+      state,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+      setSidebarState,
+      isMobile,
+      size: itemSize,
+      shape: itemShape,
+      variant: variant || "primary",
+    };
+
+    if (overlay) {
+      return (
+        <SidebarContext.Provider value={contextValue}>
+          <div className="relative h-full flex shrink-0">
+            <motion.div
+              initial={false}
+              animate={{ width: collapsedWidth }}
+              className="h-full shrink-0 bg-transparent"
+            />
+            <AnimatePresence>
+              {!isCollapsed && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={handleBackdropClick}
+                  className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[4px] duration-300 transition-all"
+                  aria-hidden="true"
+                />
+              )}
+            </AnimatePresence>
+            {SidebarContent}
+          </div>
+        </SidebarContext.Provider>
+      );
+    }
+
+    return (
+      <SidebarContext.Provider value={contextValue}>
+        {SidebarContent}
+      </SidebarContext.Provider>
+    );
+  }
+);
+SidebarRoot.displayName = "Sidebar";
+
+// --- Header ---
+const SidebarHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={clsx("flex h-16 items-center px-4 min-w-max", className)}
+    {...props}
+  />
+));
+SidebarHeader.displayName = "Sidebar.Header";
+
+// --- Content ---
+const SidebarContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={clsx(
+      "flex flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto px-3 py-2 scrollbar-thin",
+      className
+    )}
+    {...props}
+  />
+));
 SidebarContent.displayName = "Sidebar.Content";
 
-// --- 5. COMPOUND EXPORT ---
+// --- Footer ---
+const SidebarFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={clsx("flex items-center p-3 mt-auto min-w-max", className)}
+    {...props}
+  />
+));
+SidebarFooter.displayName = "Sidebar.Footer";
 
+// --- Item Variants (UPDATED) ---
+const sidebarItemVariants = cva(
+  "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-graphite-ring",
+  {
+    variants: {
+      isActive: {
+        true: "",
+        false: "",
+      },
+      parentVariant: {
+        primary: "",
+        secondary: "",
+        ghost: "",
+      },
+      size: {
+        sm: "py-1.5 text-xs",
+        md: "py-2 text-sm",
+        lg: "py-3 text-base",
+      },
+      shape: {
+        sharp: "rounded-none",
+        minimal: "rounded-lg",
+        full: "rounded-full",
+      },
+    },
+    compoundVariants: [
+      // --- Primary Parent (Default) ---
+      {
+        parentVariant: "primary",
+        isActive: true,
+        className:
+          "bg-graphite-secondary text-graphite-foreground font-semibold",
+      },
+      {
+        parentVariant: "primary",
+        isActive: false,
+        className:
+          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-secondary/60",
+      },
+      // --- Secondary Parent (Fix for contrast) ---
+      {
+        parentVariant: "secondary",
+        isActive: true,
+        className:
+          "bg-graphite-card shadow-sm text-graphite-foreground font-semibold",
+      },
+      {
+        parentVariant: "secondary",
+        isActive: false,
+        className:
+          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-card/60",
+      },
+      // --- Ghost Parent ---
+      {
+        parentVariant: "ghost",
+        isActive: true,
+        className:
+          "bg-graphite-secondary text-graphite-foreground font-semibold",
+      },
+      {
+        parentVariant: "ghost",
+        isActive: false,
+        className:
+          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-secondary/60",
+      },
+    ],
+    defaultVariants: {
+      isActive: false,
+      size: "md",
+      shape: "minimal",
+      parentVariant: "primary",
+    },
+  }
+);
+
+// --- Sidebar Item ---
+interface SidebarItemProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof sidebarItemVariants> {
+  icon?: React.ReactNode;
+  children?: React.ReactNode;
+  badge?: React.ReactNode;
+}
+
+const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
+  ({ className, icon, children, isActive, badge, ...props }, ref) => {
+    const {
+      state,
+      size: contextSize,
+      shape: contextShape,
+      variant: contextVariant,
+      isMobile,
+    } = useSidebar();
+
+    const isCollapsed = !isMobile && state === "collapsed";
+    const localRef = useRef<HTMLButtonElement>(null);
+    React.useImperativeHandle(ref, () => localRef.current!);
+
+    const [, event] = useRipple({
+      ref: localRef,
+      color: "var(--color-ripple-light)",
+      duration: 300,
+    });
+
+    const [isPressed, setIsPressed] = useState(false);
+    const iconSize = props.size === "lg" ? 24 : props.size === "sm" ? 16 : 20;
+
+    const ButtonContent = (
+      <button
+        ref={localRef}
+        onPointerDown={(e) => {
+          event(e);
+          setIsPressed(true);
+        }}
+        onPointerUp={() => setIsPressed(false)}
+        onPointerLeave={() => setIsPressed(false)}
+        className={clsx(
+          sidebarItemVariants({
+            isActive,
+            parentVariant: contextVariant, // Pass the parent variant to CVA
+            size: props.size || contextSize,
+            shape: props.shape || contextShape,
+          }),
+          "px-3",
+          className
+        )}
+        {...props}
+      >
+        {icon && (
+          <motion.span
+            animate={{ scale: isPressed ? 0.85 : 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            className={clsx(
+              "flex shrink-0 items-center justify-center transition-colors duration-300",
+              isActive ? "text-graphite-primary" : "opacity-80"
+            )}
+          >
+            {React.isValidElement(icon)
+              ? React.cloneElement(icon as React.ReactElement, {
+                  // @ts-ignore
+                  size: iconSize,
+                })
+              : icon}
+          </motion.span>
+        )}
+
+        <AnimatePresence>
+          {!isCollapsed && children && (
+            <motion.span
+              initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+              animate={{
+                opacity: 1,
+                width: "auto",
+                marginLeft: "0.75rem",
+              }}
+              exit={{
+                opacity: 0,
+                width: 0,
+                marginLeft: 0,
+              }}
+              transition={{
+                duration: 0.2,
+                ease: "easeInOut",
+              }}
+              className="flex-1 overflow-hidden whitespace-nowrap text-left min-w-0"
+            >
+              {children}
+            </motion.span>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {!isCollapsed && badge && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.2 }}
+              className="ml-auto shrink-0"
+            >
+              {badge}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </button>
+    );
+
+    return ButtonContent;
+  }
+);
+SidebarItem.displayName = "Sidebar.Item";
+
+// --- Sidebar Trigger ---
+const SidebarTrigger = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentProps<typeof IconButton>
+>(({ className, ...props }, ref) => {
+  const { state, toggleSidebar, isMobile } = useSidebar();
+  const isCollapsed = state === "collapsed";
+
+  return (
+    <IconButton
+      ref={ref}
+      variant="ghost"
+      size="sm"
+      onClick={toggleSidebar}
+      className={clsx("text-graphite-foreground/60", className)}
+      aria-label={
+        isMobile
+          ? "Open Menu"
+          : isCollapsed
+          ? "Expand Sidebar"
+          : "Collapse Sidebar"
+      }
+      {...props}
+    >
+      {isMobile ? (
+        <Menu className="h-5 w-5" />
+      ) : isCollapsed ? (
+        <PanelLeftOpen className="h-5 w-5" />
+      ) : (
+        <PanelLeftClose className="h-5 w-5" />
+      )}
+    </IconButton>
+  );
+});
+SidebarTrigger.displayName = "Sidebar.Trigger";
+
+// --- Group & Label ---
+const SidebarGroup = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={clsx("flex flex-col gap-1 py-2", className)} {...props} />
+);
+
+const SidebarLabel = ({
+  className,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => {
+  const { state, isMobile } = useSidebar();
+  const isCollapsed = !isMobile && state === "collapsed";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: isCollapsed ? 0 : 1, y: 0 }}
+      transition={{ duration: 0.12 }}
+      exit={{ opacity: 0 }}
+      className={clsx(
+        "px-3 py-1 text-xs font-semibold uppercase tracking-wider text-graphite-foreground/50 whitespace-nowrap overflow-hidden",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// --- Exports ---
 export const Sidebar = Object.assign(SidebarRoot, {
-  Container: SidebarContainer,
+  Provider: SidebarProvider,
   Header: SidebarHeader,
-  PrimaryAction: SidebarPrimaryAction,
-  Nav: SidebarNav,
-  Item: SidebarItem,
-  Footer: SidebarFooter,
-  Separator: SidebarSeparator,
-  SectionHeader: SidebarSectionHeader,
-  DragHandle: SidebarDragHandle,
   Content: SidebarContent,
+  Footer: SidebarFooter,
+  Item: SidebarItem,
+  Trigger: SidebarTrigger,
+  Group: SidebarGroup,
+  Label: SidebarLabel,
 });
