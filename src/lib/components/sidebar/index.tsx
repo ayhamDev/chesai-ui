@@ -4,9 +4,16 @@ import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+} from "lucide-react";
 import React, { createContext, useContext, useRef, useState } from "react";
 import useRipple from "use-ripple-hook";
+import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
 import { Sheet } from "../sheet";
 import { EASING } from "../stack-router/transitions";
@@ -16,6 +23,7 @@ type SidebarState = "expanded" | "collapsed";
 type SidebarSize = "sm" | "md" | "lg";
 type SidebarShape = "sharp" | "minimal" | "full";
 type SidebarVariant = "primary" | "secondary" | "ghost";
+type SidebarSide = "left" | "right";
 
 // --- Context ---
 interface SidebarContextProps {
@@ -27,7 +35,8 @@ interface SidebarContextProps {
   isMobile: boolean;
   size: SidebarSize;
   shape: SidebarShape;
-  variant: SidebarVariant; // Added variant to context
+  variant: SidebarVariant;
+  side: SidebarSide;
 }
 
 const SidebarContext = createContext<SidebarContextProps | null>(null);
@@ -73,7 +82,8 @@ export const SidebarProvider = ({
         isMobile,
         size: "md",
         shape: "minimal",
-        variant: "primary", // Default
+        variant: "primary",
+        side: "left",
       }}
     >
       {children}
@@ -87,8 +97,9 @@ const sidebarVariants = cva(
   {
     variants: {
       layout: {
-        sidebar: "border-r border-graphite-border",
-        floating: "m-4 border-graphite-border shadow-lg h-[calc(100%-2rem)]",
+        sidebar: "",
+        floating:
+          "my-4 border border-graphite-border shadow-lg h-[calc(100%-2rem)]",
         inset: "bg-transparent",
       },
       variant: {
@@ -96,20 +107,93 @@ const sidebarVariants = cva(
         secondary: "bg-graphite-secondary",
         ghost: "bg-transparent",
       },
+      side: {
+        left: "",
+        right: "",
+      },
       shape: {
-        sharp: "rounded-none",
-        minimal: "rounded-2xl",
-        full: "rounded-3xl",
+        sharp: "",
+        minimal: "",
+        full: "",
       },
       overlay: {
-        true: "absolute top-0 left-0 z-50 h-full shadow-xl border-r border-graphite-border",
+        true: "absolute top-0 z-50 h-full shadow-xl",
         false: "relative h-full",
       },
     },
+    compoundVariants: [
+      // --- SIDEBAR LAYOUT (Attached) ---
+      {
+        layout: "sidebar",
+        side: "left",
+        className: "border-e border-graphite-border",
+      },
+      {
+        layout: "sidebar",
+        side: "left",
+        shape: "minimal",
+        className: "rounded-e-2xl",
+      },
+      {
+        layout: "sidebar",
+        side: "left",
+        shape: "full",
+        className: "rounded-e-3xl",
+      },
+      {
+        layout: "sidebar",
+        side: "left",
+        shape: "sharp",
+        className: "rounded-none",
+      },
+      {
+        layout: "sidebar",
+        side: "right",
+        className: "border-s border-graphite-border",
+      },
+      {
+        layout: "sidebar",
+        side: "right",
+        shape: "minimal",
+        className: "rounded-s-2xl",
+      },
+      {
+        layout: "sidebar",
+        side: "right",
+        shape: "full",
+        className: "rounded-s-3xl",
+      },
+      {
+        layout: "sidebar",
+        side: "right",
+        shape: "sharp",
+        className: "rounded-none",
+      },
+
+      // --- FLOATING LAYOUT (Detached) ---
+      { layout: "floating", side: "left", className: "ms-4" },
+      { layout: "floating", side: "right", className: "me-4" },
+      { layout: "floating", shape: "minimal", className: "rounded-2xl" },
+      { layout: "floating", shape: "full", className: "rounded-3xl" },
+      { layout: "floating", shape: "sharp", className: "rounded-none" },
+
+      // --- OVERLAY positioning ---
+      {
+        overlay: true,
+        side: "left",
+        className: "left-0 border-e border-graphite-border",
+      },
+      {
+        overlay: true,
+        side: "right",
+        className: "right-0 border-s border-graphite-border",
+      },
+    ],
     defaultVariants: {
       layout: "sidebar",
       variant: "primary",
       shape: "minimal",
+      side: "left",
       overlay: false,
     },
   }
@@ -119,17 +203,12 @@ interface SidebarProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof sidebarVariants> {
   collapsible?: boolean;
-  /** Width of the sidebar when expanded on desktop. @default "16rem" */
   width?: string;
-  /** Width of the sidebar when collapsed on desktop. @default "4.5rem" */
   collapsedWidth?: string;
-  /** Width of the sidebar sheet on mobile. @default "18rem" */
   mobileWidth?: string;
   itemSize?: SidebarSize;
   itemShape?: SidebarShape;
-  /** If true, the sidebar will expand when hovered and collapse when the mouse leaves. */
   expandOnHover?: boolean;
-  /** If true, the expanded sidebar floats over content. A placeholder is kept for the collapsed width. */
   overlay?: boolean;
 }
 
@@ -138,9 +217,10 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
     {
       className,
       children,
-      layout,
+      layout = "sidebar",
       variant = "primary",
-      shape,
+      side = "left",
+      shape = "minimal",
       itemSize = "md",
       itemShape = "minimal",
       width = "16rem",
@@ -163,14 +243,13 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
     } = useSidebar();
     const isCollapsed = state === "collapsed";
 
-    // --- MOBILE RENDERING (SHEET) ---
     if (isMobile) {
       return (
         <Sheet
           open={openMobile}
           onOpenChange={setOpenMobile}
           forceSideSheet
-          side="left"
+          side={side}
         >
           <Sheet.Content
             className="p-0"
@@ -185,7 +264,6 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
                   : "bg-graphite-card"
               )}
             >
-              {/* Pass context down to sheet children */}
               <SidebarContext.Provider
                 value={{
                   state,
@@ -196,7 +274,8 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
                   isMobile,
                   size: itemSize,
                   shape: itemShape,
-                  variant,
+                  variant: variant || "primary",
+                  side: side || "left",
                 }}
               >
                 {children}
@@ -206,8 +285,6 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
         </Sheet>
       );
     }
-
-    // --- DESKTOP RENDERING (MOTION ASIDE) ---
 
     const handleMouseEnter = () => {
       if (expandOnHover && isCollapsed) {
@@ -242,7 +319,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={clsx(
-          sidebarVariants({ layout, variant, shape, overlay }),
+          sidebarVariants({ layout, variant, shape, side, overlay }),
           className
         )}
         data-state={state}
@@ -252,7 +329,6 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       </motion.aside>
     );
 
-    // Update context with props passed to Root
     const contextValue = {
       state,
       openMobile,
@@ -263,12 +339,18 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       size: itemSize,
       shape: itemShape,
       variant: variant || "primary",
+      side: side || "left",
     };
 
     if (overlay) {
       return (
         <SidebarContext.Provider value={contextValue}>
-          <div className="relative h-full flex shrink-0">
+          <div
+            className={clsx(
+              "relative h-full flex shrink-0",
+              side === "right" && "flex-row-reverse"
+            )}
+          >
             <motion.div
               initial={false}
               animate={{ width: collapsedWidth }}
@@ -315,20 +397,43 @@ const SidebarHeader = React.forwardRef<
 ));
 SidebarHeader.displayName = "Sidebar.Header";
 
-// --- Content ---
+// --- Content (Updated to use ElasticScrollArea with viewportClassName) ---
 const SidebarContent = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={clsx(
-      "flex flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto px-3 py-2 scrollbar-thin",
-      className
-    )}
-    {...props}
-  />
-));
+  React.HTMLAttributes<HTMLDivElement> & { elasticity?: boolean }
+>(({ className, children, elasticity = false, ...props }, ref) => {
+  if (elasticity) {
+    return (
+      <ElasticScrollArea
+        ref={ref}
+        className="flex-1 min-h-0 w-full"
+        scrollbarVisibility="auto"
+        // This is the critical fix: force the Radix viewport's inner wrapper to be block
+        viewportClassName="[&>div]:!block"
+      >
+        <div
+          className={clsx("flex flex-col gap-1 px-3 py-2 w-full", className)}
+          {...props}
+        >
+          {children}
+        </div>
+      </ElasticScrollArea>
+    );
+  }
+
+  return (
+    <div
+      ref={ref}
+      className={clsx(
+        "flex flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto px-3 py-2 scrollbar-thin",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+});
 SidebarContent.displayName = "Sidebar.Content";
 
 // --- Footer ---
@@ -344,7 +449,7 @@ const SidebarFooter = React.forwardRef<
 ));
 SidebarFooter.displayName = "Sidebar.Footer";
 
-// --- Item Variants (UPDATED) ---
+// --- Item Variants ---
 const sidebarItemVariants = cva(
   "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-graphite-ring",
   {
@@ -370,7 +475,6 @@ const sidebarItemVariants = cva(
       },
     },
     compoundVariants: [
-      // --- Primary Parent (Default) ---
       {
         parentVariant: "primary",
         isActive: true,
@@ -383,7 +487,6 @@ const sidebarItemVariants = cva(
         className:
           "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-secondary/60",
       },
-      // --- Secondary Parent (Fix for contrast) ---
       {
         parentVariant: "secondary",
         isActive: true,
@@ -396,7 +499,6 @@ const sidebarItemVariants = cva(
         className:
           "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-card/60",
       },
-      // --- Ghost Parent ---
       {
         parentVariant: "ghost",
         isActive: true,
@@ -451,7 +553,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
     const [isPressed, setIsPressed] = useState(false);
     const iconSize = props.size === "lg" ? 24 : props.size === "sm" ? 16 : 20;
 
-    const ButtonContent = (
+    return (
       <button
         ref={localRef}
         onPointerDown={(e) => {
@@ -463,7 +565,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
         className={clsx(
           sidebarItemVariants({
             isActive,
-            parentVariant: contextVariant, // Pass the parent variant to CVA
+            parentVariant: contextVariant,
             size: props.size || contextSize,
             shape: props.shape || contextShape,
           }),
@@ -530,8 +632,6 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
         </AnimatePresence>
       </button>
     );
-
-    return ButtonContent;
   }
 );
 SidebarItem.displayName = "Sidebar.Item";
@@ -541,8 +641,11 @@ const SidebarTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<typeof IconButton>
 >(({ className, ...props }, ref) => {
-  const { state, toggleSidebar, isMobile } = useSidebar();
+  const { state, toggleSidebar, isMobile, side } = useSidebar();
   const isCollapsed = state === "collapsed";
+
+  const OpenIcon = side === "left" ? PanelLeftOpen : PanelRightOpen;
+  const CloseIcon = side === "left" ? PanelLeftClose : PanelRightClose;
 
   return (
     <IconButton
@@ -563,9 +666,9 @@ const SidebarTrigger = React.forwardRef<
       {isMobile ? (
         <Menu className="h-5 w-5" />
       ) : isCollapsed ? (
-        <PanelLeftOpen className="h-5 w-5" />
+        <OpenIcon className="h-5 w-5" />
       ) : (
-        <PanelLeftClose className="h-5 w-5" />
+        <CloseIcon className="h-5 w-5" />
       )}
     </IconButton>
   );

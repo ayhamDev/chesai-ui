@@ -21,10 +21,10 @@ import React from "react";
 import { Table, type TableRootProps } from "../table";
 import { DataTableColumnHeader } from "./column-header";
 import { DataTableContext } from "./context";
-import { DataTablePagination } from "./pagination";
-import { DataTableToolbar } from "./toolbar";
 import { DataTableFacetedFilter } from "./faceted-filter";
 import { advancedFilterFn } from "./filter-utils";
+import { DataTablePagination } from "./pagination";
+import { DataTableToolbar } from "./toolbar";
 
 export {
   DataTableColumnHeader,
@@ -71,7 +71,7 @@ export function DataTable<TData>({
   onColumnFiltersChange,
   globalFilter,
   onGlobalFilterChange,
-  isLoading, // Destructure new prop
+  isLoading,
   toolbarChildren,
   density = "default",
   renderContextMenu,
@@ -145,7 +145,7 @@ export function DataTable<TData>({
           table={table}
           density={density}
           renderContextMenu={renderContextMenu}
-          isLoading={isLoading} // Pass it down
+          isLoading={isLoading}
           {...tableProps}
         />
         <DataTablePagination />

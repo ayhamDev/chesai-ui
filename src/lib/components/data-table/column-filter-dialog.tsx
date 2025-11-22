@@ -51,12 +51,12 @@ export function ColumnFilterDialog<TData, TValue>({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 w-[280px]">
-      <div className="space-y-2">
+    <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-2">
         <Typography variant="small" className="font-semibold">
           Filter by {column.id}
         </Typography>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4">
           <SelectInput
             size="sm"
             variant="secondary"

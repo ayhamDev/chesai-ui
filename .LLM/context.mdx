@@ -2863,7 +2863,7 @@ const cardVariants = cva(
         secondary: "bg-graphite-secondary",
         /** A semi-transparent, blurred background effect. Best used on a colorful or textured background. */
         glass:
-          "bg-white/5 backdrop-blur-lg border border-white/10 text-graphite-primaryForeground",
+          "bg-white/20 backdrop-blur-lg border border-white/10 text-graphite-primaryForeground",
       },
       shape: {
         full: "rounded-3xl",
@@ -4229,12 +4229,12 @@ export function ColumnFilterDialog<TData, TValue>({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 w-[280px]">
-      <div className="space-y-2">
+    <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-2">
         <Typography variant="small" className="font-semibold">
           Filter by {column.id}
         </Typography>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4">
           <SelectInput
             size="sm"
             variant="secondary"
@@ -4289,7 +4289,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../button";
-import { Dialog, DialogContent, DialogTrigger } from "../dialog";
+import { Dialog, DialogContent } from "../dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -4366,12 +4366,10 @@ export function DataTableColumnHeader<TData, TValue>({
             {enableColumnFilter && (
               <>
                 <DropdownMenuSeparator />
-                <DialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <Filter className="mr-2 h-3.5 w-3.5 text-graphite-foreground/70" />
-                    Filter
-                  </DropdownMenuItem>
-                </DialogTrigger>
+                <DropdownMenuItem onSelect={() => setIsFilterOpen(true)}>
+                  <Filter className="mr-2 h-3.5 w-3.5 text-graphite-foreground/70" />
+                  Filter
+                </DropdownMenuItem>
               </>
             )}
           </DropdownMenuContent>
@@ -4642,10 +4640,10 @@ import React from "react";
 import { Table, type TableRootProps } from "../table";
 import { DataTableColumnHeader } from "./column-header";
 import { DataTableContext } from "./context";
-import { DataTablePagination } from "./pagination";
-import { DataTableToolbar } from "./toolbar";
 import { DataTableFacetedFilter } from "./faceted-filter";
 import { advancedFilterFn } from "./filter-utils";
+import { DataTablePagination } from "./pagination";
+import { DataTableToolbar } from "./toolbar";
 
 export {
   DataTableColumnHeader,
@@ -4955,7 +4953,7 @@ export function DataTablePagination<TData>() {
             >
               Rows per page
             </Typography>
-            <div className="w-[70px]">
+            <div className="w-[80px]">
               <SelectInput
                 size="sm"
                 variant="secondary"
@@ -4969,6 +4967,7 @@ export function DataTablePagination<TData>() {
                   { value: "30", label: "30" },
                   { value: "40", label: "40" },
                   { value: "50", label: "50" },
+                  { value: "100", label: "100" },
                 ]}
               />
             </div>
@@ -5235,22 +5234,20 @@ export function DataTableViewOptions<TData>() {
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   type ColumnDef,
+  type ColumnFiltersState,
   type PaginationState,
   type SortingState,
-  type ColumnFiltersState,
 } from "@tanstack/react-table";
 import {
-  MoreHorizontal,
   CheckCircle2,
-  XCircle,
   HelpCircle,
-  Timer,
-  Copy,
-  Trash2,
-  Eye,
   Mail,
+  MoreHorizontal,
+  Timer,
+  Trash2,
+  XCircle,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "../badge";
 import { Button } from "../button";
 import { Card } from "../card";
@@ -5263,9 +5260,8 @@ import {
   DropdownMenuTrigger,
 } from "../dropdown-menu";
 import { DataTableColumnHeader } from "./column-header";
-import { DataTable, advancedFilterFn } from "./index";
-import { ContextMenu } from "../context-menu";
 import { type AdvancedFilterValue } from "./filter-utils";
+import { DataTable, advancedFilterFn } from "./index";
 
 const meta: Meta<typeof DataTable> = {
   title: "Components/Data/DataTable",
@@ -6815,16 +6811,33 @@ const materialContentVariants: Variants = {
 // --- CONTENT ---
 export interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
   shape?: CardProps["shape"];
+  variant?: CardProps["variant"];
+  padding?: CardProps["padding"];
 }
 const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, children, shape = "minimal", ...props }, ref) => {
-    const { open, onOpenChange, titleId, descriptionId, variant } =
-      useDialogContext();
+  (
+    {
+      className,
+      children,
+      shape = "minimal",
+      variant = "primary",
+      padding = "md",
+      ...props
+    },
+    ref
+  ) => {
+    const {
+      open,
+      onOpenChange,
+      titleId,
+      descriptionId,
+      variant: dialogVariant,
+    } = useDialogContext();
 
     useEffect(() => {
       if (open) {
         document.body.style.overflow = "hidden";
-        if (variant === "fullscreen") {
+        if (dialogVariant === "fullscreen") {
           document.body.style.overscrollBehavior = "none";
         }
       }
@@ -6832,9 +6845,9 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
         document.body.style.overflow = "";
         document.body.style.overscrollBehavior = "";
       };
-    }, [open, variant]);
+    }, [open, dialogVariant]);
 
-    const isFullscreen = variant === "fullscreen";
+    const isFullscreen = dialogVariant === "fullscreen";
     const backdropVariants = isFullscreen
       ? materialBackdropVariants
       : iosBackdropVariants;
@@ -6920,7 +6933,8 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   ) : (
                     <Card
                       shape={shape}
-                      padding={"md"}
+                      variant={variant}
+                      padding={padding}
                       className="relative w-full shadow-2xl"
                     >
                       {children}
@@ -7966,6 +7980,11 @@ export interface ElasticScrollAreaProps
   onScrollUp?: () => void;
   /** Callback fired when the user scrolls down. */
   onScrollDown?: () => void;
+  /**
+   * CSS classes applied directly to the internal Radix Viewport element.
+   * Use this to override internal display behaviors (e.g., `[&>div]:!block`).
+   */
+  viewportClassName?: string;
 }
 
 // --- DEFAULT REFRESH INDICATOR ---
@@ -8206,6 +8225,7 @@ const ElasticScrollAreaRoot = forwardRef<
       RefreshIndicatorComponent = DefaultRefreshIndicator,
       onScrollUp,
       onScrollDown,
+      viewportClassName,
       ...props
     },
     ref
@@ -8289,7 +8309,10 @@ const ElasticScrollAreaRoot = forwardRef<
         >
           <ScrollAreaPrimitive.Viewport
             ref={localViewportRef}
-            className="h-full w-full rounded-[inherit]"
+            className={clsx(
+              "h-full w-full rounded-[inherit]",
+              viewportClassName
+            )}
             style={{ touchAction: isVertical ? "pan-y" : "pan-x" }}
             onScroll={onScrollUp || onScrollDown ? handleScroll : undefined}
           >
@@ -15641,28 +15664,43 @@ This section includes all related source files for the `sidebar` component, incl
 ```tsx
 "use client";
 
+import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+} from "lucide-react";
 import React, { createContext, useContext, useRef, useState } from "react";
 import useRipple from "use-ripple-hook";
+import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
+import { Sheet } from "../sheet";
 import { EASING } from "../stack-router/transitions";
 
 // --- Types ---
 type SidebarState = "expanded" | "collapsed";
 type SidebarSize = "sm" | "md" | "lg";
 type SidebarShape = "sharp" | "minimal" | "full";
+type SidebarVariant = "primary" | "secondary" | "ghost";
+type SidebarSide = "left" | "right";
 
 // --- Context ---
 interface SidebarContextProps {
   state: SidebarState;
+  openMobile: boolean;
+  setOpenMobile: (open: boolean) => void;
   toggleSidebar: () => void;
   setSidebarState: (state: SidebarState) => void;
   isMobile: boolean;
   size: SidebarSize;
   shape: SidebarShape;
+  variant: SidebarVariant;
+  side: SidebarSide;
 }
 
 const SidebarContext = createContext<SidebarContextProps | null>(null);
@@ -15686,21 +15724,30 @@ export const SidebarProvider = ({
   const [state, setState] = useState<SidebarState>(
     defaultOpen ? "expanded" : "collapsed"
   );
-  const isMobile = false;
+  const [openMobile, setOpenMobile] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const toggleSidebar = () => {
-    setState((prev) => (prev === "expanded" ? "collapsed" : "expanded"));
+    if (isMobile) {
+      setOpenMobile(!openMobile);
+    } else {
+      setState((prev) => (prev === "expanded" ? "collapsed" : "expanded"));
+    }
   };
 
   return (
     <SidebarContext.Provider
       value={{
         state,
+        openMobile,
+        setOpenMobile,
         toggleSidebar,
         setSidebarState: setState,
         isMobile,
         size: "md",
         shape: "minimal",
+        variant: "primary",
+        side: "left",
       }}
     >
       {children}
@@ -15714,8 +15761,9 @@ const sidebarVariants = cva(
   {
     variants: {
       layout: {
-        sidebar: "border-r border-graphite-border",
-        floating: "m-4 border-graphite-border shadow-lg h-[calc(100%-2rem)]",
+        sidebar: "",
+        floating:
+          "my-4 border border-graphite-border shadow-lg h-[calc(100%-2rem)]",
         inset: "bg-transparent",
       },
       variant: {
@@ -15723,20 +15771,93 @@ const sidebarVariants = cva(
         secondary: "bg-graphite-secondary",
         ghost: "bg-transparent",
       },
+      side: {
+        left: "",
+        right: "",
+      },
       shape: {
-        sharp: "rounded-none",
-        minimal: "rounded-2xl",
-        full: "rounded-3xl",
+        sharp: "",
+        minimal: "",
+        full: "",
       },
       overlay: {
-        true: "absolute top-0 left-0 z-50 h-full shadow-xl border-r border-graphite-border",
+        true: "absolute top-0 z-50 h-full shadow-xl",
         false: "relative h-full",
       },
     },
+    compoundVariants: [
+      // --- SIDEBAR LAYOUT (Attached) ---
+      {
+        layout: "sidebar",
+        side: "left",
+        className: "border-e border-graphite-border",
+      },
+      {
+        layout: "sidebar",
+        side: "left",
+        shape: "minimal",
+        className: "rounded-e-2xl",
+      },
+      {
+        layout: "sidebar",
+        side: "left",
+        shape: "full",
+        className: "rounded-e-3xl",
+      },
+      {
+        layout: "sidebar",
+        side: "left",
+        shape: "sharp",
+        className: "rounded-none",
+      },
+      {
+        layout: "sidebar",
+        side: "right",
+        className: "border-s border-graphite-border",
+      },
+      {
+        layout: "sidebar",
+        side: "right",
+        shape: "minimal",
+        className: "rounded-s-2xl",
+      },
+      {
+        layout: "sidebar",
+        side: "right",
+        shape: "full",
+        className: "rounded-s-3xl",
+      },
+      {
+        layout: "sidebar",
+        side: "right",
+        shape: "sharp",
+        className: "rounded-none",
+      },
+
+      // --- FLOATING LAYOUT (Detached) ---
+      { layout: "floating", side: "left", className: "ms-4" },
+      { layout: "floating", side: "right", className: "me-4" },
+      { layout: "floating", shape: "minimal", className: "rounded-2xl" },
+      { layout: "floating", shape: "full", className: "rounded-3xl" },
+      { layout: "floating", shape: "sharp", className: "rounded-none" },
+
+      // --- OVERLAY positioning ---
+      {
+        overlay: true,
+        side: "left",
+        className: "left-0 border-e border-graphite-border",
+      },
+      {
+        overlay: true,
+        side: "right",
+        className: "right-0 border-s border-graphite-border",
+      },
+    ],
     defaultVariants: {
       layout: "sidebar",
       variant: "primary",
       shape: "minimal",
+      side: "left",
       overlay: false,
     },
   }
@@ -15748,11 +15869,10 @@ interface SidebarProps
   collapsible?: boolean;
   width?: string;
   collapsedWidth?: string;
+  mobileWidth?: string;
   itemSize?: SidebarSize;
   itemShape?: SidebarShape;
-  /** If true, the sidebar will expand when hovered and collapse when the mouse leaves. */
   expandOnHover?: boolean;
-  /** If true, the expanded sidebar floats over content. A placeholder is kept for the collapsed width. */
   overlay?: boolean;
 }
 
@@ -15761,13 +15881,15 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
     {
       className,
       children,
-      layout,
-      variant,
-      shape,
+      layout = "sidebar",
+      variant = "primary",
+      side = "left",
+      shape = "minimal",
       itemSize = "md",
       itemShape = "minimal",
       width = "16rem",
       collapsedWidth = "4.5rem",
+      mobileWidth = "18rem",
       collapsible = true,
       expandOnHover = false,
       overlay = false,
@@ -15775,10 +15897,59 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
     },
     ref
   ) => {
-    const { state, setSidebarState, toggleSidebar, isMobile } = useSidebar();
+    const {
+      state,
+      setSidebarState,
+      toggleSidebar,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+    } = useSidebar();
     const isCollapsed = state === "collapsed";
 
-    // Handle Hover Interactions
+    if (isMobile) {
+      return (
+        <Sheet
+          open={openMobile}
+          onOpenChange={setOpenMobile}
+          forceSideSheet
+          side={side}
+        >
+          <Sheet.Content
+            className="p-0"
+            style={{ width: mobileWidth, maxWidth: "100vw" }}
+            aria-describedby={undefined}
+          >
+            <div
+              className={clsx(
+                "flex h-full flex-col",
+                variant === "secondary"
+                  ? "bg-graphite-secondary"
+                  : "bg-graphite-card"
+              )}
+            >
+              <SidebarContext.Provider
+                value={{
+                  state,
+                  openMobile,
+                  setOpenMobile,
+                  toggleSidebar,
+                  setSidebarState,
+                  isMobile,
+                  size: itemSize,
+                  shape: itemShape,
+                  variant: variant || "primary",
+                  side: side || "left",
+                }}
+              >
+                {children}
+              </SidebarContext.Provider>
+            </div>
+          </Sheet.Content>
+        </Sheet>
+      );
+    }
+
     const handleMouseEnter = () => {
       if (expandOnHover && isCollapsed) {
         setSidebarState("expanded");
@@ -15791,7 +15962,6 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       }
     };
 
-    // Handle Backdrop Click (for overlay mode without hover)
     const handleBackdropClick = () => {
       if (overlay && !expandOnHover) {
         setSidebarState("collapsed");
@@ -15799,6 +15969,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
     };
 
     const SidebarContent = (
+      // @ts-ignore
       <motion.aside
         ref={ref}
         initial={false}
@@ -15812,7 +15983,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={clsx(
-          sidebarVariants({ layout, variant, shape, overlay }),
+          sidebarVariants({ layout, variant, shape, side, overlay }),
           className
         )}
         data-state={state}
@@ -15824,31 +15995,31 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
 
     const contextValue = {
       state,
+      openMobile,
+      setOpenMobile,
       toggleSidebar,
       setSidebarState,
       isMobile,
       size: itemSize,
       shape: itemShape,
+      variant: variant || "primary",
+      side: side || "left",
     };
 
     if (overlay) {
       return (
         <SidebarContext.Provider value={contextValue}>
-          <div className="relative h-full flex shrink-0">
-            {/* 
-               Ghost Placeholder: 
-               Keeps the layout from shifting by reserving space equal to the collapsed width.
-            */}
+          <div
+            className={clsx(
+              "relative h-full flex shrink-0",
+              side === "right" && "flex-row-reverse"
+            )}
+          >
             <motion.div
               initial={false}
               animate={{ width: collapsedWidth }}
               className="h-full shrink-0 bg-transparent"
             />
-
-            {/* 
-               Backdrop / Mask:
-               Darkens the background content when expanded.
-            */}
             <AnimatePresence>
               {!isCollapsed && (
                 <motion.div
@@ -15862,8 +16033,6 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
                 />
               )}
             </AnimatePresence>
-
-            {/* Actual Sidebar (z-50) */}
             {SidebarContent}
           </div>
         </SidebarContext.Provider>
@@ -15892,20 +16061,43 @@ const SidebarHeader = React.forwardRef<
 ));
 SidebarHeader.displayName = "Sidebar.Header";
 
-// --- Content ---
+// --- Content (Updated to use ElasticScrollArea with viewportClassName) ---
 const SidebarContent = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={clsx(
-      "flex flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto px-3 py-2 scrollbar-thin",
-      className
-    )}
-    {...props}
-  />
-));
+  React.HTMLAttributes<HTMLDivElement> & { elasticity?: boolean }
+>(({ className, children, elasticity = false, ...props }, ref) => {
+  if (elasticity) {
+    return (
+      <ElasticScrollArea
+        ref={ref}
+        className="flex-1 min-h-0 w-full"
+        scrollbarVisibility="auto"
+        // This is the critical fix: force the Radix viewport's inner wrapper to be block
+        viewportClassName="[&>div]:!block"
+      >
+        <div
+          className={clsx("flex flex-col gap-1 px-3 py-2 w-full", className)}
+          {...props}
+        >
+          {children}
+        </div>
+      </ElasticScrollArea>
+    );
+  }
+
+  return (
+    <div
+      ref={ref}
+      className={clsx(
+        "flex flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto px-3 py-2 scrollbar-thin",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+});
 SidebarContent.displayName = "Sidebar.Content";
 
 // --- Footer ---
@@ -15923,12 +16115,17 @@ SidebarFooter.displayName = "Sidebar.Footer";
 
 // --- Item Variants ---
 const sidebarItemVariants = cva(
-  "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 hover:bg-graphite-secondary/60 focus-visible:ring-2 focus-visible:ring-graphite-ring",
+  "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-graphite-ring",
   {
     variants: {
       isActive: {
-        true: "bg-graphite-secondary text-graphite-foreground font-semibold",
-        false: "text-graphite-foreground/70 hover:text-graphite-foreground",
+        true: "",
+        false: "",
+      },
+      parentVariant: {
+        primary: "",
+        secondary: "",
+        ghost: "",
       },
       size: {
         sm: "py-1.5 text-xs",
@@ -15941,10 +16138,49 @@ const sidebarItemVariants = cva(
         full: "rounded-full",
       },
     },
+    compoundVariants: [
+      {
+        parentVariant: "primary",
+        isActive: true,
+        className:
+          "bg-graphite-secondary text-graphite-foreground font-semibold",
+      },
+      {
+        parentVariant: "primary",
+        isActive: false,
+        className:
+          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-secondary/60",
+      },
+      {
+        parentVariant: "secondary",
+        isActive: true,
+        className:
+          "bg-graphite-card shadow-sm text-graphite-foreground font-semibold",
+      },
+      {
+        parentVariant: "secondary",
+        isActive: false,
+        className:
+          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-card/60",
+      },
+      {
+        parentVariant: "ghost",
+        isActive: true,
+        className:
+          "bg-graphite-secondary text-graphite-foreground font-semibold",
+      },
+      {
+        parentVariant: "ghost",
+        isActive: false,
+        className:
+          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-secondary/60",
+      },
+    ],
     defaultVariants: {
       isActive: false,
       size: "md",
       shape: "minimal",
+      parentVariant: "primary",
     },
   }
 );
@@ -15960,8 +16196,15 @@ interface SidebarItemProps
 
 const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
   ({ className, icon, children, isActive, badge, ...props }, ref) => {
-    const { state, size: contextSize, shape: contextShape } = useSidebar();
-    const isCollapsed = state === "collapsed";
+    const {
+      state,
+      size: contextSize,
+      shape: contextShape,
+      variant: contextVariant,
+      isMobile,
+    } = useSidebar();
+
+    const isCollapsed = !isMobile && state === "collapsed";
     const localRef = useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -15974,7 +16217,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
     const [isPressed, setIsPressed] = useState(false);
     const iconSize = props.size === "lg" ? 24 : props.size === "sm" ? 16 : 20;
 
-    const ButtonContent = (
+    return (
       <button
         ref={localRef}
         onPointerDown={(e) => {
@@ -15986,10 +16229,11 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
         className={clsx(
           sidebarItemVariants({
             isActive,
+            parentVariant: contextVariant,
             size: props.size || contextSize,
             shape: props.shape || contextShape,
           }),
-          "px-3", // Consistent padding
+          "px-3",
           className
         )}
         {...props}
@@ -16052,8 +16296,6 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
         </AnimatePresence>
       </button>
     );
-
-    return ButtonContent;
   }
 );
 SidebarItem.displayName = "Sidebar.Item";
@@ -16063,8 +16305,11 @@ const SidebarTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<typeof IconButton>
 >(({ className, ...props }, ref) => {
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, isMobile, side } = useSidebar();
   const isCollapsed = state === "collapsed";
+
+  const OpenIcon = side === "left" ? PanelLeftOpen : PanelRightOpen;
+  const CloseIcon = side === "left" ? PanelLeftClose : PanelRightClose;
 
   return (
     <IconButton
@@ -16073,13 +16318,21 @@ const SidebarTrigger = React.forwardRef<
       size="sm"
       onClick={toggleSidebar}
       className={clsx("text-graphite-foreground/60", className)}
-      aria-label={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+      aria-label={
+        isMobile
+          ? "Open Menu"
+          : isCollapsed
+          ? "Expand Sidebar"
+          : "Collapse Sidebar"
+      }
       {...props}
     >
-      {isCollapsed ? (
-        <PanelLeftOpen className="h-5 w-5" />
+      {isMobile ? (
+        <Menu className="h-5 w-5" />
+      ) : isCollapsed ? (
+        <OpenIcon className="h-5 w-5" />
       ) : (
-        <PanelLeftClose className="h-5 w-5" />
+        <CloseIcon className="h-5 w-5" />
       )}
     </IconButton>
   );
@@ -16099,11 +16352,14 @@ const SidebarLabel = ({
   children,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => {
-  const { state } = useSidebar();
+  const { state, isMobile } = useSidebar();
+  const isCollapsed = !isMobile && state === "collapsed";
+
   return (
+    // @ts-ignore
     <motion.div
       initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: state === "collapsed" ? 0 : 1, y: 0 }}
+      animate={{ opacity: isCollapsed ? 0 : 1, y: 0 }}
       transition={{ duration: 0.12 }}
       exit={{ opacity: 0 }}
       className={clsx(
@@ -16212,7 +16468,11 @@ const meta: Meta<typeof Sidebar> = {
 export default meta;
 type Story = StoryObj<typeof Sidebar>;
 
-const SidebarContentExample = () => {
+const SidebarContentExample = ({
+  elasticity = false,
+}: {
+  elasticity?: boolean;
+}) => {
   const [active, setActive] = React.useState("inbox");
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -16231,7 +16491,7 @@ const SidebarContentExample = () => {
           )}
         </div>
       </Sidebar.Header>
-      <Sidebar.Content>
+      <Sidebar.Content elasticity={elasticity}>
         <Sidebar.Group>
           <Sidebar.Item
             icon={<LayoutDashboard />}
@@ -16285,6 +16545,17 @@ const SidebarContentExample = () => {
             Products
           </Sidebar.Item>
         </Sidebar.Group>
+        {/* Add more items to demonstrate scrolling if needed */}
+        {elasticity && (
+          <Sidebar.Group>
+            <Sidebar.Label>Archive</Sidebar.Label>
+            {Array.from({ length: 15 }).map((_, i) => (
+              <Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>
+                Archive Item {i + 1}
+              </Sidebar.Item>
+            ))}
+          </Sidebar.Group>
+        )}
       </Sidebar.Content>
       <Sidebar.Footer className="justify-between border-t border-graphite-border">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -16315,8 +16586,8 @@ const SidebarContentExample = () => {
 export const Default: Story = {
   name: "1. Playground (All Props)",
   args: {
-    layout: "sidebar",
-    variant: "ghost",
+    layout: "inset",
+    variant: "primary",
     shape: "minimal",
     itemShape: "full",
     itemSize: "md",
@@ -16376,7 +16647,7 @@ export const DenseSharp: Story = {
 };
 
 export const WhatsAppStyle: Story = {
-  name: "Overlay & Hover (WhatsApp Style)",
+  name: "5. Overlay & Hover (WhatsApp Style)",
   args: {
     layout: "sidebar",
     variant: "primary",
@@ -16429,6 +16700,38 @@ export const WhatsAppStyle: Story = {
       },
     },
   },
+};
+
+export const ScrollableWithElasticity: Story = {
+  name: "6. Scrollable With Elasticity",
+  args: {
+    layout: "inset",
+    variant: "primary",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Demonstrates the `ElasticScrollArea` integration. `elasticity={true}` is passed to `Sidebar.Content` to enable the rubber-band effect when scrolling past the boundaries. This story generates extra items to force overflow.",
+      },
+    },
+  },
+  render: (args) => (
+    <Sidebar.Provider>
+      <Sidebar {...args}>
+        <SidebarContentExample elasticity={true} />
+      </Sidebar>
+      <main className="flex-1 p-6 flex flex-col bg-graphite-background">
+        <header className="h-16 border-b border-graphite-border flex items-center px-4 gap-4 bg-graphite-card rounded-xl mb-4">
+          <Sidebar.Trigger />
+          <Typography variant="h4">Elastic Scroll Demo</Typography>
+        </header>
+        <div className="flex-1 flex items-center justify-center text-graphite-foreground/50">
+          Scroll the sidebar to see the elastic effect.
+        </div>
+      </main>
+    </Sidebar.Provider>
+  ),
 };
 ```
 
@@ -18812,17 +19115,19 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { createContext, useContext, useMemo } from "react";
 import { ContextMenu } from "../context-menu";
-import { Skeleton } from "../skeleton"; // Import Skeleton
+import { Skeleton } from "../skeleton";
 
 // --- Types & Context ---
 type ResponsiveLayout = "scroll" | "custom";
 type TableDensity = "default" | "compact";
+type TableVariant = "primary" | "secondary";
 
 interface TableContextProps {
   table: TanstackTable<any>;
   responsiveLayout: ResponsiveLayout;
   isMobile: boolean;
   density: TableDensity;
+  variant: TableVariant;
   renderContextMenu?: (row: Row<any>) => React.ReactNode;
 }
 
@@ -18837,9 +19142,20 @@ const useTableContext = () => {
 };
 
 // --- CVA Variants ---
-const tableContainerVariants = cva(
-  "w-full overflow-hidden rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground"
-);
+
+// 1. Container Variants
+const tableContainerVariants = cva("w-full overflow-hidden", {
+  variants: {
+    variant: {
+      primary:
+        "rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-sm",
+      secondary: "rounded-none bg-transparent text-graphite-foreground",
+    },
+  },
+  defaultVariants: {
+    variant: "primary",
+  },
+});
 
 const tableVariants = cva("w-full text-sm caption-bottom", {
   variants: {
@@ -18851,48 +19167,87 @@ const tableVariants = cva("w-full text-sm caption-bottom", {
   },
 });
 
+// 2. Header Variants
 const thVariants = cva(
-  "h-10 px-4 text-left align-middle font-semibold text-graphite-foreground [&:has([role=checkbox])]:pr-0 border-b border-graphite-border bg-graphite-secondary/30",
+  "h-10 px-4 text-left align-middle font-semibold [&:has([role=checkbox])]:pr-0 transition-colors",
   {
     variants: {
+      variant: {
+        primary:
+          "bg-graphite-secondary/50 text-graphite-foreground border-b border-graphite-border",
+        secondary:
+          "bg-transparent text-graphite-foreground/60 border-b-2 border-graphite-border",
+      },
       density: {
         default: "py-3",
         compact: "py-2",
       },
-      isFirstSticky: { true: "sticky left-0 z-10 bg-graphite-card" },
+      isFirstSticky: {
+        true: "sticky left-0 z-10",
+        false: "",
+      },
+    },
+    defaultVariants: {
+      variant: "primary",
     },
   }
 );
 
+// 3. Row Variants
 const trVariants = cva(
-  "border-b border-graphite-border transition-colors hover:bg-graphite-secondary/40 data-[state=selected]:bg-graphite-secondary/60"
-);
-
-const tdVariants = cva(
-  "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-graphite-foreground",
+  "transition-colors data-[state=selected]:bg-graphite-secondary/60",
   {
     variants: {
-      density: {
-        default: "py-4",
-        compact: "py-2",
+      variant: {
+        primary:
+          "border-b border-graphite-border hover:bg-graphite-secondary/40",
+        secondary:
+          "border-b border-graphite-border/50 border-dashed hover:bg-graphite-secondary/20",
       },
-      isFirstSticky: { true: "sticky left-0 z-10 bg-graphite-card" },
+    },
+    defaultVariants: {
+      variant: "primary",
     },
   }
 );
+
+// 4. Cell Variants
+const tdVariants = cva("p-4 align-middle [&:has([role=checkbox])]:pr-0", {
+  variants: {
+    density: {
+      default: "py-4",
+      compact: "py-2",
+    },
+    isFirstSticky: {
+      true: "sticky left-0 z-10",
+      false: "",
+    },
+    variant: {
+      primary: "",
+      secondary: "",
+    },
+  },
+  // Removed compound variants that forced a specific background color
+});
 
 // --- Sub-Components ---
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
 >(({ className, colIndex, ...props }, ref) => {
-  const { responsiveLayout, density } = useTableContext();
+  const { responsiveLayout, density, variant } = useTableContext();
   const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
 
   return (
     <th
       ref={ref}
-      className={clsx(thVariants({ density, isFirstSticky }), className)}
+      className={clsx(
+        thVariants({ density, variant, isFirstSticky }),
+        // Manually apply background for sticky header to prevent transparency issues
+        isFirstSticky && variant === "primary" && "bg-graphite-secondary/50",
+        isFirstSticky && variant === "secondary" && "bg-graphite-background",
+        className
+      )}
       {...props}
     />
   );
@@ -18903,13 +19258,20 @@ const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
 >(({ className, colIndex, ...props }, ref) => {
-  const { responsiveLayout, density } = useTableContext();
+  const { responsiveLayout, density, variant } = useTableContext();
   const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
 
   return (
     <td
       ref={ref}
-      className={clsx(tdVariants({ density, isFirstSticky }), className)}
+      className={clsx(
+        tdVariants({ density, variant, isFirstSticky }),
+        // Ensure sticky columns have a background matching the row context to hide scrolled content
+        // We use 'inherit' or the card background usually, but to "look normal" (match the row hover),
+        // we mostly rely on the TR background. However, to prevent see-through on scroll:
+        isFirstSticky && "bg-inherit",
+        className
+      )}
       {...props}
     />
   );
@@ -18923,12 +19285,12 @@ const TableRow = <TData extends {}>({
   row: Row<TData>;
   [key: string]: any;
 }) => {
-  const { renderContextMenu } = useTableContext();
+  const { renderContextMenu, variant } = useTableContext();
 
   const RowContent = (
     <tr
       data-state={row.getIsSelected() && "selected"}
-      className={clsx(trVariants(), rest.className)}
+      className={clsx(trVariants({ variant }), rest.className)}
       {...rest}
     >
       {row.getVisibleCells().map((cell, cellIndex) => (
@@ -18959,16 +19321,12 @@ export interface TableRootProps<TData>
   responsiveLayout?: ResponsiveLayout;
   breakpoint?: "sm" | "md" | "lg";
   density?: TableDensity;
+  variant?: TableVariant;
   renderMobileRow?: (row: Row<TData>) => React.ReactNode;
   renderContextMenu?: (row: Row<TData>) => React.ReactNode;
-  /**
-   * If true, renders skeleton rows in the table body.
-   */
+  /** If true, renders skeleton rows in the table body. */
   isLoading?: boolean;
-  /**
-   * Number of skeleton rows to render when loading.
-   * @default 10
-   */
+  /** Number of skeleton rows to render when loading. @default 10 */
   skeletonCount?: number;
 }
 
@@ -18978,6 +19336,7 @@ const TableRoot = <TData extends {}>({
   responsiveLayout = "scroll",
   breakpoint = "md",
   density = "default",
+  variant = "primary", // Default to primary
   renderMobileRow,
   renderContextMenu,
   isLoading = false,
@@ -18988,8 +19347,15 @@ const TableRoot = <TData extends {}>({
   const isMobile = useMediaQuery(`(max-width: ${breakpointMap[breakpoint]}px)`);
 
   const contextValue = useMemo(
-    () => ({ table, responsiveLayout, isMobile, density, renderContextMenu }),
-    [table, responsiveLayout, isMobile, density, renderContextMenu]
+    () => ({
+      table,
+      responsiveLayout,
+      isMobile,
+      density,
+      variant,
+      renderContextMenu,
+    }),
+    [table, responsiveLayout, isMobile, density, variant, renderContextMenu]
   );
 
   const layout = isMobile ? responsiveLayout : "desktop";
@@ -19040,7 +19406,7 @@ const TableRoot = <TData extends {}>({
     <TableContext.Provider value={contextValue}>
       <div
         className={clsx(
-          tableContainerVariants(),
+          tableContainerVariants({ variant }),
           isMobile && responsiveLayout === "scroll" && "overflow-x-auto",
           className
         )}
@@ -19068,7 +19434,7 @@ const TableRoot = <TData extends {}>({
               // --- Loading Skeletons ---
               Array.from({ length: skeletonCount }).map((_, rowIndex) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-                <tr key={rowIndex} className={trVariants()}>
+                <tr key={rowIndex} className={trVariants({ variant })}>
                   {table.getVisibleLeafColumns().map((column, colIndex) => (
                     <TableCell key={column.id} colIndex={colIndex}>
                       <Skeleton className="h-6 w-full" />
@@ -19114,256 +19480,163 @@ import {
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
-  type Row,
 } from "@tanstack/react-table";
 import { Badge } from "../badge";
 import { Card } from "../card";
-import { Typography } from "../typography";
 import { Table, type TableRootProps } from "./index";
 
-const meta: Meta<TableRootProps<Payment>> = {
+const meta: Meta<TableRootProps<any>> = {
   title: "Components/Data/Table",
   component: Table,
   tags: ["autodocs"],
   parameters: {
-    layout: "centered",
-    docs: {
-      description: {
-        component:
-          "A versatile and responsive data table powered by TanStack Table. It displays data in a standard table on desktop and can transform into a horizontally scrollable table or a fully custom layout on mobile.",
-      },
-    },
+    layout: "padded",
   },
   argTypes: {
-    responsiveLayout: {
+    variant: {
       control: "select",
-      options: ["scroll", "custom"],
-      description: "Determines the table's layout on mobile viewports.",
+      options: ["primary", "secondary"],
+      description: "Visual style of the table",
     },
-    breakpoint: {
+    density: {
       control: "select",
-      options: ["sm", "md", "lg"],
-      description: "The viewport width at which the layout becomes responsive.",
+      options: ["default", "compact"],
     },
-    stickyCellVariant: {
-      control: "select",
-      options: ["card", "secondary"],
-      description: "Background color for the sticky column in 'scroll' mode.",
-    },
-    table: { control: false },
-    renderMobileRow: { control: false },
   },
 };
 
 export default meta;
-type Story = StoryObj<TableRootProps<Payment>>;
+type Story = StoryObj<TableRootProps<any>>;
 
-// --- Sample Data and Columns ---
-interface Payment {
-  id: string;
-  account: string;
-  amount: number;
-  dueDate: string;
-  period: string;
-  status: "Paid" | "Pending" | "Overdue";
+// --- Mock Data ---
+interface Invoice {
+  invoice: string;
+  status: string;
+  method: string;
+  amount: string;
 }
 
-const sampleData: Payment[] = [
+const invoices: Invoice[] = [
   {
-    id: "1",
-    account: "Visa - 3412",
-    amount: 1190,
-    dueDate: "04/01/2016",
-    period: "03/01/2016 - 03/31/2016",
+    invoice: "INV001",
     status: "Paid",
+    method: "Credit Card",
+    amount: "$250.00",
   },
   {
-    id: "2",
-    account: "Visa - 6067",
-    amount: 2443,
-    dueDate: "03/01/2016",
-    period: "02/01/2016 - 02/29/2016",
-    status: "Paid",
-  },
-  {
-    id: "3",
-    account: "Corporate AMEX",
-    amount: 1181,
-    dueDate: "03/01/2016",
-    period: "02/01/2016 - 02/29/2016",
-    status: "Overdue",
-  },
-  {
-    id: "4",
-    account: "Visa - 3412",
-    amount: 842,
-    dueDate: "02/01/2016",
-    period: "01/01/2016 - 01/31/2016",
+    invoice: "INV002",
     status: "Pending",
+    method: "PayPal",
+    amount: "$150.00",
+  },
+  {
+    invoice: "INV003",
+    status: "Unpaid",
+    method: "Bank Transfer",
+    amount: "$350.00",
+  },
+  {
+    invoice: "INV004",
+    status: "Paid",
+    method: "Credit Card",
+    amount: "$450.00",
+  },
+  {
+    invoice: "INV005",
+    status: "Paid",
+    method: "PayPal",
+    amount: "$550.00",
+  },
+  {
+    invoice: "INV006",
+    status: "Pending",
+    method: "Bank Transfer",
+    amount: "$200.00",
+  },
+  {
+    invoice: "INV007",
+    status: "Unpaid",
+    method: "Credit Card",
+    amount: "$300.00",
   },
 ];
 
-const basicColumns: ColumnDef<Payment>[] = [
+const columns: ColumnDef<Invoice>[] = [
   {
-    accessorKey: "account",
-    header: "Account",
-  },
-  {
-    accessorKey: "amount",
-    header: "Amount",
-    cell: (info) => `$${info.getValue<number>().toLocaleString()}`,
-  },
-  {
-    accessorKey: "dueDate",
-    header: "Due Date",
-  },
-  {
-    accessorKey: "period",
-    header: "Period",
+    accessorKey: "invoice",
+    header: "Invoice",
+    cell: (info) => (
+      <span className="font-medium">{info.getValue<string>()}</span>
+    ),
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: (info) => {
-      const status = info.getValue<Payment["status"]>();
-      const variant = {
-        Paid: "primary",
-        Pending: "secondary",
-        Overdue: "destructive",
-      }[status] as "primary" | "secondary" | "destructive";
+      const status = info.getValue<string>();
+      const variant =
+        status === "Paid"
+          ? "primary"
+          : status === "Pending"
+          ? "secondary"
+          : "destructive";
       return (
-        <Badge variant={variant} shape="full">
+        <Badge variant={variant} shape="minimal">
           {status}
         </Badge>
       );
     },
   },
-];
-
-// --- STORIES ---
-
-export const DesktopView: Story = {
-  name: "1. Desktop View",
-  args: {},
-  parameters: {
-    viewport: { defaultViewport: "responsive" },
+  {
+    accessorKey: "method",
+    header: "Method",
   },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card className="w-full max-w-4xl overflow-hidden">
-        <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-export const ScrollLayout: Story = {
-  name: "2. Responsive: Scroll Layout",
-  args: {
-    responsiveLayout: "scroll",
-    breakpoint: "sm",
-    stickyCellVariant: "card"
-  },
-  parameters: {
-    viewport: { defaultViewport: "mobile1" },
-  },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <Card className="w-full">
-        <Table<Payment> {...args} table={table} />
-      </Card>
-    );
-  },
-};
-
-export const CustomMobileLayout: Story = {
-  name: "3. Responsive: Custom Layout",
-  args: {
-    responsiveLayout: "custom",
-    renderMobileRow: (row: Row<Payment>) => (
-      <Card
-        shape="minimal"
-        variant={"primary"}
-        isSelected={row.original.status === "Overdue"}
-        padding="lg"
-        onClick={() => alert(`Clicked on account: ${row.original.account}`)}
-        className="cursor-pointer"
-      >
-        <div className="flex flex-col gap-8">
-          {/* Main Info */}
-          <div className="flex justify-between items-start gap-4">
-            <div>
-              <Typography variant="muted" className="!mt-0 !text-xs">
-                Account
-              </Typography>
-              <Typography variant="p" className="!mt-0 font-semibold truncate">
-                {row.original.account}
-              </Typography>
-            </div>
-            <div>
-              <Typography variant="muted" className="!mt-0 !text-xs text-right">
-                Amount
-              </Typography>
-              <Typography variant="p" className="!mt-0 font-semibold truncate">
-                ${row.original.amount.toLocaleString()}
-              </Typography>
-            </div>
-          </div>
-          {/* Secondary Info */}
-          <div className="flex justify-between items-center gap-8">
-            {row.getVisibleCells().map((cell) => {
-              // We've already rendered 'account' and 'amount', so we skip them.
-              if (["account", "amount"].includes(cell.column.id)) return null;
-              return (
-                <div key={cell.id}>
-                  <Typography variant="muted" className="!mt-0 !text-xs">
-                    {cell.column.columnDef.header as React.ReactNode}
-                  </Typography>
-                  <Typography variant="small" className="!mt-0 font-semibold">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </Typography>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Card>
+  {
+    accessorKey: "amount",
+    header: "Amount",
+    cell: (info) => (
+      <span className="text-right block font-medium">
+        {info.getValue<string>()}
+      </span>
     ),
   },
+];
+
+const TableTemplate = (args: any) => {
+  const table = useReactTable({
+    data: invoices,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  return <Table {...args} table={table} />;
+};
+
+export const Primary: Story = {
+  args: {
+    variant: "primary",
+  },
+  render: TableTemplate,
+};
+
+export const Secondary: Story = {
+  name: "Secondary (Minimal)",
+  args: {
+    variant: "secondary",
+  },
   parameters: {
-    viewport: { defaultViewport: "mobile1" },
     docs: {
       description: {
         story:
-          "Set `responsiveLayout='custom'` and provide a `renderMobileRow` function. This function receives the `row` object, giving you complete control to render it as a card, an accordion, or any other custom component.",
+          "The secondary variant removes the outer border and background, making it suitable for nesting inside other containers or for a cleaner look.",
       },
     },
   },
-  render: (args) => {
-    const table = useReactTable({
-      data: sampleData,
-      columns: basicColumns,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
-    return (
-      <div className="w-full">
-        <Table<Payment> {...args} table={table} />
-      </div>
-    );
-  },
+  render: (args) => (
+    <Card variant="secondary" className="p-6">
+      <TableTemplate {...args} />
+    </Card>
+  ),
 };
 ```
 

@@ -1,26 +1,27 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   type ColumnDef,
+  type ColumnFiltersState,
   type PaginationState,
   type SortingState,
-  type ColumnFiltersState,
 } from "@tanstack/react-table";
 import {
-  MoreHorizontal,
   CheckCircle2,
-  XCircle,
-  HelpCircle,
-  Timer,
   Copy,
-  Trash2,
-  Eye,
+  HelpCircle,
   Mail,
+  MoreHorizontal,
+  Pen,
+  Timer,
+  Trash2,
+  XCircle,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "../badge";
 import { Button } from "../button";
 import { Card } from "../card";
 import { Checkbox } from "../checkbox";
+import { ContextMenu } from "../context-menu"; // Import ContextMenu
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,9 +30,8 @@ import {
   DropdownMenuTrigger,
 } from "../dropdown-menu";
 import { DataTableColumnHeader } from "./column-header";
-import { DataTable, advancedFilterFn } from "./index";
-import { ContextMenu } from "../context-menu";
 import { type AdvancedFilterValue } from "./filter-utils";
+import { DataTable, advancedFilterFn } from "./index";
 
 const meta: Meta<typeof DataTable> = {
   title: "Components/Data/DataTable",
@@ -47,6 +47,7 @@ const meta: Meta<typeof DataTable> = {
     },
     data: { control: false },
     columns: { control: false },
+    isLoading: { control: "boolean" },
   },
 };
 
@@ -199,6 +200,8 @@ const columns: ColumnDef<Payment>[] = [
   },
 ];
 
+// --- STORIES ---
+
 export const Default: Story = {
   name: "1. Default Table",
   render: (args) => (
@@ -247,8 +250,51 @@ export const WithBulkActions: Story = {
   ),
 };
 
+export const WithContextMenu: Story = {
+  name: "3. With Context Menu",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Right-click (or long-press on touch devices) on any row to reveal context-specific actions. The `renderContextMenu` prop wraps the row internally with the ContextMenu trigger.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card className="w-full">
+      <DataTable
+        data={sampleData}
+        columns={columns}
+        density={args.density}
+        // Provide the content of the menu. The trigger is handled by the Table row.
+        renderContextMenu={(row) => (
+          <ContextMenu.Content>
+            <ContextMenu.Item
+              onClick={() => alert(`Editing ${row.original.email}`)}
+            >
+              <Pen className="mr-2 h-4 w-4" />
+              Edit Payment
+            </ContextMenu.Item>
+            <ContextMenu.Item
+              onClick={() => navigator.clipboard.writeText(row.original.id)}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copy ID
+            </ContextMenu.Item>
+            <ContextMenu.Separator />
+            <ContextMenu.Item className="text-red-500 focus:bg-red-50">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </ContextMenu.Item>
+          </ContextMenu.Content>
+        )}
+      />
+    </Card>
+  ),
+};
+
 export const ServerSideSimulation: Story = {
-  name: "3. Server-Side Simulation",
+  name: "4. Server-Side Simulation",
   render: function Render() {
     const [data, setData] = useState<Payment[]>([]);
     const [pageCount, setPageCount] = useState(0);
@@ -341,13 +387,16 @@ export const ServerSideSimulation: Story = {
           onColumnFiltersChange={setColumnFilters}
           globalFilter={globalFilter}
           onGlobalFilterChange={setGlobalFilter}
+          // Just to demonstrate smooth transitions between states
+          isLoading={isLoading && data.length === 0}
         />
       </Card>
     );
   },
 };
+
 export const ServerSideSimulationWithSkeleton: Story = {
-  name: "3. Server-Side Simulation With Skeleton",
+  name: "5. Server-Side Simulation With Skeleton",
   render: function Render() {
     const [data, setData] = useState<Payment[]>([]);
     const [pageCount, setPageCount] = useState(0);
@@ -362,12 +411,13 @@ export const ServerSideSimulationWithSkeleton: Story = {
 
     useEffect(() => {
       setIsLoading(true);
-      // setData([]); // Optional: Clear data to show full skeleton, or keep it for "background refresh" feel.
+      // Forcing empty data briefly to ensure skeleton shows during "fetch"
+      setData([]);
 
       const timer = setTimeout(() => {
         let filteredData = [...sampleData];
 
-        // 1. Global Search (Server-side)
+        // Logic mirroring backend...
         if (globalFilter) {
           const lowerFilter = globalFilter.toLowerCase();
           filteredData = filteredData.filter(
@@ -377,12 +427,10 @@ export const ServerSideSimulationWithSkeleton: Story = {
           );
         }
 
-        // 2. Column Filtering (Server-side)
         if (columnFilters.length > 0) {
           columnFilters.forEach((filter) => {
             const { id, value } = filter;
             const filterVal = value as AdvancedFilterValue;
-
             const op = filterVal.operator || "contains";
             const val = filterVal.value ?? filterVal;
 
@@ -398,7 +446,6 @@ export const ServerSideSimulationWithSkeleton: Story = {
           });
         }
 
-        // 3. Sorting
         if (sorting.length > 0) {
           const { id, desc } = sorting[0];
           filteredData.sort((a, b) => {
@@ -410,20 +457,17 @@ export const ServerSideSimulationWithSkeleton: Story = {
           });
         }
 
-        // 4. Pagination
         const totalRows = filteredData.length;
         const start = pagination.pageIndex * pagination.pageSize;
         const end = start + pagination.pageSize;
-
         const safeStart = Math.min(start, totalRows);
         const safeEnd = Math.min(end, totalRows);
-
         const slicedData = filteredData.slice(safeStart, safeEnd);
 
         setData(slicedData);
         setPageCount(Math.ceil(totalRows / pagination.pageSize));
         setIsLoading(false);
-      }, 1500); // Increased timeout to 1500ms to clearly see the skeleton
+      }, 1500);
 
       return () => clearTimeout(timer);
     }, [pagination, sorting, columnFilters, globalFilter]);
@@ -442,7 +486,7 @@ export const ServerSideSimulationWithSkeleton: Story = {
           onColumnFiltersChange={setColumnFilters}
           globalFilter={globalFilter}
           onGlobalFilterChange={setGlobalFilter}
-          isLoading={isLoading} // <--- Pass the state here
+          isLoading={isLoading}
         />
       </Card>
     );

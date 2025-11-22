@@ -5,22 +5,20 @@ import {
   type Row,
   type Table as TanstackTable,
 } from "@tanstack/react-table";
-import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { createContext, useContext, useMemo } from "react";
 import { ContextMenu } from "../context-menu";
-import { Skeleton } from "../skeleton"; // Import Skeleton
+import { Skeleton } from "../skeleton";
 
 // --- Types & Context ---
-type ResponsiveLayout = "scroll" | "custom";
 type TableDensity = "default" | "compact";
+type TableVariant = "primary" | "secondary";
 
 interface TableContextProps {
   table: TanstackTable<any>;
-  responsiveLayout: ResponsiveLayout;
-  isMobile: boolean;
   density: TableDensity;
+  variant: TableVariant;
   renderContextMenu?: (row: Row<any>) => React.ReactNode;
 }
 
@@ -35,62 +33,89 @@ const useTableContext = () => {
 };
 
 // --- CVA Variants ---
-const tableContainerVariants = cva(
-  "w-full overflow-hidden rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground"
-);
 
-const tableVariants = cva("w-full text-sm caption-bottom", {
+// 1. Container Variants
+// Added overflow-x-auto to ensure the table is scrollable on small screens by default
+const tableContainerVariants = cva("w-full overflow-hidden overflow-x-auto", {
   variants: {
-    layout: {
-      desktop: "table-auto border-collapse",
-      scroll: "table-auto border-collapse",
-      custom: "flex flex-col gap-3",
+    variant: {
+      primary:
+        "rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-sm",
+      secondary: "rounded-none bg-transparent text-graphite-foreground",
     },
+  },
+  defaultVariants: {
+    variant: "primary",
   },
 });
 
+const tableVariants = cva("w-full text-sm caption-bottom border-collapse");
+
+// 2. Header Variants
 const thVariants = cva(
-  "h-10 px-4 text-left align-middle font-semibold text-graphite-foreground [&:has([role=checkbox])]:pr-0 border-b border-graphite-border bg-graphite-secondary/30",
+  "h-10 px-4 text-left align-middle font-semibold [&:has([role=checkbox])]:pr-0 transition-colors",
   {
     variants: {
+      variant: {
+        primary:
+          "bg-graphite-secondary/50 text-graphite-foreground border-b border-graphite-border",
+        secondary:
+          "bg-transparent text-graphite-foreground/60 border-b-2 border-graphite-border",
+      },
       density: {
         default: "py-3",
         compact: "py-2",
       },
-      isFirstSticky: { true: "sticky left-0 z-10 bg-graphite-card" },
+    },
+    defaultVariants: {
+      variant: "primary",
     },
   }
 );
 
+// 3. Row Variants
 const trVariants = cva(
-  "border-b border-graphite-border transition-colors hover:bg-graphite-secondary/40 data-[state=selected]:bg-graphite-secondary/60"
-);
-
-const tdVariants = cva(
-  "p-4 align-middle [&:has([role=checkbox])]:pr-0 text-graphite-foreground",
+  "transition-colors data-[state=selected]:bg-graphite-secondary/60",
   {
     variants: {
-      density: {
-        default: "py-4",
-        compact: "py-2",
+      variant: {
+        primary:
+          "border-b border-graphite-border hover:bg-graphite-secondary/40",
+        secondary:
+          "border-b border-graphite-border/50 border-dashed hover:bg-graphite-secondary/20",
       },
-      isFirstSticky: { true: "sticky left-0 z-10 bg-graphite-card" },
+    },
+    defaultVariants: {
+      variant: "primary",
     },
   }
 );
+
+// 4. Cell Variants
+const tdVariants = cva("p-4 align-middle [&:has([role=checkbox])]:pr-0", {
+  variants: {
+    density: {
+      default: "py-4",
+      compact: "py-2",
+    },
+    variant: {
+      primary: "",
+      secondary: "",
+    },
+  },
+});
 
 // --- Sub-Components ---
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
->(({ className, colIndex, ...props }, ref) => {
-  const { responsiveLayout, density } = useTableContext();
-  const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
+  React.ThHTMLAttributes<HTMLTableCellElement>
+>(({ className, ...props }, ref) => {
+  const { density, variant } = useTableContext();
 
   return (
     <th
       ref={ref}
-      className={clsx(thVariants({ density, isFirstSticky }), className)}
+      className={clsx(thVariants({ density, variant }), className)}
       {...props}
     />
   );
@@ -99,15 +124,14 @@ TableHead.displayName = "Table.Head";
 
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
->(({ className, colIndex, ...props }, ref) => {
-  const { responsiveLayout, density } = useTableContext();
-  const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
+  React.TdHTMLAttributes<HTMLTableCellElement>
+>(({ className, ...props }, ref) => {
+  const { density, variant } = useTableContext();
 
   return (
     <td
       ref={ref}
-      className={clsx(tdVariants({ density, isFirstSticky }), className)}
+      className={clsx(tdVariants({ density, variant }), className)}
       {...props}
     />
   );
@@ -121,16 +145,16 @@ const TableRow = <TData extends {}>({
   row: Row<TData>;
   [key: string]: any;
 }) => {
-  const { renderContextMenu } = useTableContext();
+  const { renderContextMenu, variant } = useTableContext();
 
   const RowContent = (
     <tr
       data-state={row.getIsSelected() && "selected"}
-      className={clsx(trVariants(), rest.className)}
+      className={clsx(trVariants({ variant }), rest.className)}
       {...rest}
     >
-      {row.getVisibleCells().map((cell, cellIndex) => (
-        <TableCell key={cell.id} colIndex={cellIndex}>
+      {row.getVisibleCells().map((cell) => (
+        <TableCell key={cell.id}>
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
       ))}
@@ -154,102 +178,47 @@ TableRow.displayName = "Table.Row";
 export interface TableRootProps<TData>
   extends React.HTMLAttributes<HTMLDivElement> {
   table: TanstackTable<TData>;
-  responsiveLayout?: ResponsiveLayout;
-  breakpoint?: "sm" | "md" | "lg";
   density?: TableDensity;
-  renderMobileRow?: (row: Row<TData>) => React.ReactNode;
+  variant?: TableVariant;
   renderContextMenu?: (row: Row<TData>) => React.ReactNode;
-  /**
-   * If true, renders skeleton rows in the table body.
-   */
+  /** If true, renders skeleton rows in the table body. */
   isLoading?: boolean;
-  /**
-   * Number of skeleton rows to render when loading.
-   * @default 10
-   */
+  /** Number of skeleton rows to render when loading. @default 10 */
   skeletonCount?: number;
 }
 
 const TableRoot = <TData extends {}>({
   className,
   table,
-  responsiveLayout = "scroll",
-  breakpoint = "md",
   density = "default",
-  renderMobileRow,
+  variant = "primary",
   renderContextMenu,
   isLoading = false,
   skeletonCount = 10,
   ...props
 }: TableRootProps<TData>) => {
-  const breakpointMap = { sm: 640, md: 768, lg: 1024 };
-  const isMobile = useMediaQuery(`(max-width: ${breakpointMap[breakpoint]}px)`);
-
   const contextValue = useMemo(
-    () => ({ table, responsiveLayout, isMobile, density, renderContextMenu }),
-    [table, responsiveLayout, isMobile, density, renderContextMenu]
+    () => ({
+      table,
+      density,
+      variant,
+      renderContextMenu,
+    }),
+    [table, density, variant, renderContextMenu]
   );
-
-  const layout = isMobile ? responsiveLayout : "desktop";
-
-  // --- Loading State for Custom Layout ---
-  if (layout === "custom" && isLoading) {
-    return (
-      <div className={tableVariants({ layout, className })} {...props}>
-        {Array.from({ length: skeletonCount }).map((_, index) => (
-          <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-            key={index}
-            className="w-full h-32 rounded-xl bg-graphite-secondary animate-pulse"
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (layout === "custom") {
-    if (!renderMobileRow) {
-      throw new Error(
-        "renderMobileRow is required when responsiveLayout is 'custom'."
-      );
-    }
-    return (
-      <TableContext.Provider value={contextValue}>
-        <div className={tableVariants({ layout, className })} {...props}>
-          {table.getRowModel().rows.length > 0 ? (
-            table
-              .getRowModel()
-              .rows.map((row) => (
-                <React.Fragment key={row.id}>
-                  {renderMobileRow(row)}
-                </React.Fragment>
-              ))
-          ) : (
-            <div className="text-center p-8 text-graphite-foreground/70">
-              No results found.
-            </div>
-          )}
-        </div>
-      </TableContext.Provider>
-    );
-  }
 
   return (
     <TableContext.Provider value={contextValue}>
       <div
-        className={clsx(
-          tableContainerVariants(),
-          isMobile && responsiveLayout === "scroll" && "overflow-x-auto",
-          className
-        )}
+        className={clsx(tableContainerVariants({ variant }), className)}
         {...props}
       >
-        <table className={tableVariants({ layout })}>
+        <table className={tableVariants()}>
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header, headerIndex) => (
-                  <TableHead key={header.id} colIndex={headerIndex}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -263,12 +232,11 @@ const TableRoot = <TData extends {}>({
           </thead>
           <tbody>
             {isLoading ? (
-              // --- Loading Skeletons ---
               Array.from({ length: skeletonCount }).map((_, rowIndex) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-                <tr key={rowIndex} className={trVariants()}>
-                  {table.getVisibleLeafColumns().map((column, colIndex) => (
-                    <TableCell key={column.id} colIndex={colIndex}>
+                <tr key={rowIndex} className={trVariants({ variant })}>
+                  {table.getVisibleLeafColumns().map((column) => (
+                    <TableCell key={column.id}>
                       <Skeleton className="h-6 w-full" />
                     </TableCell>
                   ))}

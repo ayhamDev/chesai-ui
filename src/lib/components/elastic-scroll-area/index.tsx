@@ -60,6 +60,11 @@ export interface ElasticScrollAreaProps
   onScrollUp?: () => void;
   /** Callback fired when the user scrolls down. */
   onScrollDown?: () => void;
+  /**
+   * CSS classes applied directly to the internal Radix Viewport element.
+   * Use this to override internal display behaviors (e.g., `[&>div]:!block`).
+   */
+  viewportClassName?: string;
 }
 
 // --- DEFAULT REFRESH INDICATOR ---
@@ -300,6 +305,7 @@ const ElasticScrollAreaRoot = forwardRef<
       RefreshIndicatorComponent = DefaultRefreshIndicator,
       onScrollUp,
       onScrollDown,
+      viewportClassName,
       ...props
     },
     ref
@@ -383,7 +389,10 @@ const ElasticScrollAreaRoot = forwardRef<
         >
           <ScrollAreaPrimitive.Viewport
             ref={localViewportRef}
-            className="h-full w-full rounded-[inherit]"
+            className={clsx(
+              "h-full w-full rounded-[inherit]",
+              viewportClassName
+            )}
             style={{ touchAction: isVertical ? "pan-y" : "pan-x" }}
             onScroll={onScrollUp || onScrollDown ? handleScroll : undefined}
           >

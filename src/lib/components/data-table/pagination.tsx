@@ -55,7 +55,7 @@ export function DataTablePagination<TData>() {
             >
               Rows per page
             </Typography>
-            <div className="w-[70px]">
+            <div className="w-[80px]">
               <SelectInput
                 size="sm"
                 variant="secondary"
@@ -69,6 +69,7 @@ export function DataTablePagination<TData>() {
                   { value: "30", label: "30" },
                   { value: "40", label: "40" },
                   { value: "50", label: "50" },
+                  { value: "100", label: "100" },
                 ]}
               />
             </div>

@@ -77,7 +77,11 @@ const meta: Meta<typeof Sidebar> = {
 export default meta;
 type Story = StoryObj<typeof Sidebar>;
 
-const SidebarContentExample = () => {
+const SidebarContentExample = ({
+  elasticity = false,
+}: {
+  elasticity?: boolean;
+}) => {
   const [active, setActive] = React.useState("inbox");
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -96,7 +100,7 @@ const SidebarContentExample = () => {
           )}
         </div>
       </Sidebar.Header>
-      <Sidebar.Content>
+      <Sidebar.Content elasticity={elasticity}>
         <Sidebar.Group>
           <Sidebar.Item
             icon={<LayoutDashboard />}
@@ -150,6 +154,17 @@ const SidebarContentExample = () => {
             Products
           </Sidebar.Item>
         </Sidebar.Group>
+        {/* Add more items to demonstrate scrolling if needed */}
+        {elasticity && (
+          <Sidebar.Group>
+            <Sidebar.Label>Archive</Sidebar.Label>
+            {Array.from({ length: 15 }).map((_, i) => (
+              <Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>
+                Archive Item {i + 1}
+              </Sidebar.Item>
+            ))}
+          </Sidebar.Group>
+        )}
       </Sidebar.Content>
       <Sidebar.Footer className="justify-between border-t border-graphite-border">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -241,7 +256,7 @@ export const DenseSharp: Story = {
 };
 
 export const WhatsAppStyle: Story = {
-  name: "Overlay & Hover (WhatsApp Style)",
+  name: "5. Overlay & Hover (WhatsApp Style)",
   args: {
     layout: "sidebar",
     variant: "primary",
@@ -294,4 +309,36 @@ export const WhatsAppStyle: Story = {
       },
     },
   },
+};
+
+export const ScrollableWithElasticity: Story = {
+  name: "6. Scrollable With Elasticity",
+  args: {
+    layout: "inset",
+    variant: "primary",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Demonstrates the `ElasticScrollArea` integration. `elasticity={true}` is passed to `Sidebar.Content` to enable the rubber-band effect when scrolling past the boundaries. This story generates extra items to force overflow.",
+      },
+    },
+  },
+  render: (args) => (
+    <Sidebar.Provider>
+      <Sidebar {...args}>
+        <SidebarContentExample elasticity={true} />
+      </Sidebar>
+      <main className="flex-1 p-6 flex flex-col bg-graphite-background">
+        <header className="h-16 border-b border-graphite-border flex items-center px-4 gap-4 bg-graphite-card rounded-xl mb-4">
+          <Sidebar.Trigger />
+          <Typography variant="h4">Elastic Scroll Demo</Typography>
+        </header>
+        <div className="flex-1 flex items-center justify-center text-graphite-foreground/50">
+          Scroll the sidebar to see the elastic effect.
+        </div>
+      </main>
+    </Sidebar.Provider>
+  ),
 };

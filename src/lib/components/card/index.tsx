@@ -12,7 +12,7 @@ const cardVariants = cva(
         secondary: "bg-graphite-secondary",
         /** A semi-transparent, blurred background effect. Best used on a colorful or textured background. */
         glass:
-          "bg-white/5 backdrop-blur-lg border border-white/10 text-graphite-primaryForeground",
+          "bg-white/20 backdrop-blur-lg border border-white/10 text-graphite-primaryForeground",
       },
       shape: {
         full: "rounded-3xl",

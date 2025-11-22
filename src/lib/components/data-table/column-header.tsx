@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../button";
-import { Dialog, DialogContent, DialogTrigger } from "../dialog";
+import { Dialog, DialogContent } from "../dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,12 +89,10 @@ export function DataTableColumnHeader<TData, TValue>({
             {enableColumnFilter && (
               <>
                 <DropdownMenuSeparator />
-                <DialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <Filter className="mr-2 h-3.5 w-3.5 text-graphite-foreground/70" />
-                    Filter
-                  </DropdownMenuItem>
-                </DialogTrigger>
+                <DropdownMenuItem onSelect={() => setIsFilterOpen(true)}>
+                  <Filter className="mr-2 h-3.5 w-3.5 text-graphite-foreground/70" />
+                  Filter
+                </DropdownMenuItem>
               </>
             )}
           </DropdownMenuContent>

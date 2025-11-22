@@ -167,16 +167,33 @@ const materialContentVariants: Variants = {
 // --- CONTENT ---
 export interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
   shape?: CardProps["shape"];
+  variant?: CardProps["variant"];
+  padding?: CardProps["padding"];
 }
 const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, children, shape = "minimal", ...props }, ref) => {
-    const { open, onOpenChange, titleId, descriptionId, variant } =
-      useDialogContext();
+  (
+    {
+      className,
+      children,
+      shape = "minimal",
+      variant = "primary",
+      padding = "md",
+      ...props
+    },
+    ref
+  ) => {
+    const {
+      open,
+      onOpenChange,
+      titleId,
+      descriptionId,
+      variant: dialogVariant,
+    } = useDialogContext();
 
     useEffect(() => {
       if (open) {
         document.body.style.overflow = "hidden";
-        if (variant === "fullscreen") {
+        if (dialogVariant === "fullscreen") {
           document.body.style.overscrollBehavior = "none";
         }
       }
@@ -184,9 +201,9 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
         document.body.style.overflow = "";
         document.body.style.overscrollBehavior = "";
       };
-    }, [open, variant]);
+    }, [open, dialogVariant]);
 
-    const isFullscreen = variant === "fullscreen";
+    const isFullscreen = dialogVariant === "fullscreen";
     const backdropVariants = isFullscreen
       ? materialBackdropVariants
       : iosBackdropVariants;
@@ -272,7 +289,8 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   ) : (
                     <Card
                       shape={shape}
-                      padding={"md"}
+                      variant={variant}
+                      padding={padding}
                       className="relative w-full shadow-2xl"
                     >
                       {children}
