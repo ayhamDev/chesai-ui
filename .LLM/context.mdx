@@ -4690,7 +4690,7 @@ export function DataTable<TData>({
   onColumnFiltersChange,
   globalFilter,
   onGlobalFilterChange,
-  isLoading, // Destructure new prop
+  isLoading,
   toolbarChildren,
   density = "default",
   renderContextMenu,
@@ -4764,7 +4764,7 @@ export function DataTable<TData>({
           table={table}
           density={density}
           renderContextMenu={renderContextMenu}
-          isLoading={isLoading} // Pass it down
+          isLoading={isLoading}
           {...tableProps}
         />
         <DataTablePagination />
@@ -5240,9 +5240,11 @@ import {
 } from "@tanstack/react-table";
 import {
   CheckCircle2,
+  Copy,
   HelpCircle,
   Mail,
   MoreHorizontal,
+  Pen,
   Timer,
   Trash2,
   XCircle,
@@ -5252,6 +5254,7 @@ import { Badge } from "../badge";
 import { Button } from "../button";
 import { Card } from "../card";
 import { Checkbox } from "../checkbox";
+import { ContextMenu } from "../context-menu"; // Import ContextMenu
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -5277,6 +5280,7 @@ const meta: Meta<typeof DataTable> = {
     },
     data: { control: false },
     columns: { control: false },
+    isLoading: { control: "boolean" },
   },
 };
 
@@ -5429,6 +5433,8 @@ const columns: ColumnDef<Payment>[] = [
   },
 ];
 
+// --- STORIES ---
+
 export const Default: Story = {
   name: "1. Default Table",
   render: (args) => (
@@ -5477,8 +5483,51 @@ export const WithBulkActions: Story = {
   ),
 };
 
+export const WithContextMenu: Story = {
+  name: "3. With Context Menu",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Right-click (or long-press on touch devices) on any row to reveal context-specific actions. The `renderContextMenu` prop wraps the row internally with the ContextMenu trigger.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card className="w-full">
+      <DataTable
+        data={sampleData}
+        columns={columns}
+        density={args.density}
+        // Provide the content of the menu. The trigger is handled by the Table row.
+        renderContextMenu={(row) => (
+          <ContextMenu.Content>
+            <ContextMenu.Item
+              onClick={() => alert(`Editing ${row.original.email}`)}
+            >
+              <Pen className="mr-2 h-4 w-4" />
+              Edit Payment
+            </ContextMenu.Item>
+            <ContextMenu.Item
+              onClick={() => navigator.clipboard.writeText(row.original.id)}
+            >
+              <Copy className="mr-2 h-4 w-4" />
+              Copy ID
+            </ContextMenu.Item>
+            <ContextMenu.Separator />
+            <ContextMenu.Item className="text-red-500 focus:bg-red-50">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </ContextMenu.Item>
+          </ContextMenu.Content>
+        )}
+      />
+    </Card>
+  ),
+};
+
 export const ServerSideSimulation: Story = {
-  name: "3. Server-Side Simulation",
+  name: "4. Server-Side Simulation",
   render: function Render() {
     const [data, setData] = useState<Payment[]>([]);
     const [pageCount, setPageCount] = useState(0);
@@ -5571,13 +5620,16 @@ export const ServerSideSimulation: Story = {
           onColumnFiltersChange={setColumnFilters}
           globalFilter={globalFilter}
           onGlobalFilterChange={setGlobalFilter}
+          // Just to demonstrate smooth transitions between states
+          isLoading={isLoading && data.length === 0}
         />
       </Card>
     );
   },
 };
+
 export const ServerSideSimulationWithSkeleton: Story = {
-  name: "3. Server-Side Simulation With Skeleton",
+  name: "5. Server-Side Simulation With Skeleton",
   render: function Render() {
     const [data, setData] = useState<Payment[]>([]);
     const [pageCount, setPageCount] = useState(0);
@@ -5592,12 +5644,13 @@ export const ServerSideSimulationWithSkeleton: Story = {
 
     useEffect(() => {
       setIsLoading(true);
-      // setData([]); // Optional: Clear data to show full skeleton, or keep it for "background refresh" feel.
+      // Forcing empty data briefly to ensure skeleton shows during "fetch"
+      setData([]);
 
       const timer = setTimeout(() => {
         let filteredData = [...sampleData];
 
-        // 1. Global Search (Server-side)
+        // Logic mirroring backend...
         if (globalFilter) {
           const lowerFilter = globalFilter.toLowerCase();
           filteredData = filteredData.filter(
@@ -5607,12 +5660,10 @@ export const ServerSideSimulationWithSkeleton: Story = {
           );
         }
 
-        // 2. Column Filtering (Server-side)
         if (columnFilters.length > 0) {
           columnFilters.forEach((filter) => {
             const { id, value } = filter;
             const filterVal = value as AdvancedFilterValue;
-
             const op = filterVal.operator || "contains";
             const val = filterVal.value ?? filterVal;
 
@@ -5628,7 +5679,6 @@ export const ServerSideSimulationWithSkeleton: Story = {
           });
         }
 
-        // 3. Sorting
         if (sorting.length > 0) {
           const { id, desc } = sorting[0];
           filteredData.sort((a, b) => {
@@ -5640,20 +5690,17 @@ export const ServerSideSimulationWithSkeleton: Story = {
           });
         }
 
-        // 4. Pagination
         const totalRows = filteredData.length;
         const start = pagination.pageIndex * pagination.pageSize;
         const end = start + pagination.pageSize;
-
         const safeStart = Math.min(start, totalRows);
         const safeEnd = Math.min(end, totalRows);
-
         const slicedData = filteredData.slice(safeStart, safeEnd);
 
         setData(slicedData);
         setPageCount(Math.ceil(totalRows / pagination.pageSize));
         setIsLoading(false);
-      }, 1500); // Increased timeout to 1500ms to clearly see the skeleton
+      }, 1500);
 
       return () => clearTimeout(timer);
     }, [pagination, sorting, columnFilters, globalFilter]);
@@ -5672,7 +5719,7 @@ export const ServerSideSimulationWithSkeleton: Story = {
           onColumnFiltersChange={setColumnFilters}
           globalFilter={globalFilter}
           onGlobalFilterChange={setGlobalFilter}
-          isLoading={isLoading} // <--- Pass the state here
+          isLoading={isLoading}
         />
       </Card>
     );
@@ -13828,10 +13875,7 @@ const SelectItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { shape, variant, size } = useSelectContext();
   const localRef = useRef<HTMLDivElement>(null);
-  const rippleColor =
-    variant === "primary"
-      ? "var(--color-ripple-light)"
-      : "var(--color-ripple-dark)";
+  const rippleColor = "var(--color-ripple-light)";
 
   const [, event] = useRipple({
     ref: localRef,
@@ -19110,7 +19154,6 @@ import {
   type Row,
   type Table as TanstackTable,
 } from "@tanstack/react-table";
-import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { createContext, useContext, useMemo } from "react";
@@ -19118,14 +19161,11 @@ import { ContextMenu } from "../context-menu";
 import { Skeleton } from "../skeleton";
 
 // --- Types & Context ---
-type ResponsiveLayout = "scroll" | "custom";
 type TableDensity = "default" | "compact";
 type TableVariant = "primary" | "secondary";
 
 interface TableContextProps {
   table: TanstackTable<any>;
-  responsiveLayout: ResponsiveLayout;
-  isMobile: boolean;
   density: TableDensity;
   variant: TableVariant;
   renderContextMenu?: (row: Row<any>) => React.ReactNode;
@@ -19144,7 +19184,8 @@ const useTableContext = () => {
 // --- CVA Variants ---
 
 // 1. Container Variants
-const tableContainerVariants = cva("w-full overflow-hidden", {
+// Added overflow-x-auto to ensure the table is scrollable on small screens by default
+const tableContainerVariants = cva("w-full overflow-hidden overflow-x-auto", {
   variants: {
     variant: {
       primary:
@@ -19157,15 +19198,7 @@ const tableContainerVariants = cva("w-full overflow-hidden", {
   },
 });
 
-const tableVariants = cva("w-full text-sm caption-bottom", {
-  variants: {
-    layout: {
-      desktop: "table-auto border-collapse",
-      scroll: "table-auto border-collapse",
-      custom: "flex flex-col gap-3",
-    },
-  },
-});
+const tableVariants = cva("w-full text-sm caption-bottom border-collapse");
 
 // 2. Header Variants
 const thVariants = cva(
@@ -19181,10 +19214,6 @@ const thVariants = cva(
       density: {
         default: "py-3",
         compact: "py-2",
-      },
-      isFirstSticky: {
-        true: "sticky left-0 z-10",
-        false: "",
       },
     },
     defaultVariants: {
@@ -19218,36 +19247,24 @@ const tdVariants = cva("p-4 align-middle [&:has([role=checkbox])]:pr-0", {
       default: "py-4",
       compact: "py-2",
     },
-    isFirstSticky: {
-      true: "sticky left-0 z-10",
-      false: "",
-    },
     variant: {
       primary: "",
       secondary: "",
     },
   },
-  // Removed compound variants that forced a specific background color
 });
 
 // --- Sub-Components ---
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
->(({ className, colIndex, ...props }, ref) => {
-  const { responsiveLayout, density, variant } = useTableContext();
-  const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
+  React.ThHTMLAttributes<HTMLTableCellElement>
+>(({ className, ...props }, ref) => {
+  const { density, variant } = useTableContext();
 
   return (
     <th
       ref={ref}
-      className={clsx(
-        thVariants({ density, variant, isFirstSticky }),
-        // Manually apply background for sticky header to prevent transparency issues
-        isFirstSticky && variant === "primary" && "bg-graphite-secondary/50",
-        isFirstSticky && variant === "secondary" && "bg-graphite-background",
-        className
-      )}
+      className={clsx(thVariants({ density, variant }), className)}
       {...props}
     />
   );
@@ -19256,22 +19273,14 @@ TableHead.displayName = "Table.Head";
 
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement> & { colIndex: number }
->(({ className, colIndex, ...props }, ref) => {
-  const { responsiveLayout, density, variant } = useTableContext();
-  const isFirstSticky = responsiveLayout === "scroll" && colIndex === 0;
+  React.TdHTMLAttributes<HTMLTableCellElement>
+>(({ className, ...props }, ref) => {
+  const { density, variant } = useTableContext();
 
   return (
     <td
       ref={ref}
-      className={clsx(
-        tdVariants({ density, variant, isFirstSticky }),
-        // Ensure sticky columns have a background matching the row context to hide scrolled content
-        // We use 'inherit' or the card background usually, but to "look normal" (match the row hover),
-        // we mostly rely on the TR background. However, to prevent see-through on scroll:
-        isFirstSticky && "bg-inherit",
-        className
-      )}
+      className={clsx(tdVariants({ density, variant }), className)}
       {...props}
     />
   );
@@ -19293,8 +19302,8 @@ const TableRow = <TData extends {}>({
       className={clsx(trVariants({ variant }), rest.className)}
       {...rest}
     >
-      {row.getVisibleCells().map((cell, cellIndex) => (
-        <TableCell key={cell.id} colIndex={cellIndex}>
+      {row.getVisibleCells().map((cell) => (
+        <TableCell key={cell.id}>
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
       ))}
@@ -19318,11 +19327,8 @@ TableRow.displayName = "Table.Row";
 export interface TableRootProps<TData>
   extends React.HTMLAttributes<HTMLDivElement> {
   table: TanstackTable<TData>;
-  responsiveLayout?: ResponsiveLayout;
-  breakpoint?: "sm" | "md" | "lg";
   density?: TableDensity;
   variant?: TableVariant;
-  renderMobileRow?: (row: Row<TData>) => React.ReactNode;
   renderContextMenu?: (row: Row<TData>) => React.ReactNode;
   /** If true, renders skeleton rows in the table body. */
   isLoading?: boolean;
@@ -19333,91 +19339,35 @@ export interface TableRootProps<TData>
 const TableRoot = <TData extends {}>({
   className,
   table,
-  responsiveLayout = "scroll",
-  breakpoint = "md",
   density = "default",
-  variant = "primary", // Default to primary
-  renderMobileRow,
+  variant = "primary",
   renderContextMenu,
   isLoading = false,
   skeletonCount = 10,
   ...props
 }: TableRootProps<TData>) => {
-  const breakpointMap = { sm: 640, md: 768, lg: 1024 };
-  const isMobile = useMediaQuery(`(max-width: ${breakpointMap[breakpoint]}px)`);
-
   const contextValue = useMemo(
     () => ({
       table,
-      responsiveLayout,
-      isMobile,
       density,
       variant,
       renderContextMenu,
     }),
-    [table, responsiveLayout, isMobile, density, variant, renderContextMenu]
+    [table, density, variant, renderContextMenu]
   );
-
-  const layout = isMobile ? responsiveLayout : "desktop";
-
-  // --- Loading State for Custom Layout ---
-  if (layout === "custom" && isLoading) {
-    return (
-      <div className={tableVariants({ layout, className })} {...props}>
-        {Array.from({ length: skeletonCount }).map((_, index) => (
-          <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
-            key={index}
-            className="w-full h-32 rounded-xl bg-graphite-secondary animate-pulse"
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (layout === "custom") {
-    if (!renderMobileRow) {
-      throw new Error(
-        "renderMobileRow is required when responsiveLayout is 'custom'."
-      );
-    }
-    return (
-      <TableContext.Provider value={contextValue}>
-        <div className={tableVariants({ layout, className })} {...props}>
-          {table.getRowModel().rows.length > 0 ? (
-            table
-              .getRowModel()
-              .rows.map((row) => (
-                <React.Fragment key={row.id}>
-                  {renderMobileRow(row)}
-                </React.Fragment>
-              ))
-          ) : (
-            <div className="text-center p-8 text-graphite-foreground/70">
-              No results found.
-            </div>
-          )}
-        </div>
-      </TableContext.Provider>
-    );
-  }
 
   return (
     <TableContext.Provider value={contextValue}>
       <div
-        className={clsx(
-          tableContainerVariants({ variant }),
-          isMobile && responsiveLayout === "scroll" && "overflow-x-auto",
-          className
-        )}
+        className={clsx(tableContainerVariants({ variant }), className)}
         {...props}
       >
-        <table className={tableVariants({ layout })}>
+        <table className={tableVariants()}>
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header, headerIndex) => (
-                  <TableHead key={header.id} colIndex={headerIndex}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -19431,12 +19381,11 @@ const TableRoot = <TData extends {}>({
           </thead>
           <tbody>
             {isLoading ? (
-              // --- Loading Skeletons ---
               Array.from({ length: skeletonCount }).map((_, rowIndex) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
                 <tr key={rowIndex} className={trVariants({ variant })}>
-                  {table.getVisibleLeafColumns().map((column, colIndex) => (
-                    <TableCell key={column.id} colIndex={colIndex}>
+                  {table.getVisibleLeafColumns().map((column) => (
+                    <TableCell key={column.id}>
                       <Skeleton className="h-6 w-full" />
                     </TableCell>
                   ))}

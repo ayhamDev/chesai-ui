@@ -238,10 +238,7 @@ const SelectItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const { shape, variant, size } = useSelectContext();
   const localRef = useRef<HTMLDivElement>(null);
-  const rippleColor =
-    variant === "primary"
-      ? "var(--color-ripple-light)"
-      : "var(--color-ripple-dark)";
+  const rippleColor = "var(--color-ripple-light)";
 
   const [, event] = useRipple({
     ref: localRef,
