@@ -46,6 +46,24 @@ const itemVariants = cva("overflow-hidden transition-colors", {
     { layout: "separated", shape: "full", className: "rounded-2xl" },
     { layout: "separated", shape: "minimal", className: "rounded-xl" },
     { layout: "separated", shape: "sharp", className: "rounded-none" },
+
+    // --- NEW COMPOUND VARIANTS FOR INTEGRATED LAYOUT ---
+    {
+      layout: "integrated",
+      shape: "full",
+      className: "first:rounded-t-2xl last:rounded-b-2xl",
+    },
+    {
+      layout: "integrated",
+      shape: "minimal",
+      className: "first:rounded-t-xl last:rounded-b-xl",
+    },
+    {
+      layout: "integrated",
+      shape: "sharp",
+      className: "first:rounded-t-none last:rounded-b-none",
+    },
+    // --- END NEW VARIANTS ---
   ],
   defaultVariants: {
     variant: "primary",
@@ -83,6 +101,15 @@ const AccordionRoot = React.forwardRef<
         ref={ref}
         className={clsx(
           "w-full",
+          // The rounding on the root container is only needed for the integrated layout,
+          // as the individual items now handle their own top/bottom rounding.
+          layout === "integrated" &&
+            // Setting overflow-hidden on the root ensures child rounded borders are clipped correctly.
+            (shape === "full"
+              ? "rounded-2xl overflow-hidden"
+              : shape === "minimal"
+              ? "rounded-xl overflow-hidden"
+              : "rounded-none overflow-hidden"),
           layout === "separated" && "space-y-2",
           className
         )}

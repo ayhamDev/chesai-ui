@@ -24,6 +24,7 @@ import {
   type ElasticScrollAreaProps,
 } from "../elastic-scroll-area";
 import { Typography } from "../typography";
+import { EASING } from "../stack-router/transitions";
 
 // --- CONTEXT and PORTAL ---
 type DialogVariant = "basic" | "fullscreen";
@@ -128,12 +129,12 @@ const fullscreenDialogVariants: Variants = {
   visible: {
     y: "0%",
     opacity: 1,
-    transition: { duration: 0.35, ease: [0.2, 0.7, 0.1, 1] },
+    transition: { duration: 0.4, ease: EASING.iOS },
   },
   exit: {
-    y: "50%",
-    opacity: 0,
-    transition: { duration: 0.2, ease: [0.2, 0.2, 0.5, 1] },
+    y: "110%",
+    opacity: 0.4,
+    transition: { duration: 0.4, ease: EASING.iOS },
   },
 };
 const iosBackdropVariants: Variants = {

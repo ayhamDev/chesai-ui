@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   ArrowLeft,
-  Check,
   ChevronRight,
   ClipboardList,
   Home,
@@ -9,11 +8,10 @@ import {
   Plus,
   Search,
   Settings,
-  X,
 } from "lucide-react";
 import React, { createContext, useContext, useRef, useState } from "react";
-import { toast, Toaster } from "../toast";
 import DeviceFrame from "../device";
+import { toast, Toaster } from "../toast";
 // Import all the necessary components from the library
 import { AppBar } from "../appbar";
 import { Avatar } from "../avatar";
@@ -23,7 +21,6 @@ import { Card } from "../card";
 import { DatePicker } from "../date-picker";
 import {
   Dialog,
-  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
@@ -41,7 +38,6 @@ import {
   ItemContent,
   ItemDescription,
   ItemGroup,
-  ItemMedia,
   ItemTitle,
 } from "../item";
 import { LayoutRouter, useLayoutRouter } from "../layout-router";

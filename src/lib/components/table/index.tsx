@@ -15,7 +15,7 @@ import { Skeleton } from "../skeleton";
 type TableDensity = "default" | "compact";
 type TableVariant = "primary" | "secondary";
 
-interface TableContextProps {
+export interface TableContextProps {
   table: TanstackTable<any>;
   density: TableDensity;
   variant: TableVariant;
@@ -24,7 +24,7 @@ interface TableContextProps {
 
 const TableContext = createContext<TableContextProps | null>(null);
 
-const useTableContext = () => {
+export const useTableContext = () => {
   const context = useContext(TableContext);
   if (!context) {
     throw new Error("Table components must be used within a <Table.Root>");
@@ -36,23 +36,28 @@ const useTableContext = () => {
 
 // 1. Container Variants
 // Added overflow-x-auto to ensure the table is scrollable on small screens by default
-const tableContainerVariants = cva("w-full overflow-hidden overflow-x-auto", {
-  variants: {
-    variant: {
-      primary:
-        "rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-sm",
-      secondary: "rounded-none bg-transparent text-graphite-foreground",
+export const tableContainerVariants = cva(
+  "w-full overflow-hidden overflow-x-auto",
+  {
+    variants: {
+      variant: {
+        primary:
+          "rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-sm",
+        secondary: "rounded-none bg-transparent text-graphite-foreground",
+      },
     },
-  },
-  defaultVariants: {
-    variant: "primary",
-  },
-});
+    defaultVariants: {
+      variant: "primary",
+    },
+  }
+);
 
-const tableVariants = cva("w-full text-sm caption-bottom border-collapse");
+export const tableVariants = cva(
+  "w-full text-sm caption-bottom border-collapse"
+);
 
 // 2. Header Variants
-const thVariants = cva(
+export const thVariants = cva(
   "h-10 px-4 text-left align-middle font-semibold [&:has([role=checkbox])]:pr-0 transition-colors",
   {
     variants: {
@@ -74,7 +79,7 @@ const thVariants = cva(
 );
 
 // 3. Row Variants
-const trVariants = cva(
+export const trVariants = cva(
   "transition-colors data-[state=selected]:bg-graphite-secondary/60",
   {
     variants: {
@@ -92,21 +97,24 @@ const trVariants = cva(
 );
 
 // 4. Cell Variants
-const tdVariants = cva("p-4 align-middle [&:has([role=checkbox])]:pr-0", {
-  variants: {
-    density: {
-      default: "py-4",
-      compact: "py-2",
+export const tdVariants = cva(
+  "p-4 align-middle [&:has([role=checkbox])]:pr-0",
+  {
+    variants: {
+      density: {
+        default: "py-4",
+        compact: "py-2",
+      },
+      variant: {
+        primary: "",
+        secondary: "",
+      },
     },
-    variant: {
-      primary: "",
-      secondary: "",
-    },
-  },
-});
+  }
+);
 
 // --- Sub-Components ---
-const TableHead = React.forwardRef<
+export const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => {
@@ -122,7 +130,7 @@ const TableHead = React.forwardRef<
 });
 TableHead.displayName = "Table.Head";
 
-const TableCell = React.forwardRef<
+export const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => {
@@ -138,7 +146,7 @@ const TableCell = React.forwardRef<
 });
 TableCell.displayName = "Table.Cell";
 
-const TableRow = <TData extends {}>({
+export const TableRow = <TData extends {}>({
   row,
   ...rest
 }: {
@@ -187,7 +195,7 @@ export interface TableRootProps<TData>
   skeletonCount?: number;
 }
 
-const TableRoot = <TData extends {}>({
+export const TableRoot = <TData extends {}>({
   className,
   table,
   density = "default",

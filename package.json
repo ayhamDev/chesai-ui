@@ -48,5 +48,9 @@
     "@tailwindcss/oxide",
     "esbuild"
   ],
-  "types": "./dist/index.d.ts"
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@radix-ui/react-toolbar": "^1.1.11",
+    "hls.js": "^1.6.15"
+  }
 }

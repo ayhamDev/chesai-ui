@@ -70,6 +70,24 @@ const itemVariants = cva("overflow-hidden transition-colors", {
     { layout: "separated", shape: "full", className: "rounded-2xl" },
     { layout: "separated", shape: "minimal", className: "rounded-xl" },
     { layout: "separated", shape: "sharp", className: "rounded-none" },
+
+    // --- NEW COMPOUND VARIANTS FOR INTEGRATED LAYOUT ---
+    {
+      layout: "integrated",
+      shape: "full",
+      className: "first:rounded-t-2xl last:rounded-b-2xl",
+    },
+    {
+      layout: "integrated",
+      shape: "minimal",
+      className: "first:rounded-t-xl last:rounded-b-xl",
+    },
+    {
+      layout: "integrated",
+      shape: "sharp",
+      className: "first:rounded-t-none last:rounded-b-none",
+    },
+    // --- END NEW VARIANTS ---
   ],
   defaultVariants: {
     variant: "primary",
@@ -107,6 +125,15 @@ const AccordionRoot = React.forwardRef<
         ref={ref}
         className={clsx(
           "w-full",
+          // The rounding on the root container is only needed for the integrated layout,
+          // as the individual items now handle their own top/bottom rounding.
+          layout === "integrated" &&
+            // Setting overflow-hidden on the root ensures child rounded borders are clipped correctly.
+            (shape === "full"
+              ? "rounded-2xl overflow-hidden"
+              : shape === "minimal"
+              ? "rounded-xl overflow-hidden"
+              : "rounded-none overflow-hidden"),
           layout === "separated" && "space-y-2",
           className
         )}
@@ -6715,6 +6742,7 @@ import {
   type ElasticScrollAreaProps,
 } from "../elastic-scroll-area";
 import { Typography } from "../typography";
+import { EASING } from "../stack-router/transitions";
 
 // --- CONTEXT and PORTAL ---
 type DialogVariant = "basic" | "fullscreen";
@@ -6819,12 +6847,12 @@ const fullscreenDialogVariants: Variants = {
   visible: {
     y: "0%",
     opacity: 1,
-    transition: { duration: 0.35, ease: [0.2, 0.7, 0.1, 1] },
+    transition: { duration: 0.4, ease: EASING.iOS },
   },
   exit: {
-    y: "50%",
-    opacity: 0,
-    transition: { duration: 0.2, ease: [0.2, 0.2, 0.5, 1] },
+    y: "110%",
+    opacity: 0.4,
+    transition: { duration: 0.4, ease: EASING.iOS },
   },
 };
 const iosBackdropVariants: Variants = {
@@ -16437,21 +16465,37 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
   Archive,
   Box,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  HelpCircle,
   Inbox,
   LayoutDashboard,
   MessagesSquare,
+  Plus,
+  Search,
   Settings,
+  Settings as SettingsIcon,
   ShoppingCart,
+  User,
   Users,
 } from "lucide-react";
 import React from "react";
+import { Accordion } from "../accordion";
+import { AppBar } from "../appbar";
 import { Avatar } from "../avatar";
 import { Badge } from "../badge";
+import { Checkbox } from "../checkbox";
+import { PaginatedCalendar } from "../date-picker/paginated-calendar";
+import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
+import { Input } from "../input";
+import { SelectInput } from "../select";
 import { Separator } from "../separator";
 import { Typography } from "../typography";
 import { Sidebar, useSidebar } from "./index";
-
+import { Button } from "../button";
+import clsx from "clsx";
 const meta: Meta<typeof Sidebar> = {
   title: "Components/Navigators/Sidebar",
   component: Sidebar,
@@ -16775,6 +16819,428 @@ export const ScrollableWithElasticity: Story = {
         </div>
       </main>
     </Sidebar.Provider>
+  ),
+};
+const CalSidebarContent = () => {
+  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const { state } = useSidebar();
+  const myCalendars = [
+    { id: "c1", label: "Ayham Gm", color: "bg-blue-500", checked: true },
+    { id: "c2", label: "Birthdays", color: "bg-green-500", checked: true },
+    { id: "c3", label: "Tasks", color: "bg-indigo-500", checked: true },
+    { id: "c4", label: "Todoist", color: "bg-purple-500", checked: true },
+  ];
+
+  const otherCalendars = [
+    {
+      id: "o1",
+      label: "Holidays in Sudan",
+      color: "bg-green-600",
+      checked: true,
+    },
+    {
+      id: "o2",
+      label: "MISK Launchpad 8.0",
+      color: "bg-red-500",
+      checked: true,
+    },
+    {
+      id: "o3",
+      label: "Phase 2 Schedule",
+      color: "bg-orange-500",
+      checked: false,
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-6 px-3 py-4">
+      {/* Create Button */}
+      <div className="px-1">
+        <Button
+          variant="secondary"
+          className="h-12 w-32 !rounded-2xl shadow-sm hover:shadow-md transition-all bg-graphite-secondary border border-graphite-border"
+        >
+          <Plus className="mr-2 h-6 w-6" />
+          <span className="text-base">Create</span>
+        </Button>
+      </div>
+
+      {/* Mini Calendar */}
+
+      <div className="px-1">
+        <PaginatedCalendar
+          mode="single"
+          value={date}
+          onSelect={(val) => setDate(val as Date)}
+        />
+      </div>
+
+      {/* Search People */}
+      <div className="px-1">
+        <Input
+          startAdornment={<User className="h-4 w-4 opacity-50" />}
+          placeholder="Search for people"
+          variant="secondary"
+          shape="minimal"
+          className="bg-graphite-secondary/50"
+        />
+      </div>
+
+      {/* Calendars Accordion */}
+      <Accordion
+        type="multiple"
+        defaultValue={["my-cals", "other-cals"]}
+        className="w-full"
+        shape="minimal"
+      >
+        <Accordion.Item value="my-cals" className="border-none">
+          <Accordion.Trigger className="py-2 text-sm font-medium hover:bg-transparent">
+            My calendars
+          </Accordion.Trigger>
+          <Accordion.Content className="pb-2">
+            <div className="flex flex-col gap-2">
+              {myCalendars.map((cal) => (
+                <div key={cal.id} className="flex items-center gap-3 py-1">
+                  <Checkbox
+                    defaultChecked={cal.checked}
+                    className={clsx(
+                      "data-[state=checked]:border-transparent data-[state=checked]:text-white",
+                      // Override checkbox style to match specific calendar colors
+                      // In a real app, you might pass style={{ backgroundColor: ... }}
+                      cal.color.replace("bg-", "checked:bg-")
+                    )}
+                  />
+                  <Typography variant="small" className="font-medium">
+                    {cal.label}
+                  </Typography>
+                </div>
+              ))}
+            </div>
+          </Accordion.Content>
+        </Accordion.Item>
+
+        <Accordion.Item value="other-cals" className="border-none">
+          <Accordion.Trigger className="py-2 text-sm font-medium hover:bg-transparent">
+            Other calendars
+          </Accordion.Trigger>
+          <Accordion.Content className="pb-2">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between group cursor-pointer">
+                <div className="flex items-center gap-3 py-1">
+                  <Plus className="h-4 w-4 text-graphite-foreground/70" />
+                  <Typography variant="small" className="font-medium">
+                    Subscribe to calendar
+                  </Typography>
+                </div>
+              </div>
+              {otherCalendars.map((cal) => (
+                <div key={cal.id} className="flex items-center gap-3 py-1">
+                  <Checkbox
+                    defaultChecked={cal.checked}
+                    className={clsx(
+                      "data-[state=checked]:border-transparent data-[state=checked]:text-white",
+                      cal.color.replace("bg-", "checked:bg-")
+                    )}
+                  />
+                  <Typography variant="small" className="font-medium truncate">
+                    {cal.label}
+                  </Typography>
+                </div>
+              ))}
+            </div>
+          </Accordion.Content>
+        </Accordion.Item>
+      </Accordion>
+
+      <div className="mt-auto pt-4 text-xs text-graphite-foreground/50 px-2 text-center">
+        Terms - Privacy - Policy
+      </div>
+    </div>
+  );
+};
+
+// Mock Grid for the main view
+const CalendarGrid = () => {
+  const hours = Array.from({ length: 13 }, (_, i) => i + 11); // 11 AM to 11 PM
+  const days = [
+    "SUN 23",
+    "MON 24",
+    "TUE 25",
+    "WED 26",
+    "THU 27",
+    "FRI 28",
+    "SAT 29",
+  ];
+
+  return (
+    <div className="flex flex-col min-w-[800px]">
+      {/* Day Header */}
+      <div className="flex border-b border-graphite-border">
+        <div className="w-16 shrink-0 border-r border-graphite-border/50" />{" "}
+        {/* Time col spacer */}
+        {days.map((day, i) => {
+          const [dName, dNum] = day.split(" ");
+          const isToday = i === 0; // Mocking Sunday as today
+          return (
+            <div
+              key={day}
+              className="flex-1 flex flex-col items-center py-2 border-r border-graphite-border/50"
+            >
+              <span
+                className={clsx(
+                  "text-xs font-medium mb-1",
+                  isToday ? "text-blue-400" : "text-graphite-foreground/70"
+                )}
+              >
+                {dName}
+              </span>
+              <div
+                className={clsx(
+                  "h-8 w-8 flex items-center justify-center rounded-full text-xl",
+                  isToday
+                    ? "bg-blue-600 text-white"
+                    : "text-graphite-foreground"
+                )}
+              >
+                {dNum}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* GMT Offset */}
+      <div className="flex border-b border-graphite-border/50">
+        <div className="w-16 shrink-0 border-r border-graphite-border/50 text-[10px] text-graphite-foreground/50 p-1">
+          GMT+02
+        </div>
+        <div className="flex-1" />
+      </div>
+
+      {/* Time Grid */}
+      <div className="flex-1 relative">
+        {hours.map((hour) => (
+          <div
+            key={hour}
+            className="flex h-16 border-b border-graphite-border/30"
+          >
+            <div className="w-16 shrink-0 border-r border-graphite-border/50 text-xs text-graphite-foreground/50 text-center -mt-2.5 bg-graphite-background">
+              {hour > 12 ? hour - 12 : hour} {hour >= 12 ? "PM" : "AM"}
+            </div>
+            {days.map((_, i) => (
+              <div
+                key={i}
+                className="flex-1 border-r border-graphite-border/30 relative group"
+              >
+                {/* Hover effect for slots */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity bg-white/10 pointer-events-none" />
+              </div>
+            ))}
+          </div>
+        ))}
+
+        {/* Events Overlay */}
+        {/* Current Time Line */}
+        <div className="absolute top-[10px] left-16 right-0 border-t-2 border-red-500 z-10 pointer-events-none">
+          <div className="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-red-500" />
+        </div>
+
+        {/* Mock Events */}
+        {[0, 1, 2, 3, 4].map((colIndex) => (
+          <div
+            key={`evt-${colIndex}`}
+            className="absolute h-[60px] rounded-md p-2 text-xs bg-[#D95938] text-white border-l-4 border-[#9C3620] cursor-pointer hover:brightness-110 transition-all"
+            style={{
+              top: "192px", // Approx 2 PM
+              left: `calc(4rem + ((100% - 4rem) / 7) * ${colIndex})`,
+              width: `calc(((100% - 4rem) / 7) - 10px)`,
+              marginLeft: "5px",
+            }}
+          >
+            <div className="font-semibold">Work</div>
+            <div>2 - 4pm</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export const GoogleCalendarLayout: Story = {
+  name: "Google Calendar Replica",
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        story:
+          "A complete layout replication of Google Calendar (Dark Mode) using `Sidebar` for the left navigation, `AppBar` for the top toolbars, and `ElasticScrollArea` for the main grid content.",
+      },
+    },
+  },
+  render: () => (
+    // Force dark theme wrapper for the replica
+    <div className="theme-dark bg-[#121212] text-[#e8eaed] h-screen w-full flex flex-col overflow-hidden font-sans">
+      <Sidebar.Provider defaultOpen={true}>
+        {/* --- Main Flex Container --- */}
+        <div className="flex h-full w-full">
+          {/* --- LEFT SIDEBAR --- */}
+          <Sidebar
+            layout="inset"
+            variant="primary"
+            className="border-r border-[#2E2E2E] !bg-[#121212]" // Manual override for exact GCal dark hex
+            width="20rem"
+          >
+            <Sidebar.Content elasticity>
+              <CalSidebarContent />
+            </Sidebar.Content>
+          </Sidebar>
+
+          {/* --- CENTER CONTENT AREA --- */}
+          <div className="flex-1 flex flex-col min-w-0 bg-[#121212]">
+            {/* --- TOP APP BAR --- */}
+            <AppBar
+              position="static" // Non-sticky for this layout
+              appBarColor="background"
+              className="!bg-[#121212] border-b border-[#2E2E2E] h-16 shrink-0 relative !top-auto"
+              shadow="none"
+              startAdornment={
+                <div className="flex items-center gap-2 pl-2">
+                  <div className="flex items-center gap-2 ml-1">
+                    <CalendarIcon className="h-7 w-7 text-blue-500" />
+                    <Typography
+                      variant="h4"
+                      className="text-[22px] text-white tracking-tight font-normal hidden sm:block"
+                    >
+                      Calendar
+                    </Typography>
+                  </div>
+                </div>
+              }
+              centerAdornment={
+                <div className="flex items-center gap-4 ml-8">
+                  <Button
+                    variant="secondary"
+                    className="bg-transparent border border-[#5f6368] text-white hover:bg-[#2E2E2E] h-9 rounded px-4"
+                  >
+                    Today
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      className="hover:bg-[#2E2E2E] text-white"
+                    >
+                      <ChevronLeft />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      className="hover:bg-[#2E2E2E] text-white"
+                    >
+                      <ChevronRight />
+                    </IconButton>
+                  </div>
+                  <Typography
+                    variant="h4"
+                    className="text-xl text-white font-normal min-w-[140px]"
+                  >
+                    November 2025
+                  </Typography>
+                </div>
+              }
+              endAdornments={[
+                <IconButton
+                  key="search"
+                  variant="ghost"
+                  className="text-white hover:bg-[#2E2E2E]"
+                >
+                  <Search className="h-5 w-5" />
+                </IconButton>,
+                <IconButton
+                  key="help"
+                  variant="ghost"
+                  className="text-white hover:bg-[#2E2E2E]"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                </IconButton>,
+                <IconButton
+                  key="settings"
+                  variant="ghost"
+                  className="text-white hover:bg-[#2E2E2E]"
+                >
+                  <SettingsIcon className="h-5 w-5" />
+                </IconButton>,
+                <div key="view-select" className="mx-2">
+                  <SelectInput
+                    variant="secondary"
+                    size="sm"
+                    value="week"
+                    className="!bg-transparent border border-[#5f6368] text-white w-24"
+                    items={[
+                      { value: "day", label: "Day" },
+                      { value: "week", label: "Week" },
+                      { value: "month", label: "Month" },
+                      { value: "year", label: "Year" },
+                    ]}
+                  />
+                </div>,
+                <div key="avatar" className="pl-2">
+                  <Avatar
+                    size="sm"
+                    src="https://github.com/shadcn.png"
+                    className="ring-2 ring-[#121212]"
+                  />
+                </div>,
+              ]}
+            />
+
+            {/* --- CALENDAR GRID SCROLL AREA --- */}
+            <ElasticScrollArea
+              className="flex-1"
+              viewportClassName="!flex flex-col"
+            >
+              <CalendarGrid />
+            </ElasticScrollArea>
+          </div>
+
+          {/* --- RIGHT TOOLS PANEL (Visual Only) --- */}
+          <div className="w-14 border-l border-[#2E2E2E] flex flex-col items-center py-4 gap-6 shrink-0 bg-[#121212]">
+            <IconButton
+              size="sm"
+              variant="ghost"
+              className="hover:bg-[#2E2E2E]"
+            >
+              <div className="w-5 h-5 bg-yellow-500 rounded-sm" title="Keep" />
+            </IconButton>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              className="hover:bg-[#2E2E2E]"
+            >
+              <div className="w-5 h-5 bg-blue-500 rounded-full" title="Tasks" />
+            </IconButton>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              className="hover:bg-[#2E2E2E]"
+            >
+              <div
+                className="w-5 h-5 bg-blue-400 rounded-sm"
+                title="Contacts"
+              />
+            </IconButton>
+            <div className="h-px w-8 bg-[#2E2E2E] my-2" />
+            <IconButton
+              size="sm"
+              variant="ghost"
+              className="hover:bg-[#2E2E2E]"
+            >
+              <Plus className="h-5 w-5 text-white" />
+            </IconButton>
+          </div>
+        </div>
+      </Sidebar.Provider>
+    </div>
   ),
 };
 ```
@@ -19271,7 +19737,7 @@ const TableHead = React.forwardRef<
 });
 TableHead.displayName = "Table.Head";
 
-const TableCell = React.forwardRef<
+export const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => {
@@ -19287,7 +19753,7 @@ const TableCell = React.forwardRef<
 });
 TableCell.displayName = "Table.Cell";
 
-const TableRow = <TData extends {}>({
+export const TableRow = <TData extends {}>({
   row,
   ...rest
 }: {
@@ -22283,6 +22749,691 @@ export const Positioning: Story = {
 ```
 
 
+### Component: `toolbar`
+This section includes all related source files for the `toolbar` component, including nested sub-components (like `header.tsx`) and utilities.
+
+**Source File (`src\lib\components\toolbar\index.tsx`)**
+```tsx
+"use client";
+
+import * as ToolbarPrimitive from "@radix-ui/react-toolbar";
+import { cva, type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { createContext, useContext, useState } from "react";
+import useRipple from "use-ripple-hook";
+import { iconButtonVariants } from "../icon-button";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "../tooltip";
+import { Typography } from "../typography";
+
+// --- Types ---
+type ToolbarSize = "sm" | "md" | "lg";
+type ToolbarOrientation = "horizontal" | "vertical";
+type ToolbarShape = "full" | "minimal" | "sharp";
+
+// --- Context ---
+interface ToolbarContextProps {
+  orientation: ToolbarOrientation;
+  size: ToolbarSize;
+  shape: ToolbarShape;
+}
+const ToolbarContext = createContext<ToolbarContextProps>({
+  orientation: "horizontal",
+  size: "md",
+  shape: "minimal",
+});
+
+const useToolbarContext = () => useContext(ToolbarContext);
+
+// --- CVA Variants ---
+
+const toolbarVariants = cva(
+  "flex items-center transition-colors duration-200 border",
+  {
+    variants: {
+      orientation: {
+        horizontal: "flex-row w-fit",
+        vertical: "flex-col h-fit",
+      },
+      variant: {
+        primary: "bg-graphite-card border-graphite-border",
+        secondary: "bg-graphite-secondary border-transparent",
+        ghost: "bg-transparent border-transparent",
+      },
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-2xl",
+        sharp: "rounded-none",
+      },
+      shadow: {
+        none: "shadow-none",
+        sm: "shadow-sm",
+        md: "shadow-md",
+        lg: "shadow-lg",
+      },
+      padding: {
+        none: "p-0",
+        sm: "p-1",
+        md: "p-2",
+        lg: "p-3",
+      },
+      gap: {
+        none: "gap-0",
+        sm: "gap-1",
+        md: "gap-2",
+        lg: "gap-3",
+      },
+    },
+    defaultVariants: {
+      orientation: "horizontal",
+      variant: "primary",
+      shape: "minimal",
+      shadow: "none",
+      padding: "sm",
+      gap: "sm",
+    },
+  }
+);
+
+const separatorVariants = cva("bg-graphite-border shrink-0 opacity-60", {
+  variants: {
+    orientation: {
+      horizontal: "w-[1px] mx-1",
+      vertical: "h-[1px] my-1",
+    },
+    size: {
+      sm: "h-3 w-3",
+      md: "h-5 w-5",
+      lg: "h-6 w-6",
+    },
+  },
+  compoundVariants: [
+    { orientation: "horizontal", size: "sm", className: "h-3" },
+    { orientation: "horizontal", size: "md", className: "h-5" },
+    { orientation: "horizontal", size: "lg", className: "h-6" },
+    { orientation: "vertical", size: "sm", className: "w-3" },
+    { orientation: "vertical", size: "md", className: "w-5" },
+    { orientation: "vertical", size: "lg", className: "w-6" },
+  ],
+  defaultVariants: {
+    orientation: "horizontal",
+    size: "md",
+  },
+});
+
+// Base styles for toggle items
+const itemBaseStyles =
+  "relative flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none overflow-hidden";
+
+const toggleItemVariants = cva(itemBaseStyles, {
+  variants: {
+    variant: {
+      default:
+        "bg-transparent text-graphite-foreground hover:bg-graphite-secondary/70 data-[state=on]:bg-graphite-secondary data-[state=on]:text-graphite-primary",
+      outline:
+        "border border-transparent hover:border-graphite-border data-[state=on]:border-graphite-border data-[state=on]:bg-graphite-card shadow-sm",
+      primary:
+        "hover:bg-graphite-primary/10 data-[state=on]:bg-graphite-primary data-[state=on]:text-graphite-primaryForeground",
+    },
+    size: {
+      sm: "h-8 min-w-[2rem] text-xs px-1.5",
+      md: "h-10 min-w-[2.5rem] text-sm px-2",
+      lg: "h-12 min-w-[3rem] text-base px-3",
+    },
+    shape: {
+      full: "rounded-full",
+      minimal: "rounded-lg",
+      sharp: "rounded-none",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+    size: "md",
+    shape: "minimal",
+  },
+});
+
+// --- Helper: Tooltip Wrapper ---
+
+interface ToolbarItemTooltipProps {
+  children: React.ReactElement;
+  content: string;
+  shortcut?: string;
+}
+
+const ToolbarItemTooltip = ({
+  children,
+  content,
+  shortcut,
+}: ToolbarItemTooltipProps) => {
+  const { orientation } = useToolbarContext();
+  return (
+    <TooltipProvider>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <Tooltip
+        variant="primary"
+        side={orientation === "vertical" ? "right" : "top"}
+        className="flex items-center gap-3"
+      >
+        <span>{content}</span>
+        {shortcut && (
+          <Typography
+            variant="small"
+            className="!text-xs opacity-70 bg-white/20 px-1.5 py-0.5 rounded"
+          >
+            {shortcut}
+          </Typography>
+        )}
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
+// --- Root Component ---
+
+export interface ToolbarProps
+  extends React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Root>,
+    VariantProps<typeof toolbarVariants> {}
+
+const ToolbarRoot = React.forwardRef<
+  React.ElementRef<typeof ToolbarPrimitive.Root>,
+  ToolbarProps
+>(
+  (
+    {
+      className,
+      orientation = "horizontal",
+      variant,
+      shape = "minimal",
+      shadow,
+      padding,
+      gap,
+      size = "md",
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      <ToolbarContext.Provider
+        value={{
+          orientation: orientation!,
+          size: size!,
+          shape: shape!,
+        }}
+      >
+        <ToolbarPrimitive.Root
+          ref={ref}
+          orientation={orientation}
+          className={clsx(
+            toolbarVariants({
+              orientation,
+              variant,
+              shape,
+              shadow,
+              padding,
+              gap,
+            }),
+            className
+          )}
+          {...props}
+        >
+          {children}
+        </ToolbarPrimitive.Root>
+      </ToolbarContext.Provider>
+    );
+  }
+);
+ToolbarRoot.displayName = "Toolbar";
+
+// --- Separator ---
+
+const ToolbarSeparator = React.forwardRef<
+  React.ElementRef<typeof ToolbarPrimitive.Separator>,
+  React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Separator>
+>(({ className, ...props }, ref) => {
+  const { orientation, size } = useToolbarContext();
+  return (
+    <ToolbarPrimitive.Separator
+      ref={ref}
+      className={clsx(separatorVariants({ orientation, size }), className)}
+      {...props}
+    />
+  );
+});
+ToolbarSeparator.displayName = "ToolbarSeparator";
+
+// --- Button (Action) ---
+
+interface ToolbarButtonProps
+  extends React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Button>,
+    VariantProps<typeof iconButtonVariants> {
+  /** If set, overrides the size from the Toolbar context */
+  size?: ToolbarSize;
+  /** If set, overrides the shape from the Toolbar context */
+  shape?: ToolbarShape;
+  /** Adds a tooltip when hovered/focused */
+  tooltip?: string;
+  /** Adds a shortcut label to the tooltip */
+  shortcut?: string;
+}
+
+const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
+  (
+    {
+      className,
+      variant = "ghost",
+      size,
+      shape,
+      children,
+      tooltip,
+      shortcut,
+      ...props
+    },
+    ref
+  ) => {
+    const context = useToolbarContext();
+    const finalSize = size || context.size;
+    const finalShape = shape || context.shape;
+
+    const localRef = React.useRef<HTMLButtonElement>(null);
+    React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
+
+    const rippleColor =
+      variant === "primary" || variant === "destructive"
+        ? "var(--color-ripple-dark)"
+        : "var(--color-ripple-light)";
+
+    const [, event] = useRipple({
+      ref: localRef,
+      color: rippleColor,
+      duration: 400,
+    });
+
+    const [isPressed, setIsPressed] = useState(false);
+
+    // Check if content is text or mixed to adjust width
+    const hasText = React.Children.toArray(children).some(
+      (child) => typeof child === "string" || typeof child === "number"
+    );
+
+    const ButtonElement = (
+      <ToolbarPrimitive.Button
+        ref={localRef}
+        onPointerDown={(e) => {
+          event(e);
+          !hasText && setIsPressed(true);
+        }}
+        onPointerUp={() => setIsPressed(false)}
+        onPointerLeave={() => setIsPressed(false)}
+        className={clsx(
+          iconButtonVariants({
+            variant,
+            size: finalSize,
+            shape: finalShape,
+          }),
+          // Allow width to grow for text buttons
+          hasText && "w-auto px-4 min-w-[auto] aspect-auto",
+          className
+        )}
+        {...props}
+      >
+        <motion.span
+          className="flex items-center justify-center gap-2 relative z-10"
+          animate={{ scale: isPressed ? 0.9 : 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 15 }}
+        >
+          {children}
+        </motion.span>
+      </ToolbarPrimitive.Button>
+    );
+
+    if (tooltip) {
+      return (
+        <ToolbarItemTooltip content={tooltip} shortcut={shortcut}>
+          {ButtonElement}
+        </ToolbarItemTooltip>
+      );
+    }
+
+    return ButtonElement;
+  }
+);
+ToolbarButton.displayName = "ToolbarButton";
+
+// --- Toggle Group ---
+
+const ToolbarToggleGroup = React.forwardRef<
+  React.ElementRef<typeof ToolbarPrimitive.ToggleGroup>,
+  React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleGroup>
+>(({ className, ...props }, ref) => {
+  const { orientation } = useToolbarContext();
+  return (
+    <ToolbarPrimitive.ToggleGroup
+      ref={ref}
+      className={clsx(
+        "flex items-center gap-0.5",
+        // Automatically stack if parent is vertical
+        orientation === "vertical" ? "flex-col w-full" : "flex-row",
+        className
+      )}
+      {...props}
+    />
+  );
+});
+ToolbarToggleGroup.displayName = "ToolbarToggleGroup";
+
+// --- Toggle Item ---
+
+interface ToolbarToggleItemProps
+  extends React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleItem>,
+    VariantProps<typeof toggleItemVariants> {
+  size?: ToolbarSize;
+  shape?: ToolbarShape;
+  tooltip?: string;
+  shortcut?: string;
+}
+
+const ToolbarToggleItem = React.forwardRef<
+  React.ElementRef<typeof ToolbarPrimitive.ToggleItem>,
+  ToolbarToggleItemProps
+>(
+  (
+    { className, variant, size, shape, children, tooltip, shortcut, ...props },
+    ref
+  ) => {
+    const context = useToolbarContext();
+    const finalSize = size || context.size;
+    const finalShape = shape || context.shape;
+
+    const localRef = React.useRef<HTMLButtonElement>(null);
+    React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
+
+    const [, event] = useRipple({
+      ref: localRef,
+      color: "var(--color-ripple-light)",
+      duration: 400,
+    });
+
+    const [isPressed, setIsPressed] = useState(false);
+
+    const ItemElement = (
+      <ToolbarPrimitive.ToggleItem
+        ref={localRef}
+        onPointerDown={(e) => {
+          event(e);
+          setIsPressed(true);
+        }}
+        onPointerUp={() => setIsPressed(false)}
+        onPointerLeave={() => setIsPressed(false)}
+        className={clsx(
+          toggleItemVariants({
+            variant,
+            size: finalSize,
+            shape: finalShape,
+          }),
+          // Fill width if in vertical toolbar to match look
+          context.orientation === "vertical" && "w-full",
+          className
+        )}
+        {...props}
+      >
+        <motion.span
+          className="flex items-center justify-center gap-2 relative z-10"
+          animate={{ scale: isPressed ? 0.9 : 1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 15 }}
+        >
+          {children}
+        </motion.span>
+      </ToolbarPrimitive.ToggleItem>
+    );
+
+    if (tooltip) {
+      return (
+        <ToolbarItemTooltip content={tooltip} shortcut={shortcut}>
+          {ItemElement}
+        </ToolbarItemTooltip>
+      );
+    }
+
+    return ItemElement;
+  }
+);
+ToolbarToggleItem.displayName = "ToolbarToggleItem";
+
+// --- Export ---
+
+export const Toolbar = Object.assign(ToolbarRoot, {
+  Button: ToolbarButton,
+  Separator: ToolbarSeparator,
+  ToggleGroup: ToolbarToggleGroup,
+  ToggleItem: ToolbarToggleItem,
+  /** Helper component for adding tooltips to custom toolbar items */
+  ItemTooltip: ToolbarItemTooltip,
+});
+```
+
+
+**Storybook Stories (`Toolbar.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  Bold,
+  Highlighter,
+  Image,
+  Italic,
+  Link as LinkIcon,
+  MousePointer2,
+  Palette,
+  Redo,
+  Strikethrough,
+  Type,
+  Underline,
+  Undo,
+} from "lucide-react";
+import { Toolbar } from "./index";
+
+const meta: Meta<typeof Toolbar> = {
+  title: "Components/Data/Toolbar",
+  component: Toolbar,
+  subcomponents: {
+    "Toolbar.Button": Toolbar.Button,
+    "Toolbar.Separator": Toolbar.Separator,
+    "Toolbar.ToggleGroup": Toolbar.ToggleGroup,
+    "Toolbar.ToggleItem": Toolbar.ToggleItem,
+  },
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A responsive, accessible toolbar component. Supports horizontal/vertical layouts, multiple sizes, shape inheritance, and automatic tooltip integration.",
+      },
+    },
+  },
+  argTypes: {
+    orientation: {
+      control: "select",
+      options: ["horizontal", "vertical"],
+    },
+    variant: {
+      control: "select",
+      options: ["primary", "secondary", "ghost"],
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+      description:
+        "Determines the border radius of the container AND the items inside it.",
+    },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+    },
+    padding: {
+      control: "select",
+      options: ["none", "sm", "md", "lg"],
+    },
+    gap: {
+      control: "select",
+      options: ["none", "sm", "md", "lg"],
+    },
+    shadow: {
+      control: "select",
+      options: ["none", "sm", "md", "lg"],
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof Toolbar>;
+
+export const HorizontalEditor: Story = {
+  name: "1. Horizontal Editor (Shape: Minimal)",
+  args: {
+    orientation: "horizontal",
+    variant: "primary",
+    shape: "minimal",
+    size: "md",
+    padding: "sm",
+    shadow: "sm",
+  },
+  render: (args) => (
+    <Toolbar {...args} aria-label="Formatting options">
+      <Toolbar.ToggleGroup type="multiple" aria-label="Text formatting">
+        <Toolbar.ToggleItem value="bold" tooltip="Bold" shortcut="⌘B">
+          <Bold className="h-4 w-4" />
+        </Toolbar.ToggleItem>
+        <Toolbar.ToggleItem value="italic" tooltip="Italic" shortcut="⌘I">
+          <Italic className="h-4 w-4" />
+        </Toolbar.ToggleItem>
+        <Toolbar.ToggleItem value="underline" tooltip="Underline" shortcut="⌘U">
+          <Underline className="h-4 w-4" />
+        </Toolbar.ToggleItem>
+        <Toolbar.ToggleItem value="strike" tooltip="Strikethrough">
+          <Strikethrough className="h-4 w-4" />
+        </Toolbar.ToggleItem>
+      </Toolbar.ToggleGroup>
+
+      <Toolbar.Separator />
+
+      <Toolbar.ToggleGroup type="single" defaultValue="left" aria-label="Align">
+        <Toolbar.ToggleItem value="left" tooltip="Align Left">
+          <AlignLeft className="h-4 w-4" />
+        </Toolbar.ToggleItem>
+        <Toolbar.ToggleItem value="center" tooltip="Align Center">
+          <AlignCenter className="h-4 w-4" />
+        </Toolbar.ToggleItem>
+        <Toolbar.ToggleItem value="right" tooltip="Align Right">
+          <AlignRight className="h-4 w-4" />
+        </Toolbar.ToggleItem>
+      </Toolbar.ToggleGroup>
+
+      <Toolbar.Separator />
+
+      <Toolbar.Button tooltip="Insert Link">
+        <LinkIcon className="h-4 w-4" />
+      </Toolbar.Button>
+      <Toolbar.Button tooltip="Insert Image">
+        <Image className="h-4 w-4" />
+      </Toolbar.Button>
+
+      <Toolbar.Separator />
+
+      {/* This button will now auto-scale on click */}
+      <Toolbar.Button variant="primary" tooltip="Publish Post" shortcut="⌘S">
+        Publish
+      </Toolbar.Button>
+    </Toolbar>
+  ),
+};
+
+export const VerticalTools: Story = {
+  name: "2. Vertical Tools (Shape: Sharp)",
+  args: {
+    orientation: "vertical",
+    variant: "primary",
+    shape: "sharp", // Items inside will inherit square corners
+    size: "md",
+    padding: "sm",
+    shadow: "md",
+  },
+  render: (args) => (
+    <div className="h-96 bg-graphite-secondary/30 p-8 rounded-xl border border-dashed border-graphite-border flex items-start gap-4">
+      <Toolbar {...args} aria-label="Drawing tools">
+        <Toolbar.ToggleGroup
+          type="single"
+          defaultValue="select"
+          className="flex-col"
+        >
+          <Toolbar.ToggleItem value="select" tooltip="Select Tool" shortcut="V">
+            <MousePointer2 className="h-4 w-4" />
+          </Toolbar.ToggleItem>
+          <Toolbar.ToggleItem value="text" tooltip="Type Tool" shortcut="T">
+            <Type className="h-4 w-4" />
+          </Toolbar.ToggleItem>
+          <Toolbar.ToggleItem value="brush" tooltip="Brush Tool" shortcut="B">
+            <Highlighter className="h-4 w-4" />
+          </Toolbar.ToggleItem>
+        </Toolbar.ToggleGroup>
+
+        <Toolbar.Separator />
+
+        <Toolbar.Button tooltip="Color Palette">
+          <Palette className="h-4 w-4" style={{ color: "#3b82f6" }} />
+        </Toolbar.Button>
+
+        <div className="flex-1" />
+
+        <Toolbar.Button tooltip="Undo" shortcut="⌘Z">
+          <Undo className="h-4 w-4" />
+        </Toolbar.Button>
+        <Toolbar.Button tooltip="Redo" shortcut="⇧⌘Z">
+          <Redo className="h-4 w-4" />
+        </Toolbar.Button>
+      </Toolbar>
+
+      <div className="flex-1 h-full flex items-center justify-center text-graphite-foreground/20 font-bold text-2xl select-none">
+        Canvas
+      </div>
+    </div>
+  ),
+};
+
+export const RoundedShape: Story = {
+  name: "3. Rounded Shape (Full)",
+  args: {
+    orientation: "horizontal",
+    variant: "secondary",
+    shape: "full", // Items inside will be circles/pills
+    size: "lg",
+    padding: "md",
+    gap: "md",
+  },
+  render: (args) => (
+    <Toolbar {...args}>
+      <Toolbar.ToggleGroup type="multiple">
+        <Toolbar.ToggleItem value="b" tooltip="Bold">
+          <Bold className="h-5 w-5" />
+        </Toolbar.ToggleItem>
+        <Toolbar.ToggleItem value="i" tooltip="Italic">
+          <Italic className="h-5 w-5" />
+        </Toolbar.ToggleItem>
+      </Toolbar.ToggleGroup>
+      <Toolbar.Separator />
+      <Toolbar.Button variant="primary" tooltip="Primary Action">
+        Action
+      </Toolbar.Button>
+    </Toolbar>
+  ),
+};
+```
+
+
 ### Component: `tooltip`
 This section includes all related source files for the `tooltip` component, including nested sub-components (like `header.tsx`) and utilities.
 
@@ -22925,6 +24076,1161 @@ export const Polymorphic: Story = {
     as: "div", // Render an H1 style but with a <div> tag
     children: "This looks like an H1, but it is a div tag.",
   },
+};
+```
+
+
+### Component: `video-player`
+This section includes all related source files for the `video-player` component, including nested sub-components (like `header.tsx`) and utilities.
+
+**Source File (`src\lib\components\video-player\index.tsx`)**
+```tsx
+"use client";
+
+import * as SliderPrimitive from "@radix-ui/react-slider";
+import { useMediaQuery } from "@uidotdev/usehooks";
+import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
+import Hls from "hls.js";
+import {
+  Captions,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Gauge,
+  Languages,
+  Loader2,
+  Maximize,
+  Minimize,
+  Pause,
+  PictureInPicture,
+  Play,
+  Settings,
+  Volume1,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import { IconButton } from "../icon-button";
+import { Typography } from "../typography";
+
+// --- UTILS ---
+
+const formatTime = (seconds: number) => {
+  if (isNaN(seconds)) return "00:00";
+  const date = new Date(0);
+  date.setSeconds(seconds);
+  const hh = date.getUTCHours();
+  const mm = date.getUTCMinutes();
+  const ss = date.getUTCSeconds().toString().padStart(2, "0");
+  if (hh) {
+    return `${hh}:${mm.toString().padStart(2, "0")}:${ss}`;
+  }
+  return `${mm}:${ss}`;
+};
+
+// --- CVA VARIANTS ---
+
+const playerContainerVariants = cva(
+  "group/video relative w-full overflow-hidden bg-black text-white select-none flex items-center justify-center",
+  {
+    variants: {
+      shape: {
+        full: "rounded-3xl",
+        minimal: "rounded-xl",
+        sharp: "rounded-none",
+      },
+      isFullscreen: {
+        true: "fixed inset-0 z-[9999] h-[100dvh] w-screen rounded-none",
+        false: "aspect-video",
+      },
+    },
+    defaultVariants: {
+      shape: "minimal",
+      isFullscreen: false,
+    },
+  }
+);
+
+// --- SUB-COMPONENT: Video Scrubber ---
+
+interface VideoScrubberProps {
+  value: number;
+  max: number;
+  buffer: number;
+  onValueChange: (val: number[]) => void;
+  onValueCommit: (val: number[]) => void;
+  variant?: "video" | "volume";
+}
+
+const VideoScrubber = ({
+  value,
+  max,
+  buffer,
+  onValueChange,
+  onValueCommit,
+  variant = "video",
+}: VideoScrubberProps) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const rangeColor = variant === "video" ? "bg-red-600" : "bg-white";
+  const thumbColor = variant === "video" ? "bg-red-600" : "bg-white";
+
+  return (
+    <SliderPrimitive.Root
+      className="relative flex h-6 w-full touch-none select-none items-center group/slider cursor-pointer"
+      value={[value]}
+      max={max}
+      step={0.1}
+      onValueChange={onValueChange}
+      onValueCommit={onValueCommit}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
+    >
+      <SliderPrimitive.Track className="relative h-1 w-full grow overflow-hidden rounded-full bg-white/20 transition-all duration-200 group-hover/slider:h-1.5">
+        <div
+          className="absolute h-full bg-white/40 transition-all duration-200"
+          style={{ width: `${max > 0 ? (buffer / max) * 100 : 0}%` }}
+        />
+        <SliderPrimitive.Range
+          className={clsx("absolute h-full", rangeColor)}
+        />
+      </SliderPrimitive.Track>
+
+      <SliderPrimitive.Thumb
+        className={clsx(
+          "block h-3.5 w-3.5 rounded-full shadow-lg ring-0 transition-transform duration-200 focus-visible:outline-none",
+          thumbColor,
+          isHovered ? "scale-125" : "scale-100"
+        )}
+      />
+    </SliderPrimitive.Root>
+  );
+};
+
+// --- TYPES FOR MENU ---
+type SettingsView = "main" | "speed" | "quality" | "audio" | "captions";
+interface TrackOption {
+  id: number;
+  label: string;
+}
+
+// --- SUB-COMPONENT: Settings Menu (Memoized) ---
+// Extracted to prevent re-renders on video timeupdate
+
+interface VideoSettingsMenuProps {
+  view: SettingsView;
+  onViewChange: (view: SettingsView) => void;
+  playbackRate: number;
+  onSpeedChange: (rate: number) => void;
+  qualities: TrackOption[];
+  currentQuality: number;
+  onQualityChange: (id: number) => void;
+  audioTracks: TrackOption[];
+  currentAudioTrack: number;
+  onAudioChange: (id: number) => void;
+  subtitles: TrackOption[];
+  currentSubtitle: number;
+  onSubtitleChange: (id: number) => void;
+}
+
+const VideoSettingsMenu = React.memo(
+  ({
+    view,
+    onViewChange,
+    playbackRate,
+    onSpeedChange,
+    qualities,
+    currentQuality,
+    onQualityChange,
+    audioTracks,
+    currentAudioTrack,
+    onAudioChange,
+    subtitles,
+    currentSubtitle,
+    onSubtitleChange,
+  }: VideoSettingsMenuProps) => {
+    const menuClass =
+      "absolute bottom-full right-0 mb-3 w-64 max-h-80 overflow-hidden overflow-y-auto rounded-xl bg-graphite-card border border-graphite-border p-1 shadow-xl flex flex-col gap-1 z-50 scrollbar-thin";
+
+    const SettingsHeader = ({
+      title,
+      onBack,
+    }: {
+      title: string;
+      onBack: () => void;
+    }) => (
+      <div className="flex items-center gap-2 px-2 py-1.5 mb-1 border-b border-graphite-border text-graphite-foreground">
+        <button
+          onClick={onBack}
+          className="p-1 hover:bg-graphite-secondary rounded-md transition-colors"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span className="text-sm font-semibold">{title}</span>
+      </div>
+    );
+
+    const MenuItem = ({
+      label,
+      valueLabel,
+      onClick,
+      isActive = false,
+      icon: Icon,
+      hasSubmenu = false,
+    }: any) => (
+      <button
+        onClick={onClick}
+        className={clsx(
+          "relative flex w-full cursor-pointer select-none items-center justify-between rounded-md px-3 py-2 text-sm outline-none transition-colors",
+          isActive
+            ? "bg-graphite-secondary text-graphite-foreground font-medium"
+            : "text-graphite-foreground/80 hover:bg-graphite-secondary/50 hover:text-graphite-foreground"
+        )}
+      >
+        <div className="flex items-center gap-3">
+          {Icon && <Icon size={16} className="opacity-70" />}
+          <span>{label}</span>
+        </div>
+        <div className="flex items-center gap-1 text-xs opacity-70">
+          {valueLabel}
+          {hasSubmenu && <ChevronRight size={14} />}
+          {isActive && !hasSubmenu && (
+            <Check size={14} className="text-graphite-primary" />
+          )}
+        </div>
+      </button>
+    );
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+        transition={{ duration: 0.15 }}
+        className={menuClass}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {view === "main" && (
+          <>
+            <MenuItem
+              label="Speed"
+              valueLabel={playbackRate === 1 ? "Normal" : `${playbackRate}x`}
+              icon={Gauge}
+              hasSubmenu
+              onClick={() => onViewChange("speed")}
+            />
+            {qualities.length > 0 && (
+              <MenuItem
+                label="Quality"
+                valueLabel={
+                  currentQuality === -1
+                    ? "Auto"
+                    : qualities.find((q) => q.id === currentQuality)?.label
+                }
+                icon={Settings}
+                hasSubmenu
+                onClick={() => onViewChange("quality")}
+              />
+            )}
+            {audioTracks.length > 0 && (
+              <MenuItem
+                label="Audio"
+                valueLabel={
+                  audioTracks.find((t) => t.id === currentAudioTrack)?.label ||
+                  "Default"
+                }
+                icon={Languages}
+                hasSubmenu
+                onClick={() => onViewChange("audio")}
+              />
+            )}
+            <MenuItem
+              label="Captions"
+              valueLabel={
+                currentSubtitle === -1
+                  ? "Off"
+                  : subtitles.find((t) => t.id === currentSubtitle)?.label ||
+                    "Unknown"
+              }
+              icon={Captions}
+              hasSubmenu
+              onClick={() => onViewChange("captions")}
+            />
+          </>
+        )}
+
+        {view === "speed" && (
+          <>
+            <SettingsHeader
+              title="Playback Speed"
+              onBack={() => onViewChange("main")}
+            />
+            {[0.5, 1, 1.25, 1.5, 2].map((rate) => (
+              <MenuItem
+                key={rate}
+                label={rate === 1 ? "Normal" : `${rate}x`}
+                isActive={playbackRate === rate}
+                onClick={() => onSpeedChange(rate)}
+              />
+            ))}
+          </>
+        )}
+
+        {view === "quality" && (
+          <>
+            <SettingsHeader
+              title="Quality"
+              onBack={() => onViewChange("main")}
+            />
+            <MenuItem
+              label="Auto"
+              isActive={currentQuality === -1}
+              onClick={() => onQualityChange(-1)}
+            />
+            {qualities.map((q) => (
+              <MenuItem
+                key={q.id}
+                label={q.label}
+                isActive={currentQuality === q.id}
+                onClick={() => onQualityChange(q.id)}
+              />
+            ))}
+          </>
+        )}
+
+        {view === "audio" && (
+          <>
+            <SettingsHeader
+              title="Audio Track"
+              onBack={() => onViewChange("main")}
+            />
+            {audioTracks.map((t) => (
+              <MenuItem
+                key={t.id}
+                label={t.label}
+                isActive={currentAudioTrack === t.id}
+                onClick={() => onAudioChange(t.id)}
+              />
+            ))}
+          </>
+        )}
+
+        {view === "captions" && (
+          <>
+            <SettingsHeader
+              title="Captions"
+              onBack={() => onViewChange("main")}
+            />
+            <MenuItem
+              label="Off"
+              isActive={currentSubtitle === -1}
+              onClick={() => onSubtitleChange(-1)}
+            />
+            {subtitles.map((t) => (
+              <MenuItem
+                key={t.id}
+                label={t.label}
+                isActive={currentSubtitle === t.id}
+                onClick={() => onSubtitleChange(t.id)}
+              />
+            ))}
+          </>
+        )}
+      </motion.div>
+    );
+  }
+);
+VideoSettingsMenu.displayName = "VideoSettingsMenu";
+
+// --- MAIN COMPONENT ---
+
+export interface VideoPlayerProps {
+  src: string;
+  poster?: string;
+  autoPlay?: boolean;
+  muted?: boolean;
+  loop?: boolean;
+  className?: string;
+  shape?: "full" | "minimal" | "sharp";
+  title?: string;
+  objectFit?: "contain" | "cover" | "fill";
+}
+
+export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
+  (
+    {
+      src,
+      poster,
+      autoPlay = false,
+      muted = false,
+      loop = false,
+      className,
+      shape = "minimal",
+      title,
+      objectFit = "contain",
+    },
+    ref
+  ) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const localContainerRef = useRef<HTMLDivElement>(null);
+    const hlsRef = useRef<Hls | null>(null);
+
+    // Timers
+    const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const doubleTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const singleTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastTapTimeRef = useRef<number>(0);
+
+    useImperativeHandle(ref, () => localContainerRef.current!);
+
+    const isMobile = useMediaQuery("(pointer: coarse)");
+
+    // Player State
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isMuted, setIsMuted] = useState(muted);
+    const [volume, setVolume] = useState(1);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [buffered, setBuffered] = useState(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [showControls, setShowControls] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Settings State
+    const [playbackRate, setPlaybackRate] = useState(1);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [settingsView, setSettingsView] = useState<SettingsView>("main");
+
+    // Track State (HLS)
+    const [qualities, setQualities] = useState<TrackOption[]>([]);
+    const [currentQuality, setCurrentQuality] = useState<number>(-1); // -1 = Auto
+    const [audioTracks, setAudioTracks] = useState<TrackOption[]>([]);
+    const [currentAudioTrack, setCurrentAudioTrack] = useState<number>(-1);
+    const [subtitles, setSubtitles] = useState<TrackOption[]>([]);
+    const [currentSubtitle, setCurrentSubtitle] = useState<number>(-1); // -1 = Off
+
+    // Seek Gesture State
+    const [doubleTapState, setDoubleTapState] = useState<{
+      side: "left" | "right";
+      amount: number;
+    } | null>(null);
+
+    // --- SETUP & EVENTS ---
+
+    useEffect(() => {
+      const handleFullscreenChange = () => {
+        const isFull = !!document.fullscreenElement;
+        setIsFullscreen(isFull);
+        if (!isFull && window.screen?.orientation?.unlock) {
+          window.screen.orientation.unlock();
+        }
+      };
+      document.addEventListener("fullscreenchange", handleFullscreenChange);
+      return () =>
+        document.removeEventListener(
+          "fullscreenchange",
+          handleFullscreenChange
+        );
+    }, []);
+
+    useEffect(() => {
+      const video = videoRef.current;
+      if (!video) return;
+      setIsLoading(true);
+
+      // Reset tracks
+      setQualities([]);
+      setAudioTracks([]);
+      setSubtitles([]);
+
+      if (Hls.isSupported() && src.endsWith(".m3u8")) {
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+        }
+        const hls = new Hls({
+          startLevel: -1, // Auto start
+          capLevelToPlayerSize: true,
+        });
+        hlsRef.current = hls;
+        hls.loadSource(src);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+          setIsLoading(false);
+          if (autoPlay) video.play().catch(() => {});
+
+          // Populate Levels (Quality)
+          const levels = data.levels.map((l, i) => ({
+            id: i,
+            label: l.height ? `${l.height}p` : `Level ${i}`,
+          }));
+          setQualities(levels);
+        });
+
+        hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_, data) => {
+          setAudioTracks(
+            data.audioTracks.map((t, i) => ({
+              id: i,
+              label: t.name || t.lang || `Track ${i + 1}`,
+            }))
+          );
+          setCurrentAudioTrack(hls.audioTrack);
+        });
+
+        hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (_, data) => {
+          setSubtitles(
+            data.subtitleTracks.map((t, i) => ({
+              id: i,
+              label: t.name || t.lang || `Sub ${i + 1}`,
+            }))
+          );
+          setCurrentSubtitle(hls.subtitleTrack);
+        });
+
+        return () => {
+          hls.destroy();
+          hlsRef.current = null;
+        };
+      } else {
+        // Native playback (MP4)
+        video.src = src;
+        video.addEventListener("loadedmetadata", () => {
+          setIsLoading(false);
+          if (autoPlay) video.play().catch(() => {});
+        });
+      }
+    }, [src, autoPlay]);
+
+    useEffect(() => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      const handleUpdate = () => {
+        setCurrentTime(video.currentTime);
+        if (video.buffered.length > 0)
+          setBuffered(video.buffered.end(video.buffered.length - 1));
+      };
+      const handleDuration = () => setDuration(video.duration);
+      const handlePlay = () => setIsPlaying(true);
+      const handlePause = () => setIsPlaying(false);
+      const handleWaiting = () => setIsLoading(true);
+      const handlePlaying = () => setIsLoading(false);
+
+      video.addEventListener("timeupdate", handleUpdate);
+      video.addEventListener("durationchange", handleDuration);
+      video.addEventListener("play", handlePlay);
+      video.addEventListener("pause", handlePause);
+      video.addEventListener("waiting", handleWaiting);
+      video.addEventListener("playing", handlePlaying);
+
+      return () => {
+        video.removeEventListener("timeupdate", handleUpdate);
+        video.removeEventListener("durationchange", handleDuration);
+        video.removeEventListener("play", handlePlay);
+        video.removeEventListener("pause", handlePause);
+        video.removeEventListener("waiting", handleWaiting);
+        video.removeEventListener("playing", handlePlaying);
+      };
+    }, []);
+
+    // --- ACTIONS ---
+
+    const togglePlay = () => {
+      if (!videoRef.current) return;
+      if (isPlaying) {
+        videoRef.current.pause();
+        setShowControls(true);
+        if (controlsTimeoutRef.current)
+          clearTimeout(controlsTimeoutRef.current);
+      } else {
+        videoRef.current.play();
+      }
+    };
+
+    const toggleMute = () => {
+      if (videoRef.current) {
+        videoRef.current.muted = !isMuted;
+        setIsMuted(!isMuted);
+      }
+    };
+
+    const handleSeek = (time: number) => {
+      if (videoRef.current && !isNaN(time)) {
+        videoRef.current.currentTime = time;
+        setCurrentTime(time);
+      }
+    };
+
+    const toggleFullscreen = async () => {
+      if (!localContainerRef.current) return;
+      if (!document.fullscreenElement) {
+        try {
+          if (localContainerRef.current.requestFullscreen)
+            await localContainerRef.current.requestFullscreen();
+          // @ts-ignore
+          else if (localContainerRef.current.webkitRequestFullscreen)
+            await localContainerRef.current.webkitRequestFullscreen();
+          else setIsFullscreen(true);
+
+          // @ts-ignore
+          if (window.screen?.orientation?.lock)
+            await window.screen.orientation.lock("landscape").catch(() => {});
+        } catch (e) {
+          setIsFullscreen(true);
+        }
+      } else {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        // @ts-ignore
+        else if (document.webkitExitFullscreen)
+          await document.webkitExitFullscreen();
+        else setIsFullscreen(false);
+      }
+    };
+
+    // --- TRACK ACTIONS (Memoized) ---
+
+    const changeQuality = useCallback((levelId: number) => {
+      if (hlsRef.current) {
+        hlsRef.current.currentLevel = levelId;
+        setCurrentQuality(levelId);
+      }
+      setSettingsView("main");
+    }, []);
+
+    const changeAudio = useCallback((trackId: number) => {
+      if (hlsRef.current) {
+        hlsRef.current.audioTrack = trackId;
+        setCurrentAudioTrack(trackId);
+      }
+      setSettingsView("main");
+    }, []);
+
+    const changeSubtitle = useCallback((trackId: number) => {
+      if (hlsRef.current) {
+        hlsRef.current.subtitleTrack = trackId;
+        setCurrentSubtitle(trackId);
+      }
+      setSettingsView("main");
+    }, []);
+
+    const changeSpeed = useCallback((rate: number) => {
+      if (videoRef.current) {
+        videoRef.current.playbackRate = rate;
+        setPlaybackRate(rate);
+      }
+      setSettingsView("main");
+    }, []);
+
+    const handleViewChange = useCallback((view: SettingsView) => {
+      setSettingsView(view);
+    }, []);
+
+    // --- CONTROLS VISIBILITY (AUTO HIDE) ---
+    useEffect(() => {
+      if (isPlaying && showControls && !isSettingsOpen) {
+        if (controlsTimeoutRef.current)
+          clearTimeout(controlsTimeoutRef.current);
+        controlsTimeoutRef.current = setTimeout(
+          () => setShowControls(false),
+          3000
+        );
+      } else if (!isPlaying) {
+        setShowControls(true);
+        if (controlsTimeoutRef.current)
+          clearTimeout(controlsTimeoutRef.current);
+      }
+    }, [isPlaying, showControls, isSettingsOpen]);
+
+    // --- UNIFIED MOBILE TAP HANDLER ---
+    const handleGestureClick = (e: React.MouseEvent) => {
+      if (!isMobile) {
+        if (isSettingsOpen) setIsSettingsOpen(false);
+        else togglePlay();
+        return;
+      }
+
+      const now = Date.now();
+      const timeSinceLast = now - lastTapTimeRef.current;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const width = rect.width;
+      const ratio = x / width;
+
+      let side: "left" | "right" | null = null;
+      if (ratio < 0.35) side = "left";
+      if (ratio > 0.65) side = "right";
+
+      if (timeSinceLast < 300 && side) {
+        if (singleTapTimeoutRef.current)
+          clearTimeout(singleTapTimeoutRef.current);
+        handleSeekGesture(side);
+        lastTapTimeRef.current = 0;
+      } else {
+        lastTapTimeRef.current = now;
+        if (doubleTapState) return;
+        singleTapTimeoutRef.current = setTimeout(() => {
+          if (isSettingsOpen) {
+            setIsSettingsOpen(false);
+            setSettingsView("main");
+          } else {
+            setShowControls((prev) => !prev);
+          }
+        }, 300);
+      }
+    };
+
+    const handleSeekGesture = (side: "left" | "right") => {
+      setShowControls(true);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      if (doubleTapTimeoutRef.current)
+        clearTimeout(doubleTapTimeoutRef.current);
+
+      setDoubleTapState((prev) => {
+        const step = 10;
+        if (prev && prev.side === side) {
+          const newAmount = prev.amount + step;
+          if (videoRef.current)
+            handleSeek(
+              videoRef.current.currentTime + (side === "left" ? -step : step)
+            );
+          return { side, amount: newAmount };
+        }
+        if (videoRef.current)
+          handleSeek(
+            videoRef.current.currentTime + (side === "left" ? -step : step)
+          );
+        return { side, amount: step };
+      });
+
+      doubleTapTimeoutRef.current = setTimeout(
+        () => setDoubleTapState(null),
+        650
+      );
+    };
+
+    // --- RENDER ---
+
+    return (
+      <div
+        ref={localContainerRef}
+        className={clsx(
+          playerContainerVariants({ shape, isFullscreen }),
+          className
+        )}
+        onMouseMove={() => {
+          if (!isMobile) {
+            setShowControls(true);
+            if (controlsTimeoutRef.current)
+              clearTimeout(controlsTimeoutRef.current);
+            if (isPlaying && !isSettingsOpen)
+              controlsTimeoutRef.current = setTimeout(
+                () => setShowControls(false),
+                3000
+              );
+          }
+        }}
+        onMouseLeave={() => {
+          if (!isMobile && isPlaying && !isSettingsOpen) setShowControls(false);
+        }}
+      >
+        <video
+          ref={videoRef}
+          poster={poster}
+          loop={loop}
+          muted={muted}
+          playsInline
+          className={clsx(
+            "max-h-full max-w-full bg-black",
+            objectFit === "cover"
+              ? "h-full w-full object-cover"
+              : "h-full w-full object-contain"
+          )}
+        />
+
+        {/* Gesture Overlay */}
+        <div
+          className="absolute inset-0 z-10"
+          onClick={handleGestureClick}
+          onDoubleClick={(e) => !isMobile && toggleFullscreen()}
+        />
+
+        {/* Loading Spinner */}
+        <AnimatePresence>
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-20 flex items-center justify-center bg-black/20 pointer-events-none"
+            >
+              <Loader2 className="h-12 w-12 animate-spin text-white/80" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Seek Feedback */}
+        <AnimatePresence>
+          {doubleTapState && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className={clsx(
+                "absolute inset-y-0 z-30 flex w-1/2 items-center justify-center bg-white/10 backdrop-blur-[2px] pointer-events-none",
+                doubleTapState.side === "left"
+                  ? "left-0 rounded-r-[50%]"
+                  : "right-0 rounded-l-[50%]"
+              )}
+            >
+              <div className="flex flex-col items-center text-white font-bold">
+                {doubleTapState.side === "left" ? (
+                  <ChevronsLeft className="h-10 w-10 mb-2" />
+                ) : (
+                  <ChevronsRight className="h-10 w-10 mb-2" />
+                )}
+                <span>{doubleTapState.amount} seconds</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Play/Pause Button */}
+        <AnimatePresence>
+          {!isLoading && !doubleTapState && (
+            <>
+              {!isMobile && !isPlaying && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none"
+                >
+                  <div className="bg-black/40 rounded-full p-4 backdrop-blur-sm">
+                    <Play className="h-8 w-8 fill-white text-white ml-1" />
+                  </div>
+                </motion.div>
+              )}
+
+              {isMobile && showControls && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none"
+                >
+                  <div
+                    className="bg-black/40 rounded-full p-5 backdrop-blur-sm pointer-events-auto cursor-pointer active:scale-95 transition-transform"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePlay();
+                    }}
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-8 w-8 fill-white text-white" />
+                    ) : (
+                      <Play className="h-8 w-8 fill-white text-white ml-1" />
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Title Bar */}
+        <AnimatePresence>
+          {showControls && title && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent p-4 pt-6 pointer-events-none"
+            >
+              <Typography variant="h4" className="text-white text-shadow-sm">
+                {title}
+              </Typography>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Bottom Controls */}
+        <AnimatePresence>
+          {showControls && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="absolute bottom-0 left-0 right-0 z-50 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-20 pb-2 px-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-2 flex w-full items-center gap-2">
+                <VideoScrubber
+                  value={currentTime}
+                  max={duration || 100}
+                  buffer={buffered}
+                  onValueChange={(val) => handleSeek(val[0])}
+                  onValueCommit={(val) => handleSeek(val[0])}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {!isMobile && (
+                    <IconButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={togglePlay}
+                      className="bg-white/10 text-white hover:bg-white/20 border-none! outline-none!"
+                    >
+                      {isPlaying ? (
+                        <Pause className="fill-white h-5 w-5" />
+                      ) : (
+                        <Play className="fill-white h-5 w-5" />
+                      )}
+                    </IconButton>
+                  )}
+
+                  <div className="group/volume flex items-center">
+                    <IconButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={toggleMute}
+                      className="bg-white/10 text-white hover:bg-white/20 border-none"
+                    >
+                      {isMuted || volume === 0 ? (
+                        <VolumeX className="h-5 w-5" />
+                      ) : volume < 0.5 ? (
+                        <Volume1 className="h-5 w-5" />
+                      ) : (
+                        <Volume2 className="h-5 w-5" />
+                      )}
+                    </IconButton>
+                    {!isMobile && (
+                      <div className="w-0 overflow-hidden transition-all duration-200 group-hover/volume:w-24 group-hover/volume:ml-2">
+                        <VideoScrubber
+                          variant="volume"
+                          value={isMuted ? 0 : volume}
+                          max={1}
+                          buffer={0}
+                          onValueChange={(v) => {
+                            if (videoRef.current) {
+                              videoRef.current.volume = v[0];
+                              setVolume(v[0]);
+                              setIsMuted(v[0] === 0);
+                            }
+                          }}
+                          onValueCommit={() => {}}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="ml-2 flex items-center text-xs font-medium text-white/90 bg-white/10 px-2 py-1 rounded-md h-8">
+                    <span>{formatTime(currentTime)}</span>
+                    <span className="mx-1 opacity-50">/</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Settings Menu */}
+                  <div className="relative">
+                    <IconButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setIsSettingsOpen(!isSettingsOpen);
+                        setSettingsView("main");
+                      }}
+                      className={clsx(
+                        "bg-white/10 text-white hover:bg-white/20 border-none transition-transform",
+                        isSettingsOpen && "rotate-90 bg-white/30"
+                      )}
+                    >
+                      <Settings className="h-5 w-5" />
+                    </IconButton>
+                    <AnimatePresence>
+                      {isSettingsOpen && (
+                        <VideoSettingsMenu
+                          view={settingsView}
+                          onViewChange={handleViewChange}
+                          playbackRate={playbackRate}
+                          onSpeedChange={changeSpeed}
+                          qualities={qualities}
+                          currentQuality={currentQuality}
+                          onQualityChange={changeQuality}
+                          audioTracks={audioTracks}
+                          currentAudioTrack={currentAudioTrack}
+                          onAudioChange={changeAudio}
+                          subtitles={subtitles}
+                          currentSubtitle={currentSubtitle}
+                          onSubtitleChange={changeSubtitle}
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {!isMobile && (
+                    <IconButton
+                      variant="secondary"
+                      size="sm"
+                      onClick={async () => {
+                        if (document.pictureInPictureElement)
+                          await document.exitPictureInPicture();
+                        else await videoRef.current?.requestPictureInPicture();
+                      }}
+                      className="bg-white/10 text-white hover:bg-white/20 border-none hidden sm:flex"
+                    >
+                      <PictureInPicture className="h-5 w-5" />
+                    </IconButton>
+                  )}
+
+                  <IconButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={toggleFullscreen}
+                    className="bg-white/10 text-white hover:bg-white/20 border-none"
+                  >
+                    {isFullscreen ? (
+                      <Minimize className="h-5 w-5" />
+                    ) : (
+                      <Maximize className="h-5 w-5" />
+                    )}
+                  </IconButton>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+);
+
+VideoPlayer.displayName = "VideoPlayer";
+```
+
+
+**Storybook Stories (`Video-player.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { VideoPlayer } from "./index";
+
+const meta: Meta<typeof VideoPlayer> = {
+  title: "Components/Media/VideoPlayer",
+  component: VideoPlayer,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "padded",
+    docs: {
+      description: {
+        component:
+          "A fully featured video player supporting HLS streaming, MP4/WebM formats, YouTube-like gestures, responsive controls, and keyboard shortcuts.",
+      },
+    },
+  },
+  argTypes: {
+    src: { control: "text" },
+    poster: { control: "text" },
+    autoPlay: { control: "boolean" },
+    muted: { control: "boolean" },
+    loop: { control: "boolean" },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof VideoPlayer>;
+
+// Example HLS stream (Big Buck Bunny)
+const HLS_SOURCE = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
+const MP4_SOURCE =
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+const POSTER =
+  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg";
+
+export const Default: Story = {
+  name: "1. Default (MP4)",
+  args: {
+    src: MP4_SOURCE,
+    poster: POSTER,
+    shape: "minimal",
+    title: "Big Buck Bunny - MP4",
+  },
+  render: (args) => (
+    <div className="max-w-3xl">
+      <VideoPlayer {...args} />
+    </div>
+  ),
+};
+
+export const HLSStreaming: Story = {
+  name: "2. HLS Streaming (.m3u8)",
+  args: {
+    src: "http://sample.vodobox.com/planete_interdite/planete_interdite_alternate.m3u8",
+    poster: POSTER,
+    shape: "minimal",
+    title: "Big Buck Bunny - HLS Stream",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Supports HTTP Live Streaming (HLS) out of the box using `hls.js`. Will fallback to native HLS on Safari.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="max-w-3xl">
+      <VideoPlayer {...args} />
+    </div>
+  ),
+};
+
+export const AutoPlayMuted: Story = {
+  name: "3. AutoPlay & Muted",
+  args: {
+    src: MP4_SOURCE,
+    autoPlay: true,
+    muted: true,
+    loop: true,
+    shape: "full",
+    title: "Background Video",
+  },
+  render: (args) => (
+    <div className="max-w-xl">
+      <VideoPlayer {...args} />
+    </div>
+  ),
+};
+
+export const SharpShape: Story = {
+  name: "4. Sharp Corners",
+  args: {
+    src: MP4_SOURCE,
+    shape: "sharp",
+    title: "Industrial Style",
+  },
+  render: (args) => (
+    <div className="max-w-3xl">
+      <VideoPlayer {...args} />
+    </div>
+  ),
 };
 ```
 
