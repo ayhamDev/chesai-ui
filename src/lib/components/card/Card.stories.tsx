@@ -10,14 +10,26 @@ const meta: Meta<typeof Card> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "glass"],
+      options: ["primary", "secondary", "glass", "ghost"],
     },
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
     },
+    elevation: {
+      control: "select",
+      options: ["none", 1, 2, 3, 4, 5],
+    },
     isSelected: {
       control: "boolean",
+    },
+    hoverEffect: {
+      control: "boolean",
+      description: "Enables the bloom effect (works best on ghost variant).",
+    },
+    enableRipple: {
+      control: "boolean",
+      description: "Enables the ripple click effect.",
     },
   },
 };
@@ -29,6 +41,7 @@ export const Default: Story = {
   args: {
     variant: "primary",
     shape: "minimal",
+    padding: "md",
   },
   render: (args) => (
     <Card {...args} className="max-w-md">
@@ -41,21 +54,67 @@ export const Default: Story = {
   ),
 };
 
-export const AllVariants: Story = {
-  name: "All Variants & States",
+// --- NEW: Ghost Variant with Bloom & Ripple ---
+export const GhostInteractive: Story = {
+  name: "Interactive Ghost (Bloom + Ripple)",
+  args: {
+    variant: "ghost",
+    shape: "minimal",
+    hoverEffect: true,
+    enableRipple: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Combines `variant='ghost'`, `hoverEffect={true}`, and `enableRipple={true}` to create a highly interactive, native-feeling touch target. The background scales in on hover, and a ripple expands on click.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Card {...args} className="max-w-md">
+        <Typography variant="h4">Click Me</Typography>
+        <Typography variant="muted">
+          Hover for bloom, click for ripple.
+        </Typography>
+      </Card>
+
+      <Card
+        {...args}
+        shape="full"
+        className="max-w-md flex flex-col justify-center items-center h-32"
+      >
+        <Typography variant="h4">Full Shape</Typography>
+      </Card>
+    </div>
+  ),
+};
+
+// --- NEW: Elevation Levels ---
+export const ElevationLevels: Story = {
+  name: "Modern Elevation",
   render: () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card variant="primary" shape="minimal">
-        <Typography variant="h4">Primary</Typography>
-        <Typography variant="p">The default card style.</Typography>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-8 p-4">
+      <Card elevation={1} variant="primary" shape="minimal">
+        <Typography variant="h4">Level 1</Typography>
+        <Typography variant="muted">Subtle shadow</Typography>
       </Card>
-      <Card variant="secondary" shape="minimal">
-        <Typography variant="h4">Secondary</Typography>
-        <Typography variant="p">For less emphasis.</Typography>
+      <Card elevation={2} variant="primary" shape="minimal">
+        <Typography variant="h4">Level 2</Typography>
+        <Typography variant="muted">Default floating</Typography>
       </Card>
-      <Card variant="primary" shape="minimal" isSelected={true}>
-        <Typography variant="h4">Primary (Selected)</Typography>
-        <Typography variant="p">To indicate selection.</Typography>
+      <Card elevation={3} variant="primary" shape="minimal">
+        <Typography variant="h4">Level 3</Typography>
+        <Typography variant="muted">Lifted state</Typography>
+      </Card>
+      <Card elevation={4} variant="primary" shape="minimal">
+        <Typography variant="h4">Level 4</Typography>
+        <Typography variant="muted">Dialog / Modal</Typography>
+      </Card>
+      <Card elevation={5} variant="primary" shape="minimal">
+        <Typography variant="h4">Level 5</Typography>
+        <Typography variant="muted">Maximum lift</Typography>
       </Card>
     </div>
   ),
@@ -66,12 +125,13 @@ export const GlassVariant: Story = {
   args: {
     variant: "glass",
     shape: "minimal",
+    enableRipple: true, // Ripple works great on glass too
   },
   parameters: {
     docs: {
       description: {
         story:
-          "The `glass` variant creates a 'glassmorphism' effect with a blurred, semi-transparent background. It's designed to be placed on top of colorful or textured backgrounds.",
+          "The `glass` variant creates a 'glassmorphism' effect. We've enabled ripple here to show it uses a lighter ripple color for better contrast on dark backgrounds.",
       },
     },
   },
@@ -83,32 +143,11 @@ export const GlassVariant: Story = {
           "url(https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=1470&auto=format&fit=crop)",
       }}
     >
-      <Card {...args} className="max-w-md">
+      <Card {...args} className="max-w-md cursor-pointer">
         <Typography variant="h3">Glass Card</Typography>
         <Typography variant="p" className="!text-white/80">
-          This card uses a backdrop-blur effect to create a frosted glass look,
-          letting the background color and texture show through.
+          Click to see the light ripple effect against the blurred backdrop.
         </Typography>
-      </Card>
-    </div>
-  ),
-};
-
-export const AllShapes: Story = {
-  name: "All Shapes",
-  render: () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card shape="full">
-        <Typography variant="h4">Full</Typography>
-        <Typography variant="p">The default, highly-rounded style.</Typography>
-      </Card>
-      <Card shape="minimal">
-        <Typography variant="h4">Minimal</Typography>
-        <Typography variant="p">A more subtle, modern rounding.</Typography>
-      </Card>
-      <Card shape="sharp">
-        <Typography variant="h4">Sharp</Typography>
-        <Typography variant="p">No rounding for a blocky look.</Typography>
       </Card>
     </div>
   ),
@@ -117,7 +156,11 @@ export const AllShapes: Story = {
 export const Composition: Story = {
   name: "Composition Example",
   render: () => (
-    <Card shape="minimal" className="max-w-sm flex flex-col gap-4">
+    <Card
+      shape="minimal"
+      elevation={2}
+      className="max-w-sm flex flex-col gap-4"
+    >
       <div>
         <Typography variant="h3">Upgrade to Pro</Typography>
         <Typography variant="muted">

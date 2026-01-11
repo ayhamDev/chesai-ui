@@ -46,12 +46,17 @@ const contentVariants = cva(
 
 const itemVariants = cva(
   [
-    "relative flex cursor-pointer select-none items-center gap-2 rounded-lg outline-none overflow-hidden",
+    "relative flex cursor-pointer select-none items-center gap-2 rounded-lg outline-none overflow-hidden z-0",
     "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-    "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
+    // Remove direct hover bg
+    "focus:bg-graphite-secondary/60 data-[highlighted]:bg-graphite-secondary/60",
     "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
     "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
     "[&_svg]:pointer-events-none [&_svg]:shrink-0",
+    // Bloom
+    "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
+    "hover:after:opacity-100 hover:after:scale-100",
+    "hover:bg-transparent",
   ],
   {
     variants: {
@@ -150,7 +155,11 @@ const ContextMenuItem = React.forwardRef<
         className
       )}
       {...props}
-    />
+    >
+      <span className="relative z-10 flex items-center gap-2 w-full">
+        {props.children}
+      </span>
+    </RadixContextMenu.Item>
   );
 });
 ContextMenuItem.displayName = RadixContextMenu.Item.displayName;
@@ -175,12 +184,12 @@ const ContextMenuCheckboxItem = React.forwardRef<
       className={clsx(itemVariants({ size, shape }), "pl-8", className)}
       {...props}
     >
-      <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+      <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixContextMenu.ItemIndicator>
           <Check className="h-4 w-4 animate-check-in" />
         </RadixContextMenu.ItemIndicator>
       </span>
-      {children}
+      <span className="relative z-10">{children}</span>
     </RadixContextMenu.CheckboxItem>
   );
 });
@@ -206,12 +215,12 @@ const ContextMenuRadioItem = React.forwardRef<
       className={clsx(itemVariants({ size, shape }), "pl-8", className)}
       {...props}
     >
-      <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+      <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixContextMenu.ItemIndicator>
           <Circle className="h-2 w-2 fill-current animate-check-in" />
         </RadixContextMenu.ItemIndicator>
       </span>
-      {children}
+      <span className="relative z-10">{children}</span>
     </RadixContextMenu.RadioItem>
   );
 });
@@ -243,8 +252,10 @@ const ContextMenuSubTrigger = React.forwardRef<
       )}
       {...props}
     >
-      {children}
-      <ChevronRight className="ml-auto h-4 w-4" />
+      <span className="relative z-10 flex flex-1 items-center gap-2">
+        {children}
+        <ChevronRight className="ml-auto h-4 w-4" />
+      </span>
     </RadixContextMenu.SubTrigger>
   );
 });

@@ -22,9 +22,8 @@ import { AppBar, type AppBarSharedProps } from "../appbar";
 import { IconButton } from "../icon-button";
 import { STACK_TRANSITIONS } from "./transitions";
 
-// --- INLINED TYPE DEFINITIONS (from types.ts) ---
+// --- TYPE DEFINITIONS ---
 
-// Base types
 export interface Route<
   T extends Record<string, object | undefined>,
   R extends keyof T
@@ -47,6 +46,8 @@ export interface NavigationProp<T extends Record<string, object | undefined>> {
   pop: (count?: number) => void;
   popToTop: () => void;
   canGoBack: () => boolean;
+  // --- ADDED: setOptions method ---
+  setOptions: (options: Partial<StackScreenOptions>) => void;
   addListener: (
     event: NavigationEvent,
     callback: NavigationEventCallback
@@ -119,7 +120,9 @@ export interface StackScreenComponent<
 > {
   props: {
     name: R;
-    component: React.ComponentType<StackScreenProps<T, R>>;
+    component?: React.ComponentType<StackScreenProps<T, R>>;
+    // --- ADDED: Support for children render prop ---
+    children?: (props: StackScreenProps<T, R>) => React.ReactNode;
     options?:
       | StackScreenOptions
       | ((props: { route: RouteProp<T, R> }) => StackScreenOptions);
@@ -225,7 +228,11 @@ const Header = <T extends Record<string, object | undefined>>({
       {...options.appBarProps}
       routeKey={routeKey}
       scrollContainerRef={scrollContainerRef}
-      appBarColor={options.headerStyle?.backgroundColor || "card"}
+      appBarColor={
+        options.headerStyle?.backgroundColor ||
+        options.appBarProps?.appBarColor ||
+        "card"
+      }
       startAdornment={
         <AnimatePresence mode="wait">
           <motion.div
@@ -315,6 +322,11 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     );
     return screenConfig;
   }, [children]);
+
+  // --- ADDED: State to hold dynamic options set via setOptions ---
+  const [dynamicOptions, setDynamicOptions] = useState<
+    Record<string, Partial<StackScreenOptions>>
+  >({});
 
   const [state, setState] = useState<StackNavigationState<T>>(() => {
     if (typeof window !== "undefined" && window.history.state?.routes) {
@@ -423,6 +435,20 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         }
       },
       canGoBack,
+      // --- ADDED: setOptions implementation ---
+      setOptions: (options) => {
+        // Use the current route key to scope options
+        // We need access to the route key that invoked this.
+        // This closure captures currentRoute from the outer scope, which might be stale in callbacks.
+        // However, in React Context usage, components usually call this in useEffect.
+        // To be safe, we will rely on the fact that `currentRoute` in the render scope is correct for the active screen.
+        // A better approach for multi-screen stacks is to pass the route key to setOptions, but NavigationProp is standard.
+        // We will assume setOptions affects the *active* route.
+        setDynamicOptions((prev) => ({
+          ...prev,
+          [currentRoute.key]: { ...prev[currentRoute.key], ...options },
+        }));
+      },
       addListener: (event, callback) => {
         listeners[event].add(callback);
         return () => listeners[event].delete(callback);
@@ -432,7 +458,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
       },
       scrollContainerRef,
     };
-  }, [state.index, state.routes, listeners]);
+  }, [state.index, state.routes, listeners, currentRoute]);
 
   const activeScreenOptions = useMemo(() => {
     const resolvedGlobalOptions =
@@ -445,19 +471,30 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         ? screen.options({ route: currentRoute })
         : screen?.options || {};
 
+    const dynamicOpts = dynamicOptions[currentRoute.key] || {};
+
     return {
       ...resolvedGlobalOptions,
       ...resolvedLocalOptions,
+      ...dynamicOpts, // Merge dynamic options last
       headerStyle: {
         ...resolvedGlobalOptions.headerStyle,
         ...resolvedLocalOptions.headerStyle,
+        ...dynamicOpts.headerStyle,
       },
       appBarProps: {
         ...resolvedGlobalOptions.appBarProps,
         ...resolvedLocalOptions.appBarProps,
+        ...dynamicOpts.appBarProps,
       },
     };
-  }, [globalScreenOptions, screen?.options, currentRoute, navigation]);
+  }, [
+    globalScreenOptions,
+    screen?.options,
+    currentRoute,
+    navigation,
+    dynamicOptions,
+  ]);
 
   const activeAnimationOption = activeScreenOptions.animation || "default";
   const activeAnimationConfig =
@@ -492,16 +529,10 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
             const screenConfig = screens[route.name as string];
 
             if (!screenConfig) {
-              console.error(
-                `Stack Router Error: No screen component found for route name "${String(
-                  route.name
-                )}". Did you forget to add a <Stack.Screen name="${String(
-                  route.name
-                )}" /> component?`
-              );
               return null;
             }
             const Component = screenConfig.component;
+            const ChildrenRender = screenConfig.children;
 
             const resolvedGlobalOptions =
               typeof globalScreenOptions === "function"
@@ -516,14 +547,16 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                     route: route as RouteProp<T, keyof T>,
                   })
                 : screenConfig.options || {};
+            const dynamicOpts = dynamicOptions[route.key] || {};
+
             const finalOptions = {
               ...resolvedGlobalOptions,
               ...localOptions,
+              ...dynamicOpts,
             };
             const pageClassName = finalOptions.pageClassName;
 
             const isActive = index === state.index;
-            const isPrevious = index === state.index - 1;
             const variantName = isActive ? "center" : "behind";
 
             const style: React.CSSProperties = {
@@ -554,10 +587,18 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                 <NavigationContext.Provider value={navigation}>
                   {/* @ts-ignore */}
                   <RouteContext.Provider value={route}>
-                    <Component
-                      navigation={navigation}
-                      route={route as RouteProp<T, keyof T>}
-                    />
+                    {Component ? (
+                      <Component
+                        navigation={navigation}
+                        route={route as RouteProp<T, keyof T>}
+                      />
+                    ) : ChildrenRender ? (
+                      // Handle Children as function
+                      ChildrenRender({
+                        navigation,
+                        route: route as RouteProp<T, keyof T>,
+                      })
+                    ) : null}
                   </RouteContext.Provider>
                 </NavigationContext.Provider>
               </motion.div>

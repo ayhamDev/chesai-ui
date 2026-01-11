@@ -122,7 +122,7 @@ const sidebarVariants = cva(
       },
     },
     compoundVariants: [
-      // --- SIDEBAR LAYOUT (Attached) ---
+      // ... (No changes to compound variants logic from previous snippet) ...
       {
         layout: "sidebar",
         side: "left",
@@ -169,15 +169,11 @@ const sidebarVariants = cva(
         shape: "sharp",
         className: "rounded-none",
       },
-
-      // --- FLOATING LAYOUT (Detached) ---
       { layout: "floating", side: "left", className: "ms-4" },
       { layout: "floating", side: "right", className: "me-4" },
       { layout: "floating", shape: "minimal", className: "rounded-2xl" },
       { layout: "floating", shape: "full", className: "rounded-3xl" },
       { layout: "floating", shape: "sharp", className: "rounded-none" },
-
-      // --- OVERLAY positioning ---
       {
         overlay: true,
         side: "left",
@@ -397,7 +393,7 @@ const SidebarHeader = React.forwardRef<
 ));
 SidebarHeader.displayName = "Sidebar.Header";
 
-// --- Content (Updated to use ElasticScrollArea with viewportClassName) ---
+// --- Content ---
 const SidebarContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { elasticity?: boolean }
@@ -408,7 +404,6 @@ const SidebarContent = React.forwardRef<
         ref={ref}
         className="flex-1 min-h-0 w-full"
         scrollbarVisibility="auto"
-        // This is the critical fix: force the Radix viewport's inner wrapper to be block
         viewportClassName="[&>div]:!block"
       >
         <div
@@ -451,12 +446,13 @@ SidebarFooter.displayName = "Sidebar.Footer";
 
 // --- Item Variants ---
 const sidebarItemVariants = cva(
-  "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-graphite-ring",
+  "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-graphite-ring overflow-hidden z-0",
   {
     variants: {
       isActive: {
         true: "",
-        false: "",
+        false:
+          "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out hover:after:opacity-100 hover:after:scale-100",
       },
       parentVariant: {
         primary: "",
@@ -484,8 +480,7 @@ const sidebarItemVariants = cva(
       {
         parentVariant: "primary",
         isActive: false,
-        className:
-          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-secondary/60",
+        className: "text-graphite-foreground/70 hover:text-graphite-foreground",
       },
       {
         parentVariant: "secondary",
@@ -497,7 +492,7 @@ const sidebarItemVariants = cva(
         parentVariant: "secondary",
         isActive: false,
         className:
-          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-card/60",
+          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-card/60", // Keep simple hover for secondary to distinguish from card bg
       },
       {
         parentVariant: "ghost",
@@ -508,8 +503,7 @@ const sidebarItemVariants = cva(
       {
         parentVariant: "ghost",
         isActive: false,
-        className:
-          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-secondary/60",
+        className: "text-graphite-foreground/70 hover:text-graphite-foreground",
       },
     ],
     defaultVariants: {
@@ -579,7 +573,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
             animate={{ scale: isPressed ? 0.85 : 1 }}
             transition={{ type: "spring", stiffness: 400, damping: 15 }}
             className={clsx(
-              "flex shrink-0 items-center justify-center transition-colors duration-300",
+              "flex shrink-0 items-center justify-center transition-colors duration-300 relative z-10",
               isActive ? "text-graphite-primary" : "opacity-80"
             )}
           >
@@ -610,7 +604,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
                 duration: 0.2,
                 ease: "easeInOut",
               }}
-              className="flex-1 overflow-hidden whitespace-nowrap text-left min-w-0"
+              className="flex-1 overflow-hidden whitespace-nowrap text-left min-w-0 relative z-10"
             >
               {children}
             </motion.span>
@@ -624,7 +618,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
-              className="ml-auto shrink-0"
+              className="ml-auto shrink-0 relative z-10"
             >
               {badge}
             </motion.div>

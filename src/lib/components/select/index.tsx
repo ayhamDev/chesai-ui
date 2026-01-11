@@ -4,7 +4,7 @@ import * as SelectPrimitive from "@radix-ui/react-select";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Circle } from "lucide-react";
 import React, { createContext, useContext, useRef, useState } from "react";
 import useRipple from "use-ripple-hook";
 import { Button } from "../button";
@@ -38,8 +38,8 @@ const selectTriggerVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
+        primary: "bg-graphite-card hover:bg-graphite-secondary/40",
+        secondary: "bg-graphite-secondary hover:bg-graphite-primary/10",
       },
       shape: {
         full: "rounded-full",
@@ -53,7 +53,7 @@ const selectTriggerVariants = cva(
       },
       isErrored: { true: "" },
       disabled: {
-        true: "bg-graphite-secondary opacity-50 cursor-not-allowed",
+        true: "bg-graphite-secondary opacity-50 cursor-not-allowed hover:bg-graphite-secondary",
       },
     },
     compoundVariants: [
@@ -216,7 +216,6 @@ const SelectContent = React.forwardRef<
         <SelectPrimitive.Viewport
           className={clsx(
             "p-1",
-            // Only apply max-height and fade mask for popper position (which supports scrolling)
             position === "popper" && [
               "max-h-64",
               "[mask-image:linear-gradient(to_bottom,transparent,black_1rem,black_calc(100%-1rem),transparent)]",
@@ -310,6 +309,7 @@ interface DialogSelectItemProps {
   isSelected: boolean;
   onSelect: (value: string) => void;
   variant: "primary" | "secondary";
+  viewType?: "sheet" | "modal";
 }
 
 const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
@@ -317,6 +317,7 @@ const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
   isSelected,
   onSelect,
   variant,
+  viewType = "sheet",
 }) => {
   const localRef = useRef<HTMLButtonElement>(null);
   const rippleColor =
@@ -331,6 +332,50 @@ const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
     disabled: item.disabled,
   });
 
+  // Modal style (Radio button look)
+  if (viewType === "modal") {
+    return (
+      <button
+        ref={localRef}
+        type="button"
+        onPointerDown={event}
+        disabled={item.disabled}
+        onClick={() => onSelect(item.value)}
+        className={clsx(
+          "relative flex w-full cursor-pointer select-none items-center py-3 px-6 text-left outline-none overflow-hidden",
+          "transition-colors duration-150 ease-in-out",
+          "focus:bg-graphite-secondary/80 hover:bg-graphite-secondary/50",
+          "disabled:pointer-events-none disabled:opacity-50"
+        )}
+      >
+        <div className="flex items-center gap-4 w-full">
+          {/* Radio Indicator */}
+          <div
+            className={clsx(
+              "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
+              isSelected
+                ? "border-graphite-primary"
+                : "border-graphite-foreground/40"
+            )}
+          >
+            {isSelected && (
+              <div className="h-2.5 w-2.5 rounded-full bg-graphite-primary" />
+            )}
+          </div>
+          <span
+            className={clsx(
+              "truncate text-base",
+              isSelected ? "font-medium text-graphite-foreground" : ""
+            )}
+          >
+            {item.label}
+          </span>
+        </div>
+      </button>
+    );
+  }
+
+  // Sheet style (Checkmark look)
   return (
     <button
       ref={localRef}
@@ -374,6 +419,12 @@ interface SelectWrapperProps
   onValueChange?: (value: string) => void;
   value?: string;
   className?: string;
+  /**
+   * Controls the appearance when on mobile devices.
+   * - `sheet`: (Default) Displays as a bottom sheet with checkmarks.
+   * - `modal`: Displays as a centered Android-style dialog with radio buttons.
+   */
+  mobileViewType?: "sheet" | "modal";
 }
 
 const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
@@ -392,6 +443,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
       value,
       onValueChange,
       className,
+      mobileViewType = "sheet",
       ...props
     },
     ref
@@ -419,6 +471,24 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
 
       const displayLabel =
         items.find((item) => item.value === value)?.label || placeholder;
+
+      // Determine class names based on view type
+      const contentClasses =
+        mobileViewType === "modal"
+          ? "fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[90vw] max-w-sm rounded-[28px] p-0 overflow-hidden shadow-2xl border-none"
+          : "fixed bottom-0 m-0 w-full max-w-full rounded-b-none rounded-t-2xl p-4";
+
+      const headerClasses =
+        mobileViewType === "modal"
+          ? "text-left px-6 pt-6 pb-2"
+          : "text-left mb-2";
+
+      const titleClasses = mobileViewType === "modal" ? "text-2xl" : "";
+
+      const footerClasses =
+        mobileViewType === "modal"
+          ? "flex justify-end gap-2 p-6 pt-2"
+          : "flex justify-end gap-4 mt-4";
 
       return (
         <div className="w-full flex flex-col gap-2">
@@ -450,17 +520,18 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </button>
             </DialogTrigger>
-            <DialogContent
-              shape={shape}
-              className="fixed bottom-0 m-0 w-full max-w-full rounded-b-none rounded-t-2xl p-4"
-            >
-              <DialogHeader className="text-left">
-                <DialogTitle>{label || placeholder}</DialogTitle>
+            <DialogContent shape={shape} className={contentClasses}>
+              <DialogHeader className={headerClasses}>
+                <DialogTitle className={titleClasses}>
+                  {label || placeholder}
+                </DialogTitle>
               </DialogHeader>
               <div
                 className={clsx(
-                  "mt-4 max-h-[40vh] overflow-y-auto ",
-                  "[mask-image:linear-gradient(to_bottom,transparent,black_1rem,black_calc(100%-1rem),transparent)]"
+                  "overflow-y-auto",
+                  mobileViewType === "sheet"
+                    ? "mt-4 max-h-[40vh] [mask-image:linear-gradient(to_bottom,transparent,black_1rem,black_calc(100%-1rem),transparent)]"
+                    : "max-h-[50vh] py-2"
                 )}
               >
                 {items.map((item) => (
@@ -470,19 +541,34 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
                     isSelected={tempValue === item.value}
                     onSelect={setTempValue}
                     variant={variant}
+                    viewType={mobileViewType}
                   />
                 ))}
               </div>
-              <DialogFooter className="flex justify-end gap-4">
+              <DialogFooter className={footerClasses}>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsOpen(false)}
+                  className={
+                    mobileViewType === "modal"
+                      ? "text-graphite-primary hover:bg-graphite-primary/10 rounded-full px-4"
+                      : ""
+                  }
                 >
                   Cancel
                 </Button>
-                <Button size="sm" variant="primary" onClick={handleConfirm}>
-                  Done
+                <Button
+                  size="sm"
+                  variant={mobileViewType === "modal" ? "ghost" : "primary"}
+                  onClick={handleConfirm}
+                  className={
+                    mobileViewType === "modal"
+                      ? "text-graphite-primary hover:bg-graphite-primary/10 rounded-full px-4"
+                      : ""
+                  }
+                >
+                  OK
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -492,6 +578,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
       );
     }
 
+    // --- Standard Desktop/Item-Aligned View ---
     return (
       <div className="w-full flex flex-col gap-2">
         {label && (

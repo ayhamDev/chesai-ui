@@ -7,8 +7,10 @@ const textAreaWrapperVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-graphite-card border-2 px-4",
-        secondary: "bg-graphite-secondary border-2 px-4",
+        primary:
+          "bg-graphite-card border-2 px-4 hover:bg-graphite-secondary/50",
+        secondary:
+          "bg-graphite-secondary border-2 px-4 hover:bg-graphite-primary/10",
         minimal: "bg-transparent p-0",
       },
       shape: {
@@ -24,7 +26,7 @@ const textAreaWrapperVariants = cva(
       isErrored: { true: "" },
       isFocused: { true: "" },
       disabled: {
-        true: "bg-graphite-secondary opacity-50 cursor-not-allowed",
+        true: "bg-graphite-secondary opacity-50 cursor-not-allowed hover:bg-graphite-secondary",
       },
     },
     compoundVariants: [

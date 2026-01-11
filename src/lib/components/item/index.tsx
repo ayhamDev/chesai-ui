@@ -24,14 +24,18 @@ const useItemContext = () => React.useContext(ItemContext);
 
 // --- CVA Variants ---
 const itemVariants = cva(
-  "group/item relative flex flex-wrap items-center border text-sm outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 overflow-hidden",
+  // Added z-0 to establish stacking context for bloom effect
+  "group/item relative flex flex-wrap items-center border text-sm outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 overflow-hidden z-0",
   {
     variants: {
       variant: {
         primary: "bg-graphite-card border-graphite-border",
         secondary: "bg-graphite-secondary border-transparent",
         ghost:
-          "bg-transparent border-transparent hover:bg-graphite-secondary/60",
+          "bg-transparent border-transparent " +
+          // Bloom Effect
+          "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-250 after:ease-out " +
+          "hover:after:opacity-100 hover:after:scale-100",
       },
       size: {
         sm: "gap-3",
@@ -170,13 +174,10 @@ const Item = React.forwardRef<
       disabled: disabled || disableRipple,
     });
 
-    // --- NEW: Long Press Logic ---
     // @ts-ignore
     const longPressBindings = useLongPress(onLongPress || null);
 
-    // Combine event handlers: onLongPress bindings, ripple effect, and user's onPointerDown
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-      // Conditionally trigger the long press hook's pointer down handler
       if (
         onLongPress &&
         // @ts-ignore
@@ -185,17 +186,14 @@ const Item = React.forwardRef<
         // @ts-ignore
         longPressBindings.onPointerDown(e);
       }
-      // Trigger the ripple effect
       event(e);
-      // Trigger the user's custom onPointerDown handler
       onPointerDown?.(e);
     };
 
-    // Construct the final props, merging our event handlers with the long press ones
     const finalProps = {
       ...props,
-      ...(onLongPress ? longPressBindings : {}), // Spread all handlers from the hook
-      onPointerDown: handlePointerDown, // Override with our combined handler
+      ...(onLongPress ? longPressBindings : {}),
+      onPointerDown: handlePointerDown,
     };
 
     return (
@@ -261,7 +259,7 @@ const ItemContent = React.forwardRef<
       ref={ref}
       data-slot="item-content"
       className={clsx(
-        "flex flex-1 flex-col gap-0.5 min-w-0",
+        "flex flex-1 flex-col gap-0.5 min-w-0 z-10", // Added z-10 to stay above pseudo
         direction === "vertical" && "items-center",
         className
       )}
@@ -317,7 +315,7 @@ const ItemActions = React.forwardRef<
       ref={ref}
       data-slot="item-actions"
       className={clsx(
-        "flex items-center gap-2",
+        "flex items-center gap-2 z-10", // Added z-10
         direction === "horizontal" ? "ml-auto pl-4" : "mt-2",
         className
       )}

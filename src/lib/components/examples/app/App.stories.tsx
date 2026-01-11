@@ -10,15 +10,15 @@ import {
   Settings,
 } from "lucide-react";
 import React, { createContext, useContext, useRef, useState } from "react";
-import DeviceFrame from "../device";
-import { toast, Toaster } from "../toast";
+import DeviceFrame from "../../device";
+import { toast, Toaster } from "../../toast";
 // Import all the necessary components from the library
-import { AppBar } from "../appbar";
-import { Avatar } from "../avatar";
-import { BottomTabs } from "../bottom-tabs";
-import { Button } from "../button";
-import { Card } from "../card";
-import { DatePicker } from "../date-picker";
+import { AppBar } from "../../appbar";
+import { Avatar } from "../../avatar";
+import { BottomTabs } from "../../bottom-tabs";
+import { Button } from "../../button";
+import { Card } from "../../card";
+import { DatePicker } from "../../date-picker";
 import {
   Dialog,
   DialogClose,
@@ -27,11 +27,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../dialog";
-import { ElasticScrollArea } from "../elastic-scroll-area";
-import { FAB } from "../fab";
-import { IconButton } from "../icon-button";
-import { Input } from "../input";
+} from "../../dialog";
+import { ElasticScrollArea } from "../../elastic-scroll-area";
+import { FAB } from "../../fab";
+import { IconButton } from "../../icon-button";
+import { Input } from "../../input";
 import {
   Item,
   ItemActions,
@@ -39,14 +39,18 @@ import {
   ItemDescription,
   ItemGroup,
   ItemTitle,
-} from "../item";
-import { LayoutRouter, useLayoutRouter } from "../layout-router";
-import { SelectInput } from "../select";
-import { ShallowRouter, useRouter } from "../shallow-router";
-import { createStackNavigator, useNavigation, useRoute } from "../stack-router";
-import { Switch } from "../switch";
-import { TextArea } from "../textarea"; // FIX: Added missing TextArea import
-import { Typography } from "../typography";
+} from "../../item";
+import { LayoutRouter, useLayoutRouter } from "../../layout-router";
+import { SelectInput } from "../../select";
+import { ShallowRouter, useRouter } from "../../shallow-router";
+import {
+  createStackNavigator,
+  useNavigation,
+  useRoute,
+} from "../../stack-router";
+import { Switch } from "../../switch";
+import { TextArea } from "../../textarea"; // FIX: Added missing TextArea import
+import { Typography } from "../../typography";
 
 const meta: Meta = {
   title: "Showcase/Full Mobile App Demo",

@@ -10,15 +10,20 @@ import { Typography } from "../typography";
 
 // --- CVA Variants ---
 export const navigationMenuTriggerStyle = cva(
-  "group inline-flex h-10 w-max items-center justify-center rounded-lg bg-transparent px-4 py-2 text-sm font-semibold transition-colors hover:bg-graphite-secondary focus:bg-graphite-secondary focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-graphite-secondary/50 data-[state=open]:bg-graphite-secondary/50"
+  // Added z-0 and bloom effect
+  "group inline-flex h-10 w-max items-center justify-center rounded-lg bg-transparent px-4 py-2 text-sm font-semibold transition-colors focus:bg-graphite-secondary focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-graphite-secondary/50 data-[state=open]:bg-graphite-secondary/50 relative z-0 overflow-hidden " +
+    "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
+    "hover:after:opacity-100 hover:after:scale-100"
 );
 
 // --- NEW: CVA for ContentItem ---
-// FIX #1: Wrapped the base classes in an array to fix the cva argument error.
 const contentItemVariants = cva([
-  "relative block w-full select-none space-y-1 rounded-lg p-3 text-left leading-none no-underline outline-none transition-colors duration-150 ease-in-out overflow-hidden",
-  "hover:bg-graphite-secondary focus:bg-graphite-secondary",
+  "relative block w-full select-none space-y-1 rounded-lg p-3 text-left leading-none no-underline outline-none transition-colors duration-150 ease-in-out overflow-hidden z-0",
+  "focus:bg-graphite-secondary",
   "focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-card",
+  // Bloom effect
+  "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
+  "hover:after:opacity-100 hover:after:scale-100",
 ]);
 
 // --- Core Components (Unchanged) ---
@@ -57,7 +62,7 @@ NavigationMenuList.displayName = RadixNavigationMenu.List.displayName;
 
 const NavigationMenuItem = RadixNavigationMenu.Item;
 
-// --- Trigger (Unchanged) ---
+// --- Trigger ---
 const NavigationMenuTrigger = React.forwardRef<
   React.ElementRef<typeof RadixNavigationMenu.Trigger>,
   React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Trigger>
@@ -67,11 +72,13 @@ const NavigationMenuTrigger = React.forwardRef<
     className={clsx(navigationMenuTriggerStyle(), "group", className)}
     {...props}
   >
-    {children}
-    <ChevronDown
-      className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
-      aria-hidden="true"
-    />
+    <span className="relative z-10 flex items-center">
+      {children}
+      <ChevronDown
+        className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
+        aria-hidden="true"
+      />
+    </span>
   </RadixNavigationMenu.Trigger>
 ));
 NavigationMenuTrigger.displayName = RadixNavigationMenu.Trigger.displayName;
@@ -94,7 +101,7 @@ NavigationMenuContent.displayName = RadixNavigationMenu.Content.displayName;
 
 const NavigationMenuLink = RadixNavigationMenu.Link;
 
-// --- NEW: ContentList Component ---
+// --- ContentList Component ---
 const NavigationMenuContentList = React.forwardRef<
   HTMLUListElement,
   React.HTMLAttributes<HTMLUListElement> & {
@@ -121,8 +128,7 @@ const NavigationMenuContentList = React.forwardRef<
 });
 NavigationMenuContentList.displayName = "NavigationMenu.ContentList";
 
-// --- NEW: ContentItem Component ---
-// FIX #2: Omitted the conflicting 'title' prop from the base Radix props.
+// --- ContentItem Component ---
 interface ContentItemProps
   extends Omit<
     React.ComponentPropsWithoutRef<typeof NavigationMenuLink>,
@@ -150,7 +156,6 @@ const NavigationMenuContentItem = React.forwardRef<
     ref
   ) => {
     const localRef = useRef<HTMLAnchorElement>(null);
-    // FIX #3: Replaced the non-null assertion with a type assertion.
     useImperativeHandle(ref, () => localRef.current as HTMLAnchorElement);
     const [, event] = useRipple({
       ref: localRef,
@@ -169,7 +174,7 @@ const NavigationMenuContentItem = React.forwardRef<
           className={contentItemVariants({ className })}
           {...props}
         >
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 relative z-10">
             {startIcon && (
               <div className="mt-0.5 text-graphite-primary flex-shrink-0">
                 {startIcon}

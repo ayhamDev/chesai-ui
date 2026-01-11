@@ -27,6 +27,9 @@ const appBarVariants = cva(
 );
 
 export interface AppBarSharedProps {
+  // --- MOVED HERE to allow access via StackRouter options ---
+  appBarColor?: "background" | "card" | "primary" | "secondary";
+
   scrollBehavior?: "sticky" | "conditionally-sticky";
   animatedBehavior?: Array<"none" | "appbar-color" | "fold" | "shadow">;
   animatedColor?: "background" | "card" | "primary" | "secondary";
@@ -35,24 +38,16 @@ export interface AppBarSharedProps {
   smallHeaderContent?: React.ReactNode;
   stickyHideTarget?: "main-row" | "full-appbar";
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
-  // --- NEW CUSTOMIZABLE PROPS ---
-  /** The height of the main app bar row in its normal (md) or collapsed state. @default 64 */
   normalHeaderRowHeight?: number;
-  /** The height of the main app bar row in its large (lg) expanded state. @default 96 */
   largeHeaderRowHeight?: number;
-  /** The scroll distance over which the "fold" animation occurs. @default 50 */
   foldAnimationDistance?: number;
-  /** The border-radius applied at the end of the "fold" animation. @default 24 */
   foldBorderRadius?: number;
-  // --- MODIFICATION: Add routeKey to shared props ---
-  /** A unique key representing the current route, used to reset animations on navigation. */
   routeKey?: string;
 }
 
 export interface AppBarProps
   extends Omit<HTMLMotionProps<"header">, "color" | "size">,
     AppBarSharedProps {
-  appBarColor?: "background" | "card" | "primary" | "secondary";
   shadow?: "none" | "md";
   startAdornment?: React.ReactNode;
   centerAdornment?: React.ReactNode;
@@ -76,9 +71,7 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       smallHeaderContent,
       stickyHideTarget,
       scrollContainerRef,
-      // --- MODIFICATION: Destructure routeKey ---
       routeKey,
-      // --- DESTRUCTURE NEW PROPS ---
       normalHeaderRowHeight,
       largeHeaderRowHeight,
       foldAnimationDistance,
@@ -97,9 +90,7 @@ const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
       smallHeaderContent,
       stickyHideTarget,
       scrollContainerRef,
-      // --- MODIFICATION: Pass routeKey to hook ---
       routeKey,
-      // --- PASS NEW PROPS TO HOOK ---
       normalHeaderRowHeight,
       largeHeaderRowHeight,
       foldAnimationDistance,

@@ -9,7 +9,6 @@ import useRipple from "use-ripple-hook";
 
 type MenubarShape = "full" | "minimal" | "sharp";
 
-// --- Context to pass shape down the tree ---
 interface MenubarContextProps {
   shape: MenubarShape;
 }
@@ -20,7 +19,6 @@ const MenubarContext = createContext<MenubarContextProps>({
 
 const useMenubarContext = () => useContext(MenubarContext);
 
-// --- Root Component (Wrapped to provide context) ---
 interface MenubarProps extends RadixMenubar.MenubarProps {
   shape?: MenubarShape;
 }
@@ -43,7 +41,6 @@ const MenubarRoot: React.FC<MenubarProps> = ({
   );
 };
 
-// --- CVA for Content Components ---
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-menubar-content-available-height)] overflow-y-auto overflow-x-hidden",
@@ -64,14 +61,13 @@ const contentVariants = cva(
   }
 );
 
-// --- Re-exported Primitives ---
 const MenubarMenu = RadixMenubar.Menu;
 const MenubarGroup = RadixMenubar.Group;
 const MenubarPortal = RadixMenubar.Portal;
 const MenubarSub = RadixMenubar.Sub;
 const MenubarRadioGroup = RadixMenubar.RadioGroup;
 
-// --- Styled Trigger ---
+// --- Styled Trigger with Bloom ---
 const MenubarTrigger = React.forwardRef<
   React.ElementRef<typeof RadixMenubar.Trigger>,
   React.ComponentPropsWithoutRef<typeof RadixMenubar.Trigger>
@@ -79,17 +75,20 @@ const MenubarTrigger = React.forwardRef<
   <RadixMenubar.Trigger
     ref={ref}
     className={clsx(
-      "flex cursor-pointer select-none items-center rounded-md px-3 py-1.5 text-sm font-semibold outline-none text-graphite-foreground",
+      "flex cursor-pointer select-none items-center rounded-md px-3 py-1.5 text-sm font-semibold outline-none text-graphite-foreground relative z-0 overflow-hidden",
       "transition-colors duration-150 ease-in-out",
-      "hover:bg-graphite-secondary focus:bg-graphite-secondary",
-      "data-[state=open]:bg-graphite-secondary"
+      // Remove direct hover bg
+      "focus:bg-graphite-secondary",
+      "data-[state=open]:bg-graphite-secondary",
+      // Bloom effect
+      "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
+      "hover:after:opacity-100 hover:after:scale-100"
     )}
     {...props}
   />
 ));
 MenubarTrigger.displayName = RadixMenubar.Trigger.displayName;
 
-// --- Animated Content Container ---
 const MenubarContent = React.forwardRef<
   React.ElementRef<typeof RadixMenubar.Content>,
   React.ComponentPropsWithoutRef<typeof RadixMenubar.Content>
@@ -124,7 +123,19 @@ const MenubarContent = React.forwardRef<
 );
 MenubarContent.displayName = RadixMenubar.Content.displayName;
 
-// --- Enhanced Menu Item ---
+// Shared item styles including bloom
+const itemStyles =
+  "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden " +
+  "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)] z-0 " +
+  "focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary " +
+  "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20 " +
+  "data-[disabled]:pointer-events-none data-[disabled]:opacity-38 " +
+  // Bloom
+  "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
+  "hover:after:opacity-100 hover:after:scale-100 " +
+  // Reset bg for hover since we use bloom
+  "hover:bg-transparent";
+
 const MenubarItem = React.forwardRef<
   React.ElementRef<typeof RadixMenubar.Item>,
   React.ComponentPropsWithoutRef<typeof RadixMenubar.Item> & {
@@ -145,11 +156,7 @@ const MenubarItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden",
-        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
-        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
+        itemStyles,
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         shape === "sharp" && "!rounded-none",
@@ -161,7 +168,6 @@ const MenubarItem = React.forwardRef<
 });
 MenubarItem.displayName = RadixMenubar.Item.displayName;
 
-// --- Enhanced Checkbox Item ---
 const MenubarCheckboxItem = React.forwardRef<
   React.ElementRef<typeof RadixMenubar.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof RadixMenubar.CheckboxItem>
@@ -180,28 +186,24 @@ const MenubarCheckboxItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        "relative flex cursor-pointer select-none items-center rounded-lg py-2.5 pl-8 pr-3 text-sm outline-none overflow-hidden",
-        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
-        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
+        itemStyles,
+        "pl-8 pr-3",
         shape === "sharp" && "!rounded-none",
         className
       )}
       {...props}
     >
-      <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+      <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixMenubar.ItemIndicator>
           <Check className="h-4 w-4 animate-check-in" />
         </RadixMenubar.ItemIndicator>
       </span>
-      {children}
+      <span className="relative z-10">{children}</span>
     </RadixMenubar.CheckboxItem>
   );
 });
 MenubarCheckboxItem.displayName = RadixMenubar.CheckboxItem.displayName;
 
-// --- Enhanced Radio Item ---
 const MenubarRadioItem = React.forwardRef<
   React.ElementRef<typeof RadixMenubar.RadioItem>,
   React.ComponentPropsWithoutRef<typeof RadixMenubar.RadioItem>
@@ -220,28 +222,24 @@ const MenubarRadioItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        "relative flex cursor-pointer select-none items-center rounded-lg py-2.5 pl-8 pr-3 text-sm outline-none overflow-hidden",
-        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
-        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
+        itemStyles,
+        "pl-8 pr-3",
         shape === "sharp" && "!rounded-none",
         className
       )}
       {...props}
     >
-      <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+      <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixMenubar.ItemIndicator>
           <Circle className="h-2 w-2 fill-current animate-check-in" />
         </RadixMenubar.ItemIndicator>
       </span>
-      {children}
+      <span className="relative z-10">{children}</span>
     </RadixMenubar.RadioItem>
   );
 });
 MenubarRadioItem.displayName = RadixMenubar.RadioItem.displayName;
 
-// --- Enhanced Sub-Menu Trigger ---
 const MenubarSubTrigger = React.forwardRef<
   React.ElementRef<typeof RadixMenubar.SubTrigger>,
   React.ComponentPropsWithoutRef<typeof RadixMenubar.SubTrigger> & {
@@ -262,11 +260,8 @@ const MenubarSubTrigger = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden",
-        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary",
-        "data-[state=open]:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
-        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
+        itemStyles,
+        "data-[state=open]:bg-graphite-secondary",
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         shape === "sharp" && "!rounded-none",
@@ -274,14 +269,15 @@ const MenubarSubTrigger = React.forwardRef<
       )}
       {...props}
     >
-      {children}
-      <ChevronRight className="ml-auto h-4 w-4" />
+      <span className="relative z-10 flex flex-1 items-center gap-2">
+        {children}
+        <ChevronRight className="ml-auto h-4 w-4" />
+      </span>
     </RadixMenubar.SubTrigger>
   );
 });
 MenubarSubTrigger.displayName = RadixMenubar.SubTrigger.displayName;
 
-// --- Enhanced Sub-Menu Content ---
 const MenubarSubContent = React.forwardRef<
   React.ElementRef<typeof RadixMenubar.SubContent>,
   React.ComponentPropsWithoutRef<typeof RadixMenubar.SubContent>
@@ -304,7 +300,6 @@ const MenubarSubContent = React.forwardRef<
 });
 MenubarSubContent.displayName = RadixMenubar.SubContent.displayName;
 
-// --- Other Components (Unchanged) ---
 const MenubarLabel = React.forwardRef<
   React.ElementRef<typeof RadixMenubar.Label>,
   React.ComponentPropsWithoutRef<typeof RadixMenubar.Label> & {

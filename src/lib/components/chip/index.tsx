@@ -3,15 +3,19 @@ import React from "react";
 import useRipple from "use-ripple-hook";
 
 const chipVariants = cva(
-  // Base classes for a fixed height, padding, and pill shape
-  "inline-flex items-center justify-center h-10 px-4 rounded-full font-semibold text-sm border-2 transition-colors relative overflow-hidden disabled:pointer-events-none disabled:opacity-50",
+  // Base classes: Added z-0 for stacking context
+  "inline-flex items-center justify-center h-10 px-4 rounded-full font-semibold text-sm border-2 transition-colors relative overflow-hidden disabled:pointer-events-none disabled:opacity-50 z-0",
   {
     variants: {
       // The main variant is its selection state
       selected: {
         true: "bg-graphite-primary text-graphite-primaryForeground border border-graphite-primary",
         false:
-          "bg-transparent text-graphite-foreground border border-graphite-border hover:bg-graphite-secondary",
+          // Unselected (ghost-like)
+          "bg-transparent text-graphite-foreground border border-graphite-border " +
+          // Bloom
+          "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
+          "hover:after:opacity-100 hover:after:scale-100",
       },
     },
     defaultVariants: {

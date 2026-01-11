@@ -26,15 +26,15 @@ const preview: Preview = {
       },
     },
   },
-  decorators: [
-    (Story) => {
-      return (
-        <Card>
-          <Story />
-        </Card>
-      );
-    },
-  ],
+  // decorators: [
+  //   (Story) => {
+  //     return (
+  //       <Card>
+  //         <Story />
+  //       </Card>
+  //     );
+  //   },
+  // ],
 };
 
 export default preview;

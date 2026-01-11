@@ -42,7 +42,9 @@
     "test": "vitest",
     "test:cov": "vitest run --coverage",
     "prepack": "json -f package.json -I -e \"delete this.devDependencies; delete this.dependencies\"",
-    "gen:context": "bun run ./scripts/context.ts"
+    "gen:context": "bun run ./scripts/context.ts",
+    "git:diff-merge": "git diff --unified=2000 $(git merge-base main HEAD)...HEAD",
+    "git:diff": "git diff --unified=2000 > git-changes.txt"
   },
   "trustedDependencies": [
     "@tailwindcss/oxide",
@@ -51,6 +53,8 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@radix-ui/react-toolbar": "^1.1.11",
-    "hls.js": "^1.6.15"
+    "@tanstack/react-virtual": "^3.13.18",
+    "hls.js": "^1.6.15",
+    "react-resizable-panels": "^4.3.3"
   }
 }

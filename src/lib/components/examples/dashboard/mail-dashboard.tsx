@@ -42,28 +42,28 @@ import {
 import React, { useMemo, useState } from "react";
 
 // --- Library Imports (Adjust paths based on your structure) ---
-import { Avatar } from "../avatar";
-import { Badge } from "../badge";
-import { Button } from "../button";
-import { Card } from "../card";
-import { Checkbox } from "../checkbox";
+import { Avatar } from "../../avatar";
+import { Badge } from "../../badge";
+import { Button } from "../../button";
+import { Card } from "../../card";
+import { Checkbox } from "../../checkbox";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../dialog";
-import { ElasticScrollArea } from "../elastic-scroll-area";
-import { IconButton } from "../icon-button";
-import { Input } from "../input";
-import { Separator } from "../separator";
-import { Sidebar, useSidebar } from "../sidebar";
-import { TextArea } from "../textarea";
-import { toast } from "../toast";
-import { Tooltip, TooltipProvider, TooltipTrigger } from "../tooltip";
-import { Typography } from "../typography";
-import { FAB } from "../fab";
+} from "../../dialog";
+import { ElasticScrollArea } from "../../elastic-scroll-area";
+import { IconButton } from "../../icon-button";
+import { Input } from "../../input";
+import { Separator } from "../../separator";
+import { Sidebar, useSidebar } from "../../sidebar";
+import { TextArea } from "../../textarea";
+import { toast } from "../../toast";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "../../tooltip";
+import { Typography } from "../../typography";
+import { FAB } from "../../fab";
 
 // ============================================================================
 // 1. MOCK DATA GENERATOR & TYPES

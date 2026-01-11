@@ -1,4 +1,5 @@
-// src/components/dialog/index.tsx
+"use client";
+
 import { clsx } from "clsx";
 import FocusTrap from "focus-trap-react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
@@ -23,8 +24,8 @@ import {
   ElasticScrollArea,
   type ElasticScrollAreaProps,
 } from "../elastic-scroll-area";
-import { Typography } from "../typography";
 import { EASING } from "../stack-router/transitions";
+import { Typography } from "../typography";
 
 // --- CONTEXT and PORTAL ---
 type DialogVariant = "basic" | "fullscreen";
@@ -170,6 +171,11 @@ export interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
   shape?: CardProps["shape"];
   variant?: CardProps["variant"];
   padding?: CardProps["padding"];
+  /**
+   * If true, the dialog will animate its size and position when its content changes.
+   * Useful for dynamic content like Command menus.
+   */
+  layout?: boolean | "size" | "position" | "preserve-aspect";
 }
 const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
   (
@@ -179,6 +185,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       shape = "minimal",
       variant = "primary",
       padding = "md",
+      layout,
       ...props
     },
     ref
@@ -245,6 +252,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                 />
                 <motion.div
                   role="dialog"
+                  layout={layout} // Enable layout animation
                   aria-modal="true"
                   aria-labelledby={titleId}
                   aria-describedby={descriptionId}
@@ -269,7 +277,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                     className
                   )}
                   style={{
-                    willChange: "transform, opacity",
+                    willChange: "transform, opacity, height, width",
                     backfaceVisibility: "hidden",
                     transform: "translate3d(0, 0, 0)",
                   }}
@@ -292,7 +300,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                       shape={shape}
                       variant={variant}
                       padding={padding}
-                      className="relative w-full shadow-2xl"
+                      className="relative w-full shadow-2xl h-full" // Ensure card fills motion wrapper
                     >
                       {children}
                     </Card>

@@ -5,19 +5,24 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import React from "react";
 import useRipple from "use-ripple-hook";
+
 export const buttonVariants = cva(
-  "font-semibold cursor-pointer  min-w-max focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden",
+  "font-semibold cursor-pointer min-w-max focus:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden z-0",
   {
     variants: {
       variant: {
         primary:
-          "bg-graphite-primary hover:shadow-md disabled:bg-graphite-primary/70  text-graphite-primaryForeground hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring ",
+          "bg-graphite-primary hover:shadow-md disabled:bg-graphite-primary/70 text-graphite-primaryForeground hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         secondary:
-          "bg-graphite-secondary text-graphite-secondaryForeground disabled:bg-graphite-secondary/70 hover:bg-graphite-secondary/80  focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+          "bg-graphite-secondary text-graphite-secondaryForeground disabled:bg-graphite-secondary/70 hover:bg-graphite-secondary/80 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         destructive:
           "bg-red-500 dark:text-graphite-primary text-graphite-primaryForeground disabled:bg-red-500/70 hover:bg-red-600/80 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
         ghost:
-          "bg-transparent text-graphite-foreground disabled:opacity-70 hover:bg-graphite-secondary focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+          // --- UPDATED HOVER EFFECT ---
+          "bg-transparent text-graphite-foreground disabled:opacity-70 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring " +
+          "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
+          "hover:after:opacity-100 hover:after:scale-100 " +
+          "disabled:after:opacity-0",
         link: "bg-transparent text-graphite-primary disabled:opacity-70 hover:text-graphite-primary hover:underline !p-1 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
       },
       size: {

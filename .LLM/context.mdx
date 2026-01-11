@@ -3414,6 +3414,550 @@ export const Disabled: Story = {
 ```
 
 
+### Component: `command-palette`
+This section includes all related source files for the `command-palette` component, including nested sub-components (like `header.tsx`) and utilities.
+
+**Source File (`src\lib\components\command-palette\index.tsx`)**
+```tsx
+"use client";
+
+import { Command } from "cmdk";
+import { cva, type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import { Search } from "lucide-react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { Dialog, DialogContent } from "../dialog";
+import { Kbd } from "../kbd";
+
+// --- Types & Context ---
+
+type CommandPaletteShape = "full" | "minimal" | "sharp";
+type CommandPaletteVariant = "primary" | "secondary";
+
+interface CommandPaletteContextProps {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  shape: CommandPaletteShape;
+  variant: CommandPaletteVariant;
+}
+
+const CommandPaletteContext = createContext<CommandPaletteContextProps | null>(
+  null
+);
+
+const useCommandPalette = () => {
+  const context = useContext(CommandPaletteContext);
+  if (!context) {
+    throw new Error(
+      "CommandPalette components must be used within <CommandPalette>"
+    );
+  }
+  return context;
+};
+
+// --- Root Component ---
+
+interface CommandPaletteProps {
+  children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  triggerKey?: string;
+  shape?: CommandPaletteShape;
+  variant?: CommandPaletteVariant;
+  filter?: (value: string, search: string) => number;
+}
+
+const CommandPaletteRoot: React.FC<CommandPaletteProps> = ({
+  children,
+  open: controlledOpen,
+  onOpenChange,
+  triggerKey = "k",
+  shape = "minimal",
+  variant = "primary",
+  filter,
+}) => {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+
+  const isControlled = controlledOpen !== undefined;
+  const isOpen = isControlled ? controlledOpen : uncontrolledOpen;
+  const setIsOpen = (newOpen: boolean) => {
+    if (!isControlled) setUncontrolledOpen(newOpen);
+    onOpenChange?.(newOpen);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === triggerKey && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsOpen(!isOpen);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, triggerKey]);
+
+  return (
+    <CommandPaletteContext.Provider
+      value={{ isOpen, setIsOpen, shape, variant }}
+    >
+      <Dialog open={isOpen} onOpenChange={setIsOpen} variant="basic">
+        {children}
+      </Dialog>
+    </CommandPaletteContext.Provider>
+  );
+};
+CommandPaletteRoot.displayName = "CommandPalette";
+
+// --- Trigger ---
+
+const triggerVariants = cva(
+  "flex w-full items-center justify-between border bg-graphite-card px-3 py-2 text-sm text-graphite-foreground/60 transition-all hover:bg-graphite-secondary/40 hover:text-graphite-foreground cursor-pointer select-none ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+  {
+    variants: {
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-xl",
+        sharp: "rounded-none",
+      },
+      variant: {
+        primary: "border-graphite-border",
+        secondary: "border-transparent bg-graphite-secondary/50",
+      },
+      size: {
+        sm: "h-8",
+        md: "h-10",
+        lg: "h-12",
+      },
+    },
+    defaultVariants: {
+      size: "md",
+      shape: "minimal",
+      variant: "primary",
+    },
+  }
+);
+
+interface CommandPaletteTriggerProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof triggerVariants> {
+  placeholder?: string;
+  hideShortcut?: boolean;
+}
+
+const CommandPaletteTrigger = React.forwardRef<
+  HTMLDivElement,
+  CommandPaletteTriggerProps
+>(
+  (
+    {
+      className,
+      size,
+      shape,
+      variant,
+      placeholder = "Search...",
+      hideShortcut = false,
+      ...props
+    },
+    ref
+  ) => {
+    const { setIsOpen, shape: contextShape } = useCommandPalette();
+
+    return (
+      <div
+        ref={ref}
+        onClick={() => setIsOpen(true)}
+        className={clsx(
+          triggerVariants({
+            size,
+            shape: shape || contextShape,
+            variant,
+            className,
+          })
+        )}
+        {...props}
+      >
+        <div className="flex items-center gap-2">
+          <Search className="h-4 w-4 opacity-50" />
+          <span>{placeholder}</span>
+        </div>
+        {!hideShortcut && (
+          <div className="flex items-center gap-1">
+            <Kbd size="sm" variant="flat">
+              ⌘
+            </Kbd>
+            <Kbd size="sm" variant="flat">
+              {props["aria-keyshortcuts"] || "K"}
+            </Kbd>
+          </div>
+        )}
+      </div>
+    );
+  }
+);
+CommandPaletteTrigger.displayName = "CommandPalette.Trigger";
+
+// --- Content ---
+
+const CommandPaletteContent = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof Command>
+>(({ className, children, ...props }, ref) => {
+  const { shape } = useCommandPalette();
+
+  return (
+    <DialogContent
+      // Padding is removed ("none") so the list can be edge-to-edge.
+      padding="none"
+      shape={shape}
+      // We apply styles to the dialog wrapper, and use child selectors
+      // to ensure the internal <Card> fills the height and behaves correctly.
+      className={clsx(
+        "max-w-xl h-[450px] sm:h-[500px]", // Fixed height for desktop
+        "[&>div]:h-full [&>div]:flex [&>div]:flex-col [&>div]:overflow-hidden", // Force inner Card to fill height
+        className
+      )}
+    >
+      <Command
+        ref={ref}
+        className="flex h-full w-full flex-col overflow-hidden bg-transparent text-graphite-foreground"
+        {...props}
+      >
+        {children}
+      </Command>
+    </DialogContent>
+  );
+});
+CommandPaletteContent.displayName = "CommandPalette.Content";
+
+// --- Input ---
+
+const CommandPaletteInput = React.forwardRef<
+  React.ElementRef<typeof Command.Input>,
+  React.ComponentPropsWithoutRef<typeof Command.Input>
+>(({ className, ...props }, ref) => (
+  <div className="flex items-center border-b border-graphite-border px-4 shrink-0">
+    <Search className="mr-3 h-5 w-5 shrink-0 opacity-50" />
+    <Command.Input
+      ref={ref}
+      className={clsx(
+        "flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-graphite-foreground/40 disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  </div>
+));
+CommandPaletteInput.displayName = "CommandPalette.Input";
+
+// --- List ---
+
+const CommandPaletteList = React.forwardRef<
+  React.ElementRef<typeof Command.List>,
+  React.ComponentPropsWithoutRef<typeof Command.List>
+>(({ className, ...props }, ref) => (
+  <Command.List
+    ref={ref}
+    className={clsx(
+      "max-h-[300px] overflow-y-auto overflow-x-hidden p-2 flex-1",
+      "scrollbar-thin scrollbar-thumb-graphite-border scrollbar-track-transparent",
+      className
+    )}
+    {...props}
+  />
+));
+CommandPaletteList.displayName = "CommandPalette.List";
+
+// --- Empty ---
+
+const CommandPaletteEmpty = React.forwardRef<
+  React.ElementRef<typeof Command.Empty>,
+  React.ComponentPropsWithoutRef<typeof Command.Empty>
+>((props, ref) => (
+  <Command.Empty
+    ref={ref}
+    className="py-12 text-center text-sm text-graphite-foreground/50"
+    {...props}
+  />
+));
+CommandPaletteEmpty.displayName = "CommandPalette.Empty";
+
+// --- Group ---
+
+const CommandPaletteGroup = React.forwardRef<
+  React.ElementRef<typeof Command.Group>,
+  React.ComponentPropsWithoutRef<typeof Command.Group>
+>(({ className, ...props }, ref) => (
+  <Command.Group
+    ref={ref}
+    className={clsx(
+      "overflow-hidden p-1 text-graphite-foreground",
+      "[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-graphite-foreground/40 [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider",
+      className
+    )}
+    {...props}
+  />
+));
+CommandPaletteGroup.displayName = "CommandPalette.Group";
+
+// --- Item ---
+
+const itemVariants = cva(
+  "relative flex cursor-default select-none items-center px-3 py-2 text-sm outline-none transition-all duration-150 data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
+  {
+    variants: {
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-lg",
+        sharp: "rounded-none",
+      },
+      variant: {
+        primary:
+          "data-[selected=true]:bg-graphite-primary data-[selected=true]:text-graphite-primaryForeground",
+        secondary:
+          "data-[selected=true]:bg-graphite-secondary data-[selected=true]:text-graphite-foreground",
+      },
+    },
+    defaultVariants: {
+      shape: "minimal",
+      variant: "primary",
+    },
+  }
+);
+
+const CommandPaletteItem = React.forwardRef<
+  React.ElementRef<typeof Command.Item>,
+  React.ComponentPropsWithoutRef<typeof Command.Item>
+>(({ className, onSelect, ...props }, ref) => {
+  const { setIsOpen, shape, variant } = useCommandPalette();
+
+  return (
+    <Command.Item
+      ref={ref}
+      onSelect={(value) => {
+        onSelect?.(value);
+        setIsOpen(false);
+      }}
+      className={clsx(itemVariants({ shape, variant }), className)}
+      {...props}
+    />
+  );
+});
+CommandPaletteItem.displayName = "CommandPalette.Item";
+
+// --- Separator ---
+
+const CommandPaletteSeparator = React.forwardRef<
+  React.ElementRef<typeof Command.Separator>,
+  React.ComponentPropsWithoutRef<typeof Command.Separator>
+>(({ className, ...props }, ref) => (
+  <Command.Separator
+    ref={ref}
+    className={clsx("-mx-1 h-px bg-graphite-border/60 my-1", className)}
+    {...props}
+  />
+));
+CommandPaletteSeparator.displayName = "CommandPalette.Separator";
+
+// --- Footer ---
+
+const CommandPaletteFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={clsx(
+      "border-t border-graphite-border/60 p-2 px-4 flex items-center justify-between text-xs text-graphite-foreground/50 bg-graphite-secondary/20",
+      className
+    )}
+    {...props}
+  />
+));
+CommandPaletteFooter.displayName = "CommandPalette.Footer";
+
+// --- Exports ---
+
+export const CommandPalette = Object.assign(CommandPaletteRoot, {
+  Trigger: CommandPaletteTrigger,
+  Content: CommandPaletteContent,
+  Input: CommandPaletteInput,
+  List: CommandPaletteList,
+  Empty: CommandPaletteEmpty,
+  Group: CommandPaletteGroup,
+  Item: CommandPaletteItem,
+  Separator: CommandPaletteSeparator,
+  Footer: CommandPaletteFooter,
+});
+```
+
+
+**Storybook Stories (`CommandPalette.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import {
+  ArrowRight,
+  Box,
+  CornerDownLeft,
+  FileText,
+  Home,
+  Layout,
+  Settings,
+  User,
+} from "lucide-react";
+import { Kbd } from "../kbd";
+import { Typography } from "../typography";
+import { CommandPalette } from "./index";
+
+const meta: Meta<typeof CommandPalette> = {
+  title: "Components/Navigators/CommandPalette",
+  component: CommandPalette,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A command menu for quick navigation and actions powered by `cmdk`. Includes fuzzy filtering, keyboard navigation, and grouping.",
+      },
+    },
+  },
+  argTypes: {
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+      description: "Controls the border radius of the dialog and list items.",
+    },
+    variant: {
+      control: "select",
+      options: ["primary", "secondary"],
+      description: "Controls the active selection style.",
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof CommandPalette>;
+
+export const Default: Story = {
+  args: {
+    shape: "minimal",
+    variant: "secondary",
+  },
+  render: (args) => {
+    return (
+      <div className="w-[600px] h-96 p-10 bg-graphite-background flex flex-col items-center justify-start gap-4 border border-graphite-border rounded-xl">
+        <Typography variant="h3">Documentation Site</Typography>
+        <Typography variant="muted" className="text-center max-w-sm">
+          Press <Kbd className="mx-1">⌘</Kbd> <Kbd>K</Kbd> to open the command
+          menu. It uses `cmdk` for automatic fuzzy search.
+        </Typography>
+
+        {/* The Trigger Component */}
+        <div className="w-64 mt-4">
+          <CommandPalette triggerKey="k" {...args}>
+            <CommandPalette.Trigger placeholder="Search documentation..." />
+
+            <CommandPalette.Content>
+              <CommandPalette.Input placeholder="Type a command or search..." />
+
+              <CommandPalette.List>
+                <CommandPalette.Empty>No results found.</CommandPalette.Empty>
+
+                <CommandPalette.Group heading="Pages">
+                  <CommandPalette.Item value="docs">
+                    <FileText className="mr-3 h-4 w-4 opacity-70" />
+                    <span>Docs</span>
+                    <ArrowRight className="ml-auto h-4 w-4 opacity-50" />
+                  </CommandPalette.Item>
+                  <CommandPalette.Item value="components">
+                    <Box className="mr-3 h-4 w-4 opacity-70" />
+                    <span>Components</span>
+                    <ArrowRight className="ml-auto h-4 w-4 opacity-50" />
+                  </CommandPalette.Item>
+                  <CommandPalette.Item value="blocks">
+                    <Layout className="mr-3 h-4 w-4 opacity-70" />
+                    <span>Blocks</span>
+                    <ArrowRight className="ml-auto h-4 w-4 opacity-50" />
+                  </CommandPalette.Item>
+                </CommandPalette.Group>
+
+                <CommandPalette.Separator />
+
+                <CommandPalette.Group heading="General">
+                  <CommandPalette.Item value="home">
+                    <Home className="mr-3 h-4 w-4 opacity-70" />
+                    <span>Home</span>
+                  </CommandPalette.Item>
+                  <CommandPalette.Item value="settings">
+                    <Settings className="mr-3 h-4 w-4 opacity-70" />
+                    <span>Settings</span>
+                    <div className="ml-auto flex gap-1">
+                      <Kbd size="sm">⌘</Kbd>
+                      <Kbd size="sm">S</Kbd>
+                    </div>
+                  </CommandPalette.Item>
+                  <CommandPalette.Item value="profile">
+                    <User className="mr-3 h-4 w-4 opacity-70" />
+                    <span>Profile</span>
+                  </CommandPalette.Item>
+                </CommandPalette.Group>
+              </CommandPalette.List>
+
+              <CommandPalette.Footer>
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1">
+                    <Kbd size="sm" variant="flat">
+                      <CornerDownLeft className="h-3 w-3" />
+                    </Kbd>
+                    Go
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <Kbd size="sm" variant="flat">
+                      ↑
+                    </Kbd>
+                    <Kbd size="sm" variant="flat">
+                      ↓
+                    </Kbd>
+                    <span>Navigate</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Kbd size="sm" variant="flat">
+                      Esc
+                    </Kbd>
+                    <span>Close</span>
+                  </div>
+                </div>
+              </CommandPalette.Footer>
+            </CommandPalette.Content>
+          </CommandPalette>
+        </div>
+      </div>
+    );
+  },
+};
+
+export const PrimaryVariant: Story = {
+  name: "Primary Variant (Dark Selection)",
+  args: {
+    shape: "minimal",
+    variant: "primary",
+  },
+  render: Default.render,
+};
+
+export const RoundedShape: Story = {
+  name: "Full Rounded Shape",
+  args: {
+    shape: "full",
+    variant: "secondary",
+  },
+  render: Default.render,
+};
+```
+
+
 ### Component: `context-menu`
 This section includes all related source files for the `context-menu` component, including nested sub-components (like `header.tsx`) and utilities.
 
@@ -8874,6 +9418,1834 @@ export const WithAppBarAndBottomTabs: Story = {
 ```
 
 
+### Component: `examples`
+This section includes all related source files for the `examples` component, including nested sub-components (like `header.tsx`) and utilities.
+
+**Source File (`src\lib\components\examples\mail-dashboard.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { MailDashboard } from "./mail-dashboard";
+
+const meta: Meta<typeof MailDashboard> = {
+  title: "Showcase/Mail Dashboard (Gmail Style)",
+  component: MailDashboard,
+  parameters: {
+    layout: "fullscreen",
+    docs: {
+      description: {
+        component: `
+# Full Featured Mail Dashboard
+
+A complex, responsive dashboard template mimicking the Gmail interface.
+
+## Key Features:
+- **Split-View Layout**: Clicking a row opens a detail panel that *pushes* the table content (resizing it) rather than overlaying it.
+- **Data Table Integration**: Custom cell renderers for stars, labels, and hover actions.
+- **Collapsible Sidebar**: A fully functional sidebar with navigation groups.
+- **Complex State**: Manages selection, read status, starred status, and routing internally.
+- **Theme Support**: Fully compatible with dark mode.
+        `,
+      },
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof MailDashboard>;
+
+export const Default: Story = {
+  render: () => <MailDashboard />,
+};
+```
+
+
+**Source File (`src\lib\components\examples\mail-dashboard.tsx`)**
+```tsx
+"use client";
+
+import {
+  ColumnDef,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { clsx } from "clsx";
+import { format, formatDistanceToNow } from "date-fns";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  AlertCircle,
+  Archive,
+  ArrowLeft,
+  Bold,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  File,
+  Filter,
+  Inbox,
+  LayoutGrid,
+  Mail,
+  Menu,
+  MoreVertical,
+  Paperclip,
+  Plus,
+  Printer,
+  Reply,
+  ReplyAll,
+  Search,
+  Send,
+  Settings,
+  Star,
+  Tag,
+  Trash2,
+  X,
+} from "lucide-react";
+import React, { useMemo, useState } from "react";
+
+// --- Library Imports (Adjust paths based on your structure) ---
+import { Avatar } from "../avatar";
+import { Badge } from "../badge";
+import { Button } from "../button";
+import { Card } from "../card";
+import { Checkbox } from "../checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../dialog";
+import { ElasticScrollArea } from "../elastic-scroll-area";
+import { IconButton } from "../icon-button";
+import { Input } from "../input";
+import { Separator } from "../separator";
+import { Sidebar, useSidebar } from "../sidebar";
+import { TextArea } from "../textarea";
+import { toast } from "../toast";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "../tooltip";
+import { Typography } from "../typography";
+import { FAB } from "../fab";
+
+// ============================================================================
+// 1. MOCK DATA GENERATOR & TYPES
+// ============================================================================
+
+type LabelType = "work" | "personal" | "travel" | "important";
+
+interface MailItem {
+  id: string;
+  sender: {
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  subject: string;
+  snippet: string;
+  body: string;
+  date: Date;
+  isRead: boolean;
+  isStarred: boolean;
+  labels: LabelType[];
+  hasAttachment: boolean;
+}
+
+const GENERATE_COUNT = 50;
+
+const FIRST_NAMES = [
+  "Alice",
+  "Bob",
+  "Charlie",
+  "David",
+  "Emma",
+  "Frank",
+  "Grace",
+  "Henry",
+  "Ivy",
+  "Jack",
+];
+const LAST_NAMES = [
+  "Smith",
+  "Johnson",
+  "Williams",
+  "Brown",
+  "Jones",
+  "Garcia",
+  "Miller",
+  "Davis",
+  "Rodriguez",
+  "Martinez",
+];
+const SUBJECTS = [
+  "Project Update: Q4 Roadmap",
+  "Invitation: Lunch & Learn",
+  "Your subscription is renewing soon",
+  "Security Alert: New login detected",
+  "Feedback on the new design",
+  "Flight Confirmation: NYC to LON",
+  "Invoice #12345 is due",
+  "Weekly Digest: Top stories for you",
+  "Meeting notes from Monday",
+  "Can we reschedule?",
+];
+const SNIPPETS = [
+  "Hi team, just wanted to share the latest progress on the Q4 roadmap...",
+  "Join us for a lunch and learn session this Friday at 12 PM...",
+  "Your subscription to Pro Plan will renew on...",
+  "We detected a new login from a device in...",
+  "I've reviewed the latest mocks and I have a few thoughts...",
+  "Your flight to London has been confirmed. See details attached...",
+  "Please find the attached invoice for the services rendered...",
+  "Here are the top stories you might have missed this week...",
+  "Here are the key takeaways from our sync yesterday...",
+  "Something came up and I won't be able to make it...",
+];
+
+const generateMails = (): MailItem[] => {
+  return Array.from({ length: GENERATE_COUNT }).map((_, i) => {
+    const firstName =
+      FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+    const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+    const hasAttachment = Math.random() > 0.8;
+    const labels: LabelType[] = [];
+    if (Math.random() > 0.7) labels.push("work");
+    if (Math.random() > 0.8) labels.push("important");
+    if (Math.random() > 0.9) labels.push("travel");
+
+    return {
+      id: `mail-${i}`,
+      sender: {
+        name: `${firstName} ${lastName}`,
+        email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
+        avatar: `https://i.pravatar.cc/150?u=${i}`,
+      },
+      subject: SUBJECTS[Math.floor(Math.random() * SUBJECTS.length)],
+      snippet: SNIPPETS[Math.floor(Math.random() * SNIPPETS.length)],
+      body: `Hi there,\n\n${
+        SNIPPETS[Math.floor(Math.random() * SNIPPETS.length)]
+      } \n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nBest regards,\n${firstName}`,
+      date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)),
+      isRead: Math.random() > 0.4,
+      isStarred: Math.random() > 0.8,
+      hasAttachment,
+      labels,
+    };
+  });
+};
+
+// ============================================================================
+// 2. SHARED COMPONENTS (SUB-COMPONENTS)
+// ============================================================================
+
+const MailLabelBadge = ({ label }: { label: LabelType }) => {
+  const colors: Record<LabelType, string> = {
+    work: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    personal:
+      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+    travel:
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+    important: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+  };
+
+  return (
+    <span
+      className={clsx(
+        "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide",
+        colors[label]
+      )}
+    >
+      {label}
+    </span>
+  );
+};
+
+// ============================================================================
+// 3. MAIN DASHBOARD COMPONENT
+// ============================================================================
+
+export const MailDashboard = () => {
+  // --- STATE ---
+  const [data, setData] = useState<MailItem[]>(() => generateMails());
+  const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
+  const [rowSelection, setRowSelection] = useState({});
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Derived state for the "Push" layout
+  const isDetailOpen = !!selectedMailId;
+  const selectedMail = useMemo(
+    () => data.find((m) => m.id === selectedMailId),
+    [data, selectedMailId]
+  );
+
+  // --- HANDLERS ---
+
+  const toggleStar = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setData((prev) =>
+      prev.map((mail) =>
+        mail.id === id ? { ...mail, isStarred: !mail.isStarred } : mail
+      )
+    );
+  };
+
+  const toggleRead = (id: string, status: boolean) => {
+    setData((prev) =>
+      prev.map((mail) => (mail.id === id ? { ...mail, isRead: status } : mail))
+    );
+  };
+
+  const handleDelete = (ids: string[]) => {
+    setData((prev) => prev.filter((mail) => !ids.includes(mail.id)));
+    setRowSelection({});
+    if (ids.includes(selectedMailId || "")) {
+      setSelectedMailId(null);
+    }
+    toast.success(`Moved ${ids.length} conversation(s) to trash.`);
+  };
+
+  const handleRowClick = (mail: MailItem) => {
+    setSelectedMailId(mail.id);
+    if (!mail.isRead) {
+      toggleRead(mail.id, true);
+    }
+  };
+
+  // --- RENDER ---
+
+  return (
+    <div className="flex h-screen w-full bg-graphite-background text-graphite-foreground overflow-hidden font-sans">
+      <Sidebar.Provider defaultOpen={false}>
+        {/* LEFT SIDEBAR (Navigation) */}
+        <DashboardSidebar onCompose={() => setIsComposeOpen(true)} />
+
+        {/* MAIN CONTENT AREA */}
+        <div className="flex flex-1 flex-col min-w-0">
+          {/* TOP HEADER */}
+          <DashboardHeader
+            searchValue={searchQuery}
+            onSearch={setSearchQuery}
+          />
+
+          {/* SPLIT VIEW CONTAINER */}
+          <div className="flex flex-1 overflow-hidden relative">
+            {/* MAIL LIST (THE TABLE) */}
+            <div
+              className={clsx(
+                "flex flex-col transition-all duration-300 ease-in-out",
+                isDetailOpen
+                  ? "w-1/2 min-w-[400px] border-r border-graphite-border"
+                  : "w-full"
+              )}
+            >
+              <MailList
+                data={data.filter(
+                  (m) =>
+                    m.subject
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase()) ||
+                    m.sender.name
+                      .toLowerCase()
+                      .includes(searchQuery.toLowerCase())
+                )}
+                rowSelection={rowSelection}
+                setRowSelection={setRowSelection}
+                onRowClick={handleRowClick}
+                onToggleStar={toggleStar}
+                onDelete={handleDelete}
+                compactMode={isDetailOpen}
+              />
+            </div>
+
+            {/* DETAIL VIEW (THE "PUSH" SHEET) */}
+            <AnimatePresence mode="wait">
+              {isDetailOpen && selectedMail && (
+                <motion.div
+                  initial={{ x: "100%", opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: "100%", opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  className="flex-1 bg-graphite-card min-w-[400px] shadow-2xl z-10"
+                >
+                  <MailDetailView
+                    mail={selectedMail}
+                    onClose={() => setSelectedMailId(null)}
+                    onDelete={() => handleDelete([selectedMail.id])}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </Sidebar.Provider>
+
+      {/* COMPOSE MODAL */}
+      <ComposeModal open={isComposeOpen} onOpenChange={setIsComposeOpen} />
+    </div>
+  );
+};
+
+// ============================================================================
+// 4. SUB-COMPONENTS
+// ============================================================================
+
+// --- SIDEBAR ---
+const DashboardSidebar = ({ onCompose }: { onCompose: () => void }) => {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+
+  return (
+    <Sidebar
+      className="border-r border-graphite-border bg-graphite-background pt-2"
+      collapsedWidth="4.5rem"
+      width="16rem"
+      layout="inset"
+      expandOnHover={true}
+    >
+      <div className=" mb-4">
+        <FAB
+          icon={<Plus size={16} />}
+          variant="primary"
+          size="lg"
+          isExtended={!isCollapsed}
+          onClick={onCompose}
+        >
+          <div className="flex items-center gap-3">
+            {!isCollapsed && (
+              <span className="font-semibold text-sm">Compose</span>
+            )}
+          </div>
+        </FAB>
+      </div>
+
+      <Sidebar.Content>
+        <Sidebar.Group>
+          <Sidebar.Item icon={<Inbox size={20} />} isActive>
+            Inbox
+            <span className="ml-auto text-xs font-semibold">12</span>
+          </Sidebar.Item>
+          <Sidebar.Item icon={<Star size={20} />}>Starred</Sidebar.Item>
+          <Sidebar.Item icon={<Clock size={20} />}>Snoozed</Sidebar.Item>
+          <Sidebar.Item icon={<Send size={20} />}>Sent</Sidebar.Item>
+          <Sidebar.Item icon={<File size={20} />}>Drafts</Sidebar.Item>
+          <Sidebar.Item icon={<MoreVertical size={20} />}>More</Sidebar.Item>
+        </Sidebar.Group>
+
+        <Separator className="my-2" />
+
+        <Sidebar.Group>
+          <Sidebar.Label>Labels</Sidebar.Label>
+          <Sidebar.Item icon={<Tag size={18} className="text-blue-500" />}>
+            Work
+          </Sidebar.Item>
+          <Sidebar.Item icon={<Tag size={18} className="text-green-500" />}>
+            Personal
+          </Sidebar.Item>
+          <Sidebar.Item icon={<Tag size={18} className="text-orange-500" />}>
+            Travel
+          </Sidebar.Item>
+        </Sidebar.Group>
+      </Sidebar.Content>
+    </Sidebar>
+  );
+};
+
+// --- HEADER ---
+const DashboardHeader = ({
+  searchValue,
+  onSearch,
+}: {
+  searchValue: string;
+  onSearch: (v: string) => void;
+}) => {
+  const { toggleSidebar } = useSidebar();
+
+  return (
+    <header className="flex items-center justify-between px-4 py-2 border-b border-graphite-border bg-graphite-card h-16 shrink-0 z-20">
+      <div className="flex items-center gap-4 min-w-[240px]">
+        <IconButton variant="ghost" onClick={toggleSidebar}>
+          <Menu className="h-6 w-6" />
+        </IconButton>
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded bg-red-500 flex items-center justify-center text-white font-bold text-lg">
+            M
+          </div>
+          <Typography
+            variant="h4"
+            className="hidden sm:block text-xl text-graphite-foreground/80"
+          >
+            Mail
+          </Typography>
+        </div>
+      </div>
+
+      <div className="flex-1 max-w-2xl px-4">
+        <div className="relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-graphite-foreground/50 group-focus-within:text-graphite-primary transition-colors" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-10 py-3 rounded-full bg-graphite-secondary/50 border-transparent focus:bg-graphite-card focus:border-transparent focus:ring-2 focus:ring-graphite-ring/20 focus:shadow-md transition-all sm:text-sm outline-none"
+            placeholder="Search mail"
+            value={searchValue}
+            onChange={(e) => onSearch(e.target.value)}
+          />
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <IconButton variant="ghost" size="sm" className="rounded-full">
+              <Filter className="h-4 w-4 opacity-50" />
+            </IconButton>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 min-w-[140px] justify-end">
+        <IconButton variant="ghost">
+          <AlertCircle className="h-6 w-6 opacity-60" />
+        </IconButton>
+        <IconButton variant="ghost">
+          <Settings className="h-6 w-6 opacity-60" />
+        </IconButton>
+        <IconButton variant="ghost">
+          <LayoutGrid className="h-6 w-6 opacity-60" />
+        </IconButton>
+        <Avatar
+          src="https://github.com/shadcn.png"
+          fallback="CN"
+          size="md"
+          className="ml-2"
+        />
+      </div>
+    </header>
+  );
+};
+
+// --- MAIL LIST (TABLE) ---
+interface MailListProps {
+  data: MailItem[];
+  rowSelection: Record<string, boolean>;
+  setRowSelection: (val: any) => void;
+  onRowClick: (mail: MailItem) => void;
+  onToggleStar: (e: React.MouseEvent, id: string) => void;
+  onDelete: (ids: string[]) => void;
+  compactMode: boolean;
+}
+
+const MailList = ({
+  data,
+  rowSelection,
+  setRowSelection,
+  onRowClick,
+  onToggleStar,
+  onDelete,
+  compactMode,
+}: MailListProps) => {
+  // Define Table Columns
+  const columns: ColumnDef<MailItem>[] = useMemo(
+    () => [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <div className="pl-4">
+            <Checkbox
+              checked={table.getIsAllPageRowsSelected()}
+              onChange={(e) =>
+                table.toggleAllPageRowsSelected(!!e.target.checked)
+              }
+              aria-label="Select all"
+            />
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="pl-4" onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={row.getIsSelected()}
+              onChange={(e) => row.toggleSelected(!!e.target.checked)}
+              aria-label="Select row"
+            />
+          </div>
+        ),
+        enableSorting: false,
+        enableHiding: false,
+        size: 40,
+      },
+      {
+        id: "star",
+        cell: ({ row }) => (
+          <div
+            onClick={(e) => onToggleStar(e, row.original.id)}
+            className="cursor-pointer p-1"
+          >
+            <Star
+              className={clsx(
+                "h-5 w-5 transition-colors",
+                row.original.isStarred
+                  ? "fill-yellow-400 text-yellow-400"
+                  : "text-graphite-foreground/30 hover:text-graphite-foreground/60"
+              )}
+            />
+          </div>
+        ),
+        size: 40,
+      },
+      {
+        accessorKey: "sender.name",
+        header: "Sender",
+        cell: ({ row }) => (
+          <div
+            className={clsx(
+              "truncate font-medium",
+              !row.original.isRead && "font-bold text-graphite-foreground"
+            )}
+          >
+            {row.original.sender.name}
+          </div>
+        ),
+        size: compactMode ? 140 : 200,
+      },
+      {
+        accessorKey: "subject",
+        header: "Subject",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2 truncate max-w-full">
+            {row.original.labels.length > 0 && (
+              <div className="flex gap-1 shrink-0">
+                {row.original.labels.map((l) => (
+                  <MailLabelBadge key={l} label={l} />
+                ))}
+              </div>
+            )}
+            <span
+              className={clsx(
+                "truncate",
+                !row.original.isRead ? "font-bold text-graphite-foreground" : ""
+              )}
+            >
+              {row.original.subject}
+            </span>
+            <span className="text-graphite-foreground/60 truncate hidden sm:inline">
+              - {row.original.snippet}
+            </span>
+          </div>
+        ),
+      },
+      {
+        id: "actions", // Actions overlay on hover
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-graphite-background/80 backdrop-blur-sm absolute right-0 top-0 bottom-0 px-2 shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.1)]">
+            <TooltipProvider>
+              <TooltipTrigger>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Archive logic
+                  }}
+                >
+                  <Archive className="h-4 w-4" />
+                </IconButton>
+              </TooltipTrigger>
+              <Tooltip>Archive</Tooltip>
+
+              <TooltipTrigger>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete([row.original.id]);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </IconButton>
+              </TooltipTrigger>
+              <Tooltip>Delete</Tooltip>
+
+              <TooltipTrigger>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Mail className="h-4 w-4" />
+                </IconButton>
+              </TooltipTrigger>
+              <Tooltip>Mark as unread</Tooltip>
+            </TooltipProvider>
+          </div>
+        ),
+        size: 100,
+      },
+      {
+        accessorKey: "date",
+        header: "Date",
+        cell: ({ row }) => {
+          const date = row.original.date;
+          const isToday = new Date().toDateString() === date.toDateString();
+          return (
+            <div
+              className={clsx(
+                "text-xs text-right whitespace-nowrap font-medium",
+                !row.original.isRead
+                  ? "text-graphite-foreground"
+                  : "text-graphite-foreground/60"
+              )}
+            >
+              {isToday ? format(date, "h:mm a") : format(date, "MMM d")}
+            </div>
+          );
+        },
+        size: 80,
+      },
+    ],
+    [compactMode, onToggleStar, onDelete]
+  );
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: { rowSelection },
+    onRowSelectionChange: setRowSelection,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const selectedCount = Object.keys(rowSelection).length;
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* TOOLBAR */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-graphite-border bg-graphite-background h-12 shrink-0">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onChange={(e) =>
+              table.toggleAllPageRowsSelected(!!e.target.checked)
+            }
+          />
+          <IconButton variant="ghost" size="sm">
+            <ChevronLeft className="h-4 w-4" />
+          </IconButton>
+          {selectedCount > 0 ? (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+              <Typography variant="small" className="font-semibold mx-2">
+                {selectedCount} selected
+              </Typography>
+              <TooltipProvider>
+                <TooltipTrigger>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const selectedIds = table
+                        .getSelectedRowModel()
+                        .rows.map((r) => r.original.id);
+                      onDelete(selectedIds);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </IconButton>
+                </TooltipTrigger>
+                <Tooltip>Delete</Tooltip>
+              </TooltipProvider>
+              <IconButton variant="ghost" size="sm">
+                <Archive className="h-4 w-4" />
+              </IconButton>
+              <IconButton variant="ghost" size="sm">
+                <Mail className="h-4 w-4" />
+              </IconButton>
+            </div>
+          ) : (
+            <IconButton
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.reload()}
+            >
+              <div className="h-4 w-4 flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4"
+                >
+                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                  <path d="M21 3v5h-5" />
+                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                  <path d="M8 16H3v5" />
+                </svg>
+              </div>
+            </IconButton>
+          )}
+          <IconButton variant="ghost" size="sm">
+            <MoreVertical className="h-4 w-4" />
+          </IconButton>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-graphite-foreground/60">
+          <span>1-50 of {data.length}</span>
+          <IconButton variant="ghost" size="sm" disabled>
+            <ChevronLeft className="h-4 w-4" />
+          </IconButton>
+          <IconButton variant="ghost" size="sm">
+            <ChevronRight className="h-4 w-4" />
+          </IconButton>
+        </div>
+      </div>
+
+      {/* TABLE BODY */}
+      <ElasticScrollArea className="flex-1 bg-white dark:bg-graphite-background">
+        <div className="w-full">
+          <table className="w-full border-collapse text-sm">
+            <tbody>
+              {table.getRowModel().rows.map((row) => (
+                <tr
+                  key={row.id}
+                  onClick={() => onRowClick(row.original)}
+                  className={clsx(
+                    "group relative border-b border-graphite-border/50 hover:shadow-md hover:z-10 hover:border-transparent transition-all cursor-pointer",
+                    row.original.isRead
+                      ? "bg-white dark:bg-graphite-background"
+                      : "bg-[#f2f6fc] dark:bg-graphite-secondary/20",
+                    row.getIsSelected() && "bg-blue-50 dark:bg-blue-900/20"
+                  )}
+                >
+                  <td className="w-10 pl-4 py-2 align-middle">
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={row.getIsSelected()}
+                        onChange={(e) => row.toggleSelected(!!e.target.checked)}
+                      />
+                    </div>
+                  </td>
+                  <td className="w-10 py-2 align-middle">
+                    <div onClick={(e) => onToggleStar(e, row.original.id)}>
+                      <Star
+                        className={clsx(
+                          "h-5 w-5 transition-colors",
+                          row.original.isStarred
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300 hover:text-gray-500"
+                        )}
+                      />
+                    </div>
+                  </td>
+                  <td
+                    className={clsx(
+                      "py-3 pr-4 align-middle whitespace-nowrap",
+                      !row.original.isRead
+                        ? "font-bold text-graphite-foreground"
+                        : "font-medium text-graphite-foreground/80"
+                    )}
+                    style={{ width: compactMode ? "140px" : "200px" }}
+                  >
+                    <span className="truncate block w-full">
+                      {row.original.sender.name}
+                    </span>
+                  </td>
+                  <td className="py-3 pr-4 align-middle relative">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      {row.original.labels.map((l) => (
+                        <div key={l} className="shrink-0">
+                          <MailLabelBadge label={l} />
+                        </div>
+                      ))}
+                      <span
+                        className={clsx(
+                          "truncate",
+                          !row.original.isRead
+                            ? "font-bold text-graphite-foreground"
+                            : "text-graphite-foreground/80"
+                        )}
+                      >
+                        {row.original.subject}
+                      </span>
+                      <span className="text-gray-400 truncate hidden md:inline">
+                        - {row.original.snippet}
+                      </span>
+                    </div>
+
+                    {/* Hover Actions (Absolute positioned) */}
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center bg-inherit shadow-[-10px_0_10px_-5px_rgba(255,255,255,1)] dark:shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.5)] pl-2">
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete([row.original.id]);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500" />
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Archive className="h-4 w-4 text-gray-500" />
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Clock className="h-4 w-4 text-gray-500" />
+                      </IconButton>
+                    </div>
+                  </td>
+                  {/* Date Column - Hidden if compact mode gets too small, or keep it fixed */}
+                  {!compactMode && (
+                    <td
+                      className={clsx(
+                        "py-3 pr-4 text-right whitespace-nowrap text-xs w-24",
+                        !row.original.isRead
+                          ? "font-bold"
+                          : "font-medium text-gray-500"
+                      )}
+                    >
+                      {format(row.original.date, "MMM d")}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+// --- MAIL DETAIL VIEW ---
+interface MailDetailViewProps {
+  mail: MailItem;
+  onClose: () => void;
+  onDelete: () => void;
+}
+
+const MailDetailView = ({ mail, onClose, onDelete }: MailDetailViewProps) => {
+  return (
+    <div className="flex flex-col h-full bg-graphite-card">
+      {/* TOOLBAR */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-graphite-border h-12 shrink-0">
+        <div className="flex items-center gap-1">
+          <TooltipProvider>
+            <TooltipTrigger>
+              <IconButton variant="ghost" size="sm" onClick={onClose}>
+                <ArrowLeft className="h-5 w-5" />
+              </IconButton>
+            </TooltipTrigger>
+            <Tooltip>Back to inbox</Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <TooltipTrigger>
+              <IconButton variant="ghost" size="sm">
+                <Archive className="h-4 w-4" />
+              </IconButton>
+            </TooltipTrigger>
+            <Tooltip>Archive</Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <TooltipTrigger>
+              <IconButton variant="ghost" size="sm">
+                <AlertCircle className="h-4 w-4" />
+              </IconButton>
+            </TooltipTrigger>
+            <Tooltip>Report spam</Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <TooltipTrigger>
+              <IconButton variant="ghost" size="sm" onClick={onDelete}>
+                <Trash2 className="h-4 w-4" />
+              </IconButton>
+            </TooltipTrigger>
+            <Tooltip>Delete</Tooltip>
+          </TooltipProvider>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <IconButton variant="ghost" size="sm">
+            <Printer className="h-4 w-4" />
+          </IconButton>
+          <IconButton variant="ghost" size="sm">
+            <MoreVertical className="h-4 w-4" />
+          </IconButton>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <ElasticScrollArea className="flex-1">
+        <div className="p-6">
+          <div className="flex items-start justify-between mb-6">
+            <h1 className="text-2xl font-normal text-graphite-foreground leading-snug">
+              {mail.subject}
+              {mail.labels.map((l) => (
+                <span key={l} className="ml-3 align-middle">
+                  <MailLabelBadge label={l} />
+                </span>
+              ))}
+            </h1>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="secondary"
+                shape="minimal"
+                className="text-xs font-mono"
+              >
+                Inbox
+              </Badge>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-4 mb-6">
+            <Avatar
+              src={mail.sender.avatar}
+              fallback={mail.sender.name.slice(0, 1)}
+              size="md"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline justify-between">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-bold text-graphite-foreground">
+                    {mail.sender.name}
+                  </span>
+                  <span className="text-sm text-graphite-foreground/60">
+                    &lt;{mail.sender.email}&gt;
+                  </span>
+                </div>
+                <div className="text-xs text-graphite-foreground/50">
+                  {format(mail.date, "PPP p")} ({formatDistanceToNow(mail.date)}{" "}
+                  ago)
+                </div>
+              </div>
+              <div className="text-xs text-graphite-foreground/50 mt-0.5">
+                to me
+              </div>
+            </div>
+          </div>
+
+          <div className="prose dark:prose-invert max-w-none text-graphite-foreground/90 whitespace-pre-line text-sm leading-relaxed">
+            {mail.body}
+          </div>
+
+          {mail.hasAttachment && (
+            <div className="mt-8 pt-4 border-t border-graphite-border">
+              <Typography variant="small" className="font-semibold mb-3">
+                2 Attachments
+              </Typography>
+              <div className="flex gap-4">
+                <Card
+                  variant="secondary"
+                  shape="minimal"
+                  className="w-48 p-0 overflow-hidden group cursor-pointer border border-transparent hover:border-graphite-border transition-all"
+                >
+                  <div className="h-24 bg-graphite-border/30 flex items-center justify-center">
+                    <File className="h-8 w-8 text-graphite-foreground/40" />
+                  </div>
+                  <div className="p-3 bg-graphite-card">
+                    <div className="text-sm font-medium truncate">
+                      Quarterly_Report.pdf
+                    </div>
+                    <div className="text-xs text-graphite-foreground/50">
+                      2.4 MB
+                    </div>
+                  </div>
+                </Card>
+                <Card
+                  variant="secondary"
+                  shape="minimal"
+                  className="w-48 p-0 overflow-hidden group cursor-pointer border border-transparent hover:border-graphite-border transition-all"
+                >
+                  <div className="h-24 bg-graphite-border/30 flex items-center justify-center">
+                    <div className="h-full w-full bg-blue-100 dark:bg-blue-900/20" />
+                  </div>
+                  <div className="p-3 bg-graphite-card">
+                    <div className="text-sm font-medium truncate">
+                      Meeting_Notes.docx
+                    </div>
+                    <div className="text-xs text-graphite-foreground/50">
+                      14 KB
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-12 flex gap-4">
+            <Button
+              variant="secondary"
+              className="rounded-full px-6 border border-graphite-border"
+              startIcon={<Reply className="h-4 w-4" />}
+            >
+              Reply
+            </Button>
+            <Button
+              variant="secondary"
+              className="rounded-full px-6 border border-graphite-border"
+              startIcon={<ReplyAll className="h-4 w-4" />}
+            >
+              Reply All
+            </Button>
+            <Button
+              variant="secondary"
+              className="rounded-full px-6 border border-graphite-border"
+              startIcon={<ArrowLeft className="h-4 w-4 rotate-180" />}
+            >
+              Forward
+            </Button>
+          </div>
+        </div>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+// --- COMPOSE MODAL ---
+const ComposeModal = ({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) => {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange} variant="basic">
+      <DialogContent className="w-full max-w-2xl !p-0 overflow-hidden h-[600px] flex flex-col shadow-2xl rounded-t-xl sm:rounded-xl">
+        <DialogHeader className="bg-[#f2f6fc] dark:bg-graphite-secondary px-4 py-3 border-b border-graphite-border flex flex-row items-center justify-between !space-y-0">
+          <DialogTitle className="text-sm font-semibold">
+            New Message
+          </DialogTitle>
+          <div className="flex items-center gap-2">
+            <IconButton
+              variant="ghost"
+              size="xs"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </IconButton>
+          </div>
+        </DialogHeader>
+
+        <div className="flex-1 flex flex-col bg-graphite-card">
+          <div className="border-b border-graphite-border/50">
+            <Input
+              variant="minimal"
+              placeholder="Recipients"
+              rootClassName="px-4 py-2"
+              inputClassName="text-sm"
+            />
+          </div>
+          <div className="border-b border-graphite-border/50">
+            <Input
+              variant="minimal"
+              placeholder="Subject"
+              rootClassName="px-4 py-2"
+              inputClassName="text-sm font-medium"
+            />
+          </div>
+          <TextArea
+            variant="minimal"
+            placeholder=""
+            className="flex-1 resize-none p-4 text-sm leading-relaxed"
+            wrapperClassName="h-full"
+          />
+        </div>
+
+        <DialogFooter className="bg-graphite-card p-3 border-t border-graphite-border flex justify-between items-center w-full !mt-0">
+          <div className="flex items-center gap-2">
+            <Button
+              className="rounded-full px-6 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => {
+                toast.success("Message sent");
+                onOpenChange(false);
+              }}
+            >
+              Send
+            </Button>
+            <IconButton variant="ghost" size="sm">
+              <Paperclip className="h-4 w-4" />
+            </IconButton>
+            <IconButton variant="ghost" size="sm">
+              <Tag className="h-4 w-4" />
+            </IconButton>
+            <IconButton variant="ghost" size="sm">
+              <Bold className="h-4 w-4" />
+            </IconButton>
+          </div>
+          <IconButton variant="ghost" size="sm">
+            <Trash2 className="h-4 w-4" />
+          </IconButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+```
+
+
+**Storybook Stories (`App.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  ClipboardList,
+  Home,
+  MoreVertical,
+  Plus,
+  Search,
+  Settings,
+} from "lucide-react";
+import React, { createContext, useContext, useRef, useState } from "react";
+import DeviceFrame from "../device";
+import { toast, Toaster } from "../toast";
+// Import all the necessary components from the library
+import { AppBar } from "../appbar";
+import { Avatar } from "../avatar";
+import { BottomTabs } from "../bottom-tabs";
+import { Button } from "../button";
+import { Card } from "../card";
+import { DatePicker } from "../date-picker";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../dialog";
+import { ElasticScrollArea } from "../elastic-scroll-area";
+import { FAB } from "../fab";
+import { IconButton } from "../icon-button";
+import { Input } from "../input";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from "../item";
+import { LayoutRouter, useLayoutRouter } from "../layout-router";
+import { SelectInput } from "../select";
+import { ShallowRouter, useRouter } from "../shallow-router";
+import { createStackNavigator, useNavigation, useRoute } from "../stack-router";
+import { Switch } from "../switch";
+import { TextArea } from "../textarea"; // FIX: Added missing TextArea import
+import { Typography } from "../typography";
+
+const meta: Meta = {
+  title: "Showcase/Full Mobile App Demo",
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A complete mobile application example built with `chesai-ui` components. It demonstrates nested navigation (`BottomTabs` + `StackRouter` + `LayoutRouter`), state management, form handling, and advanced component composition.",
+      },
+    },
+  },
+};
+
+export default meta;
+
+// --- 1. MOCK DATA & STATE MANAGEMENT ---
+
+const MOCK_PROJECTS = [
+  {
+    id: "proj-1",
+    title: "Website Redesign",
+    color: "bg-blue-500",
+    taskCount: 5,
+    avatar: "WR",
+  },
+  {
+    id: "proj-2",
+    title: "Mobile App Launch",
+    color: "bg-purple-500",
+    taskCount: 8,
+    avatar: "ML",
+  },
+  {
+    id: "proj-3",
+    title: "API Integration",
+    color: "bg-green-500",
+    taskCount: 3,
+    avatar: "AI",
+  },
+];
+
+const MOCK_TASKS = [
+  {
+    id: "task-1",
+    title: "Draft homepage copy",
+    projectId: "proj-1",
+    dueDate: new Date(2024, 6, 25),
+    completed: false,
+  },
+  {
+    id: "task-2",
+    title: "Design mobile mockups",
+    projectId: "proj-1",
+    dueDate: new Date(2024, 6, 28),
+    completed: false,
+  },
+  {
+    id: "task-3",
+    title: "Setup CI/CD pipeline",
+    projectId: "proj-2",
+    dueDate: new Date(2024, 7, 1),
+    completed: true,
+  },
+  {
+    id: "task-4",
+    title: "Authenticate with OAuth provider",
+    projectId: "proj-3",
+    dueDate: new Date(2024, 7, 5),
+    completed: false,
+  },
+  {
+    id: "task-5",
+    title: "Publish to App Store",
+    projectId: "proj-2",
+    dueDate: new Date(2024, 7, 15),
+    completed: false,
+  },
+];
+
+// Simple global state using React Context for the demo
+const AppStateContext = createContext({
+  tasks: MOCK_TASKS,
+  projects: MOCK_PROJECTS,
+  toggleTask: (taskId: string) => {},
+  deleteTask: (taskId: string) => {},
+  addTask: (task: any) => {},
+});
+const useAppState = () => useContext(AppStateContext);
+
+// --- 2. NAVIGATION STACKS ---
+
+type HomeStackParamList = {
+  Inbox: undefined;
+  TaskDetails: { taskId: string };
+};
+const HomeStack = createStackNavigator<HomeStackParamList>();
+
+type ProjectsStackParamList = {
+  ProjectList: undefined;
+};
+const ProjectsStack = createStackNavigator<ProjectsStackParamList>();
+
+type SettingsStackParamList = {
+  Settings: undefined;
+};
+const SettingsStack = createStackNavigator<SettingsStackParamList>();
+
+// --- 3. SCREEN COMPONENTS ---
+
+// --- INBOX TAB ---
+const InboxScreen = () => {
+  const navigation = useNavigation<HomeStackParamList>();
+  const { tasks } = useAppState();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
+
+  return (
+    <div className="flex h-full flex-col bg-graphite-background">
+      <AppBar
+        size="lg"
+        largeHeaderRowHeight={50}
+        scrollBehavior="conditionally-sticky"
+        appBarColor="background"
+        animatedBehavior={["shadow"]}
+        scrollContainerRef={scrollRef}
+        children={
+          <Typography variant="h4" className="truncate font-bold">
+            Inbox
+          </Typography>
+        }
+        largeHeaderContent={
+          <Input
+            variant="secondary"
+            shape="full"
+            startAdornment={<Search className="h-5 w-5 text-gray-500" />}
+            placeholder="Search tasks..."
+          />
+        }
+      />
+      <ElasticScrollArea
+        ref={scrollRef}
+        className="flex-1"
+        pullToRefresh
+        onRefresh={() => new Promise((res) => setTimeout(res, 1500))}
+      >
+        <main className="p-4 pt-[110px]">
+          <ItemGroup>
+            {tasks.map((task) => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                onPress={() =>
+                  navigation.push("TaskDetails", { taskId: task.id })
+                }
+              />
+            ))}
+          </ItemGroup>
+        </main>
+      </ElasticScrollArea>
+      <div className="absolute bottom-20 right-6 z-10">
+        <FAB isExtended icon={<Plus />} onClick={() => setIsNewTaskOpen(true)}>
+          New Task
+        </FAB>
+      </div>
+      <NewTaskDialog open={isNewTaskOpen} onOpenChange={setIsNewTaskOpen} />
+    </div>
+  );
+};
+
+const TaskDetailsScreen = () => {
+  const navigation = useNavigation<HomeStackParamList>();
+  const route = useRoute<HomeStackParamList, "TaskDetails">();
+  const { tasks, deleteTask } = useAppState();
+  const task = tasks.find((t) => t.id === route.params.taskId);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  if (!task) {
+    return (
+      <div className="p-6 pt-[70px]">
+        <Typography>Task not found.</Typography>
+      </div>
+    );
+  }
+
+  const handleDelete = () => {
+    deleteTask(task.id);
+    toast.success("Task deleted");
+    navigation.goBack();
+  };
+
+  return (
+    <ElasticScrollArea ref={navigation.scrollContainerRef}>
+      <div className="p-6 pt-[70px]">
+        <div className="flex flex-col gap-6">
+          <Input label="Task Title" defaultValue={task.title} size="lg" />
+          <TextArea label="Description" placeholder="Add a description..." />
+          <DatePicker label="Due Date" value={task.dueDate} />
+          <SelectInput
+            label="Project"
+            items={MOCK_PROJECTS.map((p) => ({
+              value: p.id,
+              label: p.title,
+            }))}
+            value={task.projectId}
+          />
+          <Button onClick={() => navigation.goBack()}>Save Changes</Button>
+          <Button
+            variant="destructive"
+            onClick={() => setIsDeleteDialogOpen(true)}
+          >
+            Delete Task
+          </Button>
+        </div>
+        <Dialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          variant="basic"
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Task?</DialogTitle>
+              <DialogDescription>
+                This action cannot be undone. Are you sure you want to
+                permanently delete this task?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="secondary">Cancel</Button>
+              </DialogClose>
+              <Button variant="destructive" onClick={handleDelete}>
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </ElasticScrollArea>
+  );
+};
+
+// --- PROJECTS TAB ---
+const ProjectsScreen = () => {
+  const navigation = useNavigation<ProjectsStackParamList>();
+  const { projects } = useAppState();
+
+  return (
+    <LayoutRouter>
+      <LayoutRouter.List>
+        <div className="flex h-full flex-col bg-graphite-background">
+          <AppBar appBarColor="background">
+            <Typography variant="h4" className="font-bold">
+              Projects
+            </Typography>
+          </AppBar>
+          <ElasticScrollArea
+            className="flex-1 p-4 pt-[70px]"
+            ref={navigation.scrollContainerRef}
+          >
+            <div className="grid grid-cols-2 gap-4">
+              {projects.map((project) => (
+                <LayoutRouter.Link key={project.id} id={project.id}>
+                  <Card
+                    variant="primary"
+                    shape="minimal"
+                    className="aspect-square flex flex-col justify-between cursor-pointer"
+                  >
+                    <div>
+                      <LayoutRouter.SharedElement tag="avatar">
+                        <Avatar
+                          fallback={project.avatar}
+                          className={`!rounded-lg ${project.color}`}
+                        />
+                      </LayoutRouter.SharedElement>
+                    </div>
+                    <div>
+                      <LayoutRouter.SharedElement tag="title">
+                        <Typography variant="large">{project.title}</Typography>
+                      </LayoutRouter.SharedElement>
+                      <Typography variant="muted">
+                        {project.taskCount} tasks
+                      </Typography>
+                    </div>
+                  </Card>
+                </LayoutRouter.Link>
+              ))}
+            </div>
+          </ElasticScrollArea>
+        </div>
+      </LayoutRouter.List>
+      {projects.map((project) => (
+        <LayoutRouter.Screen key={project.id} id={project.id} dismissible>
+          <ProjectDetailsScreen project={project} />
+        </LayoutRouter.Screen>
+      ))}
+    </LayoutRouter>
+  );
+};
+
+const ProjectDetailsScreen = ({ project }: { project: any }) => {
+  const { goBack } = useLayoutRouter();
+  const { tasks } = useAppState();
+  const projectTasks = tasks.filter((t) => t.projectId === project.id);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div className="flex h-full flex-col bg-graphite-background">
+      <AppBar
+        scrollBehavior="conditionally-sticky"
+        animatedBehavior={["shadow"]}
+        appBarColor="background"
+        scrollContainerRef={scrollRef}
+        startAdornment={
+          <IconButton variant="ghost" onClick={goBack}>
+            <ArrowLeft />
+          </IconButton>
+        }
+      />
+      <ElasticScrollArea ref={scrollRef} className="flex-1">
+        <main className="p-4 pt-[70px]">
+          <div className="flex items-center gap-4 mb-6">
+            <LayoutRouter.SharedElement tag="avatar">
+              <Avatar
+                size="xl"
+                fallback={project.avatar}
+                className={`!rounded-xl ${project.color}`}
+              />
+            </LayoutRouter.SharedElement>
+            <div>
+              <LayoutRouter.SharedElement tag="title">
+                <Typography variant="h2">{project.title}</Typography>
+              </LayoutRouter.SharedElement>
+              <Typography variant="lead">{project.taskCount} tasks</Typography>
+            </div>
+          </div>
+          <ItemGroup>
+            {projectTasks.map((task) => (
+              <TaskItem key={task.id} task={task} />
+            ))}
+          </ItemGroup>
+        </main>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+// --- SETTINGS TAB ---
+const SettingsScreen = () => {
+  const navigation = useNavigation<SettingsStackParamList>();
+  return (
+    <div className="flex h-full flex-col bg-graphite-background">
+      <AppBar appBarColor="background">
+        <Typography variant="h4" className="font-bold">
+          Settings
+        </Typography>
+      </AppBar>
+      <ElasticScrollArea
+        className="flex-1 p-4 pt-[70px]"
+        ref={navigation.scrollContainerRef}
+      >
+        <ItemGroup>
+          <Item
+            variant="secondary"
+            onClick={() => {}}
+            className="cursor-pointer"
+          >
+            <ItemContent>
+              <ItemTitle>Enable Notifications</ItemTitle>
+            </ItemContent>
+            <ItemActions>
+              <Switch defaultChecked />
+            </ItemActions>
+          </Item>
+          <Item
+            variant="secondary"
+            onClick={() => {}}
+            className="cursor-pointer"
+          >
+            <ItemContent>
+              <ItemTitle>Dark Mode</ItemTitle>
+            </ItemContent>
+            <ItemActions>
+              <Switch />
+            </ItemActions>
+          </Item>
+          <Item
+            variant="secondary"
+            onClick={() => {}}
+            className="cursor-pointer"
+          >
+            <ItemContent>
+              <ItemTitle>Profile</ItemTitle>
+            </ItemContent>
+            <ItemActions>
+              <ChevronRight />
+            </ItemActions>
+          </Item>
+        </ItemGroup>
+      </ElasticScrollArea>
+    </div>
+  );
+};
+
+// --- 4. REUSABLE COMPONENTS ---
+const TaskItem = ({ task, onPress }: { task: any; onPress?: () => void }) => {
+  const { toggleTask } = useAppState();
+  return (
+    <Item
+      variant="secondary"
+      onClick={onPress}
+      className={onPress ? "cursor-pointer" : ""}
+    >
+      <ItemContent>
+        <ItemTitle
+          className={task.completed ? "line-through text-gray-400" : ""}
+        >
+          {task.title}
+        </ItemTitle>
+        <ItemDescription>
+          Due: {task.dueDate.toLocaleDateString()}
+        </ItemDescription>
+      </ItemContent>
+      <ItemActions>
+        <IconButton variant="ghost" size="sm">
+          <MoreVertical size={16} />
+        </IconButton>
+      </ItemActions>
+    </Item>
+  );
+};
+
+const NewTaskDialog = ({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const { addTask } = useAppState();
+  const [title, setTitle] = useState("");
+
+  const handleAddTask = () => {
+    if (title.trim()) {
+      addTask({
+        id: `task-${Date.now()}`,
+        title,
+        projectId: "proj-1",
+        dueDate: new Date(),
+        completed: false,
+      });
+      toast.success("Task added!");
+      onOpenChange(false);
+      setTitle("");
+    } else {
+      toast.error("Task title cannot be empty.");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange} variant="basic">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New Task</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 flex flex-col gap-4">
+          <Input
+            label="Task Title"
+            placeholder="e.g., Finalize Q3 report"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            size="lg"
+          />
+          <Button key="add" size="sm" onClick={handleAddTask}>
+            Add Task
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// --- 5. APP SHELL & TAB NAVIGATION ---
+const AppShell = () => {
+  const { path: activeTab, push } = useRouter();
+  const iconSize = 24;
+  const initialTab = "home";
+
+  return (
+    <div className="h-full w-full relative">
+      <div className="h-full w-full">
+        {/* FIX: Render the Home stack on the default "/" path as well */}
+        {(activeTab === "/" || activeTab === "/home") && (
+          <HomeStack.Navigator initialRouteName="Inbox">
+            <HomeStack.Screen
+              name="Inbox"
+              component={InboxScreen}
+              options={{ headerShown: false }}
+            />
+            <HomeStack.Screen
+              name="TaskDetails"
+              component={TaskDetailsScreen}
+              options={{ title: "Task Details" }}
+            />
+          </HomeStack.Navigator>
+        )}
+        {activeTab === "/projects" && (
+          <ProjectsStack.Navigator initialRouteName="ProjectList">
+            <ProjectsStack.Screen
+              name="ProjectList"
+              component={ProjectsScreen}
+              options={{ headerShown: false }}
+            />
+          </ProjectsStack.Navigator>
+        )}
+        {activeTab === "/settings" && (
+          <SettingsStack.Navigator initialRouteName="Settings">
+            <SettingsStack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{ headerShown: false }}
+            />
+          </SettingsStack.Navigator>
+        )}
+      </div>
+
+      <div className="absolute bottom-0 left-0 right-0 z-50">
+        <BottomTabs.Navigator
+          mode="attached"
+          shape="full"
+          activeTab={activeTab === "/" ? initialTab : activeTab.substring(1)}
+          onTabPress={(tab) => push(`/${tab}`)}
+        >
+          <BottomTabs.Screen
+            name="home"
+            label="Inbox"
+            icon={() => <Home size={iconSize} />}
+          />
+          <BottomTabs.Screen
+            name="projects"
+            label="Projects"
+            icon={() => <ClipboardList size={iconSize} />}
+          />
+          <BottomTabs.Screen
+            name="settings"
+            label="Settings"
+            icon={() => <Settings size={iconSize} />}
+          />
+        </BottomTabs.Navigator>
+      </div>
+    </div>
+  );
+};
+
+// --- 6. THE FINAL STORY ---
+const AppStateProvider = ({ children }: { children: React.ReactNode }) => {
+  const [tasks, setTasks] = useState(MOCK_TASKS);
+  const projects = MOCK_PROJECTS;
+
+  const toggleTask = (taskId: string) => {
+    setTasks((currentTasks) =>
+      currentTasks.map((t) =>
+        t.id === taskId ? { ...t, completed: !t.completed } : t
+      )
+    );
+  };
+
+  const deleteTask = (taskId: string) => {
+    setTasks((currentTasks) => currentTasks.filter((t) => t.id !== taskId));
+  };
+
+  const addTask = (task: any) => {
+    setTasks((currentTasks) => [task, ...currentTasks]);
+  };
+
+  return (
+    <AppStateContext.Provider
+      value={{ tasks, projects, toggleTask, deleteTask, addTask }}
+    >
+      {children}
+    </AppStateContext.Provider>
+  );
+};
+
+export const TasksApp: StoryObj = {
+  render: () => (
+    <DeviceFrame>
+      <AppStateProvider>
+        <ShallowRouter paramName="tab">
+          <AppShell />
+        </ShallowRouter>
+      </AppStateProvider>
+      <Toaster position="bottom-center" />
+    </DeviceFrame>
+  ),
+};
+```
+
+
 ### Component: `fab`
 This section includes all related source files for the `fab` component, including nested sub-components (like `header.tsx`) and utilities.
 
@@ -9532,8 +11904,10 @@ export const inputWrapperVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-graphite-card border-2 px-4",
-        secondary: "bg-graphite-secondary border-2 px-4",
+        primary:
+          "bg-graphite-card border-2 px-4 hover:bg-graphite-secondary/50",
+        secondary:
+          "bg-graphite-secondary border-2 px-4 hover:bg-graphite-primary/10",
         minimal: "bg-transparent p-0",
       },
       shape: {
@@ -9549,7 +11923,7 @@ export const inputWrapperVariants = cva(
       isErrored: { true: "" },
       isFocused: { true: "" },
       disabled: {
-        true: "bg-graphite-secondary opacity-50 cursor-not-allowed",
+        true: "bg-graphite-secondary opacity-50 cursor-not-allowed hover:bg-graphite-secondary",
       },
     },
     compoundVariants: [
@@ -10995,6 +13369,250 @@ export const NotificationList: Story = {
 ```
 
 
+### Component: `kbd`
+This section includes all related source files for the `kbd` component, including nested sub-components (like `header.tsx`) and utilities.
+
+**Source File (`src\lib\components\kbd\index.tsx`)**
+```tsx
+import { cva, type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import React from "react";
+
+const kbdVariants = cva(
+  "inline-flex items-center justify-center font-mono font-medium text-graphite-foreground transition-colors select-none",
+  {
+    variants: {
+      variant: {
+        // Default simulates a physical key with a thicker bottom border
+        default:
+          "bg-graphite-card border border-graphite-border border-b-2 shadow-sm",
+        // Flat styling similar to a secondary badge
+        flat: "bg-graphite-secondary border border-transparent",
+        // Outline only
+        outline: "bg-transparent border border-graphite-border",
+        // Ghost for subtle hints
+        ghost:
+          "bg-transparent border border-transparent hover:bg-graphite-secondary/50",
+      },
+      size: {
+        sm: "h-5 min-w-[1.25rem] text-[10px] px-1",
+        md: "h-6 min-w-[1.5rem] text-xs px-1.5",
+        lg: "h-8 min-w-[2rem] text-sm px-2.5",
+      },
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-md", // Keys look better with slightly tighter rounding than other 'minimal' components
+        sharp: "rounded-none",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "md",
+      shape: "minimal",
+    },
+  }
+);
+
+export interface KbdProps
+  extends React.HTMLAttributes<HTMLElement>,
+    VariantProps<typeof kbdVariants> {}
+
+export const Kbd = React.forwardRef<HTMLElement, KbdProps>(
+  ({ className, variant, size, shape, ...props }, ref) => {
+    return (
+      <kbd
+        className={clsx(kbdVariants({ variant, size, shape, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+
+Kbd.displayName = "Kbd";
+```
+
+
+**Storybook Stories (`Kbd.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { Command } from "lucide-react";
+import { Typography } from "../typography";
+import { Kbd } from "./index";
+
+const meta: Meta<typeof Kbd> = {
+  title: "Components/Data/Kbd",
+  component: Kbd,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A component to display keyboard shortcuts. It mimics the look of a physical keyboard key using the `kbd` HTML tag.",
+      },
+    },
+  },
+  argTypes: {
+    variant: {
+      control: "select",
+      options: ["default", "flat", "outline", "ghost"],
+    },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+    },
+    children: {
+      control: "text",
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof Kbd>;
+
+export const Default: Story = {
+  args: {
+    children: "K",
+  },
+};
+
+export const CommonShortcuts: Story = {
+  name: "Common Shortcuts",
+  render: () => (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Typography variant="small" className="w-32">
+          Spotlight:
+        </Typography>
+        <span className="flex gap-1">
+          <Kbd>
+            <Command className="h-3 w-3" />
+          </Kbd>
+          <Kbd>K</Kbd>
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Typography variant="small" className="w-32">
+          Close Tab:
+        </Typography>
+        <span className="flex gap-1">
+          <Kbd>Ctrl</Kbd>
+          <Kbd>W</Kbd>
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Typography variant="small" className="w-32">
+          Screenshot:
+        </Typography>
+        <span className="flex gap-1">
+          <Kbd>
+            <Command className="h-3 w-3" />
+          </Kbd>
+          <Kbd>
+            <span className="text-xs">⇧</span>
+          </Kbd>
+          <Kbd>4</Kbd>
+        </span>
+      </div>
+    </div>
+  ),
+};
+
+export const Variants: Story = {
+  name: "Visual Variants",
+  render: () => (
+    <div className="flex items-center gap-4">
+      <div className="flex flex-col items-center gap-2">
+        <Kbd variant="default">Default</Kbd>
+        <Typography variant="muted" className="text-xs">
+          3D / Card
+        </Typography>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Kbd variant="flat">Flat</Kbd>
+        <Typography variant="muted" className="text-xs">
+          Secondary
+        </Typography>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Kbd variant="outline">Outline</Kbd>
+        <Typography variant="muted" className="text-xs">
+          Border Only
+        </Typography>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Kbd variant="ghost">Ghost</Kbd>
+        <Typography variant="muted" className="text-xs">
+          Minimal
+        </Typography>
+      </div>
+    </div>
+  ),
+};
+
+export const Sizes: Story = {
+  name: "Sizes",
+  render: () => (
+    <div className="flex items-end gap-4">
+      <div className="flex flex-col items-center gap-2">
+        <Kbd size="sm">Esc</Kbd>
+        <Typography variant="muted" className="text-xs">
+          Small
+        </Typography>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Kbd size="md">Enter</Kbd>
+        <Typography variant="muted" className="text-xs">
+          Medium
+        </Typography>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <Kbd size="lg">Space</Kbd>
+        <Typography variant="muted" className="text-xs">
+          Large
+        </Typography>
+      </div>
+    </div>
+  ),
+};
+
+export const InsideMenu: Story = {
+  name: "Usage in Menu",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Kbd components are frequently used as right-aligned addons in Dropdowns or Command Palettes.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-64 rounded-xl border border-graphite-border bg-graphite-card p-2 shadow-lg">
+      <div className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-graphite-secondary cursor-pointer">
+        <span className="text-sm font-medium">Search...</span>
+        <span className="flex gap-1">
+          <Kbd size="sm">⌘</Kbd>
+          <Kbd size="sm">F</Kbd>
+        </span>
+      </div>
+      <div className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-graphite-secondary cursor-pointer">
+        <span className="text-sm font-medium">Settings</span>
+        <span className="flex gap-1">
+          <Kbd size="sm">⌘</Kbd>
+          <Kbd size="sm">,</Kbd>
+        </span>
+      </div>
+    </div>
+  ),
+};
+```
+
+
 ### Component: `layout-router`
 This section includes all related source files for the `layout-router` component, including nested sub-components (like `header.tsx`) and utilities.
 
@@ -11774,6 +14392,380 @@ export const IntegratingWithStackRouter: Story = {
         )}
       />
     </AppStack.Navigator>
+  ),
+};
+```
+
+
+### Component: `loadingIndicator`
+This section includes all related source files for the `loadingIndicator` component, including nested sub-components (like `header.tsx`) and utilities.
+
+**Source File (`src\lib\components\loadingIndicator\index.tsx`)**
+```tsx
+import { clsx } from "clsx";
+import React from "react";
+
+export interface LoadingIndicatorProps
+  extends React.HTMLAttributes<HTMLDivElement> {
+  variant?:
+    | "linear-straight"
+    | "linear-wavy"
+    | "circular-straight"
+    | "circular-wavy";
+  thickness?: "normal" | "thick";
+}
+
+// Path data for a continuous sine-wave circle (8 waves)
+const WAVY_CIRCLE_PATH =
+  "M24,2.5c2.6,0,3.6,3.7,6.1,3.7c2.5,0,4.8-2.6,6.8-1.1c2,1.5,0.7,5.1,2,7.2c1.3,2.1,5.3,1.9,5.8,4.3c0.5,2.4-2.8,4.6-2.8,7.1c0,2.5,3.3,4.7,2.8,7.1c-0.5,2.4-4.5,2.2-5.8,4.3c-1.3,2.1,0,5.7-2,7.2c-2,1.5-4.3-1.1-6.8-1.1c-2.5,0-3.5,3.7-6.1,3.7s-3.6-3.7-6.1-3.7c-2.5,0-4.8,2.6-6.8,1.1c-2-1.5-0.7-5.1-2-7.2c-1.3-2.1-5.3-1.9-5.8-4.3c-0.5-2.4,2.8-4.6,2.8-7.1c0-2.5-3.3-4.7-2.8-7.1c0.5-2.4,4.5-2.2,5.8-4.3c1.3-2.1,0-5.7,2-7.2c2-1.5,4.3,1.1,6.8,1.1C20.4,6.2,21.4,2.5,24,2.5z";
+
+export const LoadingIndicator = React.forwardRef<
+  HTMLDivElement,
+  LoadingIndicatorProps
+>(
+  (
+    { variant = "linear-straight", thickness = "normal", className, ...props },
+    ref
+  ) => {
+    const strokeWidth = thickness === "thick" ? 4.5 : 3.5;
+    const strokeProgressWidth = thickness === "thick" ? 4.5 : 3.5;
+    const linearHeight = thickness === "thick" ? "h-1.5" : "h-1";
+    const linearProgressHeight = thickness === "thick" ? "h-2.5" : "h-1.5";
+
+    // Shared container styles
+    const baseClasses = clsx("relative text-graphite-foreground", className);
+
+    const renderVariant = () => {
+      switch (variant) {
+        case "linear-straight":
+          return (
+            <div
+              ref={ref}
+              className={clsx(
+                baseClasses,
+                linearHeight,
+                "w-48 rounded-full overflow-hidden bg-graphite-secondary"
+              )}
+              role="progressbar"
+              {...props}
+            >
+              <div className="absolute top-0 h-full w-2/5 bg-graphite-primary rounded-full animate-loading-linear" />
+            </div>
+          );
+
+        case "linear-wavy":
+          return (
+            <div
+              ref={ref}
+              className={baseClasses}
+              role="progressbar"
+              {...props}
+            >
+              <svg
+                width="200"
+                height="12"
+                viewBox="0 0 200 10"
+                className="overflow-visible w-full"
+              >
+                <defs>
+                  <path
+                    id="wavy-path-linear"
+                    d="M 0,5 C 20,0, 20,10, 40,5 S 60,0, 80,5 S 100,10, 120,5 S 140,0, 160,5 S 180,10, 200,5"
+                    fill="none"
+                  />
+                </defs>
+                {/* Background Track */}
+                <use
+                  href="#wavy-path-linear"
+                  className="stroke-graphite-secondary"
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                {/* Moving Indicator */}
+                <use
+                  href="#wavy-path-linear"
+                  className="stroke-graphite-primary animate-loading-wavy "
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="round"
+                  fill="none"
+                  strokeDasharray="40 200"
+                />
+              </svg>
+            </div>
+          );
+
+        case "circular-straight":
+          return (
+            <div
+              ref={ref}
+              className={clsx(
+                baseClasses,
+                "w-10 h-10 animate-loading-circular"
+              )}
+              role="progressbar"
+              {...props}
+            >
+              <svg viewBox="0 0 48 48" className="w-full h-full">
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="20"
+                  fill="none"
+                  className="stroke-graphite-secondary"
+                  strokeWidth={strokeWidth}
+                />
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="20"
+                  fill="none"
+                  className="stroke-graphite-primary"
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="round"
+                  strokeDasharray="100 200"
+                />
+              </svg>
+            </div>
+          );
+
+        case "circular-wavy":
+          return (
+            <div
+              ref={ref}
+              className={clsx(
+                baseClasses,
+                "w-12 h-12  animate-loading-circular-slow"
+              )}
+              role="progressbar"
+              {...props}
+            >
+              <svg
+                // Expanded viewBox (-4 to 56) provides padding to prevent the thick stroke
+                // from being clipped at the edges of the container.
+                viewBox="-4 -4 56 56"
+                className="w-full h-full"
+              >
+                {/* Static Background Track */}
+                <path
+                  d={WAVY_CIRCLE_PATH}
+                  fill="none"
+                  className="stroke-graphite-secondary"
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="round"
+                />
+
+                {/* Crawling Indicator */}
+                <path
+                  d={WAVY_CIRCLE_PATH}
+                  fill="none"
+                  className="stroke-graphite-primary animate-loading-circular-wavy-crawl"
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="round"
+                  // 35px visible dash, 98px gap. Total = 133px (Matches Path Length for smooth loop)
+                  strokeDasharray="35 98"
+                />
+              </svg>
+            </div>
+          );
+
+        default:
+          return null;
+      }
+    };
+
+    return renderVariant();
+  }
+);
+
+LoadingIndicator.displayName = "LoadingIndicator";
+```
+
+
+**Storybook Stories (`LoadingIndicator.stories.tsx`)**
+```tsx
+import type { Meta, StoryObj } from "@storybook/react";
+import { LoadingIndicator } from ".";
+import { Card } from "../card";
+import { Typography } from "../typography";
+
+const meta: Meta<typeof LoadingIndicator> = {
+  title: "Components/Feedback/LoadingIndicator",
+  component: LoadingIndicator,
+  tags: ["autodocs"],
+  parameters: {
+    layout: "centered",
+    docs: {
+      description: {
+        component:
+          "A collection of loading indicators using SVG and CSS animations. They utilize the global theme colors (`graphite-primary` and `graphite-secondary`) by default.",
+      },
+    },
+  },
+  argTypes: {
+    variant: {
+      control: "select",
+      options: [
+        "linear-straight",
+        "linear-wavy",
+        "circular-straight",
+        "circular-wavy",
+      ],
+      description: "The visual style of the loader.",
+    },
+    thickness: {
+      control: "select",
+      options: ["normal", "thick"],
+      description: "The stroke width of the indicator.",
+    },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof LoadingIndicator>;
+
+export const Default: Story = {
+  args: {
+    variant: "linear-straight",
+    thickness: "normal",
+  },
+};
+
+export const AllVariants: Story = {
+  name: "All Variants",
+  render: () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
+      {/* Linear Straight */}
+      <Card className="flex flex-col items-center justify-center gap-4 min-h-[160px]">
+        <Typography variant="small" className="text-muted-foreground">
+          Linear Straight
+        </Typography>
+        <LoadingIndicator variant="linear-straight" />
+      </Card>
+
+      {/* Linear Wavy */}
+      <Card className="flex flex-col items-center justify-center gap-4 min-h-[160px]">
+        <Typography variant="small" className="text-muted-foreground">
+          Linear Wavy
+        </Typography>
+        <LoadingIndicator variant="linear-wavy" />
+      </Card>
+
+      {/* Circular Straight */}
+      <Card className="flex flex-col items-center justify-center gap-4 min-h-[160px]">
+        <Typography variant="small" className="text-muted-foreground">
+          Circular Straight
+        </Typography>
+        <LoadingIndicator variant="circular-straight" />
+      </Card>
+
+      {/* Circular Wavy */}
+      <Card className="flex flex-col items-center justify-center gap-4 min-h-[160px]">
+        <Typography variant="small" className="text-muted-foreground">
+          Circular Wavy
+        </Typography>
+        <LoadingIndicator variant="circular-wavy" />
+      </Card>
+    </div>
+  ),
+};
+
+export const ThicknessComparison: Story = {
+  name: "Thickness: Normal vs Thick",
+  render: () => (
+    <div className="flex flex-col gap-8 w-80">
+      <div className="space-y-2">
+        <Typography variant="small">Normal</Typography>
+        <LoadingIndicator variant="linear-straight" thickness="normal" />
+        <LoadingIndicator variant="circular-straight" thickness="normal" />
+      </div>
+      <div className="space-y-2">
+        <Typography variant="small">Thick</Typography>
+        <LoadingIndicator variant="linear-straight" thickness="thick" />
+        <LoadingIndicator variant="circular-straight" thickness="thick" />
+      </div>
+    </div>
+  ),
+};
+
+export const CustomSizing: Story = {
+  name: "Custom Sizing",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "You can control the size of the indicators using standard Tailwind `w-*` and `h-*` classes via the `className` prop.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex items-end gap-8">
+      <LoadingIndicator
+        variant="circular-straight"
+        className="w-6 h-6" // Small
+      />
+      <LoadingIndicator
+        variant="circular-straight"
+        className="w-12 h-12" // Medium
+      />
+      <LoadingIndicator
+        variant="circular-straight"
+        className="w-24 h-24" // Large
+      />
+    </div>
+  ),
+};
+
+export const CustomColors: Story = {
+  name: "Custom Colors",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The component uses `graphite-primary` and `graphite-secondary` by default. You can override these using Tailwind text/stroke/bg modifiers in `className` or by defining CSS variables in a parent container.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex flex-col gap-6">
+      {/* Override via text colors for SVG strokes */}
+      <div className="space-y-2">
+        <Typography variant="small">Utility Class Overrides (Red)</Typography>
+        {/* 
+            Note: For SVG based variants (wavy/circular), we can target children using arbitrary variants 
+            or simply rely on CSS variables if the component supported 'currentColor'. 
+            
+            Since the component hardcodes 'stroke-graphite-primary', 
+            we can override it using specific selector strategies or by setting the CSS variables inline.
+        */}
+        <div
+          style={
+            {
+              "--color-graphite-primary": "#ef4444", // Red-500
+              "--color-graphite-secondary": "#fee2e2", // Red-100
+            } as React.CSSProperties
+          }
+        >
+          <LoadingIndicator variant="linear-straight" className="mb-4" />
+          <LoadingIndicator variant="circular-straight" />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Typography variant="small">Utility Class Overrides (Blue)</Typography>
+        <div
+          style={
+            {
+              "--color-graphite-primary": "#3b82f6", // Blue-500
+              "--color-graphite-secondary": "#dbeafe", // Blue-100
+            } as React.CSSProperties
+          }
+        >
+          <LoadingIndicator variant="linear-wavy" className="mb-4" />
+          <LoadingIndicator variant="circular-wavy" />
+        </div>
+      </div>
+    </div>
   ),
 };
 ```
@@ -13703,8 +16695,8 @@ const selectTriggerVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
+        primary: "bg-graphite-card hover:bg-graphite-secondary/40",
+        secondary: "bg-graphite-secondary hover:bg-graphite-primary/10",
       },
       shape: {
         full: "rounded-full",
@@ -13718,7 +16710,7 @@ const selectTriggerVariants = cva(
       },
       isErrored: { true: "" },
       disabled: {
-        true: "bg-graphite-secondary opacity-50 cursor-not-allowed",
+        true: "bg-graphite-secondary opacity-50 cursor-not-allowed hover:bg-graphite-secondary",
       },
     },
     compoundVariants: [
@@ -19630,7 +22622,7 @@ import { Skeleton } from "../skeleton";
 type TableDensity = "default" | "compact";
 type TableVariant = "primary" | "secondary";
 
-interface TableContextProps {
+export interface TableContextProps {
   table: TanstackTable<any>;
   density: TableDensity;
   variant: TableVariant;
@@ -19639,7 +22631,7 @@ interface TableContextProps {
 
 const TableContext = createContext<TableContextProps | null>(null);
 
-const useTableContext = () => {
+export const useTableContext = () => {
   const context = useContext(TableContext);
   if (!context) {
     throw new Error("Table components must be used within a <Table.Root>");
@@ -19651,23 +22643,28 @@ const useTableContext = () => {
 
 // 1. Container Variants
 // Added overflow-x-auto to ensure the table is scrollable on small screens by default
-const tableContainerVariants = cva("w-full overflow-hidden overflow-x-auto", {
-  variants: {
-    variant: {
-      primary:
-        "rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-sm",
-      secondary: "rounded-none bg-transparent text-graphite-foreground",
+export const tableContainerVariants = cva(
+  "w-full overflow-hidden overflow-x-auto",
+  {
+    variants: {
+      variant: {
+        primary:
+          "rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-sm",
+        secondary: "rounded-none bg-transparent text-graphite-foreground",
+      },
     },
-  },
-  defaultVariants: {
-    variant: "primary",
-  },
-});
+    defaultVariants: {
+      variant: "primary",
+    },
+  }
+);
 
-const tableVariants = cva("w-full text-sm caption-bottom border-collapse");
+export const tableVariants = cva(
+  "w-full text-sm caption-bottom border-collapse"
+);
 
 // 2. Header Variants
-const thVariants = cva(
+export const thVariants = cva(
   "h-10 px-4 text-left align-middle font-semibold [&:has([role=checkbox])]:pr-0 transition-colors",
   {
     variants: {
@@ -19689,7 +22686,7 @@ const thVariants = cva(
 );
 
 // 3. Row Variants
-const trVariants = cva(
+export const trVariants = cva(
   "transition-colors data-[state=selected]:bg-graphite-secondary/60",
   {
     variants: {
@@ -19707,21 +22704,24 @@ const trVariants = cva(
 );
 
 // 4. Cell Variants
-const tdVariants = cva("p-4 align-middle [&:has([role=checkbox])]:pr-0", {
-  variants: {
-    density: {
-      default: "py-4",
-      compact: "py-2",
+export const tdVariants = cva(
+  "p-4 align-middle [&:has([role=checkbox])]:pr-0",
+  {
+    variants: {
+      density: {
+        default: "py-4",
+        compact: "py-2",
+      },
+      variant: {
+        primary: "",
+        secondary: "",
+      },
     },
-    variant: {
-      primary: "",
-      secondary: "",
-    },
-  },
-});
+  }
+);
 
 // --- Sub-Components ---
-const TableHead = React.forwardRef<
+export const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => {
@@ -19802,7 +22802,7 @@ export interface TableRootProps<TData>
   skeletonCount?: number;
 }
 
-const TableRoot = <TData extends {}>({
+export const TableRoot = <TData extends {}>({
   className,
   table,
   density = "default",
@@ -21463,7 +24463,8 @@ const textAreaWrapperVariants = cva(
     variants: {
       variant: {
         primary: "bg-graphite-card border-2 px-4",
-        secondary: "bg-graphite-secondary border-2 px-4",
+        secondary:
+          "bg-graphite-secondary border-2 px-4 hover:bg-graphite-primary/10",
         minimal: "bg-transparent p-0",
       },
       shape: {
@@ -21479,7 +24480,7 @@ const textAreaWrapperVariants = cva(
       isErrored: { true: "" },
       isFocused: { true: "" },
       disabled: {
-        true: "bg-graphite-secondary opacity-50 cursor-not-allowed",
+        true: "bg-graphite-secondary opacity-50 cursor-not-allowed hover:bg-graphite-secondary",
       },
     },
     compoundVariants: [
@@ -26056,25 +29057,25 @@ export default useShallowRouter;
 
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
-.theme-dark  {
- --color-graphite-primary: hsl(0 0% 98%);            /* #FAFAFA */
-  --color-graphite-primaryForeground: hsl(0 0% 9%);   /* #171717 */
-  --color-graphite-secondary: hsl(0 0% 14%);          /* #242424 */
+.theme-dark {
+  --color-graphite-primary: hsl(0 0% 98%); /* #FAFAFA */
+  --color-graphite-primaryForeground: hsl(0 0% 9%); /* #171717 */
+  --color-graphite-secondary: hsl(0 0% 14%); /* #242424 */
   --color-graphite-secondaryForeground: hsl(0 0% 98%); /* #FAFAFA */
-  --color-graphite-background: hsl(0, 0%, 8%);          /* #121212 */
-  --color-graphite-foreground: hsl(0 0% 98%);         /* #FAFAFA */
-  --color-graphite-card: hsl(0 0% 10%);               /* #1A1A1A */
-  --color-graphite-cardForeground: hsl(0 0% 98%);     /* #FAFAFA */
-  --color-graphite-border: hsl(0 0% 18%);             /* #2E2E2E */
-  --color-graphite-ring: hsl(0 0% 98%);               /* #FAFAFA */
+  --color-graphite-background: hsl(0, 0%, 8%); /* #121212 */
+  --color-graphite-foreground: hsl(0 0% 98%); /* #FAFAFA */
+  --color-graphite-card: hsl(0 0% 10%); /* #1A1A1A */
+  --color-graphite-cardForeground: hsl(0 0% 98%); /* #FAFAFA */
+  --color-graphite-border: hsl(0 0% 18%); /* #2E2E2E */
+  --color-graphite-ring: hsl(0 0% 98%); /* #FAFAFA */
   --color-sidebar: var(--color-graphite-card);
   --color-sidebar-foreground: var(--color-graphite-cardForeground);
   --color-sidebar-border: var(--color-graphite-border);
   --color-sidebar-accent: var(--color-graphite-secondary);
   --color-sidebar-accent-foreground: var(--color-graphite-secondaryForeground);
   --color-sidebar-ring: var(--color-graphite-ring);
-  --color-ripple-dark : rgba(0, 0, 0, 0.1);
-  --color-ripple-light : rgba(255, 255, 255, 0.2);
+  --color-ripple-dark: rgba(0, 0, 0, 0.1);
+  --color-ripple-light: rgba(255, 255, 255, 0.2);
 }
 @theme {
   /*
@@ -26086,15 +29087,15 @@ export default useShallowRouter;
   --font-manrope: manrope, sans-serif;
 
   /* Graphite Color Theme Definitions */
-  --color-graphite-primary: hsl(0 0% 9%);            /* #171717 */
-  --color-graphite-primaryForeground: hsl(0 0% 98%);  /* #FAFAFA */
-  --color-graphite-secondary: hsl(0 0% 94.1%);       /* #F5F5F5 */
+  --color-graphite-primary: hsl(0 0% 9%); /* #171717 */
+  --color-graphite-primaryForeground: hsl(0 0% 98%); /* #FAFAFA */
+  --color-graphite-secondary: hsl(0 0% 94.1%); /* #F5F5F5 */
   --color-graphite-secondaryForeground: hsl(0 0% 9%); /* #171717 */
-  --color-graphite-background: hsl(33 33% 98%);      /* #FDFBFA */
-  --color-graphite-foreground: hsl(0 0% 9%);         /* #171717 */
-  --color-graphite-card: hsl(0 0% 100%);             /* #FFFFFF */
+  --color-graphite-background: hsl(33 33% 98%); /* #FDFBFA */
+  --color-graphite-foreground: hsl(0 0% 9%); /* #171717 */
+  --color-graphite-card: hsl(0 0% 100%); /* #FFFFFF */
   --color-graphite-cardForeground: hsl(0 0% 9%);
-  --color-graphite-border: hsl(0 0% 93%);            /* #EDEDED */
+  --color-graphite-border: hsl(0 0% 93%); /* #EDEDED */
   --color-graphite-ring: hsl(0 0% 9%);
   --color-sidebar: var(--color-graphite-card);
   --color-sidebar-foreground: var(--color-graphite-cardForeground);
@@ -26102,17 +29103,25 @@ export default useShallowRouter;
   --color-sidebar-accent: var(--color-graphite-secondary);
   --color-sidebar-accent-foreground: var(--color-graphite-secondaryForeground);
   --color-sidebar-ring: var(--color-graphite-ring);
-  --color-ripple-light : rgba(0, 0, 0, 0.1);
-  --color-ripple-dark : rgba(255, 255, 255, 0.1);
+  --color-ripple-light: rgba(0, 0, 0, 0.1);
+  --color-ripple-dark: rgba(255, 255, 255, 0.1);
 
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
-
 
   /*
   |--------------------------------------------------------------------------
   | Animations
   |--------------------------------------------------------------------------
   */
+
+  @keyframes loading-wave-translate {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-40px);
+    }
+  }
 
   /* 1. Define the animation keyframes */
   @keyframes menu-enter {
@@ -26162,23 +29171,47 @@ export default useShallowRouter;
   /* --- END SELECT ANIMATIONS --- */
 
   @keyframes submenu-enter-right {
-    from { opacity: 0; transform: scale(0.95) translateX(-0.5rem); }
-    to { opacity: 1; transform: scale(1) translateX(0); }
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateX(-0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+    }
   }
 
   @keyframes submenu-enter-left {
-    from { opacity: 0; transform: scale(0.95) translateX(0.5rem); }
-    to { opacity: 1; transform: scale(1) translateX(0); }
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateX(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+    }
   }
 
   @keyframes submenu-exit-right {
-    from { opacity: 1; transform: scale(1) translateX(0); }
-    to { opacity: 0; transform: scale(0.95) translateX(-0.5rem); }
+    from {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.95) translateX(-0.5rem);
+    }
   }
 
   @keyframes submenu-exit-left {
-    from { opacity: 1; transform: scale(1) translateX(0); }
-    to { opacity: 0; transform: scale(0.95) translateX(0.5rem); }
+    from {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.95) translateX(0.5rem);
+    }
   }
 
   @keyframes check-in {
@@ -26193,134 +29226,182 @@ export default useShallowRouter;
   }
 
   /* --- NEW: Radix Navigation Menu Animations --- */
-@keyframes enter-from-right {
-  from {
-    opacity: 0;
-    transform: translateX(12.5rem);
+  @keyframes enter-from-right {
+    from {
+      opacity: 0;
+      transform: translateX(12.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
 
-@keyframes enter-from-left {
-  from {
-    opacity: 0;
-    transform: translateX(-12.5rem);
+  @keyframes enter-from-left {
+    from {
+      opacity: 0;
+      transform: translateX(-12.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+  /* Add to your theme.css or equivalent */
+  @keyframes caret-blink {
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    50% {
+      opacity: 0;
+    }
   }
-}
-/* Add to your theme.css or equivalent */
-@keyframes caret-blink {
-  0%, 70%, 100% { opacity: 1; }
-  20%, 50% { opacity: 0; }
-}
 
-@keyframes exit-to-right {
-  from {
-    opacity: 1;
-    transform: translateX(0);
+  @keyframes exit-to-right {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(12.5rem);
+    }
   }
-  to {
-    opacity: 0;
-    transform: translateX(12.5rem);
-  }
-}
 
-@keyframes exit-to-left {
-  from {
-    opacity: 1;
-    transform: translateX(0);
+  @keyframes exit-to-left {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-12.5rem);
+    }
   }
-  to {
-    opacity: 0;
-    transform: translateX(-12.5rem);
-  }
-}
 
-@keyframes scale-in-content {
-  from {
-    opacity: 0;
-    transform: rotateX(-15deg) scale(0.9);
+  @keyframes scale-in-content {
+    from {
+      opacity: 0;
+      transform: rotateX(-15deg) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: rotateX(0deg) scale(1);
+    }
   }
-  to {
-    opacity: 1;
-    transform: rotateX(0deg) scale(1);
-  }
-}
 
-@keyframes scale-out-content {
-  from {
-    opacity: 1;
-    transform: rotateX(0deg) scale(1);
+  @keyframes scale-out-content {
+    from {
+      opacity: 1;
+      transform: rotateX(0deg) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: rotateX(-10deg) scale(0.95);
+    }
   }
-  to {
-    opacity: 0;
-    transform: rotateX(-10deg) scale(0.95);
-  }
-}
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
-  to {
-    opacity: 1;
-  }
-}
 
-@keyframes fade-out {
-  from {
-    opacity: 1;
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
   }
-  to {
-    opacity: 0;
-  }
-}
 
-/* --- END: Radix Navigation Menu Animations --- */
+  /* --- END: Radix Navigation Menu Animations --- */
 
-@keyframes accordion-down {
-  from {
-    height: 0;
-    opacity: 0;
+  @keyframes accordion-down {
+    from {
+      height: 0;
+      opacity: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
   }
-  to {
-    height: var(--radix-accordion-content-height);
-    opacity: 1;
-  }
-}
 
-@keyframes accordion-up {
-  from {
-    height: var(--radix-accordion-content-height);
-    opacity: 1;
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+    to {
+      height: 0;
+      opacity: 0;
+    }
   }
-  to {
-    height: 0;
-    opacity: 0;
-  }
-}
 
   /* --- NEW: Animations for Skeleton and Collapsible --- */
   @keyframes pulse {
     50% {
-      opacity: .5;
+      opacity: 0.5;
     }
   }
 
   @keyframes collapsible-down {
-    from { height: 0; }
-    to { height: var(--radix-collapsible-content-height); }
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-collapsible-content-height);
+    }
   }
 
   @keyframes collapsible-up {
-    from { height: var(--radix-collapsible-content-height); }
-    to { height: 0; }
+    from {
+      height: var(--radix-collapsible-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+
+  @keyframes loading-linear-move {
+    0% {
+      left: -40%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+
+  @keyframes circular-wavy-crawl {
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: -133;
+    }
+  }
+
+  @keyframes loading-circular-rotate {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes loading-wavy-move {
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: -240;
+    } /* dash (40) + gap (200) */
   }
 
   /* --- NEW: Animation Utilities --- */
@@ -26328,40 +29409,54 @@ export default useShallowRouter;
   --animate-collapsible-down: collapsible-down 200ms ease-out;
   --animate-collapsible-up: collapsible-up 200ms ease-out;
 
-/* Add these new utilities to your --animate-* list */
---animate-accordion-down: accordion-down 200ms cubic-bezier(0.87, 0, 0.13, 1) forwards;
---animate-accordion-up: accordion-up 200ms cubic-bezier(0.87, 0, 0.13, 1) forwards;
-
-
+  /* Add these new utilities to your --animate-* list */
+  --animate-accordion-down: accordion-down 200ms cubic-bezier(0.87, 0, 0.13, 1)
+    forwards;
+  --animate-accordion-up: accordion-up 200ms cubic-bezier(0.87, 0, 0.13, 1)
+    forwards;
 
   /* 2. Create the `animate-*` utility classes from the keyframes */
   --animate-menu-enter: menu-enter 300ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-menu-exit: menu-exit 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
-  
+
   /* --- SELECT UTILITIES --- */
-  --animate-select-enter: select-enter-clip 200ms cubic-bezier(0.2, 0, 0, 1) forwards;
-  --animate-select-exit: select-exit-clip 1500ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  --animate-select-enter: select-enter-clip 200ms cubic-bezier(0.2, 0, 0, 1)
+    forwards;
+  --animate-select-exit: select-exit-clip 1500ms cubic-bezier(0.4, 0, 1, 1)
+    forwards;
   /* --- END SELECT UTILITIES --- */
-  --animate-submenu-enter-right: submenu-enter-right 250ms cubic-bezier(0.2, 0, 0, 1) forwards;
-  --animate-submenu-enter-left: submenu-enter-left 250ms cubic-bezier(0.2, 0, 0, 1) forwards;
-  --animate-submenu-exit-right: submenu-exit-right 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
-  --animate-submenu-exit-left: submenu-exit-left 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
-  
+  --animate-submenu-enter-right: submenu-enter-right 250ms
+    cubic-bezier(0.2, 0, 0, 1) forwards;
+  --animate-submenu-enter-left: submenu-enter-left 250ms
+    cubic-bezier(0.2, 0, 0, 1) forwards;
+  --animate-submenu-exit-right: submenu-exit-right 150ms
+    cubic-bezier(0.4, 0, 1, 1) forwards;
+  --animate-submenu-exit-left: submenu-exit-left 150ms
+    cubic-bezier(0.4, 0, 1, 1) forwards;
+
   --animate-check-in: check-in 200ms cubic-bezier(0.2, 0, 0, 1) forwards;
-  
 
   --animate-nav-enter-from-right: enter-from-right 250ms ease;
---animate-nav-enter-from-left: enter-from-left 250ms ease;
---animate-nav-exit-to-right: exit-to-right 250ms ease;
---animate-nav-exit-to-left: exit-to-left 250ms ease;
---animate-nav-scale-in: scale-in-content 200ms ease;
---animate-nav-scale-out: scale-out-content 200ms ease;
---animate-nav-fade-in: fade-in 200ms ease;
---animate-nav-fade-out: fade-out 200ms ease;
+  --animate-nav-enter-from-left: enter-from-left 250ms ease;
+  --animate-nav-exit-to-right: exit-to-right 250ms ease;
+  --animate-nav-exit-to-left: exit-to-left 250ms ease;
+  --animate-nav-scale-in: scale-in-content 200ms ease;
+  --animate-nav-scale-out: scale-out-content 200ms ease;
+  --animate-nav-fade-in: fade-in 200ms ease;
+  --animate-nav-fade-out: fade-out 200ms ease;
 
   --animate-caret-blink: caret-blink 1.25s ease-out infinite;
 
+  /* --- LOADING ANIMATION UTILITIES --- */
+  --animate-loading-linear: loading-linear-move 1.5s infinite ease-in-out;
+  /* Wavy indicator animation (the worm) */
+  --animate-loading-wavy: loading-wavy-move 1.6s linear infinite;
+  /* Wavy track animation (the river flow) */
+  --animate-loading-wave-flow: loading-wave-translate 1s linear infinite;
+  --animate-loading-circular-wavy-crawl: circular-wavy-crawl 2s linear infinite;
 
+  --animate-loading-circular: loading-circular-rotate 1.4s linear infinite;
+  --animate-loading-circular-slow: loading-circular-rotate 4s linear infinite;
 }
 
 @layer base {
@@ -26369,7 +29464,6 @@ export default useShallowRouter;
     @apply font-manrope  text-gray-900;
   }
 }
-
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
@@ -26389,47 +29483,45 @@ input[type="number"] {
     overscroll-behavior: contain;
   }
   ::-webkit-scrollbar {
-  display: none; /* Hides the scrollbar visually */
-  width: 0; /* Removes any allocated space for the scrollbar */
-  background: transparent; /* Makes the scrollbar track transparent */
+    display: none; /* Hides the scrollbar visually */
+    width: 0; /* Removes any allocated space for the scrollbar */
+    background: transparent; /* Makes the scrollbar track transparent */
+  }
+}
+[data-vaul-drawer][data-vaul-drawer-direction="bottom"]::after {
+  opacity: var(--vaul-after-display, block);
 }
 
+[data-vaul-drawer][data-vaul-drawer-direction="left"]::after {
+  opacity: var(--vaul-after-display, block);
 }
-  [data-vaul-drawer][data-vaul-drawer-direction="bottom"]::after {
-    opacity: var(--vaul-after-display, block);
-  }
 
-    [data-vaul-drawer][data-vaul-drawer-direction="left"]::after {
-    opacity: var(--vaul-after-display, block);
-  }
+[data-vaul-drawer][data-vaul-drawer-direction="right"]::after {
+  opacity: var(--vaul-after-display, block);
+}
 
-      [data-vaul-drawer][data-vaul-drawer-direction="right"]::after {
-    opacity: var(--vaul-after-display, block);
-  }
+[data-vaul-drawer][data-vaul-drawer-direction="top"]::after {
+  opacity: var(--vaul-after-display, block);
+}
 
-      [data-vaul-drawer][data-vaul-drawer-direction="top"]::after {
-    opacity: var(--vaul-after-display, block);
-  }
-
-  
 /*  */
-  [data-vaul-drawer][data-vaul-drawer-direction=bottom]::after {
-    opacity: var(--vaul-after-display, block);
-  }
+[data-vaul-drawer][data-vaul-drawer-direction="bottom"]::after {
+  opacity: var(--vaul-after-display, block);
+}
 
-    [data-vaul-drawer][data-vaul-drawer-direction=left]::after {
-    opacity: var(--vaul-after-display, block);
-  }
+[data-vaul-drawer][data-vaul-drawer-direction="left"]::after {
+  opacity: var(--vaul-after-display, block);
+}
 
-      [data-vaul-drawer][data-vaul-drawer-direction=right]::after {
-    opacity: var(--vaul-after-display, block);
-  }
+[data-vaul-drawer][data-vaul-drawer-direction="right"]::after {
+  opacity: var(--vaul-after-display, block);
+}
 
-      [data-vaul-drawer][data-vaul-drawer-direction=top]::after {
-    opacity: var(--vaul-after-display, block);
-  }
+[data-vaul-drawer][data-vaul-drawer-direction="top"]::after {
+  opacity: var(--vaul-after-display, block);
+}
 
-  textarea {
+textarea {
   resize: none;
 }
 ```

@@ -4,7 +4,7 @@ import * as RadixDropdownMenu from "@radix-ui/react-dropdown-menu";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { Check, ChevronRight, Circle } from "lucide-react";
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useRef } from "react";
 import useRipple from "use-ripple-hook";
 
 type DropdownMenuShape = "full" | "minimal" | "sharp";
@@ -91,7 +91,21 @@ const DropdownMenuContent = React.forwardRef<
 });
 DropdownMenuContent.displayName = RadixDropdownMenu.Content.displayName;
 
-// --- Enhanced Menu Item (Restored Original Styles) ---
+// --- Common Item Styles with Bloom Effect ---
+// We use data-[highlighted] to trigger the bloom effect on both hover and keyboard focus.
+const itemStyles =
+  "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden z-0 " +
+  "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)] " +
+  "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20 " +
+  "data-[disabled]:pointer-events-none data-[disabled]:opacity-38 " +
+  // Bloom Effect Pseudo-element
+  "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary/60 " +
+  "after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] " +
+  "after:transition-all after:duration-200 after:ease-out " +
+  // Trigger bloom on highlight
+  "data-[highlighted]:after:opacity-100 data-[highlighted]:after:scale-100";
+
+// --- Enhanced Menu Item ---
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.Item>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.Item> & {
@@ -99,8 +113,8 @@ const DropdownMenuItem = React.forwardRef<
   }
 >(({ className, inset, ...props }, ref) => {
   const { shape } = useDropdownMenuContext();
-  const localRef = React.useRef<HTMLDivElement>(null);
-  const [ripple, event] = useRipple({
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
     ref: localRef,
     color: "var(--color-ripple-light)",
     duration: 400,
@@ -112,11 +126,7 @@ const DropdownMenuItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden",
-        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
-        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
+        itemStyles,
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         shape === "sharp" && "!rounded-none",
@@ -128,14 +138,14 @@ const DropdownMenuItem = React.forwardRef<
 });
 DropdownMenuItem.displayName = RadixDropdownMenu.Item.displayName;
 
-// --- Enhanced Checkbox Item (Restored Original Styles) ---
+// --- Enhanced Checkbox Item ---
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.CheckboxItem>
 >(({ className, children, ...props }, ref) => {
   const { shape } = useDropdownMenuContext();
-  const localRef = React.useRef<HTMLDivElement>(null);
-  const [ripple, event] = useRipple({
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
     ref: localRef,
     color: "var(--color-ripple-light)",
     duration: 400,
@@ -147,36 +157,33 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        "relative flex cursor-pointer select-none items-center rounded-lg py-2.5 pl-8 pr-3 text-sm outline-none overflow-hidden",
-        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
-        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
+        itemStyles,
+        "pl-8 pr-3",
         shape === "sharp" && "!rounded-none",
         className
       )}
       {...props}
     >
-      <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+      <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixDropdownMenu.ItemIndicator>
           <Check className="h-4 w-4 animate-check-in" />
         </RadixDropdownMenu.ItemIndicator>
       </span>
-      {children}
+      <span className="relative z-10">{children}</span>
     </RadixDropdownMenu.CheckboxItem>
   );
 });
 DropdownMenuCheckboxItem.displayName =
   RadixDropdownMenu.CheckboxItem.displayName;
 
-// --- Enhanced Radio Item (Restored Original Styles) ---
+// --- Enhanced Radio Item ---
 const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.RadioItem>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.RadioItem>
 >(({ className, children, ...props }, ref) => {
   const { shape } = useDropdownMenuContext();
-  const localRef = React.useRef<HTMLDivElement>(null);
-  const [ripple, event] = useRipple({
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
     ref: localRef,
     color: "var(--color-ripple-light)",
     duration: 400,
@@ -188,28 +195,25 @@ const DropdownMenuRadioItem = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        "relative flex cursor-pointer select-none items-center rounded-lg py-2.5 pl-8 pr-3 text-sm outline-none overflow-hidden",
-        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
-        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
+        itemStyles,
+        "pl-8 pr-3",
         shape === "sharp" && "!rounded-none",
         className
       )}
       {...props}
     >
-      <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+      <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixDropdownMenu.ItemIndicator>
           <Circle className="h-2 w-2 fill-current animate-check-in" />
         </RadixDropdownMenu.ItemIndicator>
       </span>
-      {children}
+      <span className="relative z-10">{children}</span>
     </RadixDropdownMenu.RadioItem>
   );
 });
 DropdownMenuRadioItem.displayName = RadixDropdownMenu.RadioItem.displayName;
 
-// --- Enhanced Sub-Menu Trigger (Restored Original Styles) ---
+// --- Enhanced Sub-Menu Trigger ---
 const DropdownMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.SubTrigger>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.SubTrigger> & {
@@ -217,8 +221,8 @@ const DropdownMenuSubTrigger = React.forwardRef<
   }
 >(({ className, children, inset, ...props }, ref) => {
   const { shape } = useDropdownMenuContext();
-  const localRef = React.useRef<HTMLDivElement>(null);
-  const [ripple, event] = useRipple({
+  const localRef = useRef<HTMLDivElement>(null);
+  const [, event] = useRipple({
     ref: localRef,
     color: "var(--color-ripple-light)",
     duration: 400,
@@ -230,11 +234,8 @@ const DropdownMenuSubTrigger = React.forwardRef<
       ref={localRef}
       onPointerDown={event}
       className={clsx(
-        "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden",
-        "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-        "hover:bg-graphite-secondary/60 focus:bg-graphite-secondary",
-        "data-[state=open]:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary",
-        "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
+        itemStyles,
+        "data-[state=open]:after:opacity-100 data-[state=open]:after:scale-100", // Keep bloom active when sub-menu is open
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         shape === "sharp" && "!rounded-none",
@@ -242,8 +243,10 @@ const DropdownMenuSubTrigger = React.forwardRef<
       )}
       {...props}
     >
-      {children}
-      <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] group-data-[state=open]:rotate-90" />
+      <span className="relative z-10 flex flex-1 items-center gap-2">
+        {children}
+        <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] group-data-[state=open]:rotate-90" />
+      </span>
     </RadixDropdownMenu.SubTrigger>
   );
 });
