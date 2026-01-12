@@ -4,7 +4,7 @@ import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Menu } from "lucide-react";
+import { ChevronLeft, Divide, Menu } from "lucide-react";
 import React, {
   Children,
   createContext,
@@ -16,6 +16,7 @@ import React, {
 import useRipple from "use-ripple-hook";
 import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
+import { Divider } from "../divider";
 
 // --- TYPE DEFINITIONS & CONTEXT ---
 
@@ -414,7 +415,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
         {/* Header (Menu Toggle) */}
         <div
           className={clsx(
-            "flex h-20 w-full shrink-0 items-center justify-end px-4"
+            "flex h-20 w-full shrink-0 items-center justify-end p-4 pr-7"
           )}
         >
           <IconButton
@@ -430,9 +431,9 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
 
         {/* FAB Area - Placed at the top, below header */}
         {fab && <div className="shrink-0">{fab}</div>}
-
         {/* Screens - Centered vertically */}
-        <ul className="flex flex-1 flex-col items-center justify-center gap-2 p-4 pr-6">
+        <ul className="flex flex-1 flex-col items-center justify-start gap-2 p-4 pt-0 pr-6">
+          <Divider variant="dashed" />
           {screens.map((screen) => (
             <TabItem key={screen.name} screen={screen} />
           ))}

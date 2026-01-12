@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
 import React from "react";
+import { MaterialMorph } from "./MaterialMorph";
 
 export interface LoadingIndicatorProps
   extends React.HTMLAttributes<HTMLDivElement> {
@@ -7,8 +8,11 @@ export interface LoadingIndicatorProps
     | "linear-straight"
     | "linear-wavy"
     | "circular-straight"
-    | "circular-wavy";
+    | "circular-wavy"
+    | "material-morph" // Add new variant
+    | "material-morph-background";
   thickness?: "normal" | "thick";
+  isPlaying?: boolean;
 }
 
 // Path data for a continuous sine-wave circle (8 waves)
@@ -20,7 +24,13 @@ export const LoadingIndicator = React.forwardRef<
   LoadingIndicatorProps
 >(
   (
-    { variant = "linear-straight", thickness = "normal", className, ...props },
+    {
+      variant = "linear-straight",
+      thickness = "normal",
+      isPlaying = true,
+      className,
+      ...props
+    },
     ref
   ) => {
     const strokeWidth = thickness === "thick" ? 4.5 : 3.5;
@@ -33,6 +43,37 @@ export const LoadingIndicator = React.forwardRef<
 
     const renderVariant = () => {
       switch (variant) {
+        case "material-morph-background":
+          return (
+            <div
+              ref={ref}
+              className={clsx(baseClasses, "w-12 h-12 text-graphite-primary")}
+              role="progressbar"
+              {...props}
+            >
+              <MaterialMorph
+                isPlaying={isPlaying}
+                background={true}
+                className="w-full h-full"
+              />
+            </div>
+          );
+        case "material-morph":
+          return (
+            <div
+              ref={ref}
+              className={clsx(baseClasses, "w-12 h-12 text-graphite-primary")}
+              role="progressbar"
+              {...props}
+            >
+              <MaterialMorph
+                isPlaying={isPlaying}
+                background={false}
+                className="w-full h-full"
+              />
+            </div>
+          );
+
         case "linear-straight":
           return (
             <div

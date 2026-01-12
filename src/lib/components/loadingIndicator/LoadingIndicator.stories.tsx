@@ -24,6 +24,7 @@ const meta: Meta<typeof LoadingIndicator> = {
         "linear-wavy",
         "circular-straight",
         "circular-wavy",
+        "material-morph",
       ],
       description: "The visual style of the loader.",
     },
@@ -179,6 +180,34 @@ export const CustomColors: Story = {
           <LoadingIndicator variant="circular-wavy" />
         </div>
       </div>
+    </div>
+  ),
+};
+
+export const MaterialDesign3: Story = {
+  name: "Material Morph (MD3)",
+  args: {
+    variant: "material-morph",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Uses the official Material Design 3 shape assets to create an expressive, morphing, and rotating loading indicator.",
+      },
+    },
+  },
+  render: () => (
+    <div className="flex gap-8 items-center">
+      <LoadingIndicator variant="material-morph" className="w-8 h-8" />
+      <LoadingIndicator
+        variant="material-morph"
+        className="w-12 h-12 text-blue-500"
+      />
+      <LoadingIndicator
+        variant="material-morph"
+        className="w-24 h-24 text-purple-600"
+      />
     </div>
   ),
 };

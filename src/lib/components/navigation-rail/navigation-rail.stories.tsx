@@ -65,6 +65,7 @@ const RenderWithLayout = (args: any) => {
         >
           Label
         </NavigationRail.FAB>
+
         <NavigationRail.Screen
           name="home"
           label="Home"

@@ -15,6 +15,7 @@ import { Input } from "../input";
 import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { ElasticScrollArea } from "./index";
+import { LoadingIndicator } from "../loadingIndicator";
 
 const meta: Meta<typeof ElasticScrollArea> = {
   title: "Components/ElasticScrollArea",
@@ -188,12 +189,10 @@ const CustomWeatherIndicator = ({
   const rotation = useTransform(pullProgress, [0, 150], [0, 360]);
   return (
     <motion.div style={{ rotate: rotation }}>
-      <Sun
-        className={
-          isRefreshing
-            ? "h-6 w-6 text-yellow-500 animate-spin"
-            : "h-6 w-6 text-yellow-500"
-        }
+      <LoadingIndicator
+        isPlaying={!!isRefreshing}
+        variant="material-morph"
+        className="w-[35px] h-[35px]"
       />
     </motion.div>
   );
@@ -352,7 +351,12 @@ const RenderWithAppBarAndBottomTabs = ({
             initial={{ y: "100%" }}
             animate={{ y: "0%" }}
             exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 400, damping: 40 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 24,
+              mass: 1,
+            }}
             className="absolute bottom-0 left-0 right-0"
           >
             <BottomTabs.Navigator

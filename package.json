@@ -50,5 +50,9 @@
     "@tailwindcss/oxide",
     "esbuild"
   ],
-  "types": "./dist/index.d.ts"
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@types/flubber": "^0.4.0",
+    "flubber": "^0.4.2"
+  }
 }

@@ -33,6 +33,7 @@ import { Typography } from "../typography";
 import { Sidebar, useSidebar } from "./index";
 import { Button } from "../button";
 import clsx from "clsx";
+import { Divider } from "../divider";
 const meta: Meta<typeof Sidebar> = {
   title: "Components/Navigators/Sidebar",
   component: Sidebar,
@@ -145,7 +146,7 @@ const SidebarContentExample = ({
             Messages
           </Sidebar.Item>
         </Sidebar.Group>
-        <Separator className="my-2" />
+        <Divider variant="dashed" />
         <Sidebar.Group>
           <Sidebar.Label>Management</Sidebar.Label>
           <Sidebar.Item

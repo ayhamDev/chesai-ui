@@ -113,7 +113,10 @@ const toggleItemVariants = cva(itemBaseStyles, {
   variants: {
     variant: {
       default:
-        "bg-transparent text-graphite-foreground hover:bg-graphite-secondary/70 data-[state=on]:bg-graphite-secondary data-[state=on]:text-graphite-primary",
+        "bg-transparent text-graphite-foreground disabled:opacity-70 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring " +
+        "after:absolute after:inset-0 after:z-[1] after:bg-graphite-secondary after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
+        "hover:after:opacity-100 hover:after:scale-100 " +
+        "disabled:after:opacity-0",
       outline:
         "border border-transparent hover:border-graphite-border data-[state=on]:border-graphite-border data-[state=on]:bg-graphite-card shadow-sm",
       primary:
