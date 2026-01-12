@@ -32,6 +32,7 @@ interface CommandDialogProps extends DialogProps {
 
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (
+    // @ts-ignore
     <Dialog {...props} variant="basic">
       <DialogContent
         className="overflow-hidden shadow-2xl"

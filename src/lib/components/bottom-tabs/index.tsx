@@ -1,6 +1,6 @@
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import React, {
@@ -16,13 +16,9 @@ import { Typography } from "../typography";
 // --- TYPE DEFINITIONS & CONTEXT ---
 
 export interface ScreenProps {
-  /** A unique name for the screen. */
   name: string;
-  /** The text label to display. */
   label: React.ReactNode;
-  /** A function that returns the icon element, receiving active state. */
   icon: (props: { isActive: boolean }) => React.ReactNode;
-  /** Overrides the shape of this specific tab item, indicator, and ripple effect. */
   shape?: "full" | "minimal" | "sharp";
 }
 
@@ -31,9 +27,10 @@ interface BottomTabsContextProps {
   onTabPress: (name: string) => void;
   itemLayout: "stacked" | "inline";
   mode: "attached" | "detached";
-  /** The shape inherited from the parent navigator, used as a fallback. */
   navigatorShape: "full" | "minimal" | "sharp";
   indicatorId: string;
+  // --- NEW PROP ---
+  showLabels: boolean;
 }
 
 const BottomTabsContext = createContext<BottomTabsContextProps | null>(null);
@@ -47,7 +44,7 @@ const useBottomTabs = () => {
   return context;
 };
 
-// --- CVA VARIANTS (REFACTORED) ---
+// --- CVA VARIANTS ---
 
 const navigatorVariants = cva("w-full bg-graphite-card", {
   variants: {
@@ -79,14 +76,12 @@ const navigatorVariants = cva("w-full bg-graphite-card", {
   ],
 });
 
-// --- SCREEN COMPONENT (CONFIG ONLY) ---
-
 const BottomTabsScreen: React.FC<ScreenProps> = () => {
   return null;
 };
 BottomTabsScreen.displayName = "BottomTabs.Screen";
 
-// --- TAB ITEM (INTERNAL) ---
+// --- TAB ITEM ---
 
 interface TabItemProps {
   screen: ScreenProps;
@@ -94,11 +89,16 @@ interface TabItemProps {
 
 const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   const { name, label, icon, shape: itemShape } = screen;
-  const { activeTab, onTabPress, itemLayout, indicatorId, navigatorShape } =
-    useBottomTabs();
-  const isActive = activeTab === name;
+  const {
+    activeTab,
+    onTabPress,
+    itemLayout,
+    indicatorId,
+    navigatorShape,
+    showLabels, // --- CONSUME NEW PROP ---
+  } = useBottomTabs();
 
-  // If the item has its own shape, use it; otherwise, fall back to the navigator's shape.
+  const isActive = activeTab === name;
   const finalShape = itemShape || navigatorShape;
 
   const localRef = useRef<HTMLButtonElement>(null);
@@ -108,11 +108,11 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     duration: 400,
   });
 
-  const isHorizontal = itemLayout === "inline" && isActive;
+  const isHorizontal = itemLayout === "inline" && isActive && showLabels;
 
   const shapeToBorderRadius = {
     full: 9999,
-    minimal: 12, // Corresponds to rounded-xl
+    minimal: 12,
     sharp: 0,
   };
 
@@ -137,52 +137,65 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
           isActive
             ? "text-graphite-primary font-semibold"
             : "text-graphite-foreground/70",
-          shapeToClassName[finalShape] // Apply dynamic shape class for ripple
+          shapeToClassName[finalShape],
+          !isActive && [
+            "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out",
+            "hover:after:opacity-100 hover:after:scale-100",
+            "disabled:after:opacity-0",
+          ]
         )}
       >
         {isActive && (
           <motion.div
             layoutId={indicatorId}
             className="absolute inset-0 z-0 bg-graphite-secondary"
-            // Apply dynamic border radius for indicator
             style={{ borderRadius: shapeToBorderRadius[finalShape] }}
-            transition={{ type: "spring", stiffness: 400, damping: 35 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 20, // Lower damping = more "expressive" bounce
+              mass: 1.2, // Higher mass = feels more "physical"
+            }}
           />
         )}
         <div className="relative z-10">{icon({ isActive })}</div>
-        <AnimatePresence>
-          {isHorizontal ? (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{
-                width: "auto",
-                opacity: 1,
-                transition: { delay: 0.1, duration: 0.2 },
-              }}
-              exit={{ width: 0, opacity: 0, transition: { duration: 0.1 } }}
-              className="relative z-10 overflow-hidden whitespace-nowrap"
-            >
-              <Typography variant="small" className="font-semibold">
-                {label}
-              </Typography>
-            </motion.div>
-          ) : (
-            <div className="relative z-10">
-              <Typography
-                variant="small"
-                className={isActive ? "font-semibold" : ""}
+
+        {/* --- CONDITIONALLY RENDER LABELS --- */}
+        {showLabels && (
+          <AnimatePresence>
+            {isHorizontal ? (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{
+                  width: "auto",
+                  opacity: 1,
+                  transition: { delay: 0.1, duration: 0.2 },
+                }}
+                exit={{ width: 0, opacity: 0, transition: { duration: 0.1 } }}
+                className="relative z-10 overflow-hidden whitespace-nowrap"
               >
-                {label}
-              </Typography>
-            </div>
-          )}
-        </AnimatePresence>
+                <Typography variant="small" className="font-semibold">
+                  {label}
+                </Typography>
+              </motion.div>
+            ) : (
+              <div className="relative z-10">
+                <Typography
+                  variant="small"
+                  className={isActive ? "font-semibold" : ""}
+                >
+                  {label}
+                </Typography>
+              </div>
+            )}
+          </AnimatePresence>
+        )}
       </button>
     </li>
   );
 };
 
-// --- NAVIGATOR COMPONENT (REFACTORED) ---
+// --- NAVIGATOR COMPONENT ---
 
 interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   mode?: "attached" | "detached";
@@ -193,6 +206,8 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   activeTab: string;
   onTabPress: (name: string) => void;
   itemLayout?: "stacked" | "inline";
+  // --- NEW PROP ---
+  showLabels?: boolean;
 }
 
 const BottomTabsNavigator: React.FC<NavigatorProps> = ({
@@ -204,6 +219,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   shape = "full",
   bordered = true,
   shadow = "lg",
+  showLabels = true, // Default to true
   className,
   ...props
 }) => {
@@ -228,8 +244,9 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
       mode,
       navigatorShape: shape,
       indicatorId,
+      showLabels, // --- PASS TO CONTEXT ---
     }),
-    [activeTab, onTabPress, itemLayout, mode, shape, indicatorId]
+    [activeTab, onTabPress, itemLayout, mode, shape, indicatorId, showLabels]
   );
 
   return (
@@ -256,8 +273,6 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   );
 };
 BottomTabsNavigator.displayName = "BottomTabs.Navigator";
-
-// --- EXPORT COMPOUND COMPONENT ---
 
 export const BottomTabs = {
   Navigator: BottomTabsNavigator,

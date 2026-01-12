@@ -1,12 +1,12 @@
+"use client";
+
 import { cva, type VariantProps } from "class-variance-authority";
 import clsx from "clsx";
 import React, { useImperativeHandle, useRef } from "react";
 import useRipple from "use-ripple-hook";
 
 const cardVariants = cva(
-  // Base classes:
-  // - z-0: Establishes stacking context for bloom effect
-  // - overflow-hidden: Ensures ripple doesn't spill out (especially for rounded corners)
+  // Base classes
   "transition-all duration-300 ease-out relative z-0 overflow-hidden",
   {
     variants: {
@@ -15,8 +15,7 @@ const cardVariants = cva(
         secondary: "bg-graphite-secondary",
         glass:
           "bg-white/20 backdrop-blur-lg border border-white/10 text-graphite-primaryForeground",
-        // Ghost has no background initially
-        ghost: "bg-transparent border border-transparent",
+        ghost: "bg-transparent",
       },
       shape: {
         full: "rounded-3xl",
@@ -29,20 +28,23 @@ const cardVariants = cva(
         md: "p-6",
         lg: "p-8",
       },
-      isSelected: {
-        true: "border-2 border-graphite-primary",
-        false: "border-2 border-transparent",
+      // --- NEW: Bordered Option ---
+      bordered: {
+        true: "border border-graphite-border",
+        false: "border-none",
       },
-      // Modern Elevation levels (Shadows)
+      isSelected: {
+        true: "border-2! border-graphite-primary!", // Force primary border when selected
+        false: "",
+      },
       elevation: {
         none: "shadow-none",
-        1: "shadow-sm border-graphite-border/50", // Subtle
-        2: "shadow-md", // Default floating
-        3: "shadow-lg", // Lifted
-        4: "shadow-xl", // Modal/Dialog level
-        5: "shadow-2xl", // Max lift
+        1: "shadow-sm",
+        2: "shadow-md",
+        3: "shadow-lg",
+        4: "shadow-xl",
+        5: "shadow-2xl",
       },
-      // Blooming hover effect toggle
       hoverEffect: {
         true: "cursor-pointer",
         false: "",
@@ -50,22 +52,14 @@ const cardVariants = cva(
     },
     compoundVariants: [
       {
-        variant: "glass",
-        isSelected: false,
-        className: "border border-white/10",
-      },
-      // The Blooming Effect Logic
-      {
         variant: "ghost",
         hoverEffect: true,
         className: [
-          // Pseudo-element setup
           "after:absolute after:inset-0 after:z-[-1]",
-          "after:bg-graphite-secondary/50", // The bloom color
+          "after:bg-graphite-secondary/50",
           "after:opacity-0 after:scale-90 after:origin-center",
-          "after:rounded-[inherit]", // Inherit parent's border radius
+          "after:rounded-[inherit]",
           "after:transition-all after:duration-300 after:ease-out",
-          // Hover states
           "hover:after:opacity-100 hover:after:scale-100",
         ],
       },
@@ -75,6 +69,7 @@ const cardVariants = cva(
       shape: "minimal",
       padding: "md",
       isSelected: false,
+      bordered: false, // Default to no border (elevated style)
       elevation: "none",
       hoverEffect: false,
     },
@@ -87,9 +82,9 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   padding?: "none" | "sm" | "md" | "lg";
   elevation?: "none" | 1 | 2 | 3 | 4 | 5;
   isSelected?: boolean;
-  /** Enables the scaling bloom background effect on hover (best used with variant="ghost") */
+  /** Adds a subtle outline to the card. */
+  bordered?: boolean;
   hoverEffect?: boolean;
-  /** Enables the ripple click effect */
   enableRipple?: boolean;
 }
 
@@ -101,6 +96,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       variant,
       padding,
       isSelected,
+      bordered,
       elevation,
       hoverEffect,
       enableRipple,
@@ -112,9 +108,6 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     const localRef = useRef<HTMLDivElement>(null);
     useImperativeHandle(ref, () => localRef.current!);
 
-    // Determine ripple color based on variant
-    // For 'primary' (usually card color) we want a dark ripple (light mode)
-    // For 'glass' (usually dark bg) we want a light ripple
     const rippleColor =
       variant === "glass"
         ? "var(--color-ripple-dark)"
@@ -123,7 +116,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     const [, event] = useRipple({
       ref: localRef,
       color: rippleColor,
-      duration: 600, // Slightly slower ripple for large cards feels better
+      duration: 600,
       disabled: !enableRipple,
     });
 
@@ -136,6 +129,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
             variant,
             padding,
             isSelected,
+            bordered,
             elevation,
             hoverEffect,
           }),

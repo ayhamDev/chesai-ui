@@ -272,3 +272,18 @@ export const DetachedWithShadows: Story = {
     </div>
   ),
 };
+
+export const NoLabels: Story = {
+  name: "7. No Labels",
+  args: {
+    mode: "detached",
+    showLabels: false,
+    shape: "full",
+    shadow: "sm"
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab_no_labels">
+      <RenderWithRouter {...args} />
+    </ShallowRouter>
+  ),
+};

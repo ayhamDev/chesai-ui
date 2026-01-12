@@ -1,10 +1,9 @@
 "use client";
 
-import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion, type HTMLMotionProps } from "framer-motion";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 // Breakpoints matching Tailwind default or project config
 const BREAKPOINTS = {
@@ -59,28 +58,45 @@ export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
     { className, children, columns = 1, gap, align, stagger = false, ...props },
     ref
   ) => {
-    // Media queries for responsive columns
-    const isSm = useMediaQuery(`(min-width: ${BREAKPOINTS.sm}px)`);
-    const isMd = useMediaQuery(`(min-width: ${BREAKPOINTS.md}px)`);
-    const isLg = useMediaQuery(`(min-width: ${BREAKPOINTS.lg}px)`);
-    const isXl = useMediaQuery(`(min-width: ${BREAKPOINTS.xl}px)`);
-    const is2xl = useMediaQuery(`(min-width: ${BREAKPOINTS["2xl"]}px)`);
+    const gridRef = useRef<HTMLDivElement>(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+
+    // --- NEW: Use ResizeObserver to measure the container width ---
+    useEffect(() => {
+      const element = gridRef.current;
+      if (!element) return;
+
+      const observer = new ResizeObserver((entries) => {
+        if (entries[0]) {
+          setContainerWidth(entries[0].contentRect.width);
+        }
+      });
+
+      observer.observe(element);
+      return () => observer.disconnect();
+    }, []);
 
     const currentCols = useMemo(() => {
       if (typeof columns === "number") return columns;
 
-      // Safe cast to object access since we checked number
       const colsObj = columns as ResponsiveObject<number>;
+      const width = containerWidth;
 
       // Order matters: check largest first
-      if (is2xl && colsObj["2xl"] !== undefined) return colsObj["2xl"];
-      if (isXl && colsObj.xl !== undefined) return colsObj.xl;
-      if (isLg && colsObj.lg !== undefined) return colsObj.lg;
-      if (isMd && colsObj.md !== undefined) return colsObj.md;
-      if (isSm && colsObj.sm !== undefined) return colsObj.sm;
+      if (width >= BREAKPOINTS["2xl"] && colsObj["2xl"] !== undefined)
+        return colsObj["2xl"];
+      if (width >= BREAKPOINTS.xl && colsObj.xl !== undefined)
+        return colsObj.xl;
+      if (width >= BREAKPOINTS.lg && colsObj.lg !== undefined)
+        return colsObj.lg;
+      if (width >= BREAKPOINTS.md && colsObj.md !== undefined)
+        return colsObj.md;
+      if (width >= BREAKPOINTS.sm && colsObj.sm !== undefined)
+        return colsObj.sm;
 
       return colsObj.default || 1;
-    }, [columns, isSm, isMd, isLg, isXl, is2xl]);
+    }, [columns, containerWidth]);
+    // --- END NEW ---
 
     const variants = stagger
       ? {
@@ -94,9 +110,20 @@ export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
         }
       : undefined;
 
+    // --- NEW: Combine refs ---
+    const combinedRef = (node: HTMLDivElement) => {
+      // @ts-ignore
+      gridRef.current = node;
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
+    };
+
     return (
       <motion.div
-        ref={ref}
+        ref={combinedRef}
         layout
         variants={variants}
         initial={stagger ? "hidden" : undefined}

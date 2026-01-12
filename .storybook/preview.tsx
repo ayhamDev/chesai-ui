@@ -1,8 +1,7 @@
 import type { Preview } from "@storybook/react-vite";
 import { themes } from "@storybook/theming";
 import "../src/lib/tailwind/theme.css";
-import { Card } from "../src/lib/components/card";
-
+// import { Card } from "../src/lib/components/card";
 const preview: Preview = {
   parameters: {
     darkMode: {
@@ -26,15 +25,6 @@ const preview: Preview = {
       },
     },
   },
-  // decorators: [
-  //   (Story) => {
-  //     return (
-  //       <Card>
-  //         <Story />
-  //       </Card>
-  //     );
-  //   },
-  // ],
 };
 
 export default preview;

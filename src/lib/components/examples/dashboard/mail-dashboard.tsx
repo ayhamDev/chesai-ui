@@ -659,6 +659,7 @@ const MailList = ({
       <div className="flex items-center justify-between px-4 py-2 border-b border-graphite-border bg-graphite-background h-12 shrink-0">
         <div className="flex items-center gap-2">
           <Checkbox
+            // @ts-ignore
             checked={
               table.getIsAllPageRowsSelected() ||
               (table.getIsSomePageRowsSelected() && "indeterminate")

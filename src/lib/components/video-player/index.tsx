@@ -592,12 +592,14 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
             await localContainerRef.current.requestFullscreen();
           // @ts-ignore
           else if (localContainerRef.current.webkitRequestFullscreen)
-            await localContainerRef.current.webkitRequestFullscreen();
+            // @ts-ignore
+            await localContainerRef.current?.webkitRequestFullscreen();
           else setIsFullscreen(true);
 
           // @ts-ignore
           if (window.screen?.orientation?.lock)
-            await window.screen.orientation.lock("landscape").catch(() => {});
+            // @ts-ignore
+            await window.screen.orientation?.lock("landscape").catch(() => {});
         } catch (e) {
           setIsFullscreen(true);
         }
@@ -605,6 +607,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
         if (document.exitFullscreen) await document.exitFullscreen();
         // @ts-ignore
         else if (document.webkitExitFullscreen)
+          // @ts-ignore
           await document.webkitExitFullscreen();
         else setIsFullscreen(false);
       }

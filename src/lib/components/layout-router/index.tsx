@@ -234,10 +234,8 @@ const LayoutRouterScreen = ({
   const { transition } = useContext(LayoutRouterConfigContext);
   const { goBack } = useLayoutRouter();
 
-  // --- NEW: State for scroll lock ---
   const [isAtTop, setIsAtTop] = useState(true);
   const dismissibleContextValue = useMemo(() => ({ setIsAtTop }), []);
-  // --- END NEW ---
 
   const dragAxis = useMotionValue(0);
   const DISMISS_THRESHOLD = 150;
@@ -255,19 +253,30 @@ const LayoutRouterScreen = ({
     }
   };
 
-  const scale = useTransform(dragAxis, [0, 400], [1, 0.85], { clamp: true });
+  // --- CHANGED: Width/Height/Radius transitions instead of Scale ---
+  // When dragging, we reduce width/height from 100% down to ~90%
+  // We also increase border radius to create a "card" effect as it shrinks.
+  const width = useTransform(dragAxis, [0, 600], ["100%", "90%"], {
+    clamp: true,
+  });
+  const height = useTransform(dragAxis, [0, 600], ["100%", "90%"], {
+    clamp: true,
+  });
+  const borderRadius = useTransform(dragAxis, [0, 400], [0, 24], {
+    clamp: true,
+  });
   const backdropOpacity = useTransform(dragAxis, [0, 300], [1, 0], {
     clamp: true,
   });
 
   const containerClasses =
     presentation === "fullscreen"
-      ? "absolute inset-0 z-50 pointer-events-auto"
+      ? "fixed inset-0 z-50 pointer-events-auto flex items-center justify-center" // Changed to fixed flex center
       : "fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-auto";
 
   const contentClasses =
     presentation === "fullscreen"
-      ? "w-full h-full bg-graphite-background"
+      ? "w-full h-full bg-graphite-background overflow-hidden"
       : "w-full max-w-lg rounded-2xl bg-graphite-card shadow-2xl overflow-hidden";
 
   return (
@@ -290,9 +299,9 @@ const LayoutRouterScreen = ({
         <DismissibleContext.Provider value={dismissibleContextValue}>
           <motion.div
             layoutId={`card-${id}`}
+            layout // Enable layout animation for width/height changes
             className={contentClasses}
             transition={transition}
-            // --- MODIFIED: drag prop is now conditional ---
             drag={dismissible && isAtTop ? dismissDirection : false}
             dragConstraints={{
               top: dismissDirection === "y" ? 0 : 0,
@@ -303,8 +312,11 @@ const LayoutRouterScreen = ({
             dragElastic={0.1}
             onDragEnd={dismissible ? handleDragEnd : undefined}
             style={{
-              willChange: "transform, opacity",
-              scale: dismissible ? scale : undefined,
+              willChange:
+                "transform, opacity, width, height, border-radius, left, top", // Updated will-change hints
+              width: dismissible ? width : undefined,
+              height: dismissible ? height : undefined,
+              borderRadius: dismissible ? borderRadius : undefined,
               [dismissDirection]: dragAxis,
             }}
           >

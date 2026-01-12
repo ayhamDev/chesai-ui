@@ -177,3 +177,55 @@ export const Composition: Story = {
     </Card>
   ),
 };
+// ... (existing imports)
+
+export const Outlined: Story = {
+  name: "Outlined Card",
+  args: {
+    variant: "primary",
+    bordered: true,
+    elevation: "none",
+    shape: "minimal",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `bordered` prop adds a subtle 1px border. This is the standard 'Outlined' card style in Material Design 3.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card {...args} className="max-w-md">
+      <Typography variant="h4">Outlined Style</Typography>
+      <Typography variant="p">
+        Best for low-priority content or clean, flat interfaces.
+      </Typography>
+    </Card>
+  ),
+};
+
+export const BorderedVsElevated: Story = {
+  name: "Compare: Border vs Elevation",
+  render: () => (
+    <div className="flex flex-wrap gap-6">
+      {/* Bordered */}
+      <Card bordered variant="primary" className="w-64">
+        <Typography variant="h4">Bordered</Typography>
+        <Typography variant="muted">Flat, 1px stroke</Typography>
+      </Card>
+
+      {/* Elevated */}
+      <Card elevation={2} variant="primary" className="w-64">
+        <Typography variant="h4">Elevated</Typography>
+        <Typography variant="muted">Shadow, no stroke</Typography>
+      </Card>
+
+      {/* Both */}
+      <Card bordered elevation={1} variant="primary" className="w-64">
+        <Typography variant="h4">Both</Typography>
+        <Typography variant="muted">Subtle stroke + Shadow</Typography>
+      </Card>
+    </div>
+  ),
+};

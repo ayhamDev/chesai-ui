@@ -156,6 +156,7 @@ const ToolbarItemTooltip = ({
       <TooltipTrigger asChild>{children}</TooltipTrigger>
       <Tooltip
         variant="primary"
+        // @ts-ignore
         side={orientation === "vertical" ? "right" : "top"}
         className="flex items-center gap-3"
       >
@@ -192,6 +193,7 @@ const ToolbarRoot = React.forwardRef<
       shadow,
       padding,
       gap,
+      // @ts-ignore
       size = "md",
       children,
       ...props

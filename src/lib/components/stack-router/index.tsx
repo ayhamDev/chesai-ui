@@ -227,7 +227,7 @@ const Header = <T extends Record<string, object | undefined>>({
     <AppBar
       {...options.appBarProps}
       routeKey={routeKey}
-      scrollContainerRef={scrollContainerRef}
+      scrollContainerRef={scrollContainerRef || null}
       appBarColor={
         options.headerStyle?.backgroundColor ||
         options.appBarProps?.appBarColor ||

@@ -6,6 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import * as React from "react";
 import useRipple from "use-ripple-hook";
+export * from "./virtual-item-list";
 
 // --- Context for Item Configuration ---
 interface ItemContextProps {

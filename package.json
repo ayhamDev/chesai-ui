@@ -50,11 +50,5 @@
     "@tailwindcss/oxide",
     "esbuild"
   ],
-  "types": "./dist/index.d.ts",
-  "dependencies": {
-    "@radix-ui/react-toolbar": "^1.1.11",
-    "@tanstack/react-virtual": "^3.13.18",
-    "hls.js": "^1.6.15",
-    "react-resizable-panels": "^4.3.3"
-  }
+  "types": "./dist/index.d.ts"
 }
