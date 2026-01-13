@@ -157,7 +157,7 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
     };
 
     return (
-      <div className="w-full flex flex-col gap-2">
+      <div className={clsx("w-full flex flex-col gap-2", wrapperClassName)}>
         {label && (
           <label
             htmlFor={textAreaId}
@@ -174,7 +174,6 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
             isErrored: hasError,
             isFocused,
             disabled,
-            className: wrapperClassName,
           })}
         >
           <textarea

@@ -1,200 +1,685 @@
+"use client";
+
 import type { Meta, StoryObj } from "@storybook/react";
+import { useMediaQuery } from "@uidotdev/usehooks";
 import {
   Archive,
+  ChevronLeft,
+  Forward,
+  History,
   Inbox,
-  Menu,
   MessageSquare,
   MoreVertical,
-  Pencil,
+  Paperclip,
+  Plus,
+  Reply,
   Search,
   Star,
   Trash2,
+  TrendingUp,
   Video,
+  X,
 } from "lucide-react";
-import React from "react";
+import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import clsx from "clsx";
+import { Button } from "../button";
+// Library Imports
 import { Avatar } from "../avatar";
-import { Card } from "../card";
+import { Badge } from "../badge";
+import { BottomTabs } from "../bottom-tabs";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { FAB } from "../fab";
 import { IconButton } from "../icon-button";
+import { Input } from "../input";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "../item";
 import { NavigationRail } from "../navigation-rail";
+import { SearchView } from "../search-view";
+import { createStackNavigator, useNavigation, useRoute } from "../stack-router";
 import { Typography } from "../typography";
 import { Resizable } from "./index";
+import { Dialog, DialogContent } from "../dialog";
+import { TextArea } from "../textarea";
+import { toast } from "../toast";
 
-const meta: Meta<typeof Resizable> = {
-  title: "Components/Layout/Resizable (Split View)",
-  component: Resizable,
-  parameters: {
-    layout: "fullscreen",
-    docs: {
-      description: {
-        component:
-          "A scratch-built resizable pane component. It mimics the Android/Material 3 split-view behavior. Drag the handle to resize the list view.",
-      },
-    },
-  },
-  decorators: [
-    (Story) => (
-      <div className="h-screen w-full bg-[#FDFCFB] text-[#1A1C1E] flex overflow-hidden">
-        <Story />
-      </div>
-    ),
-  ],
+const meta: Meta = {
+  title: "Showcase/Dynamic Split View (Gmail)",
+  parameters: { layout: "fullscreen" },
 };
 
 export default meta;
-type Story = StoryObj<typeof Resizable>;
 
-// --- MOCK CONTENT ---
-
+// --- MOCK DATA ---
 const EMAILS = [
   {
-    id: 1,
-    author: "老强",
-    time: "10 min ago",
-    subject: "豆花鱼",
+    id: "1",
+    author: "Ayham Gm",
+    time: "10:45 AM",
+    subject: "New Design System Components",
     preview:
-      "最近忙吗？昨晚我去了你最爱的那家饭馆，点了他们的特色豆花鱼，吃着吃着就想你了。有空咱们视频？",
-    avatar: "https://i.pravatar.cc/150?u=1",
-    color: "bg-orange-100",
+      "I've updated the Resizable and StackRouter components. Can you take a look at the latest PR?",
+    avatar: "https://i.pravatar.cc/150?u=ayham",
   },
   {
-    id: 2,
-    author: "So Duri",
-    time: "20 min ago",
-    subject: "Dinner Club",
+    id: "2",
+    author: "Google Cloud",
+    time: "9:20 AM",
+    subject: "Your monthly usage report",
     preview:
-      "I think it's time for us to finally try that new noodle shop downtown that doesn't use menus. Anyone else have other suggestions...",
-    avatar: "https://i.pravatar.cc/150?u=2",
-    color: "bg-[#E8DEF8]", // The purple selected color from screenshot
-    selected: true,
+      "Your usage for the month of June has been processed. View your detailed breakdown in the console.",
+    avatar: "https://i.pravatar.cc/150?u=google",
   },
   {
-    id: 3,
-    author: "Lily MacDonald",
-    time: "2 hours ago",
-    subject: "This food show is made for you",
+    id: "3",
+    author: "Framer Team",
+    time: "Yesterday",
+    subject: "Layout Animations are here!",
     preview:
-      "Whatever you do, don't watch the new episode of 'Street Food' while hungry. It features that place we went to in Osaka!",
-    avatar: "https://i.pravatar.cc/150?u=3",
-    color: "bg-yellow-100",
+      "Magic Motion just got an upgrade. Learn how to use the new shared element transitions.",
+    avatar: "https://i.pravatar.cc/150?u=framer",
   },
   {
-    id: 4,
-    author: "Ziad",
-    time: "3 hours ago",
-    subject: "Recipe attached",
-    preview: "Here is the PDF for the focaccia bread. Good luck!",
-    avatar: "https://i.pravatar.cc/150?u=4",
-    color: "bg-green-100",
+    id: "4",
+    author: "Linear",
+    time: "2 days ago",
+    subject: "Cycle 43 Summary",
+    preview:
+      "The cycle has ended. Here is a summary of the issues completed and the velocity of the team.",
+    avatar: "https://i.pravatar.cc/150?u=linear",
+  },
+  {
+    id: "5",
+    author: "Slack",
+    time: "Last week",
+    subject: "New login from Chrome on Windows",
+    preview:
+      "We noticed a new login to your workspace. If this was you, you can ignore this email.",
+    avatar: "https://i.pravatar.cc/150?u=slack",
   },
 ];
 
-const DetailView = () => (
-  <div className="flex flex-col h-full bg-[#FDFCFB] p-6">
-    {/* Header */}
-    <div className="flex items-start justify-between mb-6">
-      <div>
-        <Typography variant="h2" className="text-[28px] font-normal mb-1">
-          Dinner club
-        </Typography>
-        <div className="flex items-center gap-2">
-          <Badge>3 Messages</Badge>
-        </div>
-      </div>
-      <div className="flex items-center gap-1">
-        <IconButton variant="ghost">
-          <Trash2 className="h-5 w-5 text-gray-600" />
-        </IconButton>
-        <IconButton variant="ghost">
-          <MoreVertical className="h-5 w-5 text-gray-600" />
-        </IconButton>
-      </div>
-    </div>
+const HISTORY = [
+  { id: 1, text: "Summer vacation plans", icon: <History size={20} /> },
+  { id: 2, text: "Grocery list", icon: <History size={20} /> },
+  { id: 3, text: "Budget 2025", icon: <History size={20} /> },
+];
 
-    {/* Sender Info */}
-    <div className="flex items-start gap-4 mb-6">
-      <Avatar src="https://i.pravatar.cc/150?u=2" size="md" />
-      <div className="flex-1">
-        <div className="flex justify-between items-center">
-          <Typography variant="h4" className="text-base font-bold">
-            So Duri
-          </Typography>
-          <div className="flex items-center gap-2">
-            <Typography variant="small" className="text-gray-500">
-              20 min ago
-            </Typography>
-            <IconButton variant="ghost" size="sm">
-              <Star className="h-5 w-5 text-gray-400" />
-            </IconButton>
-          </div>
-        </div>
-        <Typography variant="small" className="text-gray-600 mt-1">
-          To me, Ziad, and Lily
-        </Typography>
-      </div>
-    </div>
+const SUGGESTIONS = [
+  { id: 4, text: "Coffee shops nearby", icon: <Search size={20} /> },
+  { id: 5, text: "Weather in Tokyo", icon: <Search size={20} /> },
+  { id: 6, text: "How to center a div", icon: <TrendingUp size={20} /> },
+];
 
-    {/* Body */}
-    <ElasticScrollArea className="flex-1 -mr-4 pr-4">
-      <div className="space-y-6 text-[16px] leading-relaxed text-[#444746]">
-        <p>
-          I think it's time for us to finally try that new noodle shop downtown
-          that doesn't use menus. Anyone else have other suggestions for dinner
-          club this week? I'm so intrigued by this idea of a noodle restaurant
-          where no one gets to order for themselves – could be fun, or terrible,
-          or both :)
-        </p>
-        <div className="rounded-2xl overflow-hidden mt-4">
-          <img
-            src="https://images.unsplash.com/photo-1552611052-33e04de081de?q=80&w=1000&auto=format&fit=crop"
-            alt="Dumplings"
-            className="w-full h-auto object-cover"
-          />
-        </div>
-      </div>
-    </ElasticScrollArea>
+const RESULTS = [
+  {
+    id: 7,
+    text: "Alice Freeman",
+    sub: "alice@example.com",
+    avatar: "https://i.pravatar.cc/150?u=a",
+  },
+  {
+    id: 8,
+    text: "Bob Smith",
+    sub: "bob@example.com",
+    avatar: "https://i.pravatar.cc/150?u=b",
+  },
+  {
+    id: "mail-1",
+    text: "Ayham Gm",
+    sub: "ayham@example.com",
+    avatar: "https://i.pravatar.cc/150?u=ayham",
+  },
+];
+
+// --- MOBILE STACK DEFINITION ---
+type MobileStackParamList = {
+  Home: undefined;
+  Detail: { mailId: string };
+};
+const MobileStack = createStackNavigator<MobileStackParamList>();
+
+// --- SHARED COMPONENTS ---
+
+const EmptyState = () => (
+  <div className="flex h-full flex-col items-center justify-center p-12 text-center opacity-40">
+    <div className="mb-4 rounded-full bg-graphite-secondary p-8">
+      <Inbox size={48} />
+    </div>
+    <Typography variant="h4">Select an item to read</Typography>
+    <Typography variant="p">Nothing is selected yet.</Typography>
   </div>
 );
 
-const Badge = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-    {children}
-  </span>
+const ComposeModal = ({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) => {
+  return (
+    <Dialog variant="fullscreen" open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden flex flex-col h-[90vh] sm:h-[600px] border border-graphite-border">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-graphite-border bg-graphite-secondary/30">
+          <Typography variant="h4" className="text-sm font-semibold">
+            New Message
+          </Typography>
+          <IconButton
+            variant="ghost"
+            size="xs"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="h-4 w-4" />
+          </IconButton>
+        </div>
+
+        {/* Form Body */}
+        <div className="flex-1 flex flex-col p-0 bg-graphite-card">
+          <Input
+            variant="secondary"
+            placeholder="To"
+            rootClassName="border-b border-graphite-border/30 px-4 py-3"
+            inputClassName="text-sm"
+          />
+          <Input
+            variant="secondary"
+            placeholder="Subject"
+            rootClassName="border-b border-graphite-border/30 px-4 py-3"
+            inputClassName="text-sm font-medium"
+          />
+          <TextArea
+            variant="secondary"
+            placeholder="Compose email..."
+            wrapperClassName="flex-1 px-4 py-4"
+            className="h-full resize-none text-sm leading-relaxed"
+            rows={10}
+          />
+        </div>
+
+        {/* Footer */}
+        <div className="p-3 border-t border-graphite-border flex justify-between items-center bg-graphite-card">
+          <div className="flex items-center gap-2">
+            <Button
+              className="rounded-full px-6 h-9"
+              onClick={() => {
+                toast.success("Message sent");
+                onOpenChange(false);
+              }}
+            >
+              Send
+            </Button>
+            <IconButton variant="ghost" size="sm">
+              <Paperclip className="h-4 w-4 text-graphite-foreground/60" />
+            </IconButton>
+          </div>
+          <IconButton variant="ghost" size="sm">
+            <Trash2 className="h-4 w-4 text-graphite-foreground/60" />
+          </IconButton>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const DetailView = ({
+  mail,
+  onClose,
+}: {
+  mail: (typeof EMAILS)[0];
+  onClose: () => void;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, x: 20 }}
+    animate={{ opacity: 1, x: 0 }}
+    exit={{ opacity: 0, x: 10 }}
+    className="flex h-full flex-col bg-graphite-card"
+  >
+    {/* Header Actions */}
+    <div className="flex items-center justify-between border-b border-graphite-border p-4 bg-graphite-card/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="flex gap-1">
+        <IconButton variant="ghost" size="sm" onClick={onClose}>
+          <ChevronLeft />
+        </IconButton>
+        <IconButton variant="ghost" size="sm">
+          <Archive size={18} />
+        </IconButton>
+        <IconButton variant="ghost" size="sm">
+          <Trash2 size={18} />
+        </IconButton>
+        <IconButton variant="ghost" size="sm">
+          <Star size={18} />
+        </IconButton>
+      </div>
+      <IconButton variant="ghost" size="sm">
+        <MoreVertical size={18} />
+      </IconButton>
+    </div>
+
+    <ElasticScrollArea className="flex-1">
+      <div className="p-6 md:p-8">
+        <div className="mb-6 flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+          <Typography
+            variant="h3"
+            className="text-2xl md:text-3xl font-normal leading-tight"
+          >
+            {mail.subject}
+          </Typography>
+          <Badge variant="secondary" shape="minimal" className="w-fit">
+            Inbox
+          </Badge>
+        </div>
+
+        <div className="mb-8 flex items-center gap-4">
+          <Avatar src={mail.avatar} size="lg" />
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <Typography variant="large" className="font-bold">
+                {mail.author}
+              </Typography>
+              <Typography variant="small" className="opacity-50">
+                {mail.time}
+              </Typography>
+            </div>
+            <Typography variant="small" className="opacity-60">
+              to me
+            </Typography>
+          </div>
+        </div>
+
+        <div className="prose dark:prose-invert">
+          <Typography
+            variant="p"
+            className="leading-relaxed text-graphite-foreground/80"
+          >
+            {mail.preview}
+            <br />
+            <br />
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Satius est
+            enim ad posteris et iis, qui nunc sunt, ut cum ea, quae docere
+            vellent, perfectioneretur.
+          </Typography>
+        </div>
+
+        <div className="mt-12 flex gap-3">
+          <Button
+            variant="secondary"
+            shape="full"
+            startIcon={<Reply size={16} />}
+          >
+            Reply
+          </Button>
+          <Button
+            variant="secondary"
+            shape="full"
+            startIcon={<Forward size={16} />}
+          >
+            Forward
+          </Button>
+        </div>
+      </div>
+    </ElasticScrollArea>
+  </motion.div>
 );
 
-export const MailLayout: Story = {
-  name: "Google Mail Replica",
-  render: () => {
-    // 465dp is roughly 465px in web terms for this demo
-    return (
-      <div className="flex w-full h-full">
-        {/* 1. NAVIGATION RAIL (Leftmost) */}
+// --- MOBILE SCREEN COMPONENTS ---
 
+const MobileInboxContent = ({
+  data,
+  onMailClick,
+  searchQuery,
+  setSearchQuery,
+  isOpen,
+  setIsOpen,
+  onCompose,
+}: {
+  data: typeof EMAILS;
+  onMailClick: (id: string) => void;
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  isOpen: boolean;
+  setIsOpen: (o: boolean) => void;
+  onCompose: () => void;
+}) => {
+  const isSearching = searchQuery.length > 0;
+  const filteredResults = RESULTS.filter((r) =>
+    r.text.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="flex flex-col h-full bg-graphite-background">
+      <div className="p-4 pb-2 z-20 sticky top-0 bg-graphite-background/95 backdrop-blur-md">
+        <SearchView
+          value={searchQuery}
+          onChange={setSearchQuery}
+          open={isOpen}
+          onOpenChange={setIsOpen}
+          placeholder="Search in mail"
+          dockedLeadingIcon={<Search className="h-6 w-6" />}
+          dockedTrailingIcon={
+            <Avatar
+              src="https://i.pravatar.cc/150?u=8"
+              size="sm"
+              className="cursor-pointer hover:opacity-80"
+            />
+          }
+        >
+          <div className="py-2">
+            {!isSearching && (
+              <>
+                <div className="px-4 py-3">
+                  <Typography variant="small" className="font-bold opacity-70">
+                    Recent
+                  </Typography>
+                </div>
+                {HISTORY.map((item) => (
+                  <Item
+                    key={item.id}
+                    variant="ghost"
+                    className="cursor-pointer rounded-none px-4 py-3"
+                    onClick={() => setSearchQuery(item.text)}
+                  >
+                    <ItemMedia className="text-graphite-foreground/70 mr-4">
+                      {item.icon}
+                    </ItemMedia>
+                    <ItemContent>
+                      <ItemTitle className="font-normal text-base">
+                        {item.text}
+                      </ItemTitle>
+                    </ItemContent>
+                  </Item>
+                ))}
+              </>
+            )}
+            {isSearching && (
+              <>
+                <div className="px-4 py-3">
+                  <Typography variant="small" className="font-bold opacity-70">
+                    Contacts
+                  </Typography>
+                </div>
+                {filteredResults.map((item) => (
+                  <Item
+                    key={item.id}
+                    variant="ghost"
+                    className="cursor-pointer rounded-none px-4 py-3"
+                  >
+                    <ItemMedia className="mr-4">
+                      <Avatar src={item.avatar} />
+                    </ItemMedia>
+                    <ItemContent>
+                      <ItemTitle className="font-normal text-base">
+                        {item.text}
+                      </ItemTitle>
+                      <Typography variant="muted" className="text-sm">
+                        {item.sub}
+                      </Typography>
+                    </ItemContent>
+                  </Item>
+                ))}
+              </>
+            )}
+          </div>
+        </SearchView>
+      </div>
+
+      <ElasticScrollArea
+        className="flex-1"
+        pullToRefresh
+        onRefresh={async () => {
+          await new Promise((r) => setTimeout(r, 1000));
+        }}
+      >
+        <div className="flex flex-col gap-1 px-2 pb-20">
+          <Typography
+            variant="small"
+            className="px-4 py-2 font-bold opacity-50 uppercase tracking-wider text-xs"
+          >
+            Inbox
+          </Typography>
+          {data.map((mail) => (
+            <Item
+              key={mail.id}
+              variant="ghost"
+              shape="minimal"
+              padding="md"
+              className="cursor-pointer bg-graphite-card border border-graphite-border shadow-sm mb-2"
+              onClick={() => onMailClick(mail.id)}
+            >
+              <ItemMedia className="self-start mt-1">
+                <Avatar src={mail.avatar} size="md" />
+              </ItemMedia>
+              <ItemContent>
+                <div className="flex items-center justify-between">
+                  <ItemTitle className="text-base font-bold">
+                    {mail.author}
+                  </ItemTitle>
+                  <Typography
+                    variant="small"
+                    className="text-xs font-medium opacity-60"
+                  >
+                    {mail.time}
+                  </Typography>
+                </div>
+                <Typography variant="small" className="font-semibold mt-0.5">
+                  {mail.subject}
+                </Typography>
+                <ItemDescription className="line-clamp-2 mt-1 text-sm">
+                  {mail.preview}
+                </ItemDescription>
+              </ItemContent>
+              <ItemActions className="self-start mt-1">
+                <IconButton variant="ghost" size="xs">
+                  <Star className="w-4 h-4 opacity-30" />
+                </IconButton>
+              </ItemActions>
+            </Item>
+          ))}
+        </div>
+      </ElasticScrollArea>
+
+      <div className="absolute bottom-6 right-6 z-30">
+        <FAB icon={<Plus />} size="lg" variant="primary" onClick={onCompose}>
+          Compose
+        </FAB>
+      </div>
+    </div>
+  );
+};
+
+// --- MOBILE HOME SCREEN (TABS HOST) ---
+const MobileHomeScreen = ({
+  data,
+  onMailClick,
+  searchQuery,
+  setSearchQuery,
+  isOpen,
+  setIsOpen,
+}: {
+  data: typeof EMAILS;
+  onMailClick: (id: string) => void;
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  isOpen: boolean;
+  setIsOpen: (o: boolean) => void;
+}) => {
+  const [activeTab, setActiveTab] = useState("inbox");
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+
+  return (
+    <div className="flex flex-col h-full w-full bg-graphite-background">
+      {/* Content Area */}
+      <div className="flex-1 relative overflow-hidden">
+        {activeTab === "inbox" && (
+          <MobileInboxContent
+            data={data}
+            onMailClick={onMailClick}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            isOpen={isOpen}
+            setIsOpen={setIsOpen}
+            onCompose={() => setIsComposeOpen(true)}
+          />
+        )}
+        {activeTab === "chat" && (
+          <div className="flex h-full items-center justify-center p-8 text-center opacity-50">
+            <div>
+              <MessageSquare className="w-12 h-12 mx-auto mb-4" />
+              <Typography variant="h4">Chats</Typography>
+              <Typography variant="small">No messages yet.</Typography>
+            </div>
+          </div>
+        )}
+        {activeTab === "meet" && (
+          <div className="flex h-full items-center justify-center p-8 text-center opacity-50">
+            <div>
+              <Video className="w-12 h-12 mx-auto mb-4" />
+              <Typography variant="h4">Meet</Typography>
+              <Typography variant="small">No upcoming meetings.</Typography>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* --- REPLACED BOTTOM TABS WITH REQUESTED CONFIG --- */}
+      <BottomTabs.Navigator
+        activeTab={activeTab}
+        onTabPress={setActiveTab}
+        shape="sharp"
+        mode="attached"
+        itemLayout="stacked"
+      >
+        <BottomTabs.Screen
+          name="inbox"
+          label="Inbox"
+          shape="full"
+          icon={() => <Inbox size={24} />}
+        />
+        <BottomTabs.Screen
+          name="chat"
+          label="Chat"
+          shape="full"
+          icon={() => <MessageSquare size={24} />}
+        />
+        <BottomTabs.Screen
+          name="meet"
+          shape="full"
+          label="Meet"
+          icon={() => <Video size={24} />}
+        />
+      </BottomTabs.Navigator>
+
+      {/* Shared Compose Modal */}
+      <ComposeModal open={isComposeOpen} onOpenChange={setIsComposeOpen} />
+    </div>
+  );
+};
+
+// 2. Mobile Detail Screen Wrapper
+const MobileDetailScreen = () => {
+  const navigation = useNavigation<MobileStackParamList>();
+  const route = useRoute<MobileStackParamList, "Detail">();
+  const mail = EMAILS.find((m) => m.id === route.params.mailId);
+
+  if (!mail) return null;
+
+  return <DetailView mail={mail} onClose={() => navigation.goBack()} />;
+};
+
+// --- MAIN STORY ---
+
+export const GmailReplica: StoryObj = {
+  render: () => {
+    // --- Shared State ---
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [query, setQuery] = useState("");
+    const [isOpen, setIsOpen] = useState(false);
+    const [isComposeOpen, setIsComposeOpen] = useState(false); // For Desktop
+
+    // Filter logic shared between views
+    const filteredEmails = useMemo(
+      () =>
+        EMAILS.filter(
+          (m) =>
+            m.subject.toLowerCase().includes(query.toLowerCase()) ||
+            m.author.toLowerCase().includes(query.toLowerCase())
+        ),
+      [query]
+    );
+
+    const activeMail = useMemo(
+      () => EMAILS.find((m) => m.id === selectedId),
+      [selectedId]
+    );
+
+    // --- Responsive Check ---
+    const isMobile = useMediaQuery("(max-width: 768px)");
+
+    // --- RENDER: MOBILE VIEW (StackRouter + BottomTabs) ---
+    if (isMobile) {
+      return (
+        <div className="h-screen w-full bg-graphite-background">
+          <MobileStack.Navigator
+            initialRouteName="Home"
+            screenOptions={{
+              headerShown: false,
+              animation: "slide-from-bottom", // Native-like slide transition
+            }}
+          >
+            <MobileStack.Screen name="Home">
+              {(props) => (
+                <MobileHomeScreen
+                  data={filteredEmails}
+                  onMailClick={(id) =>
+                    props.navigation.push("Detail", { mailId: id })
+                  }
+                  searchQuery={query}
+                  setSearchQuery={setQuery}
+                  isOpen={isOpen}
+                  setIsOpen={setIsOpen}
+                />
+              )}
+            </MobileStack.Screen>
+            <MobileStack.Screen name="Detail" component={MobileDetailScreen} />
+          </MobileStack.Navigator>
+        </div>
+      );
+    }
+
+    // --- RENDER: DESKTOP VIEW (Resizable + NavRail) ---
+    const isSearching = query.length > 0;
+    const filteredResults = RESULTS.filter((r) =>
+      r.text.toLowerCase().includes(query.toLowerCase())
+    );
+
+    return (
+      <div className="flex h-screen w-full bg-graphite-background">
+        {/* 1. LEFT NAV RAIL */}
         <NavigationRail.Navigator
           activeTab="inbox"
           onTabPress={() => {}}
           variant="ghost"
           shape="full"
-          className="w-full"
+          width="4.5rem"
+          expandedWidth="14rem"
           bordered={false}
         >
+          <NavigationRail.FAB
+            icon={<Plus />}
+            label="Compose"
+            onClick={() => setIsComposeOpen(true)}
+          />
           <NavigationRail.Screen
             name="inbox"
             label="Inbox"
-            icon={({ isActive }) => (
-              <div className="relative">
-                <Inbox />
-                <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] px-1 rounded-full font-bold">
-                  4
-                </span>
-              </div>
-            )}
-          />
-          <NavigationRail.Screen
-            name="docs"
-            label="Docs"
-            icon={() => <Archive />}
+            icon={() => <Inbox />}
           />
           <NavigationRail.Screen
             name="chat"
@@ -208,92 +693,183 @@ export const MailLayout: Story = {
           />
         </NavigationRail.Navigator>
 
+        {/* 2. MAIN RESIZABLE AREA */}
         <Resizable
-          className="flex-1  bg-[#FDFCFB]"
-          defaultWidth={465} // Matches the 465dp spec
-          minWidth={320}
-          maxWidth={600}
+          className="flex-1"
+          defaultWidth={420}
+          minWidth={350}
+          maxWidth={700}
         >
-          {/* 2a. LEFT PANE (Message List) */}
-          <Resizable.PaneLeft className="bg-[#F6F8FC] flex flex-col border-r border-transparent">
-            {/* Search Bar */}
-            <div className="p-4 pb-2">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search replies"
-                  className="w-full bg-[#ECEFF1] rounded-full py-3 pl-12 pr-10 outline-none focus:ring-2 focus:ring-blue-200 transition-all text-sm"
-                />
-                <Avatar
-                  src="https://github.com/shadcn.png"
-                  size="xs"
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                />
-              </div>
+          {/* LEFT PANE (LIST) */}
+          <Resizable.PaneLeft className="flex flex-col bg-graphite-background/50">
+            <div className="p-4">
+              <SearchView
+                value={query}
+                onChange={setQuery}
+                open={isOpen}
+                onOpenChange={setIsOpen}
+                placeholder="Search mail"
+                dockedLeadingIcon={<Search className="h-6 w-6" />}
+                dockedTrailingIcon={
+                  <Avatar
+                    src="https://i.pravatar.cc/150?u=8"
+                    size="sm"
+                    className="cursor-pointer hover:opacity-80"
+                  />
+                }
+              >
+                <div className="py-2">
+                  {!isSearching && (
+                    <>
+                      <div className="px-4 py-3">
+                        <Typography
+                          variant="small"
+                          className="font-bold opacity-70"
+                        >
+                          Recent
+                        </Typography>
+                      </div>
+                      {HISTORY.map((item) => (
+                        <Item
+                          key={item.id}
+                          variant="ghost"
+                          className="cursor-pointer rounded-none px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5"
+                          onClick={() => setQuery(item.text)}
+                        >
+                          <ItemMedia className="text-graphite-foreground/70 mr-4">
+                            {item.icon}
+                          </ItemMedia>
+                          <ItemContent>
+                            <ItemTitle className="font-normal text-base">
+                              {item.text}
+                            </ItemTitle>
+                          </ItemContent>
+                          <ItemActions>
+                            <div className="-rotate-45 opacity-40">
+                              <MoreVertical size={18} />
+                            </div>
+                          </ItemActions>
+                        </Item>
+                      ))}
+                    </>
+                  )}
+                  {isSearching && (
+                    <>
+                      <div className="px-4 py-3">
+                        <Typography
+                          variant="small"
+                          className="font-bold opacity-70"
+                        >
+                          Contacts
+                        </Typography>
+                      </div>
+                      {filteredResults.map((item) => (
+                        <Item
+                          key={item.id}
+                          variant="ghost"
+                          className="cursor-pointer rounded-none px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5"
+                        >
+                          <ItemMedia className="mr-4">
+                            <Avatar src={item.avatar} />
+                          </ItemMedia>
+                          <ItemContent>
+                            <ItemTitle className="font-normal text-base">
+                              {item.text}
+                            </ItemTitle>
+                            <Typography variant="muted" className="text-sm">
+                              {item.sub}
+                            </Typography>
+                          </ItemContent>
+                        </Item>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </SearchView>
             </div>
 
-            {/* Email List */}
-            <ElasticScrollArea className="flex-row flex-1 p-3">
-              <div className="flex flex-col gap-4">
-                {EMAILS.map((email) => (
-                  <Card
-                    key={email.id}
-                    padding="md"
+            <ElasticScrollArea className="flex-1 px-2">
+              <div className="flex flex-col gap-1 py-2">
+                <Typography
+                  variant="small"
+                  className="px-4 py-2 font-bold opacity-50 uppercase tracking-wider text-xs"
+                >
+                  Today
+                </Typography>
+                {filteredEmails.map((mail) => (
+                  <Item
+                    key={mail.id}
+                    variant="ghost"
                     shape="minimal"
-                    elevation={email.selected ? 1 : "none"}
-                    className={`cursor-pointer transition-all hover:shadow-sm border-none ${
-                      email.selected ? "bg-[#E8DEF8]" : "bg-white"
-                    } rounded-[20px]`} // Rounded corners like Material 3
+                    padding="sm"
+                    className={clsx(
+                      "cursor-pointer transition-all",
+                      selectedId === mail.id
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100"
+                        : "hover:bg-graphite-secondary/40"
+                    )}
+                    onClick={() => setSelectedId(mail.id)}
                   >
-                    <div className="flex justify-between items-start mb-1">
-                      <div className="flex items-center gap-3">
-                        <Avatar src={email.avatar} size="sm" />
-                        <div>
-                          <Typography
-                            variant="small"
-                            className="font-bold text-[#1A1C1E]"
-                          >
-                            {email.author}
-                          </Typography>
-                          <Typography
-                            variant="muted"
-                            className="text-xs !mt-0 font-medium"
-                          >
-                            {email.time}
-                          </Typography>
-                        </div>
+                    <ItemMedia>
+                      <Avatar src={mail.avatar} size="md" />
+                    </ItemMedia>
+                    <ItemContent>
+                      <div className="flex items-center justify-between">
+                        <ItemTitle className="text-sm font-bold">
+                          {mail.author}
+                        </ItemTitle>
+                        <Typography
+                          variant="small"
+                          className="text-[10px] opacity-50"
+                        >
+                          {mail.time}
+                        </Typography>
                       </div>
-                      <Star
-                        className={`h-5 w-5 ${
-                          email.selected
-                            ? "fill-gray-700 text-gray-700"
-                            : "text-gray-400"
-                        }`}
-                      />
-                    </div>
-                    <Typography
-                      variant="h4"
-                      className="text-base mt-2 mb-1 font-medium"
-                    >
-                      {email.subject}
-                    </Typography>
-                    <p className="text-sm text-[#444746] line-clamp-2 leading-snug">
-                      {email.preview}
-                    </p>
-                  </Card>
+                      <Typography
+                        variant="small"
+                        className="font-semibold line-clamp-1"
+                      >
+                        {mail.subject}
+                      </Typography>
+                      <ItemDescription className="line-clamp-2">
+                        {mail.preview}
+                      </ItemDescription>
+                    </ItemContent>
+                  </Item>
                 ))}
               </div>
             </ElasticScrollArea>
           </Resizable.PaneLeft>
 
-          {/* 2b. HANDLE */}
+          {/* HANDLE */}
           <Resizable.Handle variant="pill" />
-          {/* 2c. RIGHT PANE (Detail View) */}
-          <Resizable.PaneRight>
-            <DetailView />
+
+          {/* RIGHT PANE (DETAIL) */}
+          <Resizable.PaneRight className="bg-graphite-card">
+            <AnimatePresence mode="wait">
+              {activeMail ? (
+                <DetailView
+                  key={activeMail.id}
+                  mail={activeMail}
+                  onClose={() => setSelectedId(null)}
+                />
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="h-full"
+                >
+                  <EmptyState />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Resizable.PaneRight>
         </Resizable>
+
+        {/* Desktop Compose Modal */}
+        <ComposeModal open={isComposeOpen} onOpenChange={setIsComposeOpen} />
       </div>
     );
   },

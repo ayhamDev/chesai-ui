@@ -313,6 +313,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   width = "6rem",
   expandedWidth = "auto",
   className,
+  style,
   ...props
 }) => {
   const indicatorId = React.useId();
@@ -409,6 +410,11 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
           stiffness: 400,
           damping: 24,
           mass: 0.9,
+        }}
+        style={{
+          display: "block",
+          minWidth: "96px",
+          ...style,
         }}
         {...props}
       >
