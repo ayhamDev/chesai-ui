@@ -93,18 +93,20 @@ export const SidebarProvider = ({
 
 // --- Sidebar Root ---
 const sidebarVariants = cva(
-  "group/sidebar flex flex-col overflow-hidden transition-all duration-300 ease-ios text-graphite-foreground",
+  "group/sidebar flex flex-col overflow-hidden transition-all duration-300 ease-ios text-on-surface",
   {
     variants: {
       layout: {
         sidebar: "",
         floating:
-          "my-4 border border-graphite-border shadow-lg h-[calc(100%-2rem)]",
+          "my-4 border border-outline-variant shadow-lg h-[calc(100%-2rem)]",
         inset: "bg-transparent",
       },
       variant: {
-        primary: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
+        // Primary: Subtle Surface Container (Standard)
+        primary: "bg-surface-container-low",
+        // Secondary: Higher Contrast Surface
+        secondary: "bg-surface-container-highest",
         ghost: "bg-transparent",
       },
       side: {
@@ -122,11 +124,10 @@ const sidebarVariants = cva(
       },
     },
     compoundVariants: [
-      // ... (No changes to compound variants logic from previous snippet) ...
       {
         layout: "sidebar",
         side: "left",
-        className: "border-e border-graphite-border",
+        className: "border-e border-outline-variant",
       },
       {
         layout: "sidebar",
@@ -149,7 +150,7 @@ const sidebarVariants = cva(
       {
         layout: "sidebar",
         side: "right",
-        className: "border-s border-graphite-border",
+        className: "border-s border-outline-variant",
       },
       {
         layout: "sidebar",
@@ -177,12 +178,12 @@ const sidebarVariants = cva(
       {
         overlay: true,
         side: "left",
-        className: "left-0 border-e border-graphite-border",
+        className: "left-0 border-e border-outline-variant",
       },
       {
         overlay: true,
         side: "right",
-        className: "right-0 border-s border-graphite-border",
+        className: "right-0 border-s border-outline-variant",
       },
     ],
     defaultVariants: {
@@ -256,8 +257,8 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
               className={clsx(
                 "flex h-full flex-col",
                 variant === "secondary"
-                  ? "bg-graphite-secondary"
-                  : "bg-graphite-card"
+                  ? "bg-surface-container-high"
+                  : "bg-surface-container-low"
               )}
             >
               <SidebarContext.Provider
@@ -446,13 +447,13 @@ SidebarFooter.displayName = "Sidebar.Footer";
 
 // --- Item Variants ---
 const sidebarItemVariants = cva(
-  "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-graphite-ring overflow-hidden z-0",
+  "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 overflow-hidden z-0",
   {
     variants: {
       isActive: {
         true: "",
         false:
-          "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out hover:after:opacity-100 hover:after:scale-100",
+          "after:absolute after:inset-0 after:z-[-1] after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out hover:after:opacity-100 hover:after:scale-100",
       },
       parentVariant: {
         primary: "",
@@ -471,39 +472,46 @@ const sidebarItemVariants = cva(
       },
     },
     compoundVariants: [
+      // Primary Context (Standard)
       {
         parentVariant: "primary",
         isActive: true,
         className:
-          "bg-graphite-secondary text-graphite-foreground font-semibold",
+          "bg-secondary-container text-on-secondary-container font-bold",
       },
       {
         parentVariant: "primary",
         isActive: false,
-        className: "text-graphite-foreground/70 hover:text-graphite-foreground",
+        className:
+          "text-on-surface-variant hover:text-on-surface after:bg-secondary-container/50",
       },
+
+      // Secondary Context (High Contrast / Distinct)
       {
         parentVariant: "secondary",
         isActive: true,
-        className:
-          "bg-graphite-card shadow-sm text-graphite-foreground font-semibold",
+        // Uses Primary color instead of Secondary for distinction against the 'Highest' container
+        className: "bg-primary text-on-primary font-bold shadow-sm",
       },
       {
         parentVariant: "secondary",
         isActive: false,
         className:
-          "text-graphite-foreground/70 hover:text-graphite-foreground hover:bg-graphite-card/60", // Keep simple hover for secondary to distinguish from card bg
+          "text-on-surface-variant hover:text-on-surface after:bg-surface-container-highest", // Hover subtly lighter/darker
       },
+
+      // Ghost Context
       {
         parentVariant: "ghost",
         isActive: true,
         className:
-          "bg-graphite-secondary text-graphite-foreground font-semibold",
+          "bg-secondary-container text-on-secondary-container font-bold",
       },
       {
         parentVariant: "ghost",
         isActive: false,
-        className: "text-graphite-foreground/70 hover:text-graphite-foreground",
+        className:
+          "text-on-surface-variant hover:text-on-surface after:bg-secondary-container/30",
       },
     ],
     defaultVariants: {
@@ -538,10 +546,17 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
     const localRef = useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current!);
 
+    // Dynamic Ripple Color based on Variant
+    const rippleColor =
+      contextVariant === "secondary" && isActive
+        ? "var(--color-on-primary)" // White ripple if active item is Primary color
+        : "var(--color-on-surface)"; // Standard dark ripple
+
     const [, event] = useRipple({
       ref: localRef,
-      color: "var(--color-ripple-light)",
+      color: rippleColor,
       duration: 300,
+      opacity: 0.1,
     });
 
     const [isPressed, setIsPressed] = useState(false);
@@ -574,7 +589,8 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
             transition={{ type: "spring", stiffness: 400, damping: 15 }}
             className={clsx(
               "flex shrink-0 items-center justify-center transition-colors duration-300 relative z-10",
-              isActive ? "text-graphite-primary" : "opacity-80"
+              // Icon color inherits from parent text color set by compound variants
+              "opacity-100"
             )}
           >
             {React.isValidElement(icon)
@@ -647,7 +663,7 @@ const SidebarTrigger = React.forwardRef<
       variant="ghost"
       size="sm"
       onClick={toggleSidebar}
-      className={clsx("text-graphite-foreground/60", className)}
+      className={clsx("text-on-surface-variant", className)}
       aria-label={
         isMobile
           ? "Open Menu"
@@ -693,7 +709,7 @@ const SidebarLabel = ({
       transition={{ duration: 0.12 }}
       exit={{ opacity: 0 }}
       className={clsx(
-        "px-3 py-1 text-xs font-semibold uppercase tracking-wider text-graphite-foreground/50 whitespace-nowrap overflow-hidden",
+        "px-3 py-1 text-xs font-semibold uppercase tracking-wider text-on-surface-variant whitespace-nowrap overflow-hidden",
         className
       )}
       {...props}

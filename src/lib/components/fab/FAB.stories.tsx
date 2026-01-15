@@ -20,7 +20,7 @@ const meta: Meta<typeof FAB> = {
     // --- NEW: Added variant control ---
     variant: {
       control: "select",
-      options: ["primary", "secondary"],
+      options: ["primary", "secondary", "tertiary"],
     },
     size: {
       control: "select",
@@ -58,7 +58,7 @@ export const AllVariants: Story = {
   render: (args) => (
     <div className="flex flex-col items-start space-y-6">
       <p className="font-semibold">Primary</p>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 ">
         <FAB {...args} variant="primary" isExtended={false} />
         <FAB {...args} variant="primary" isExtended={true} />
       </div>

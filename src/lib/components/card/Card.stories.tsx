@@ -10,7 +10,7 @@ const meta: Meta<typeof Card> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "glass", "ghost"],
+      options: ["primary", "secondary", "glass", "ghost", "surface"],
     },
     shape: {
       control: "select",

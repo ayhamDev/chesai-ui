@@ -25,6 +25,7 @@ const meta: Meta<typeof LoadingIndicator> = {
         "circular-straight",
         "circular-wavy",
         "material-morph",
+        "material-morph-background",
       ],
       description: "The visual style of the loader.",
     },
@@ -187,7 +188,8 @@ export const CustomColors: Story = {
 export const MaterialDesign3: Story = {
   name: "Material Morph (MD3)",
   args: {
-    variant: "material-morph",
+    variant: "material-morph-background",
+    thickness: "normal",
   },
   parameters: {
     docs: {
@@ -197,15 +199,12 @@ export const MaterialDesign3: Story = {
       },
     },
   },
-  render: () => (
+  render: ({ variant }) => (
     <div className="flex gap-8 items-center">
-      <LoadingIndicator variant="material-morph" className="w-8 h-8" />
+      <LoadingIndicator variant={variant} className="w-8 h-8" />
+      <LoadingIndicator variant={variant} className="w-12 h-12 text-blue-500" />
       <LoadingIndicator
-        variant="material-morph"
-        className="w-12 h-12 text-blue-500"
-      />
-      <LoadingIndicator
-        variant="material-morph"
+        variant={variant}
         className="w-24 h-24 text-purple-600"
       />
     </div>

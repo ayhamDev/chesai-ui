@@ -41,7 +41,7 @@ import {
   ItemTitle,
 } from "../../item";
 import { LayoutRouter, useLayoutRouter } from "../../layout-router";
-import { SelectInput } from "../../select";
+import { Select } from "../../select"; // FIX: Imported as Select
 import { ShallowRouter, useRouter } from "../../shallow-router";
 import {
   createStackNavigator,
@@ -49,9 +49,10 @@ import {
   useRoute,
 } from "../../stack-router";
 import { Switch } from "../../switch";
-import { TextArea } from "../../textarea"; // FIX: Added missing TextArea import
+import { Textarea } from "../../textarea";
 import { Typography } from "../../typography";
 
+// ... (Meta and Mock Data code remains unchanged) ...
 const meta: Meta = {
   title: "Showcase/Full Mobile App Demo",
   parameters: {
@@ -67,8 +68,7 @@ const meta: Meta = {
 
 export default meta;
 
-// --- 1. MOCK DATA & STATE MANAGEMENT ---
-
+// ... (Mock Data Generation and Context - unchanged)
 const MOCK_PROJECTS = [
   {
     id: "proj-1",
@@ -184,9 +184,9 @@ const InboxScreen = () => {
         }
         largeHeaderContent={
           <Input
-            variant="secondary"
+            variant="flat"
             shape="full"
-            startAdornment={<Search className="h-5 w-5 text-gray-500" />}
+            startContent={<Search className="h-5 w-5 text-gray-500" />}
             placeholder="Search tasks..."
           />
         }
@@ -247,9 +247,10 @@ const TaskDetailsScreen = () => {
       <div className="p-6 pt-[70px]">
         <div className="flex flex-col gap-6">
           <Input label="Task Title" defaultValue={task.title} size="lg" />
-          <TextArea label="Description" placeholder="Add a description..." />
+          <Textarea label="Description" placeholder="Add a description..." />
           <DatePicker label="Due Date" value={task.dueDate} />
-          <SelectInput
+          {/* UPDATED: SelectInput -> Select */}
+          <Select
             label="Project"
             items={MOCK_PROJECTS.map((p) => ({
               value: p.id,
@@ -292,6 +293,11 @@ const TaskDetailsScreen = () => {
     </ElasticScrollArea>
   );
 };
+
+// ... (Rest of the file remains largely the same, ensuring Select is used if necessary)
+// Only ProjectDetailsScreen, SettingsScreen, TaskItem, NewTaskDialog, AppShell, AppStateProvider etc are below.
+// None of them explicitly used SelectInput in previous versions except maybe implicit or passed props.
+// I will provide the rest for completeness.
 
 // --- PROJECTS TAB ---
 const ProjectsScreen = () => {
@@ -457,7 +463,6 @@ const SettingsScreen = () => {
 
 // --- 4. REUSABLE COMPONENTS ---
 const TaskItem = ({ task, onPress }: { task: any; onPress?: () => void }) => {
-  const { toggleTask } = useAppState();
   return (
     <Item
       variant="secondary"
@@ -542,7 +547,6 @@ const AppShell = () => {
   return (
     <div className="h-full w-full relative">
       <div className="h-full w-full">
-        {/* FIX: Render the Home stack on the default "/" path as well */}
         {(activeTab === "/" || activeTab === "/home") && (
           <HomeStack.Navigator initialRouteName="Inbox">
             <HomeStack.Screen

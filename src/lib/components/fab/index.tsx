@@ -10,14 +10,16 @@ import React from "react";
 import useRipple from "use-ripple-hook";
 
 const fabVariants = cva(
-  // Base styles: Removed specific color classes
-  "font-semibold focus:outline-none flex transition-shadow duration-200  items-center justify-start relative overflow-hidden group shadow-lg hover:shadow-xl focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+  "font-semibold focus:outline-none flex transition-shadow duration-200  items-center justify-start relative overflow-hidden group shadow-lg hover:shadow-xl focus:ring-2 focus:ring-offset-2 focus:ring-primary",
   {
     variants: {
-      // --- NEW: Variant property for color schemes ---
       variant: {
-        primary: "bg-graphite-primary text-graphite-primaryForeground",
-        secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
+        primary:
+          "bg-primary-container text-on-primary-container hover:bg-primary-container/90",
+        // Switched to solid Secondary color to ensure distinct visual difference from Primary Container
+        secondary: "bg-secondary text-on-secondary hover:bg-secondary/90",
+        tertiary:
+          "bg-tertiary-container text-on-tertiary-container hover:bg-tertiary-container/90",
       },
       size: {
         sm: "h-10",
@@ -31,7 +33,7 @@ const fabVariants = cva(
       },
     },
     defaultVariants: {
-      variant: "primary", // Default to the primary style
+      variant: "primary",
       size: "md",
       shape: "full",
     },
@@ -40,7 +42,7 @@ const fabVariants = cva(
 
 export interface FABProps
   extends Omit<HTMLMotionProps<"button">, "children" | "ref"> {
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "tertiary";
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
   icon: React.ReactNode;
@@ -59,7 +61,7 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
   (
     {
       className,
-      variant, // Destructure the new variant prop
+      variant = "primary",
       size,
       shape,
       children,
@@ -75,9 +77,9 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
     const rippleRef = localRef as React.RefObject<HTMLElement>;
 
-    // Adjust ripple color based on variant
+    // Solid secondary needs white ripple (dark), others (containers) need dark ripple (light)
     const rippleColor =
-      variant === "primary"
+      variant === "secondary"
         ? "var(--color-ripple-dark)"
         : "var(--color-ripple-light)";
 
@@ -101,7 +103,7 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
         }}
         transition={transition}
         className={clsx(
-          fabVariants({ variant, size, shape, className }), // Pass variant to CVA
+          fabVariants({ variant, size, shape, className }),
           !isExtended && "justify-center"
         )}
         style={{

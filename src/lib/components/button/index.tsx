@@ -12,18 +12,17 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-graphite-primary hover:shadow-md disabled:bg-graphite-primary/70 text-graphite-primaryForeground hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+          "bg-primary text-on-primary hover:shadow-md disabled:bg-primary/70 disabled:text-on-primary/70 hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-primary",
         secondary:
-          "bg-graphite-secondary text-graphite-secondaryForeground disabled:bg-graphite-secondary/70 hover:bg-graphite-secondary/80 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+          "bg-secondary-container text-on-secondary-container disabled:bg-secondary-container/70 disabled:text-on-secondary-container/70 hover:bg-secondary-container/80 focus:ring-2 focus:ring-offset-2 focus:ring-primary",
         destructive:
-          "bg-red-500 dark:text-graphite-primary text-graphite-primaryForeground disabled:bg-red-500/70 hover:bg-red-600/80 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+          "bg-error text-on-error disabled:bg-error/70 hover:bg-error/90 focus:ring-2 focus:ring-offset-2 focus:ring-error",
         ghost:
-          // --- UPDATED HOVER EFFECT ---
-          "bg-transparent text-graphite-foreground disabled:opacity-70 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring " +
-          "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
+          "bg-transparent text-primary disabled:opacity-70 focus:ring-2 focus:ring-offset-2 focus:ring-primary " +
+          "after:absolute after:inset-0 after:z-[-1] after:bg-primary/10 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
           "hover:after:opacity-100 hover:after:scale-100 " +
           "disabled:after:opacity-0",
-        link: "bg-transparent text-graphite-primary disabled:opacity-70 hover:text-graphite-primary hover:underline !p-1 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+        link: "bg-transparent text-primary disabled:opacity-70 hover:underline !p-1 focus:ring-2 focus:ring-offset-2 focus:ring-primary",
       },
       size: {
         xs: "h-8 px-2 text-xs",
@@ -56,7 +55,6 @@ export interface ButtonProps
   isLoading?: boolean;
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
-  /** If true, the button will render as a `Slot.Root` and merge its props onto the immediate child. */
   asChild?: boolean;
 }
 
@@ -79,10 +77,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const localRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
+
+    // MD3 State Layer Logic:
+    // Dark backgrounds (Primary, Destructive) -> White ripple (approx 10-12%)
+    // Light backgrounds (Secondary, Ghost) -> Black/Primary ripple (approx 10-12%)
     const rippleColor =
       variant === "primary" || variant === "destructive"
-        ? "var(--color-ripple-dark)"
-        : "var(--color-ripple-light)";
+        ? "var(--color-ripple-dark)" // Defined in theme.css as rgba(255,255,255, 0.1)
+        : "var(--color-ripple-light)"; // Defined in theme.css as rgba(0,0,0, 0.1)
 
     const rippleRef = localRef as React.RefObject<HTMLElement>;
     const [, event] = useRipple({

@@ -9,7 +9,7 @@ import {
 import { useEffect, useState } from "react";
 import { IconButton } from "../icon-button";
 import { Input } from "../input";
-import { SelectInput } from "../select";
+import { Select } from "../select"; // FIX: Imported as Select
 import { Typography } from "../typography";
 import { useDataTable } from "./context";
 
@@ -56,9 +56,9 @@ export function DataTablePagination<TData>() {
               Rows per page
             </Typography>
             <div className="w-[80px]">
-              <SelectInput
+              <Select
                 size="sm"
-                variant="secondary"
+                variant="flat"
                 value={`${table.getState().pagination.pageSize}`}
                 onValueChange={(value) => {
                   table.setPageSize(Number(value));
@@ -90,8 +90,8 @@ export function DataTablePagination<TData>() {
               }}
               // Dynamic width based on character length + padding
               style={{ width: `${Math.max(pageInput.length, 1) + 2}ch` }}
-              inputClassName="h-8 text-center px-1 min-w-[2.5rem]"
-              variant="secondary"
+              classNames={{ input: "h-8 text-center px-1 min-w-[2.5rem]" }}
+              variant="flat"
               size="sm"
             />
             <span className="whitespace-nowrap">of {pageCount || 1}</span>

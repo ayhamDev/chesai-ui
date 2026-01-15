@@ -171,10 +171,6 @@ export interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
   shape?: CardProps["shape"];
   variant?: CardProps["variant"];
   padding?: CardProps["padding"];
-  /**
-   * If true, the dialog will animate its size and position when its content changes.
-   * Useful for dynamic content like Command menus.
-   */
   layout?: boolean | "size" | "position" | "preserve-aspect";
 }
 const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
@@ -183,7 +179,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       className,
       children,
       shape = "minimal",
-      variant = "primary",
+      variant = "primary", // Maps to Surface Container Low via Card
       padding = "md",
       layout,
       ...props
@@ -245,14 +241,15 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   variants={backdropVariants}
                   className={clsx(
                     "absolute inset-0",
-                    isFullscreen ? "bg-black/32" : "bg-black/50"
+                    "bg-black/50"
+                    // Use scrim color for backdrop
                   )}
                   onClick={() => onOpenChange(false)}
                   style={{ willChange: "opacity" }}
                 />
                 <motion.div
                   role="dialog"
-                  layout={layout} // Enable layout animation
+                  layout={layout}
                   aria-modal="true"
                   aria-labelledby={titleId}
                   aria-describedby={descriptionId}
@@ -268,7 +265,8 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                     "relative z-10 flex flex-col",
                     isFullscreen
                       ? [
-                          "w-full bg-graphite-card shadow-2xl",
+                          // Fullscreen uses Surface Container High
+                          "w-full bg-surface-container-high shadow-2xl",
                           "h-full sm:max-h-[90vh] sm:w-full sm:max-w-2xl",
                           "sm:rounded-3xl",
                           "overflow-hidden",
@@ -300,7 +298,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                       shape={shape}
                       variant={variant}
                       padding={padding}
-                      className="relative w-full shadow-2xl h-full" // Ensure card fills motion wrapper
+                      className="relative w-full shadow-2xl h-full"
                     >
                       {children}
                     </Card>
@@ -348,8 +346,9 @@ const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row items-center justify-between",
           "px-6 py-4 sm:px-8 sm:py-6",
-          "bg-graphite-card",
-          "border-b border-graphite-border",
+          // Header bg matches content
+          "bg-surface-container-high",
+          "border-b border-outline-variant",
         ],
         props.className
       )}
@@ -374,8 +373,8 @@ const DialogFooter = (props: HTMLAttributes<HTMLDivElement>) => {
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row gap-3",
           "px-6 py-4 sm:px-8 sm:py-6",
-          "bg-graphite-card",
-          "border-t border-graphite-border",
+          "bg-surface-container-high",
+          "border-t border-outline-variant",
         ],
         props.className
       )}
@@ -395,7 +394,7 @@ const DialogTitle = forwardRef<
   HTMLHeadingElement,
   HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
-  const { titleId, variant } = useDialogContext();
+  const { titleId } = useDialogContext();
   return <Typography ref={ref} id={titleId} variant="h3" {...props} />;
 });
 DialogTitle.displayName = "DialogTitle";
@@ -455,7 +454,6 @@ const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
 );
 DialogBody.displayName = "DialogBody";
 
-// --- EXPORTS ---
 export {
   Dialog,
   DialogBody,

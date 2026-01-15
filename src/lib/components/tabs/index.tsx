@@ -22,7 +22,6 @@ import React, {
 import useRipple from "use-ripple-hook";
 import { ShallowRouter, useRouter, useRouterOptions } from "../shallow-router";
 
-// --- TYPE DEFINITIONS & CONTEXT ---
 type TabVariant = "primary" | "secondary";
 type PageTransition = "slide" | "fade";
 
@@ -44,7 +43,6 @@ export const useTabs = () => {
   return context;
 };
 
-// --- ROOT & PROVIDER ---
 interface TabsProps {
   children: React.ReactNode;
   defaultValue: string;
@@ -52,10 +50,6 @@ interface TabsProps {
   pageTransition?: PageTransition;
   routingMode?: "search" | "pathname";
   routingParamName?: string;
-  /**
-   * For 'pathname' mode, specifies which tab to redirect to on initial load
-   * if the current path is the base path.
-   */
   initialTab?: string;
 }
 
@@ -98,9 +92,7 @@ const TabsProvider: React.FC<TabsProviderProps> = ({
   initialTab,
 }) => {
   const { path, push, replace } = useRouter();
-  const { mode } = useRouterOptions();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: strict
   useEffect(() => {
     if (initialTab) {
       replace(initialTab);
@@ -123,7 +115,6 @@ const TabsProvider: React.FC<TabsProviderProps> = ({
   );
 };
 
-// --- TAB LIST ---
 interface TabsListProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
@@ -134,10 +125,8 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
       "start" | "middle" | "end"
     >("start");
 
-    // Combine forwarded ref with local ref for external access
     useImperativeHandle(ref, () => listRef.current!);
 
-    // Memoized function to check overflow and scroll position
     const checkScrollState = useCallback(() => {
       const el = listRef.current;
       if (!el) return;
@@ -150,7 +139,6 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
         return;
       }
 
-      // Using a small tolerance for floating point inaccuracies
       const isAtStart = el.scrollLeft <= 1;
       const isAtEnd = el.scrollLeft >= el.scrollWidth - el.clientWidth - 1;
 
@@ -163,13 +151,11 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
       }
     }, []);
 
-    // Effect to check scroll state on mount, resize, and content changes
     useEffect(() => {
       const el = listRef.current;
       if (!el) return;
 
       checkScrollState();
-
       const resizeObserver = new ResizeObserver(checkScrollState);
       resizeObserver.observe(el);
 
@@ -186,20 +172,16 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
       checkScrollState();
     };
 
-    // CSS mask styles for creating the fade effect on the edges
     const maskStyles: Record<string, React.CSSProperties> = {
       start: {
-        // Fade on the right side
         maskImage:
           "linear-gradient(to right, black calc(100% - 48px), transparent 100%)",
       },
       middle: {
-        // Fade on both sides
         maskImage:
           "linear-gradient(to right, transparent 0%, black 48px, black calc(100% - 48px), transparent 100%)",
       },
       end: {
-        // Fade on the left side
         maskImage: "linear-gradient(to right, transparent 0%, black 48px)",
       },
     };
@@ -210,8 +192,7 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
         role="tablist"
         onScroll={handleScroll}
         className={clsx(
-          "relative flex border-b border-graphite-border",
-          // Apply scrolling and scrollbar hiding only when needed
+          "relative flex border-b border-outline-variant",
           isOverflowing && "overflow-x-auto no-scrollbar",
           className
         )}
@@ -225,15 +206,14 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
 );
 TabsList.displayName = "Tabs.List";
 
-// --- TAB TRIGGER (MODIFIED) ---
 const triggerVariants = cva(
-  "relative flex px-6 flex-col items-center justify-center gap-1.5 flex-1 min-h-14 max-auto pb-2 pt-2 font-semibold text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+  "relative flex px-6 flex-col items-center justify-center gap-1.5 flex-1 min-h-14 max-auto pb-2 pt-2 font-semibold text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
   {
     variants: {
       variant: { primary: "pt-1", secondary: "" },
       isActive: {
-        true: "text-graphite-primary",
-        false: "text-graphite-foreground/60 hover:text-graphite-foreground/80",
+        true: "text-primary",
+        false: "text-on-surface-variant hover:text-on-surface",
       },
     },
     defaultVariants: { variant: "primary", isActive: false },
@@ -253,12 +233,12 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
     const localRef = React.useRef<HTMLButtonElement>(null);
     const [, event] = useRipple({
       ref: localRef,
-      color: "var(--color-ripple-light)",
+      color: "var(--color-primary)",
       duration: 450,
+      opacity: 0.1,
     });
     React.useImperativeHandle(ref, () => localRef.current!);
 
-    // --- NEW LOGIC TO SCROLL ACTIVE TAB INTO VIEW ---
     useEffect(() => {
       if (isActive && localRef.current) {
         localRef.current.scrollIntoView({
@@ -268,7 +248,6 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
         });
       }
     }, [isActive]);
-    // --- END OF NEW LOGIC ---
 
     return (
       <button
@@ -287,7 +266,7 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
           <motion.div
             layoutId={indicatorId}
             className={clsx(
-              "absolute bottom-0 rounded-full bg-graphite-primary",
+              "absolute bottom-0 rounded-full bg-primary",
               variant === "primary" ? "w-8" : "w-full"
             )}
             style={{
@@ -302,7 +281,6 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
 );
 TabsTrigger.displayName = "Tabs.Trigger";
 
-// --- TABS CONTENT ---
 interface TabsContentProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
@@ -313,7 +291,6 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
     const x = useMotionValue(0);
 
     if (pageTransition === "fade") {
-      // Find the child that corresponds to the active tab.
       const activeChild = React.Children.toArray(children).find(
         (child) =>
           // @ts-ignore
@@ -323,12 +300,9 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
       return (
         <div ref={ref} className={clsx("relative", className)} {...props}>
           <AnimatePresence mode="wait">
-            {/* If an active child is found, clone it and give it a unique key.
-                This key is essential for AnimatePresence to detect when the
-                component changes and apply enter/exit animations correctly. */}
             {activeChild && React.isValidElement(activeChild)
               ? React.cloneElement(activeChild, {
-                  key: activeTab, // Assign the key here
+                  key: activeTab,
                 })
               : null}
           </AnimatePresence>
@@ -342,7 +316,6 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
     const tabValues = panels.map((panel) => panel.props.value);
     const activeIndex = tabValues.indexOf(activeTab);
 
-    // biome-ignore lint/correctness/useHookAtTopLevel: strict
     useEffect(() => {
       const measureWidth = () => {
         if (containerRef.current) {
@@ -354,7 +327,6 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
       return () => window.removeEventListener("resize", measureWidth);
     }, []);
 
-    // biome-ignore lint/correctness/useHookAtTopLevel: strict
     useEffect(() => {
       if (containerWidth > 0) {
         const targetX = -activeIndex * containerWidth;
@@ -366,29 +338,21 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
       }
     }, [activeIndex, containerWidth, x]);
 
-    // --- MODIFICATION START: Replaced handleDragEnd logic ---
     const handleDragEnd = (event: MouseEvent | TouchEvent, info: PanInfo) => {
       const { offset, velocity } = info;
-
-      // A fast swipe (fling) is prioritized. We use a velocity threshold.
       const velocityThreshold = 300;
-      // If not a fling, the user must drag at least a portion of the page width.
-      const distanceThreshold = containerWidth * 0.3; // 30% of the width
+      const distanceThreshold = containerWidth * 0.3;
 
       if (velocity.x < -velocityThreshold || offset.x < -distanceThreshold) {
-        // Decisive swipe to the left (next page)
         const nextIndex = Math.min(activeIndex + 1, panels.length - 1);
         setActiveTab(tabValues[nextIndex]);
       } else if (
         velocity.x > velocityThreshold ||
         offset.x > distanceThreshold
       ) {
-        // Decisive swipe to the right (previous page)
         const prevIndex = Math.max(activeIndex - 1, 0);
         setActiveTab(tabValues[prevIndex]);
       } else {
-        // Indecisive swipe, snap back to the current active page.
-        // This is crucial for preventing the "stuck" state.
         animate(x, -activeIndex * containerWidth, {
           type: "spring",
           stiffness: 400,
@@ -396,7 +360,6 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
         });
       }
     };
-    // --- END MODIFICATION ---
 
     return (
       <div
@@ -424,7 +387,6 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
 );
 TabsContent.displayName = "Tabs.Content";
 
-// --- TABS PANEL ---
 interface TabsPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   value: string;
 }
@@ -434,9 +396,6 @@ const TabsPanel = React.forwardRef<HTMLDivElement, TabsPanelProps>(
     const { activeTab, pageTransition } = useTabs();
 
     if (pageTransition === "fade") {
-      // The parent (TabsContent) now handles filtering and keying.
-      // This component just needs to render the animatable motion.div.
-      // The key={value} here is now redundant but harmless.
       return (
         // @ts-ignore
         <motion.div
@@ -469,7 +428,6 @@ const TabsPanel = React.forwardRef<HTMLDivElement, TabsPanelProps>(
 );
 TabsPanel.displayName = "Tabs.Panel";
 
-// --- EXPORT COMPOUND COMPONENT ---
 export const Tabs = Object.assign(TabsRoot, {
   List: TabsList,
   Trigger: TabsTrigger,

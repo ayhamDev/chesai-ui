@@ -6,10 +6,10 @@ import { clsx } from "clsx";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import React, { createContext, useContext, useRef } from "react";
 import useRipple from "use-ripple-hook";
+import { useTheme } from "../../context";
 
 type DropdownMenuShape = "full" | "minimal" | "sharp";
 
-// --- Context to pass shape down the tree ---
 interface DropdownMenuContextProps {
   shape: DropdownMenuShape;
 }
@@ -20,7 +20,6 @@ const DropdownMenuContext = createContext<DropdownMenuContextProps>({
 
 const useDropdownMenuContext = () => useContext(DropdownMenuContext);
 
-// --- Root Component (Wrapped to provide context) ---
 interface DropdownMenuProps extends RadixDropdownMenu.DropdownMenuProps {
   shape?: DropdownMenuShape;
 }
@@ -42,11 +41,11 @@ const DropdownMenuPortal = RadixDropdownMenu.Portal;
 const DropdownMenuSub = RadixDropdownMenu.Sub;
 const DropdownMenuRadioGroup = RadixDropdownMenu.RadioGroup;
 
-// --- CVA for Content Components ---
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-graphite-border bg-graphite-card text-graphite-foreground p-1.5",
+    // Standard MD3 Menu styling
+    "border border-outline-variant bg-surface-container text-on-surface p-1.5",
     "shadow-md",
   ],
   {
@@ -63,7 +62,6 @@ const contentVariants = cva(
   }
 );
 
-// --- Enhanced Animated Content Container ---
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.Content>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.Content>
@@ -91,21 +89,17 @@ const DropdownMenuContent = React.forwardRef<
 });
 DropdownMenuContent.displayName = RadixDropdownMenu.Content.displayName;
 
-// --- Common Item Styles with Bloom Effect ---
-// We use data-[highlighted] to trigger the bloom effect on both hover and keyboard focus.
+// Bloom uses secondary container for active state
 const itemStyles =
   "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden z-0 " +
   "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)] " +
-  "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20 " +
+  "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/20 " +
   "data-[disabled]:pointer-events-none data-[disabled]:opacity-38 " +
-  // Bloom Effect Pseudo-element
-  "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary/60 " +
+  "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 " +
   "after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] " +
   "after:transition-all after:duration-200 after:ease-out " +
-  // Trigger bloom on highlight
   "data-[highlighted]:after:opacity-100 data-[highlighted]:after:scale-100";
 
-// --- Enhanced Menu Item ---
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.Item>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.Item> & {
@@ -116,7 +110,7 @@ const DropdownMenuItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -138,7 +132,6 @@ const DropdownMenuItem = React.forwardRef<
 });
 DropdownMenuItem.displayName = RadixDropdownMenu.Item.displayName;
 
-// --- Enhanced Checkbox Item ---
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.CheckboxItem>
@@ -147,7 +140,8 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
+    opacity: 0.1,
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -166,7 +160,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     >
       <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixDropdownMenu.ItemIndicator>
-          <Check className="h-4 w-4 animate-check-in" />
+          <Check className="h-4 w-4 animate-check-in text-primary" />
         </RadixDropdownMenu.ItemIndicator>
       </span>
       <span className="relative z-10">{children}</span>
@@ -176,7 +170,6 @@ const DropdownMenuCheckboxItem = React.forwardRef<
 DropdownMenuCheckboxItem.displayName =
   RadixDropdownMenu.CheckboxItem.displayName;
 
-// --- Enhanced Radio Item ---
 const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.RadioItem>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.RadioItem>
@@ -185,7 +178,8 @@ const DropdownMenuRadioItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
+    opacity: 0.1,
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -204,7 +198,7 @@ const DropdownMenuRadioItem = React.forwardRef<
     >
       <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixDropdownMenu.ItemIndicator>
-          <Circle className="h-2 w-2 fill-current animate-check-in" />
+          <Circle className="h-2 w-2 fill-current animate-check-in text-primary" />
         </RadixDropdownMenu.ItemIndicator>
       </span>
       <span className="relative z-10">{children}</span>
@@ -213,7 +207,6 @@ const DropdownMenuRadioItem = React.forwardRef<
 });
 DropdownMenuRadioItem.displayName = RadixDropdownMenu.RadioItem.displayName;
 
-// --- Enhanced Sub-Menu Trigger ---
 const DropdownMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.SubTrigger>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.SubTrigger> & {
@@ -224,7 +217,8 @@ const DropdownMenuSubTrigger = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
+    opacity: 0.1,
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -235,7 +229,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
       onPointerDown={event}
       className={clsx(
         itemStyles,
-        "data-[state=open]:after:opacity-100 data-[state=open]:after:scale-100", // Keep bloom active when sub-menu is open
+        "data-[state=open]:after:opacity-100 data-[state=open]:after:scale-100",
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         shape === "sharp" && "!rounded-none",
@@ -252,7 +246,6 @@ const DropdownMenuSubTrigger = React.forwardRef<
 });
 DropdownMenuSubTrigger.displayName = RadixDropdownMenu.SubTrigger.displayName;
 
-// --- Enhanced Sub-Menu Content ---
 const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.SubContent>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.SubContent>
@@ -279,7 +272,6 @@ const DropdownMenuSubContent = React.forwardRef<
 });
 DropdownMenuSubContent.displayName = RadixDropdownMenu.SubContent.displayName;
 
-// --- Other Components (Unchanged) ---
 const DropdownMenuLabel = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.Label>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.Label> & {
@@ -289,7 +281,7 @@ const DropdownMenuLabel = React.forwardRef<
   <RadixDropdownMenu.Label
     ref={ref}
     className={clsx(
-      "px-3 py-2 text-xs font-medium text-graphite-foreground/70 tracking-wide",
+      "px-3 py-2 text-xs font-medium text-on-surface-variant tracking-wide",
       inset && "pl-8",
       className
     )}
@@ -304,7 +296,7 @@ const DropdownMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadixDropdownMenu.Separator
     ref={ref}
-    className={clsx("-mx-1 my-1.5 h-px bg-graphite-border/60", className)}
+    className={clsx("-mx-1 my-1.5 h-px bg-outline-variant/60", className)}
     {...props}
   />
 ));
@@ -317,7 +309,7 @@ const DropdownMenuShortcut = ({
   return (
     <span
       className={clsx(
-        "ml-auto text-xs font-mono tracking-wider text-graphite-foreground/50",
+        "ml-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
         className
       )}
       {...props}

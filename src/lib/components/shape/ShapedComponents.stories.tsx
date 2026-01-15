@@ -7,17 +7,18 @@ import {
   Phone,
   Plus,
   Send,
-  Share2,
   ThumbsUp,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ShapedBadge,
   ShapedButton,
   ShapedIcon,
   ShapedIconButton,
+  ShapedImage,
 } from "./shaped-components";
+import { SHAPE_PATHS, type ShapeType } from "./paths";
 import { Typography } from "../typography";
 
 const meta: Meta = {
@@ -33,7 +34,7 @@ export default meta;
 export const Icons: StoryObj = {
   name: "1. Shaped Icons",
   render: () => (
-    <div className="flex gap-4 items-center text-graphite-primary">
+    <div className="flex gap-4 items-center text-primary">
       <ShapedIcon shape="flower" size={48} />
       <ShapedIcon shape="burst" size={48} />
       <ShapedIcon shape="sunny" size={48} className="text-yellow-500" />
@@ -42,8 +43,82 @@ export const Icons: StoryObj = {
   ),
 };
 
+export const Images: StoryObj = {
+  name: "2. Shaped Images",
+  render: () => {
+    // --- Auto-cycle Logic ---
+    const [currentShape, setCurrentShape] = useState<ShapeType>("cookie4");
+    const shapes = Object.keys(SHAPE_PATHS) as ShapeType[];
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setCurrentShape((prev) => {
+          const currentIndex = shapes.indexOf(prev);
+          const nextIndex = (currentIndex + 1) % shapes.length;
+          return shapes[nextIndex];
+        });
+      }, 2000);
+      return () => clearInterval(interval);
+    }, [shapes]);
+
+    return (
+      <div className="flex flex-col gap-12">
+        {/* Dynamic Example */}
+        <div className="flex flex-col items-center gap-4">
+          <ShapedImage
+            shape={currentShape}
+            src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop"
+            size={200}
+            alt="Auto Cycling Shape"
+            className="transition-all duration-300"
+          />
+          <div className="text-center">
+            <Typography variant="h4">Auto Cycle</Typography>
+            <Typography variant="muted" className="capitalize">
+              Current: {currentShape}
+            </Typography>
+          </div>
+        </div>
+
+        {/* Static Grid */}
+        <div className="flex gap-8 items-center flex-wrap justify-center border-t border-outline-variant pt-8">
+          <div className="flex flex-col items-center gap-2">
+            <ShapedImage
+              shape="heart"
+              src="https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=400&h=400&fit=crop"
+              size={100}
+              alt="Cat"
+            />
+            <Typography variant="small">Heart</Typography>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <ShapedImage
+              shape="arrow"
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop"
+              size={100}
+              alt="Portrait"
+            />
+            <Typography variant="small">Scallop</Typography>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <ShapedImage
+              shape="pill"
+              src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop"
+              size={100}
+              alt="Portrait"
+            />
+            <Typography variant="small">Pill</Typography>
+          </div>
+        </div>
+      </div>
+    );
+  },
+};
+
 export const IconButtons: StoryObj = {
-  name: "2. Shaped Icon Buttons",
+  name: "3. Shaped Icon Buttons",
   render: () => {
     const [activeShape, setActiveShape] = useState<any>("circle");
 
@@ -98,11 +173,11 @@ export const IconButtons: StoryObj = {
 };
 
 export const Badges: StoryObj = {
-  name: "3. Shaped Badges",
+  name: "4. Shaped Badges",
   render: () => (
     <div className="flex gap-8 items-center">
       <div className="relative">
-        <Bell className="w-8 h-8 text-graphite-foreground" />
+        <Bell className="w-8 h-8 text-on-surface" />
         <div className="absolute -top-1 -right-2">
           <ShapedBadge shape="burst" variant="destructive" size="sm">
             3
@@ -122,7 +197,7 @@ export const Badges: StoryObj = {
 };
 
 export const FloatingActionButtons: StoryObj = {
-  name: "4. Expressive FABs",
+  name: "5. Expressive FABs",
   render: () => (
     <div className="flex gap-6 items-end">
       <div className="flex flex-col items-center gap-2">
@@ -152,73 +227,6 @@ export const FloatingActionButtons: StoryObj = {
           className="bg-green-100 text-green-700" // Custom colors via className
         >
           <Phone />
-        </ShapedButton>
-        <Typography variant="small">Pentagon</Typography>
-      </div>
-    </div>
-  ),
-};
-
-export const InteractiveMorph: StoryObj = {
-  name: "5. Interactive Morph",
-  render: () => {
-    const [isLiked, setIsLiked] = useState(false);
-
-    return (
-      <ShapedButton
-        shape={isLiked ? "heart" : "circle"}
-        variant={isLiked ? "destructive" : "secondary"}
-        size="lg"
-        onClick={() => setIsLiked(!isLiked)}
-        className="text-2xl"
-      >
-        <Heart className={isLiked ? "fill-white" : ""} />
-      </ShapedButton>
-    );
-  },
-};
-
-export const FixedShadows: StoryObj = {
-  name: "Correct Shadow Handling",
-  render: () => (
-    <div className="flex gap-10 items-end p-8 bg-gray-50 rounded-xl">
-      {/* Square / Squircle */}
-      <div className="flex flex-col items-center gap-3">
-        <ShapedButton
-          shape="square"
-          variant="secondary"
-          size="lg"
-          shadow="lg" // Uses drop-shadow-lg
-        >
-          <Plus className="w-6 h-6" />
-        </ShapedButton>
-        <Typography variant="small">Square</Typography>
-      </div>
-
-      {/* Cookie / Wavy - The shadow will curve with the shape */}
-      <div className="flex flex-col items-center gap-3">
-        <ShapedButton
-          shape="cookie4"
-          variant="primary" // Black fill
-          size="lg"
-          shadow="xl" // Uses drop-shadow-xl
-        >
-          <Send className="w-6 h-6 ml-1" />
-        </ShapedButton>
-        <Typography variant="small">Cookie</Typography>
-      </div>
-
-      {/* Pentagon - Shadow will have 5 points */}
-      <div className="flex flex-col items-center gap-3">
-        <ShapedButton
-          shape="pentagon"
-          // Custom color via class, NO background color on container
-          className="text-green-600"
-          variant="ghost" // Use ghost base to allow custom text-color fill
-          size="lg"
-          shadow="md"
-        >
-          <Phone className="w-6 h-6 text-white" />
         </ShapedButton>
         <Typography variant="small">Pentagon</Typography>
       </div>

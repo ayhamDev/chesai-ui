@@ -1,241 +1,95 @@
-import { cva } from "class-variance-authority";
-import { clsx } from "clsx";
-import React from "react";
+"use client";
 
-// 1. No changes to variants
-export const inputWrapperVariants = cva(
-  "flex items-center transition-all duration-200 w-full",
-  {
-    variants: {
-      variant: {
-        primary:
-          "bg-graphite-card border-2 px-4 hover:bg-graphite-secondary/50",
-        secondary:
-          "bg-graphite-secondary border-2 px-4 hover:bg-graphite-primary/10",
-        minimal: "bg-transparent p-0",
-      },
-      shape: {
-        full: "rounded-4xl",
-        minimal: "rounded-2xl",
-        sharp: "rounded-none",
-      },
-      size: {
-        sm: "h-10 text-sm",
-        md: "h-12 text-base",
-        lg: "h-14 text-lg",
-      },
-      isErrored: { true: "" },
-      isFocused: { true: "" },
-      disabled: {
-        true: "bg-graphite-secondary opacity-50 cursor-not-allowed hover:bg-graphite-secondary",
-      },
-    },
-    compoundVariants: [
-      {
-        variant: "primary",
-        isErrored: false,
-        isFocused: false,
-        className: "border-graphite-border",
-      },
-      {
-        variant: "primary",
-        isFocused: true,
-        isErrored: false,
-        className: "border-graphite-primary",
-      },
-      {
-        variant: "primary",
-        isErrored: true,
-        className: "border-red-500",
-      },
-      {
-        variant: "primary",
-        isFocused: true,
-        isErrored: true,
-        className: "border-red-600",
-      },
-      {
-        variant: "secondary",
-        isErrored: false,
-        isFocused: false,
-        className: "border-transparent",
-      },
-      {
-        variant: "secondary",
-        isFocused: true,
-        isErrored: false,
-        className: "border-graphite-primary",
-      },
-      {
-        variant: "secondary",
-        isErrored: true,
-        className: "border-red-500",
-      },
-      {
-        variant: "secondary",
-        isFocused: true,
-        isErrored: true,
-        className: "border-red-600",
-      },
-      {
-        variant: "minimal",
-        className: "rounded-none border-0",
-      },
-    ],
-    defaultVariants: {
-      variant: "primary",
-      shape: "minimal",
-      size: "md",
-    },
-  }
-);
+import { X } from "lucide-react";
+import React, { forwardRef, useMemo } from "react";
+import { type UseInputProps, useInput } from "./use-input";
 
-export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
-  variant?: "primary" | "secondary" | "minimal";
-  shape?: "full" | "minimal" | "sharp";
-  size?: "sm" | "md" | "lg";
-  label?: string;
-  startAdornment?: React.ReactNode;
-  endAdornment?: React.ReactNode;
-  error?: string;
-  // 2. Renamed/Added props for clarity
-  inputClassName?: string; // Applied to the <input> element
-  rootClassName?: string; // Applied to the outer-most wrapping div (holding label+input+error)
-}
+// Export the helper for other components (like TimePicker)
+export { inputWrapperVariants } from "./input-styles";
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      className, // Now applies to the styled container
-      inputClassName, // Now applies to the input element
-      rootClassName, // Applies to the flex-col wrapper
-      id,
-      label,
-      startAdornment,
-      endAdornment,
-      error,
-      disabled,
-      shape,
-      size,
-      variant,
-      onFocus,
-      onBlur,
-      onKeyDown,
-      onPaste,
-      type,
-      ...props
-    },
-    ref
-  ) => {
-    const uniqueId = React.useId();
-    const inputId = id || uniqueId;
-    const hasError = !!error;
-    const [isFocused, setIsFocused] = React.useState(false);
+export interface InputProps extends UseInputProps {}
 
-    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(true);
-      onFocus?.(e);
-    };
+export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
+  const {
+    Component,
+    label,
+    description,
+    isClearable,
+    startContent,
+    endContent,
+    labelPlacement,
+    shouldLabelBeOutside,
+    errorMessage,
+    isInvalid,
+    getBaseProps,
+    getLabelProps,
+    getInputProps,
+    getInnerWrapperProps,
+    getInputWrapperProps,
+    getHelperWrapperProps,
+    getDescriptionProps,
+    getErrorMessageProps,
+    getClearButtonProps,
+  } = useInput({ ...props, ref });
 
-    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(false);
-      onBlur?.(e);
-    };
+  const labelContent = label ? (
+    <label {...getLabelProps()}>{label}</label>
+  ) : null;
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (type === "number") {
-        const { value } = e.currentTarget;
-        const allowedKeys = [
-          "Backspace",
-          "Delete",
-          "Tab",
-          "Escape",
-          "Enter",
-          "ArrowLeft",
-          "ArrowRight",
-          "Home",
-          "End",
-        ];
-        if (e.key === "." && !value.includes(".")) {
-          return;
-        }
-        if (allowedKeys.includes(e.key)) {
-          return;
-        }
-        if (e.ctrlKey || e.metaKey) {
-          return;
-        }
-        if (!/^[0-9]$/.test(e.key)) {
-          e.preventDefault();
-        }
-      }
-      onKeyDown?.(e);
-    };
+  const end = useMemo(() => {
+    if (isClearable) {
+      return (
+        <button {...getClearButtonProps()}>
+          {endContent || <X className="h-4 w-4" />}
+        </button>
+      );
+    }
+    return endContent;
+  }, [isClearable, getClearButtonProps, endContent]);
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-      if (type === "number") {
-        const pastedText = e.clipboardData.getData("text");
-        if (!/^\d*\.?\d*$/.test(pastedText)) {
-          e.preventDefault();
-        }
-      }
-      onPaste?.(e);
-    };
+  const helperWrapper = useMemo(() => {
+    const shouldShowError = isInvalid && errorMessage;
+    const hasContent = shouldShowError || description;
+
+    if (!hasContent) return null;
 
     return (
-      <div className={clsx("w-full flex flex-col gap-2", rootClassName)}>
-        {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium text-graphite-primary"
-          >
-            {label}
-          </label>
+      <div {...getHelperWrapperProps()}>
+        {shouldShowError ? (
+          <div {...getErrorMessageProps()}>{errorMessage}</div>
+        ) : (
+          <div {...getDescriptionProps()}>{description}</div>
         )}
-
-        {/* Container styling now receives 'className' */}
-        <div
-          className={inputWrapperVariants({
-            variant,
-            shape,
-            size,
-            isErrored: hasError,
-            isFocused,
-            disabled,
-            className: className,
-          })}
-        >
-          {startAdornment && (
-            <div className="flex items-center mr-2">{startAdornment}</div>
-          )}
-
-          {/* Input styling now receives 'inputClassName' */}
-          <input
-            id={inputId}
-            ref={ref}
-            disabled={disabled}
-            type={type}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            className={clsx(
-              "w-full flex-1 bg-transparent focus:outline-none text-graphite-foreground",
-              "placeholder:text-graphite-foreground/60",
-              "disabled:cursor-not-allowed",
-              inputClassName
-            )}
-            {...props}
-          />
-          {endAdornment && (
-            <div className="flex items-center ml-2">{endAdornment}</div>
-          )}
-        </div>
-        {hasError && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </div>
     );
-  }
-);
+  }, [
+    isInvalid,
+    errorMessage,
+    description,
+    getHelperWrapperProps,
+    getErrorMessageProps,
+    getDescriptionProps,
+  ]);
+
+  const innerWrapper = (
+    <div {...getInnerWrapperProps()}>
+      {startContent}
+      <input {...getInputProps()} />
+      {end}
+    </div>
+  );
+
+  return (
+    // @ts-ignore
+    <Component {...getBaseProps()}>
+      {shouldLabelBeOutside ? labelContent : null}
+      <div {...getInputWrapperProps()}>
+        {!shouldLabelBeOutside ? labelContent : null}
+        {innerWrapper}
+      </div>
+      {helperWrapper}
+    </Component>
+  );
+});
 
 Input.displayName = "Input";

@@ -2,9 +2,8 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React from "react";
 
-// CVA for the track (the background)
 const switchTrackVariants = cva(
-  "transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-graphite-ring peer-focus:ring-offset-2 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed bg-graphite-border peer-checked:bg-graphite-primary shadow",
+  "transition-colors peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary peer-focus:ring-offset-2 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed bg-outline-variant peer-checked:bg-primary shadow",
   {
     variants: {
       size: {
@@ -25,9 +24,8 @@ const switchTrackVariants = cva(
   }
 );
 
-// CVA for the thumb (the moving circle)
 const switchThumbVariants = cva(
-  "absolute bg-graphite-card transition-transform duration-200 ease-ios shadow-lg",
+  "absolute bg-surface-container-lowest transition-transform duration-200 ease-ios shadow-lg",
   {
     variants: {
       size: {
@@ -48,7 +46,6 @@ const switchThumbVariants = cva(
   }
 );
 
-// Helper map for the translation distance based on size
 const translateMap: Record<"sm" | "md" | "lg", string> = {
   sm: "peer-checked:translate-x-4",
   md: "peer-checked:translate-x-5",
@@ -70,10 +67,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
     return (
       <label
         htmlFor={switchId}
-        className={clsx(
-          "inline-flex items-center cursor-pointer",
-          className // Pass down className to the top-level label
-        )}
+        className={clsx("inline-flex items-center cursor-pointer", className)}
       >
         <div className="relative">
           <input
@@ -94,7 +88,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
           />
         </div>
         {label && (
-          <div className="ml-3 text-sm font-medium text-graphite-foreground select-none">
+          <div className="ml-3 text-sm font-medium text-on-surface select-none">
             {label}
           </div>
         )}

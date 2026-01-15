@@ -2,22 +2,19 @@ import { cva } from "class-variance-authority";
 import React from "react";
 
 const badgeVariants = cva(
-  // Base classes: Increased padding with px-3
-  "inline-flex items-center border px-2 py-1 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-2",
+  "inline-flex items-center border px-2 py-1 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
   {
     variants: {
       variant: {
         primary:
-          "border-transparent bg-graphite-primary text-graphite-primaryForeground hover:bg-graphite-primary/80",
+          "border-transparent bg-primary text-on-primary hover:bg-primary/80",
         secondary:
-          "border-transparent bg-graphite-secondary text-graphite-secondaryForeground hover:bg-graphite-secondary/80",
-        // Destructive variant is now a solid, bold red
+          "border-transparent bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80",
         destructive:
-          "border-transparent bg-red-500 text-graphite-primaryForeground hover:bg-red-600/80",
-        outline: "text-graphite-foreground border-graphite-border",
+          "border-transparent bg-error text-on-error hover:bg-error/80",
+        outline: "text-on-surface border-outline",
       },
       shape: {
-        // Added shape variants
         full: "rounded-full",
         minimal: "rounded-lg",
         sharp: "rounded-none",
@@ -25,7 +22,7 @@ const badgeVariants = cva(
     },
     defaultVariants: {
       variant: "primary",
-      shape: "full", // Default to a pill shape
+      shape: "full",
     },
   }
 );

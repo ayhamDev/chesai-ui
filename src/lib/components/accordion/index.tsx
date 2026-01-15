@@ -6,8 +6,8 @@ import { clsx } from "clsx";
 import { ChevronDown } from "lucide-react";
 import React, { createContext, useContext, useRef } from "react";
 import useRipple from "use-ripple-hook";
+import { useTheme } from "../../context";
 
-// --- Context for Accordion Configuration ---
 interface AccordionContextProps {
   variant: "primary" | "secondary";
   shape: "full" | "minimal" | "sharp";
@@ -25,15 +25,15 @@ const useAccordionContext = () => {
   }
   return context;
 };
-// --- CVA Variants ---
+
 const itemVariants = cva("overflow-hidden transition-colors", {
   variants: {
     variant: {
-      primary: "bg-graphite-card",
-      secondary: "bg-graphite-secondary",
+      primary: "bg-surface-container-low text-on-surface",
+      secondary: "bg-surface-container-high text-on-surface",
     },
     layout: {
-      integrated: "border-b border-graphite-border last:border-b-0",
+      integrated: "border-b border-outline-variant last:border-b-0",
       separated: "border border-transparent",
     },
     shape: {
@@ -47,7 +47,6 @@ const itemVariants = cva("overflow-hidden transition-colors", {
     { layout: "separated", shape: "minimal", className: "rounded-xl" },
     { layout: "separated", shape: "sharp", className: "rounded-none" },
 
-    // --- NEW COMPOUND VARIANTS FOR INTEGRATED LAYOUT ---
     {
       layout: "integrated",
       shape: "full",
@@ -63,7 +62,6 @@ const itemVariants = cva("overflow-hidden transition-colors", {
       shape: "sharp",
       className: "first:rounded-t-none last:rounded-b-none",
     },
-    // --- END NEW VARIANTS ---
   ],
   defaultVariants: {
     variant: "primary",
@@ -72,7 +70,6 @@ const itemVariants = cva("overflow-hidden transition-colors", {
   },
 });
 
-// --- Root Component ---
 type AccordionRootProps = React.ComponentPropsWithoutRef<
   typeof AccordionPrimitive.Root
 > & {
@@ -101,10 +98,7 @@ const AccordionRoot = React.forwardRef<
         ref={ref}
         className={clsx(
           "w-full",
-          // The rounding on the root container is only needed for the integrated layout,
-          // as the individual items now handle their own top/bottom rounding.
           layout === "integrated" &&
-            // Setting overflow-hidden on the root ensures child rounded borders are clipped correctly.
             (shape === "full"
               ? "rounded-2xl overflow-hidden"
               : shape === "minimal"
@@ -122,7 +116,6 @@ const AccordionRoot = React.forwardRef<
 );
 AccordionRoot.displayName = "Accordion";
 
-// --- Accordion Item ---
 const AccordionItem = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
@@ -138,20 +131,18 @@ const AccordionItem = React.forwardRef<
 });
 AccordionItem.displayName = "AccordionItem";
 
-// --- Accordion Trigger (MODIFIED) ---
 const AccordionTrigger = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
-    /** If true, the ripple effect on click will be disabled. */
     disableRipple?: boolean;
   }
 >(({ className, children, disableRipple = false, ...props }, ref) => {
   const localRef = useRef<HTMLButtonElement | null>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
     duration: 400,
-    disabled: disableRipple, // Pass the new prop to the hook
+    disabled: disableRipple,
   });
   React.useImperativeHandle(ref, () => localRef.current);
 
@@ -161,7 +152,7 @@ const AccordionTrigger = React.forwardRef<
         ref={localRef}
         onPointerDown={event}
         className={clsx(
-          "relative flex flex-1 items-center justify-between p-4 font-semibold text-graphite-foreground transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+          "relative flex flex-1 items-center justify-between p-4 font-semibold text-on-surface transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           "[&[data-state=open]>svg]:rotate-180",
           className
         )}
@@ -175,7 +166,6 @@ const AccordionTrigger = React.forwardRef<
 });
 AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
 
-// --- Accordion Content ---
 const AccordionContent = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
@@ -185,12 +175,13 @@ const AccordionContent = React.forwardRef<
     className="overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
     {...props}
   >
-    <div className={clsx("px-4 pb-4 pt-0", className)}>{children}</div>
+    <div className={clsx("px-4 pb-4 pt-0 text-on-surface-variant", className)}>
+      {children}
+    </div>
   </AccordionPrimitive.Content>
 ));
 AccordionContent.displayName = AccordionPrimitive.Content.displayName;
 
-// --- Compound Export ---
 export const Accordion = Object.assign(AccordionRoot, {
   Item: AccordionItem,
   Trigger: AccordionTrigger,

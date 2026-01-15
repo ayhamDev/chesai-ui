@@ -24,9 +24,9 @@ const lineVariants = cva("flex-1", {
       vertical: "w-px h-full",
     },
     variant: {
-      solid: "bg-graphite-border",
-      dashed: "bg-transparent border-graphite-border",
-      dotted: "bg-transparent border-graphite-border",
+      solid: "bg-outline-variant",
+      dashed: "bg-transparent border-outline-variant",
+      dotted: "bg-transparent border-outline-variant",
     },
   },
   compoundVariants: [
@@ -60,15 +60,7 @@ const lineVariants = cva("flex-1", {
 export interface DividerProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof dividerVariants> {
-  /**
-   * The visual style of the line.
-   * @default "solid"
-   */
   variant?: "solid" | "dashed" | "dotted";
-  /**
-   * Alignment of the content when orientation is horizontal.
-   * @default "center"
-   */
   textAlign?: "start" | "center" | "end";
 }
 
@@ -98,7 +90,6 @@ export const Divider = React.forwardRef<HTMLDivElement, DividerProps>(
         )}
         {...props}
       >
-        {/* Leading Line */}
         {(!hasContent ||
           (orientation === "horizontal" &&
             (textAlign === "center" || textAlign === "end")) ||
@@ -106,13 +97,12 @@ export const Divider = React.forwardRef<HTMLDivElement, DividerProps>(
           <div className={clsx(lineVariants({ orientation, variant }))} />
         )}
 
-        {/* Content */}
         {hasContent && (
           <span className="shrink-0">
             {typeof children === "string" ? (
               <Typography
                 variant="small"
-                className="text-graphite-foreground/60 font-medium"
+                className="text-on-surface-variant font-medium"
               >
                 {children}
               </Typography>
@@ -122,7 +112,6 @@ export const Divider = React.forwardRef<HTMLDivElement, DividerProps>(
           </span>
         )}
 
-        {/* Trailing Line */}
         {hasContent &&
           ((orientation === "horizontal" &&
             (textAlign === "center" || textAlign === "start")) ||

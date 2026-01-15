@@ -19,6 +19,8 @@ import {
   TrendingUp,
   Video,
   X,
+  Tag, // Added import for Tag
+  Bold, // Added import for Bold
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -45,8 +47,14 @@ import { SearchView } from "../search-view";
 import { createStackNavigator, useNavigation, useRoute } from "../stack-router";
 import { Typography } from "../typography";
 import { Resizable } from "./index";
-import { Dialog, DialogContent } from "../dialog";
-import { TextArea } from "../textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../dialog"; // Added DialogFooter, DialogHeader, DialogTitle
+import { Textarea } from "../textarea";
 import { toast } from "../toast";
 
 const meta: Meta = {
@@ -165,50 +173,67 @@ const ComposeModal = ({
   onOpenChange: (open: boolean) => void;
 }) => {
   return (
-    <Dialog variant="fullscreen" open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden flex flex-col h-[90vh] sm:h-[600px] border border-graphite-border">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-graphite-border bg-graphite-secondary/30">
-          <Typography variant="h4" className="text-sm font-semibold">
+    <Dialog variant="basic" open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full max-w-2xl !p-0 overflow-hidden h-[600px] flex flex-col shadow-2xl rounded-t-xl sm:rounded-xl">
+        <DialogHeader className="bg-[#f2f6fc] dark:bg-graphite-secondary px-4 py-3 border-b border-graphite-border flex flex-row items-center justify-between !space-y-0">
+          <DialogTitle className="text-sm font-semibold">
             New Message
-          </Typography>
-          <IconButton
-            variant="ghost"
-            size="xs"
-            onClick={() => onOpenChange(false)}
-          >
-            <X className="h-4 w-4" />
-          </IconButton>
-        </div>
+          </DialogTitle>
+          <div className="flex items-center gap-2">
+            <IconButton
+              variant="ghost"
+              size="xs"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </IconButton>
+          </div>
+        </DialogHeader>
 
-        {/* Form Body */}
-        <div className="flex-1 flex flex-col p-0 bg-graphite-card">
-          <Input
-            variant="secondary"
-            placeholder="To"
-            rootClassName="border-b border-graphite-border/30 px-4 py-3"
-            inputClassName="text-sm"
-          />
-          <Input
-            variant="secondary"
-            placeholder="Subject"
-            rootClassName="border-b border-graphite-border/30 px-4 py-3"
-            inputClassName="text-sm font-medium"
-          />
-          <TextArea
-            variant="secondary"
+        <div className="flex-1 flex flex-col bg-graphite-card">
+          <div className="border-b border-graphite-border/50">
+            {/* UPDATED INPUT */}
+            <Input
+              variant="flat"
+              shape="sharp"
+              placeholder="Recipients"
+              className="bg-transparent shadow-none" // Remove default background/shadow
+              classNames={{
+                input: "text-sm",
+                inputWrapper: "bg-transparent shadow-none px-4 py-3", // Padding moves to wrapper
+              }}
+            />
+          </div>
+          <div className="border-b border-graphite-border/50">
+            {/* UPDATED INPUT */}
+            <Input
+              variant="flat"
+              shape="sharp"
+              placeholder="Subject"
+              className="bg-transparent shadow-none"
+              classNames={{
+                input: "text-sm font-medium",
+                inputWrapper: "bg-transparent shadow-none px-4 py-3",
+              }}
+            />
+          </div>
+          {/* UPDATED TEXTAREA */}
+          <Textarea
+            variant="flat"
+            shape="sharp"
             placeholder="Compose email..."
-            wrapperClassName="flex-1 px-4 py-4"
-            className="h-full resize-none text-sm leading-relaxed"
-            rows={10}
+            className="flex-1 bg-transparent shadow-none"
+            classNames={{
+              input: "resize-none text-sm leading-relaxed p-4",
+              inputWrapper: "h-full bg-transparent shadow-none",
+            }}
           />
         </div>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-graphite-border flex justify-between items-center bg-graphite-card">
+        <DialogFooter className="bg-graphite-card p-3 border-t border-graphite-border flex justify-between items-center w-full !mt-0">
           <div className="flex items-center gap-2">
             <Button
-              className="rounded-full px-6 h-9"
+              className="rounded-full px-6 h-9 bg-blue-600 hover:bg-blue-700 text-white"
               onClick={() => {
                 toast.success("Message sent");
                 onOpenChange(false);
@@ -219,11 +244,17 @@ const ComposeModal = ({
             <IconButton variant="ghost" size="sm">
               <Paperclip className="h-4 w-4 text-graphite-foreground/60" />
             </IconButton>
+            <IconButton variant="ghost" size="sm">
+              <Tag className="h-4 w-4 text-graphite-foreground/60" />
+            </IconButton>
+            <IconButton variant="ghost" size="sm">
+              <Bold className="h-4 w-4 text-graphite-foreground/60" />
+            </IconButton>
           </div>
           <IconButton variant="ghost" size="sm">
             <Trash2 className="h-4 w-4 text-graphite-foreground/60" />
           </IconButton>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -486,7 +517,12 @@ const MobileInboxContent = ({
       </ElasticScrollArea>
 
       <div className="absolute bottom-6 right-6 z-30">
-        <FAB icon={<Plus />} size="lg" variant="primary" onClick={onCompose}>
+        <FAB
+          icon={<Plus size={32} />}
+          size="lg"
+          variant="primary"
+          onClick={onCompose}
+        >
           Compose
         </FAB>
       </div>
@@ -548,7 +584,7 @@ const MobileHomeScreen = ({
         )}
       </div>
 
-      {/* --- REPLACED BOTTOM TABS WITH REQUESTED CONFIG --- */}
+      {/* --- BOTTOM TABS --- */}
       <BottomTabs.Navigator
         activeTab={activeTab}
         onTabPress={setActiveTab}
@@ -668,11 +704,12 @@ export const GmailReplica: StoryObj = {
           variant="ghost"
           shape="full"
           width="4.5rem"
-          expandedWidth="14rem"
+          expandedWidth="12rem"
           bordered={false}
         >
           <NavigationRail.FAB
             icon={<Plus />}
+            variant="primary"
             label="Compose"
             onClick={() => setIsComposeOpen(true)}
           />
@@ -804,9 +841,8 @@ export const GmailReplica: StoryObj = {
                     padding="sm"
                     className={clsx(
                       "cursor-pointer transition-all",
-                      selectedId === mail.id
-                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100"
-                        : "hover:bg-graphite-secondary/40"
+                      selectedId === mail.id &&
+                        " dark:bg-surface-container-highest "
                     )}
                     onClick={() => setSelectedId(mail.id)}
                   >

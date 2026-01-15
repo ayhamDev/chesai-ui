@@ -16,7 +16,7 @@ import { PaginatedCalendar } from "./paginated-calendar";
 
 type DatePickerProps = Omit<
   InputProps,
-  "value" | "onChange" | "readOnly" | "endAdornment"
+  "value" | "onChange" | "readOnly" | "endContent"
 > & {
   value?: Date | DateRange;
   onChange?: (value?: Date | DateRange) => void;
@@ -69,7 +69,9 @@ export const DatePicker = ({
         readOnly
         value={displayValue}
         placeholder={placeholder}
-        endAdornment={<CalendarIcon className="h-4 w-4 text-gray-500" />}
+        endContent={
+          <CalendarIcon className="h-4 w-4 text-on-surface-variant" />
+        }
         className="cursor-pointer"
         {...inputProps}
       />
@@ -84,7 +86,7 @@ export const DatePicker = ({
           <Popover.Content
             sideOffset={8}
             className={clsx(
-              "z-50 min-w-[320px] w-full p-4 bg-graphite-card rounded-xl border border-graphite-border shadow-lg",
+              "z-50 min-w-[320px] w-full p-4 bg-surface-container-high rounded-xl border border-outline-variant shadow-lg",
               "data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit"
             )}
           >
@@ -103,9 +105,11 @@ export const DatePicker = ({
   }
 
   const DialogContentComponent = (
-    <DialogContent shape="full" className="!p-0 max-w-sm">
+    <DialogContent
+      shape="full"
+      className="!p-0 max-w-sm bg-surface-container-high"
+    >
       {isInputMode ? (
-        // FIX: Pass the correct props to the new DateInputView
         <DateInputView
           mode={mode}
           value={tempValue}
@@ -127,7 +131,7 @@ export const DatePicker = ({
           onSelect={setTempValue}
         />
       )}
-      <div className="flex justify-end gap-2 ">
+      <div className="flex justify-end gap-2 p-4">
         <Button variant="ghost" onClick={() => handleOpenChange(false)}>
           Cancel
         </Button>

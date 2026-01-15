@@ -2,7 +2,7 @@
 
 import { type Table } from "@tanstack/react-table";
 import { useDebounce } from "@uidotdev/usehooks";
-import { AnimatePresence, motion } from "framer-motion"; // Import Framer Motion
+import { AnimatePresence, motion } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "../button";
@@ -10,6 +10,7 @@ import { Input } from "../input";
 import { DataTableAdvancedFilter } from "./advanced-filter";
 import { useDataTable } from "./context";
 import { DataTableViewOptions } from "./view-options";
+import { Card } from "../card";
 
 interface DataTableToolbarProps<TData> {
   children?: React.ReactNode;
@@ -28,38 +29,45 @@ export function DataTableToolbar<TData>({
   const selectedRows = table.getFilteredSelectedRowModel().rows;
   const hasSelection = selectedRows.length > 0;
 
-  // Local state for search input
   const [searchValue, setSearchValue] = useState(
     table.getState().globalFilter ?? ""
   );
   const debouncedSearch = useDebounce(searchValue, 300);
 
-  // Sync debounced value to table state
   useEffect(() => {
     table.setGlobalFilter(debouncedSearch);
   }, [debouncedSearch, table]);
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-2 gap-4 sm:gap-2">
-      {/* Left Side: Search & Filters */}
-      <div className="flex flex-1 items-center gap-2 w-full overflow-x-auto no-scrollbar flex-wrap ">
-        <div className="w-[450px] min-2-[200px]">
+    <Card
+      padding="sm"
+      variant="surface"
+      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-2"
+    >
+      <div className="flex flex-1 items-center gap-2 w-full overflow-x-auto no-scrollbar flex-wrap">
+        <div className="w-full max-w-sm min-w-[200px]">
           <Input
             placeholder="Search..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-            className="h-8 "
-            startAdornment={
-              <Search className="h-4 w-4 text-graphite-foreground/50" />
+            // Ensure height matches standard buttons (h-10) and override min-height logic
+            className="h-10"
+            classNames={{
+              inputWrapper: "!min-h-10 h-10", // Force height override
+              input: "text-sm",
+            }}
+            startContent={
+              <Search className="h-4 w-4 text-on-surface-variant" />
             }
-            variant="secondary"
+            variant="flat"
             shape="minimal"
+            // Use outside label placement to avoid internal padding shifts for "floating label" logic
+            labelPlacement="outside"
           />
         </div>
 
         <DataTableAdvancedFilter table={table} />
 
-        {/* Animated Children */}
         {children && (
           <motion.div
             initial={{ opacity: 0, x: -10 }}
@@ -71,7 +79,6 @@ export function DataTableToolbar<TData>({
           </motion.div>
         )}
 
-        {/* Animated Reset Button */}
         <AnimatePresence>
           {isFiltered && (
             <motion.div
@@ -87,7 +94,7 @@ export function DataTableToolbar<TData>({
                   table.setGlobalFilter("");
                   setSearchValue("");
                 }}
-                className="h-8 px-2 lg:px-3"
+                className="h-10 px-2 lg:px-3"
                 startIcon={<X className="h-4 w-4" />}
               >
                 Reset
@@ -97,7 +104,6 @@ export function DataTableToolbar<TData>({
         </AnimatePresence>
       </div>
 
-      {/* Right Side: Bulk Actions & View Options */}
       <div className="flex items-center gap-2 self-end sm:self-auto">
         <AnimatePresence>
           {hasSelection && bulkActions && (
@@ -108,12 +114,12 @@ export function DataTableToolbar<TData>({
               className="flex items-center gap-2"
             >
               {bulkActions(table)}
-              <div className="h-6 w-[1px] bg-graphite-border mx-1" />
+              <div className="h-6 w-[1px] bg-outline-variant mx-1" />
             </motion.div>
           )}
         </AnimatePresence>
         <DataTableViewOptions />
       </div>
-    </div>
+    </Card>
   );
 }

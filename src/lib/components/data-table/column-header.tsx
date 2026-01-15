@@ -49,40 +49,40 @@ export function DataTableColumnHeader<TData, TValue>({
             <Button
               variant="ghost"
               size="sm"
-              className="-ml-3 h-8 data-[state=open]:bg-graphite-secondary"
+              className="-ml-3 h-8 data-[state=open]:bg-secondary-container"
             >
               <span>{title}</span>
               {column.getIsSorted() === "desc" ? (
-                <ArrowDown className="ml-2 h-4 w-4 text-graphite-primary" />
+                <ArrowDown className="ml-2 h-4 w-4 text-primary" />
               ) : column.getIsSorted() === "asc" ? (
-                <ArrowUp className="ml-2 h-4 w-4 text-graphite-primary" />
+                <ArrowUp className="ml-2 h-4 w-4 text-primary" />
               ) : (
                 <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
               )}
               {column.getFilterValue() && (
-                <Filter className="ml-2 h-3 w-3 text-graphite-primary" />
+                <Filter className="ml-2 h-3 w-3 text-primary" />
               )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-              <ArrowUp className="mr-2 h-3.5 w-3.5 text-graphite-foreground/70" />
+              <ArrowUp className="mr-2 h-3.5 w-3.5 text-on-surface-variant" />
               Asc
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-              <ArrowDown className="mr-2 h-3.5 w-3.5 text-graphite-foreground/70" />
+              <ArrowDown className="mr-2 h-3.5 w-3.5 text-on-surface-variant" />
               Desc
             </DropdownMenuItem>
 
             <DropdownMenuItem onClick={() => column.clearSorting()}>
-              <X className="mr-2 h-3.5 w-3.5 text-graphite-foreground/70" />
+              <X className="mr-2 h-3.5 w-3.5 text-on-surface-variant" />
               Clear Sort
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
 
             <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-              <EyeOff className="mr-2 h-3.5 w-3.5 text-graphite-foreground/70" />
+              <EyeOff className="mr-2 h-3.5 w-3.5 text-on-surface-variant" />
               Hide
             </DropdownMenuItem>
 
@@ -90,7 +90,7 @@ export function DataTableColumnHeader<TData, TValue>({
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => setIsFilterOpen(true)}>
-                  <Filter className="mr-2 h-3.5 w-3.5 text-graphite-foreground/70" />
+                  <Filter className="mr-2 h-3.5 w-3.5 text-on-surface-variant" />
                   Filter
                 </DropdownMenuItem>
               </>

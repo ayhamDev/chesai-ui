@@ -333,7 +333,7 @@ export const ServerSideSimulation: Story = {
 
             filteredData = filteredData.filter((item) => {
               const itemValue = item[id as keyof Payment];
-              if (op === "eq") return String(itemValue) == String(val);
+              if (op === "eq") return String(itemValue) === String(val);
               if (op === "gt") return Number(itemValue) > Number(val);
               if (op === "lt") return Number(itemValue) < Number(val);
               return String(itemValue)

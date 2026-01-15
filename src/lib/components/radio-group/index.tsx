@@ -5,7 +5,7 @@ import { clsx } from "clsx";
 export interface RadioGroupItemProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
-  value?: string; // Added explicit value prop
+  value?: string;
 }
 
 const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
@@ -23,13 +23,13 @@ const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
             className={clsx(
               "peer h-5 w-5 shrink-0 appearance-none rounded-full border-2 transition-colors duration-200",
               // Unchecked state
-              "border-graphite-border",
+              "border-outline-variant",
               // Checked state
-              "checked:border-graphite-primary",
+              "checked:border-primary",
               // Focus state
-              "focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-2",
+              "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
               // Disabled state
-              "disabled:cursor-not-allowed disabled:opacity-50 disabled:checked:border-graphite-border",
+              "disabled:cursor-not-allowed disabled:opacity-50 disabled:checked:border-outline-variant",
               className
             )}
             {...props}
@@ -37,7 +37,7 @@ const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
           {/* The Inner Dot */}
           <div
             className={clsx(
-              "pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-graphite-primary",
+              "pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-primary",
               "transition-transform duration-200 ease-in-out transform scale-0 peer-checked:scale-100"
             )}
           />
@@ -45,7 +45,7 @@ const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
         {label && (
           <label
             htmlFor={radioId}
-            className="ml-3 select-none text-sm font-medium text-graphite-foreground"
+            className="ml-3 select-none text-sm font-medium text-on-surface"
           >
             {label}
           </label>
@@ -88,7 +88,7 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
         {label && (
           <div
             id={labelId}
-            className="mb-2 block text-sm font-medium text-graphite-primary"
+            className="mb-2 block text-sm font-medium text-primary"
           >
             {label}
           </div>
@@ -103,7 +103,6 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
           {React.Children.map(children, (child) => {
             if (!React.isValidElement<RadioGroupItemProps>(child)) return child;
 
-            // Inject props into each RadioGroup.Item
             return React.cloneElement(child, {
               name: groupName,
               checked: child.props.value === value,
@@ -121,6 +120,5 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
 );
 RadioGroup.displayName = "RadioGroup";
 
-// Export as a compound component
 const Radio = Object.assign(RadioGroup, { Item: RadioGroupItem });
 export { Radio, RadioGroup, RadioGroupItem };

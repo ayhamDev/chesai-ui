@@ -18,23 +18,25 @@ const Toaster = ({ ...props }: ToasterProps) => {
         classNames: {
           // --- General Toast Styling ---
           toast:
-            "group toast group-[.toaster]:bg-graphite-card group-[.toaster]:text-graphite-foreground group-[.toaster]:border-graphite-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-graphite-foreground/80",
+            "group toast group-[.toaster]:bg-surface-container group-[.toaster]:text-on-surface group-[.toaster]:border-outline-variant group-[.toaster]:shadow-lg",
+          description: "group-[.toast]:text-on-surface-variant",
 
           // --- Button Styling ---
           actionButton:
-            "group-[.toast]:bg-graphite-primary group-[.toast]:text-graphite-primaryForeground",
+            "group-[.toast]:bg-primary group-[.toast]:text-on-primary",
           cancelButton:
-            "group-[.toast]:bg-graphite-secondary group-[.toast]:text-graphite-secondaryForeground",
+            "group-[.toast]:bg-secondary-container group-[.toast]:text-on-secondary-container",
 
           // --- Icon Styling for Different States ---
+          // Using standard colors since 'success' etc aren't in our core palette yet,
+          // or mapping error to our error token.
           success:
-            "group-[.toast]:!text-green-500 group-[.toast]:[&_[data-icon]]:!text-green-500",
+            "group-[.toast]:!text-green-600 group-[.toast]:[&_[data-icon]]:!text-green-600",
           error:
-            "group-[.toast]:!text-red-500 group-[.toast]:[&_[data-icon]]:!text-red-500",
+            "group-[.toast]:!text-error group-[.toast]:[&_[data-icon]]:!text-error",
           warning:
-            "group-[.toast]:!text-yellow-500 group-[.toast]:[&_[data-icon]]:!text-yellow-500",
-          info: "group-[.toast]:!text-blue-500 group-[.toast]:[&_[data-icon]]:!text-blue-500",
+            "group-[.toast]:!text-yellow-600 group-[.toast]:[&_[data-icon]]:!text-yellow-600",
+          info: "group-[.toast]:!text-primary group-[.toast]:[&_[data-icon]]:!text-primary",
         },
       }}
       {...props}

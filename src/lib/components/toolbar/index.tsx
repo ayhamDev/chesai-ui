@@ -10,12 +10,10 @@ import { iconButtonVariants } from "../icon-button";
 import { Tooltip, TooltipProvider, TooltipTrigger } from "../tooltip";
 import { Typography } from "../typography";
 
-// --- Types ---
 type ToolbarSize = "sm" | "md" | "lg";
 type ToolbarOrientation = "horizontal" | "vertical";
 type ToolbarShape = "full" | "minimal" | "sharp";
 
-// --- Context ---
 interface ToolbarContextProps {
   orientation: ToolbarOrientation;
   size: ToolbarSize;
@@ -29,8 +27,6 @@ const ToolbarContext = createContext<ToolbarContextProps>({
 
 const useToolbarContext = () => useContext(ToolbarContext);
 
-// --- CVA Variants ---
-
 const toolbarVariants = cva(
   "flex items-center transition-colors duration-200 border",
   {
@@ -40,8 +36,8 @@ const toolbarVariants = cva(
         vertical: "flex-col h-fit",
       },
       variant: {
-        primary: "bg-graphite-card border-graphite-border",
-        secondary: "bg-graphite-secondary border-transparent",
+        primary: "bg-surface-container border-outline-variant",
+        secondary: "bg-surface-container-high border-transparent",
         ghost: "bg-transparent border-transparent",
       },
       shape: {
@@ -79,7 +75,7 @@ const toolbarVariants = cva(
   }
 );
 
-const separatorVariants = cva("bg-graphite-border shrink-0 opacity-60", {
+const separatorVariants = cva("bg-outline-variant shrink-0 opacity-60", {
   variants: {
     orientation: {
       horizontal: "w-[1px] mx-1",
@@ -105,22 +101,22 @@ const separatorVariants = cva("bg-graphite-border shrink-0 opacity-60", {
   },
 });
 
-// Base styles for toggle items
 const itemBaseStyles =
-  "relative flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none overflow-hidden";
+  "relative flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none overflow-hidden";
 
 const toggleItemVariants = cva(itemBaseStyles, {
   variants: {
     variant: {
       default:
-        "bg-transparent text-graphite-foreground disabled:opacity-70 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring " +
-        "after:absolute after:inset-0 after:z-[1] after:bg-graphite-secondary after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
+        "bg-transparent text-on-surface disabled:opacity-70 focus:ring-2 focus:ring-offset-2 focus:ring-primary " +
+        "after:absolute after:inset-0 after:z-[1] after:bg-secondary-container after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
         "hover:after:opacity-100 hover:after:scale-100 " +
-        "disabled:after:opacity-0",
+        "disabled:after:opacity-0 " +
+        "data-[state=on]:bg-secondary-container data-[state=on]:text-on-secondary-container",
       outline:
-        "border border-transparent hover:border-graphite-border data-[state=on]:border-graphite-border data-[state=on]:bg-graphite-card shadow-sm",
+        "border border-transparent hover:border-outline-variant data-[state=on]:border-outline-variant data-[state=on]:bg-surface-container-high shadow-sm",
       primary:
-        "hover:bg-graphite-primary/10 data-[state=on]:bg-graphite-primary data-[state=on]:text-graphite-primaryForeground",
+        "hover:bg-primary/10 data-[state=on]:bg-primary data-[state=on]:text-on-primary",
     },
     size: {
       sm: "h-8 min-w-[2rem] text-xs px-1.5",
@@ -139,8 +135,6 @@ const toggleItemVariants = cva(itemBaseStyles, {
     shape: "minimal",
   },
 });
-
-// --- Helper: Tooltip Wrapper ---
 
 interface ToolbarItemTooltipProps {
   children: React.ReactElement;
@@ -176,8 +170,6 @@ const ToolbarItemTooltip = ({
     </TooltipProvider>
   );
 };
-
-// --- Root Component ---
 
 export interface ToolbarProps
   extends React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Root>,
@@ -235,8 +227,6 @@ const ToolbarRoot = React.forwardRef<
 );
 ToolbarRoot.displayName = "Toolbar";
 
-// --- Separator ---
-
 const ToolbarSeparator = React.forwardRef<
   React.ElementRef<typeof ToolbarPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Separator>
@@ -252,18 +242,12 @@ const ToolbarSeparator = React.forwardRef<
 });
 ToolbarSeparator.displayName = "ToolbarSeparator";
 
-// --- Button (Action) ---
-
 interface ToolbarButtonProps
   extends React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Button>,
     VariantProps<typeof iconButtonVariants> {
-  /** If set, overrides the size from the Toolbar context */
   size?: ToolbarSize;
-  /** If set, overrides the shape from the Toolbar context */
   shape?: ToolbarShape;
-  /** Adds a tooltip when hovered/focused */
   tooltip?: string;
-  /** Adds a shortcut label to the tooltip */
   shortcut?: string;
 }
 
@@ -290,18 +274,18 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
 
     const rippleColor =
       variant === "primary" || variant === "destructive"
-        ? "var(--color-ripple-dark)"
-        : "var(--color-ripple-light)";
+        ? "var(--color-on-primary)"
+        : "var(--color-primary)";
 
     const [, event] = useRipple({
       ref: localRef,
       color: rippleColor,
       duration: 400,
+      opacity: 0.1,
     });
 
     const [isPressed, setIsPressed] = useState(false);
 
-    // Check if content is text or mixed to adjust width
     const hasText = React.Children.toArray(children).some(
       (child) => typeof child === "string" || typeof child === "number"
     );
@@ -321,7 +305,6 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
             size: finalSize,
             shape: finalShape,
           }),
-          // Allow width to grow for text buttons
           hasText && "w-auto px-4 min-w-[auto] aspect-auto",
           className
         )}
@@ -350,8 +333,6 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
 );
 ToolbarButton.displayName = "ToolbarButton";
 
-// --- Toggle Group ---
-
 const ToolbarToggleGroup = React.forwardRef<
   React.ElementRef<typeof ToolbarPrimitive.ToggleGroup>,
   React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleGroup>
@@ -362,7 +343,6 @@ const ToolbarToggleGroup = React.forwardRef<
       ref={ref}
       className={clsx(
         "flex items-center gap-0.5",
-        // Automatically stack if parent is vertical
         orientation === "vertical" ? "flex-col w-full" : "flex-row",
         className
       )}
@@ -371,8 +351,6 @@ const ToolbarToggleGroup = React.forwardRef<
   );
 });
 ToolbarToggleGroup.displayName = "ToolbarToggleGroup";
-
-// --- Toggle Item ---
 
 interface ToolbarToggleItemProps
   extends React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleItem>,
@@ -400,8 +378,9 @@ const ToolbarToggleItem = React.forwardRef<
 
     const [, event] = useRipple({
       ref: localRef,
-      color: "var(--color-ripple-light)",
+      color: "var(--color-on-surface)",
       duration: 400,
+      opacity: 0.1,
     });
 
     const [isPressed, setIsPressed] = useState(false);
@@ -421,7 +400,6 @@ const ToolbarToggleItem = React.forwardRef<
             size: finalSize,
             shape: finalShape,
           }),
-          // Fill width if in vertical toolbar to match look
           context.orientation === "vertical" && "w-full",
           className
         )}
@@ -450,13 +428,10 @@ const ToolbarToggleItem = React.forwardRef<
 );
 ToolbarToggleItem.displayName = "ToolbarToggleItem";
 
-// --- Export ---
-
 export const Toolbar = Object.assign(ToolbarRoot, {
   Button: ToolbarButton,
   Separator: ToolbarSeparator,
   ToggleGroup: ToolbarToggleGroup,
   ToggleItem: ToolbarToggleItem,
-  /** Helper component for adding tooltips to custom toolbar items */
   ItemTooltip: ToolbarItemTooltip,
 });

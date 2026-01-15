@@ -6,6 +6,7 @@ import { clsx } from "clsx";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import React, { createContext, useContext, useRef } from "react";
 import useRipple from "use-ripple-hook";
+import { useTheme } from "../../context";
 
 type MenubarShape = "full" | "minimal" | "sharp";
 
@@ -44,7 +45,7 @@ const MenubarRoot: React.FC<MenubarProps> = ({
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-menubar-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-graphite-border bg-graphite-card text-graphite-foreground p-1.5",
+    "border border-outline-variant bg-surface-container text-on-surface p-1.5",
     "shadow-md",
   ],
   {
@@ -67,7 +68,6 @@ const MenubarPortal = RadixMenubar.Portal;
 const MenubarSub = RadixMenubar.Sub;
 const MenubarRadioGroup = RadixMenubar.RadioGroup;
 
-// --- Styled Trigger with Bloom ---
 const MenubarTrigger = React.forwardRef<
   React.ElementRef<typeof RadixMenubar.Trigger>,
   React.ComponentPropsWithoutRef<typeof RadixMenubar.Trigger>
@@ -75,13 +75,11 @@ const MenubarTrigger = React.forwardRef<
   <RadixMenubar.Trigger
     ref={ref}
     className={clsx(
-      "flex cursor-pointer select-none items-center rounded-md px-3 py-1.5 text-sm font-semibold outline-none text-graphite-foreground relative z-0 overflow-hidden",
+      "flex cursor-pointer select-none items-center rounded-md px-3 py-1.5 text-sm font-semibold outline-none text-on-surface relative z-0 overflow-hidden",
       "transition-colors duration-150 ease-in-out",
-      // Remove direct hover bg
-      "focus:bg-graphite-secondary",
-      "data-[state=open]:bg-graphite-secondary",
-      // Bloom effect
-      "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
+      "focus:bg-surface-container-highest",
+      "data-[state=open]:bg-surface-container-highest",
+      "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
       "hover:after:opacity-100 hover:after:scale-100"
     )}
     {...props}
@@ -123,17 +121,14 @@ const MenubarContent = React.forwardRef<
 );
 MenubarContent.displayName = RadixMenubar.Content.displayName;
 
-// Shared item styles including bloom
 const itemStyles =
   "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden " +
   "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)] z-0 " +
-  "focus:bg-graphite-secondary data-[highlighted]:bg-graphite-secondary " +
-  "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20 " +
+  "focus:bg-secondary-container/60 data-[highlighted]:bg-secondary-container/60 " +
+  "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/20 " +
   "data-[disabled]:pointer-events-none data-[disabled]:opacity-38 " +
-  // Bloom
-  "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
+  "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
   "hover:after:opacity-100 hover:after:scale-100 " +
-  // Reset bg for hover since we use bloom
   "hover:bg-transparent";
 
 const MenubarItem = React.forwardRef<
@@ -144,9 +139,15 @@ const MenubarItem = React.forwardRef<
 >(({ className, inset, ...props }, ref) => {
   const { shape } = useMenubarContext();
   const localRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+  console.log(theme);
+
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color:
+      theme === "dark"
+        ? "var(--color-ripple-dark)"
+        : "var(--color-ripple-light)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -176,7 +177,7 @@ const MenubarCheckboxItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -195,7 +196,7 @@ const MenubarCheckboxItem = React.forwardRef<
     >
       <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixMenubar.ItemIndicator>
-          <Check className="h-4 w-4 animate-check-in" />
+          <Check className="h-4 w-4 animate-check-in text-primary" />
         </RadixMenubar.ItemIndicator>
       </span>
       <span className="relative z-10">{children}</span>
@@ -212,7 +213,7 @@ const MenubarRadioItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -231,7 +232,7 @@ const MenubarRadioItem = React.forwardRef<
     >
       <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixMenubar.ItemIndicator>
-          <Circle className="h-2 w-2 fill-current animate-check-in" />
+          <Circle className="h-2 w-2 fill-current animate-check-in text-primary" />
         </RadixMenubar.ItemIndicator>
       </span>
       <span className="relative z-10">{children}</span>
@@ -250,7 +251,7 @@ const MenubarSubTrigger = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -261,7 +262,7 @@ const MenubarSubTrigger = React.forwardRef<
       onPointerDown={event}
       className={clsx(
         itemStyles,
-        "data-[state=open]:bg-graphite-secondary",
+        "data-[state=open]:bg-secondary-container/60",
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         shape === "sharp" && "!rounded-none",
@@ -309,7 +310,7 @@ const MenubarLabel = React.forwardRef<
   <RadixMenubar.Label
     ref={ref}
     className={clsx(
-      "px-3 py-2 text-xs font-medium text-graphite-foreground/70 tracking-wide",
+      "px-3 py-2 text-xs font-medium text-on-surface-variant tracking-wide",
       inset && "pl-8",
       className
     )}
@@ -324,7 +325,7 @@ const MenubarSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadixMenubar.Separator
     ref={ref}
-    className={clsx("-mx-1 my-1.5 h-px bg-graphite-border/60", className)}
+    className={clsx("-mx-1 my-1.5 h-px bg-outline-variant", className)}
     {...props}
   />
 ));
@@ -337,7 +338,7 @@ const MenubarShortcut = ({
   return (
     <span
       className={clsx(
-        "ml-auto text-xs font-mono tracking-wider text-graphite-foreground/50",
+        "ml-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
         className
       )}
       {...props}

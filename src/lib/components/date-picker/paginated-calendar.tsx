@@ -29,7 +29,6 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
     mode
   );
 
-  // --- Data for Month and Year Views ---
   const months = useMemo(
     () => Array.from({ length: 12 }, (_, i) => format(new Date(0, i), "MMM")),
     []
@@ -39,7 +38,6 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
     return Array.from({ length: 12 }, (_, i) => startYear + i);
   }, [cursorDate]);
 
-  // --- Handlers ---
   const handleNav = (dir: 1 | -1) => {
     setDirection(dir);
     if (currentView === "day") {
@@ -89,7 +87,6 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
     else setCurrentView("day");
   };
 
-  // --- Animation Variants ---
   const viewVariants = {
     enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? "100%" : "-100%" }),
     center: { opacity: 1, x: "0%" },
@@ -99,18 +96,17 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
   const today = new Date();
 
   return (
-    <div className="p-0 w-full max-w-sm mx-auto">
+    <div className="p-0 w-full max-w-sm mx-auto text-on-surface">
       <div className="flex items-center justify-between mb-4 px-1">
         <button
           type="button"
           onClick={handleHeaderClick}
-          className="text-base font-semibold hover:bg-graphite-secondary text-graphite-foreground px-2 py-1 rounded-lg transition-colors"
+          className="text-base font-semibold hover:bg-secondary-container text-on-surface px-2 py-1 rounded-lg transition-colors"
         >
           {currentView === "day" && format(cursorDate, "MMMM yyyy")}
           {currentView === "month" && format(cursorDate, "yyyy")}
           {currentView === "year" && `${yearBlock[0]} - ${yearBlock[11]}`}
         </button>
-        {/* Show nav arrows only for paginated views */}
         {(currentView === "day" || currentView === "year") && (
           <div className="flex items-center ">
             <IconButton
@@ -152,7 +148,7 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
               {weekdays.map((day, i) => (
                 <div
                   key={`${day}-${i}`}
-                  className="w-10 h-10 flex items-center justify-center text-sm font-medium text-gray-500"
+                  className="w-10 h-10 flex items-center justify-center text-sm font-medium text-on-surface-variant"
                 >
                   {day}
                 </div>
@@ -171,9 +167,9 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
                     key={day.toISOString()}
                     className={clsx(
                       "h-10 flex items-center justify-center",
-                      isInRange && "bg-graphite-secondary",
-                      isRangeStart && "bg-graphite-secondary rounded-l-full",
-                      isRangeEnd && "bg-graphite-secondary rounded-r-full"
+                      isInRange && "bg-secondary-container",
+                      isRangeStart && "bg-secondary-container rounded-l-full",
+                      isRangeEnd && "bg-secondary-container rounded-r-full"
                     )}
                   >
                     <button
@@ -181,17 +177,18 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
                       onClick={() => handleSelectDay(day)}
                       disabled={!isCurrentMonth}
                       className={clsx(
-                        "w-10 h-10 flex items-center justify-center rounded-full transition-colors text-sm text-graphite-foreground",
-                        "focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-1",
-                        !isCurrentMonth && "text-gray-400 pointer-events-none",
+                        "w-10 h-10 flex items-center justify-center rounded-full transition-colors text-sm text-on-surface",
+                        "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+                        !isCurrentMonth &&
+                          "text-on-surface-variant/50 pointer-events-none",
                         !isSelected &&
                           !isInRange &&
-                          "hover:bg-graphite-secondary",
+                          "hover:bg-secondary-container",
                         isToday &&
                           !isSelected &&
-                          "font-bold ring-1 ring-graphite-primary",
-                        isSelected &&
-                          "bg-graphite-primary text-graphite-primaryForeground"
+                          "font-bold ring-1 ring-primary text-primary",
+                        // FIX: Force correct text color for selected state
+                        isSelected && "bg-primary !text-on-primary"
                       )}
                     >
                       {format(day, "d")}
@@ -222,14 +219,15 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
                     type="button"
                     onClick={() => handleSelectMonth(i)}
                     className={clsx(
-                      "h-16 flex items-center justify-center rounded-xl transition-colors text-sm font-semibold text-graphite-foreground ",
-                      "focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-1",
+                      "h-16 flex items-center justify-center rounded-xl transition-colors text-sm font-semibold text-on-surface",
+                      "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+                      // FIX: Force correct text color for selected state
                       isSelected
-                        ? "bg-graphite-primary text-graphite-primaryForeground"
-                        : "hover:bg-graphite-secondary",
+                        ? "bg-primary !text-on-primary"
+                        : "hover:bg-secondary-container",
                       isCurrentMonth &&
                         !isSelected &&
-                        "ring-1 ring-graphite-primary"
+                        "ring-1 ring-primary text-primary"
                     )}
                   >
                     {month}
@@ -262,14 +260,15 @@ export const PaginatedCalendar = ({ mode, value, onSelect }: CalendarProps) => {
                     type="button"
                     onClick={() => handleSelectYear(year)}
                     className={clsx(
-                      "h-16 flex items-center justify-center rounded-xl transition-colors text-sm font-semibold text-graphite-foreground",
-                      "focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-1",
+                      "h-16 flex items-center justify-center rounded-xl transition-colors text-sm font-semibold text-on-surface",
+                      "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
+                      // FIX: Force correct text color for selected state
                       isSelected
-                        ? "bg-graphite-primary text-graphite-primaryForeground"
-                        : "hover:bg-graphite-secondary",
+                        ? "bg-primary !text-on-primary"
+                        : "hover:bg-secondary-container",
                       isCurrentYear &&
                         !isSelected &&
-                        "ring-1 ring-graphite-primary"
+                        "ring-1 ring-primary text-primary"
                     )}
                   >
                     {year}

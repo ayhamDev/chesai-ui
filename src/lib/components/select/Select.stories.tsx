@@ -1,238 +1,152 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { User } from "lucide-react";
 import { useState } from "react";
-import { SelectInput } from "./index";
+import { Select } from "./index";
 
-const meta: Meta<typeof SelectInput> = {
+const meta: Meta<typeof Select> = {
   title: "Components/Forms & Inputs/Select",
-  component: SelectInput,
+  component: Select,
   tags: ["autodocs"],
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary"],
-    },
-    shape: {
-      control: "select",
-      options: ["full", "minimal", "sharp"],
+      options: ["flat", "bordered", "underlined", "faded"],
     },
     size: {
       control: "select",
       options: ["sm", "md", "lg"],
     },
-    label: { control: "text" },
-    placeholder: { control: "text" },
-    disabled: { control: "boolean" },
-    error: { control: "text" },
-    contentPosition: {
+    shape: {
       control: "select",
-      options: ["item-aligned", "popper"],
-      description: "Controls the positioning and animation of the dropdown.",
+      options: ["full", "minimal", "sharp"],
     },
+    labelPlacement: {
+      control: "select",
+      options: ["inside", "outside", "outside-left"],
+    },
+    disabled: { control: "boolean" },
+    isInvalid: { control: "boolean" },
   },
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<typeof Select>;
 
-const fruitItems = [
-  {
-    value: "apple loremfwekfkweiofkjweifjwoeifoifwejfiowejfiowejfowiejfwi",
-    label: "Apple loremfwekfkweiofkjweifjwoeifoifwejfiowejfiowejfowiejfwi",
-  },
-  { value: "banana", label: "Banana" },
-  { value: "blueberry", label: "Blueberry" },
-  { value: "grapes", label: "Grapes" },
-  { value: "pineapple", label: "Pineapple", disabled: true },
-  { value: "strawberry", label: "Strawberry" },
-  { value: "orange", label: "Orange" },
-  { value: "mango", label: "Mango" },
-  { value: "kiwi", label: "Kiwi" },
-  { value: "peach", label: "Peach" },
-  { value: "pear", label: "Pear" },
-  { value: "watermelon", label: "Watermelon" },
-  { value: "cherry", label: "Cherry" },
-  { value: "raspberry", label: "Raspberry" },
-  { value: "lemon", label: "Lemon" },
+const animals = [
+  { value: "cat", label: "Cat" },
+  { value: "dog", label: "Dog" },
+  { value: "elephant", label: "Elephant" },
+  { value: "lion", label: "Lion" },
+  { value: "tiger", label: "Tiger" },
+  { value: "giraffe", label: "Giraffe" },
 ];
+
 export const Default: Story = {
   args: {
-    variant: "primary",
-    shape: "minimal",
-    size: "md",
-    label: "Favorite Fruit",
-    placeholder: "Select a fruit...",
-    items: fruitItems,
-    contentPosition: "item-aligned", // Default
-  },
-  render: (args) => {
-    const [value, setValue] = useState("");
-    return <SelectInput {...args} value={value} onValueChange={setValue} />;
+    label: "Favorite Animal",
+    placeholder: "Select an animal",
+    items: animals,
+    labelPlacement: "inside"
   },
 };
 
-export const PopperPosition: Story = {
-  name: "Popper Position",
-  args: {
-    ...Default.args,
-    label: "Popper Positioned Select",
-    placeholder: "Select a fruit...",
-    contentPosition: "popper",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "When `contentPosition` is set to `popper`, the content detaches and uses a scale/fade animation, similar to a dropdown menu.",
-      },
-    },
-  },
-  render: (args) => {
-    const [value, setValue] = useState("");
-    return <SelectInput {...args} value={value} onValueChange={setValue} />;
-  },
-};
-
-// ... keep your other stories like AllSizes, AllVariantsAndShapes, and AllStates
-export const AllSizes: Story = {
-  name: "All Sizes",
+export const Variants: Story = {
+  name: "Visual Variants",
   render: () => (
-    <div className="flex flex-col gap-6 max-w-sm">
-      <SelectInput
-        size="sm"
-        label="Small"
-        placeholder="Select size..."
-        items={fruitItems}
+    <div className="w-full flex flex-col gap-6 max-w-sm">
+      <Select
+        label="Flat (Default)"
+        variant="flat"
+        items={animals}
+        placeholder="Select..."
       />
-      <SelectInput
+      <Select
+        label="Faded"
+        variant="faded"
+        items={animals}
+        placeholder="Select..."
+      />
+      <Select
+        label="Bordered"
+        variant="bordered"
+        items={animals}
+        placeholder="Select..."
+      />
+      <Select
+        label="Underlined"
+        variant="underlined"
+        items={animals}
+        placeholder="Select..."
+      />
+    </div>
+  ),
+};
+
+export const Shapes: Story = {
+  name: "Shapes",
+  render: () => (
+    <div className="w-full flex flex-col gap-6 max-w-sm">
+      <Select
+        label="Minimal"
+        shape="minimal"
+        variant="flat"
+        items={animals}
+        placeholder="Select..."
+      />
+      <Select
+        label="Full"
+        shape="full"
+        variant="flat"
+        items={animals}
+        placeholder="Select..."
+      />
+      <Select
+        label="Sharp"
+        shape="sharp"
+        variant="flat"
+        items={animals}
+        placeholder="Select..."
+      />
+    </div>
+  ),
+};
+
+export const Sizes: Story = {
+  name: "Sizes",
+  render: () => (
+    <div className="w-full flex flex-col gap-6 max-w-sm">
+      <Select label="Small" size="sm" items={animals} placeholder="Select..." />
+      <Select
+        label="Medium"
         size="md"
-        label="Medium (Default)"
-        placeholder="Select size..."
-        items={fruitItems}
+        items={animals}
+        placeholder="Select..."
       />
-      <SelectInput
-        size="lg"
-        label="Large"
-        placeholder="Select size..."
-        items={fruitItems}
-      />
+      <Select label="Large" size="lg" items={animals} placeholder="Select..." />
     </div>
   ),
 };
 
-export const AllVariantsAndShapes: Story = {
-  name: "All Variants & Shapes",
-  render: () => (
-    <div className="flex flex-col gap-8 max-w-sm">
-      <div>
-        <h3 className="font-bold mb-4">Primary Variant</h3>
-        <div className="flex flex-col gap-4">
-          <SelectInput
-            variant="primary"
-            shape="full"
-            placeholder="Full Shape"
-            items={fruitItems}
-          />
-          <SelectInput
-            variant="primary"
-            shape="minimal"
-            placeholder="Minimal Shape"
-            items={fruitItems}
-          />
-          <SelectInput
-            variant="primary"
-            shape="sharp"
-            placeholder="Sharp Shape"
-            items={fruitItems}
-          />
-        </div>
-      </div>
-      <div>
-        <h3 className="font-bold mb-4">Secondary Variant</h3>
-        <div className="flex flex-col gap-4">
-          <SelectInput
-            variant="secondary"
-            shape="full"
-            placeholder="Full Shape"
-            items={fruitItems}
-          />
-          <SelectInput
-            variant="secondary"
-            shape="minimal"
-            placeholder="Minimal Shape"
-            items={fruitItems}
-          />
-          <SelectInput
-            variant="secondary"
-            shape="sharp"
-            placeholder="Sharp Shape"
-            items={fruitItems}
-          />
-        </div>
-      </div>
-    </div>
-  ),
+export const WithStartContent: Story = {
+  name: "With Start Content",
+  args: {
+    label: "User",
+    placeholder: "Select user",
+    items: [
+      { value: "1", label: "Jane Doe" },
+      { value: "2", label: "John Smith" },
+    ],
+    startContent: <User className="w-4 h-4 text-gray-500" />,
+  },
 };
 
-export const AllStates: Story = {
-  name: "All States",
-  render: () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl">
-      <div className="flex flex-col gap-4">
-        <h3 className="font-bold mb-2">Primary States</h3>
-        <SelectInput
-          variant="primary"
-          label="Default"
-          placeholder="Select..."
-          items={fruitItems}
-        />
-        <SelectInput
-          variant="primary"
-          label="With Value"
-          defaultValue="apple"
-          items={fruitItems}
-        />
-        <SelectInput
-          variant="primary"
-          label="Error State"
-          error="Please select a fruit."
-          items={fruitItems}
-        />
-        <SelectInput
-          variant="primary"
-          label="Disabled"
-          placeholder="Cannot select"
-          disabled
-          items={fruitItems}
-        />
-      </div>
-      <div className="flex flex-col gap-4">
-        <h3 className="font-bold mb-2">Secondary States</h3>
-        <SelectInput
-          variant="secondary"
-          label="Default"
-          placeholder="Select..."
-          items={fruitItems}
-        />
-        <SelectInput
-          variant="secondary"
-          label="With Value"
-          defaultValue="banana"
-          items={fruitItems}
-        />
-        <SelectInput
-          variant="secondary"
-          label="Error State"
-          error="Please select a fruit."
-          items={fruitItems}
-        />
-        <SelectInput
-          variant="secondary"
-          label="Disabled"
-          placeholder="Cannot select"
-          disabled
-          items={fruitItems}
-        />
-      </div>
-    </div>
-  ),
+export const InvalidState: Story = {
+  name: "Invalid State",
+  args: {
+    label: "Required Field",
+    placeholder: "Select...",
+    items: animals,
+    isInvalid: true,
+    errorMessage: "Please make a selection",
+  },
 };

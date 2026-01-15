@@ -5,41 +5,41 @@ import { Copy, Minus, Square, X } from "lucide-react";
 import React, { useRef, useState } from "react";
 
 // --- CVA Variants ---
-const taskbarVariants = cva(
-  "flex items-center text-graphite-foreground select-none",
-  {
-    variants: {
-      variant: {
-        transparent: "bg-transparent",
-        card: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
-      },
-      bordered: {
-        true: "border-b border-graphite-border",
-        false: "border-b border-transparent",
-      },
-      size: {
-        sm: "h-8",
-        md: "h-10",
-        lg: "h-12",
-      },
+const taskbarVariants = cva("flex items-center text-on-surface select-none", {
+  variants: {
+    variant: {
+      transparent: "bg-transparent",
+      // Standard App Bar / Taskbar color
+      card: "bg-surface-container",
+      // Slightly higher elevation/contrast
+      secondary: "bg-surface-container-high",
     },
-    defaultVariants: {
-      variant: "transparent",
-      bordered: false,
-      size: "md",
+    bordered: {
+      true: "border-b border-outline-variant",
+      false: "border-b border-transparent",
     },
-  }
-);
+    size: {
+      sm: "h-8",
+      md: "h-10",
+      lg: "h-12",
+    },
+  },
+  defaultVariants: {
+    variant: "transparent",
+    bordered: false,
+    size: "md",
+  },
+});
 
 const windowControlVariants = cva(
-  "flex items-center justify-center transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring relative overflow-hidden group ",
+  "flex items-center justify-center transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary relative overflow-hidden group ",
   {
     variants: {
       variant: {
-        minimize: "hover:bg-black/10",
-        maximize: "hover:bg-black/10",
-        close: "hover:bg-red-500 hover:text-white",
+        // Use on-surface with low opacity for hover states to work in both light/dark
+        minimize: "hover:bg-on-surface/10",
+        maximize: "hover:bg-on-surface/10",
+        close: "hover:bg-error hover:text-on-error",
       },
       size: {
         sm: "h-8 w-10",
@@ -63,7 +63,6 @@ interface WindowButtonProps
 const WindowButton = React.forwardRef<HTMLButtonElement, WindowButtonProps>(
   ({ children, variant, size, onClick, ...props }, ref) => {
     const localRef = useRef<HTMLButtonElement>(null);
-
     const [isPressed, setIsPressed] = useState(false);
 
     const stopPropagation = (
@@ -105,19 +104,14 @@ export interface TaskbarProps extends React.HTMLAttributes<HTMLElement> {
   variant?: "transparent" | "card" | "secondary";
   bordered?: boolean;
   size?: "sm" | "md" | "lg";
-  /** Content to render at the start of the taskbar (e.g., app icon, title). */
   startAdornment?: React.ReactNode;
-  /** Content to render in the center (e.g., navigation menu). */
   centerAdornment?: React.ReactNode;
-  /** Determines if the maximize icon should show the 'restore' state. */
   isMaximized?: boolean;
-  /** Callback fired when the minimize button is clicked. */
   onMinimize?: () => void;
-  /** Callback fired when the maximize/restore button is clicked. */
   onMaximize?: () => void;
-  /** Callback fired when the close button is clicked. */
   onClose?: () => void;
 }
+
 // --- Main Component ---
 export const Taskbar = React.forwardRef<HTMLElement, TaskbarProps>(
   (

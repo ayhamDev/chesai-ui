@@ -5,26 +5,22 @@ import React, { useState } from "react";
 import useRipple from "use-ripple-hook";
 
 export const iconButtonVariants = cva(
-  // Added 'z-0' to the root to establish stacking context for the pseudo-element
   "font-semibold focus:outline-none min-w-max transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden p-0 z-0",
   {
     variants: {
       variant: {
         primary:
-          "bg-graphite-primary disabled:bg-graphite-primary/70 text-graphite-primaryForeground hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+          "bg-primary disabled:bg-primary/70 text-on-primary hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-primary",
         secondary:
-          "bg-graphite-secondary disabled:bg-graphite-secondary/70 text-graphite-secondaryForeground hover:bg-graphite-secondary/80 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+          "bg-secondary-container disabled:bg-secondary-container/70 text-on-secondary-container hover:bg-secondary-container/80 focus:ring-2 focus:ring-offset-2 focus:ring-primary",
         destructive:
-          "bg-red-500 text-graphite-primaryForeground disabled:bg-red-500/70 hover:bg-red-600/80 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+          "bg-error text-on-error disabled:bg-error/70 hover:bg-error/90 focus:ring-2 focus:ring-offset-2 focus:ring-error",
         ghost:
-          // --- UPDATED HOVER EFFECT ---
-          // 1. Removed: hover:bg-graphite-secondary
-          // 2. Added: after: class set to create the scaling background
-          "bg-transparent text-graphite-foreground disabled:opacity-70 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring " +
-          "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
+          "bg-transparent text-on-surface-variant disabled:opacity-70 focus:ring-2 focus:ring-offset-2 focus:ring-primary " +
+          "after:absolute after:inset-0 after:z-[-1] after:bg-primary/5 after:opacity-0 after:scale-50 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
           "hover:after:opacity-100 hover:after:scale-100 " +
           "disabled:after:opacity-0",
-        link: "bg-transparent disabled:opacity-70 text-graphite-primary hover:text-graphite-primary hover:underline !p-1 focus:ring-2 focus:ring-offset-2 focus:ring-graphite-ring",
+        link: "bg-transparent text-primary disabled:opacity-70 hover:text-primary hover:underline !p-1 focus:ring-2 focus:ring-offset-2 focus:ring-primary",
       },
       size: {
         xs: "h-8 w-8",
@@ -61,7 +57,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
   (
     {
       className,
-      variant,
+      variant = "primary",
       size,
       shape,
       children,
@@ -73,11 +69,13 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
   ) => {
     const localRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
+    const rippleRef = localRef as React.RefObject<HTMLElement>;
+
     const rippleColor =
       variant === "primary" || variant === "destructive"
         ? "var(--color-ripple-dark)"
         : "var(--color-ripple-light)";
-    const rippleRef = localRef as React.RefObject<HTMLElement>;
+
     const [, event] = useRipple({
       ref: rippleRef,
       color: rippleColor,
@@ -136,7 +134,6 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
                 scale: isPressed ? 0.85 : 1,
               }}
               exit={{ opacity: 0, scale: 0.9 }}
-              // Ensure content is above the pseudo-element background
               className="relative z-10 flex items-center justify-center"
               transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >

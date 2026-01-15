@@ -52,12 +52,12 @@ const useNavigationRail = () => {
 // --- CVA VARIANTS ---
 
 const navigatorVariants = cva(
-  "flex flex-col h-full transition-shadow duration-300 ease-in-out z-20 overflow-hidden",
+  "flex flex-col h-full transition-shadow duration-300 ease-in-out z-20 overflow-hidden text-on-surface",
   {
     variants: {
       variant: {
-        primary: "bg-graphite-card",
-        secondary: "bg-graphite-secondary",
+        primary: "bg-surface",
+        secondary: "bg-surface-container-high",
         ghost: "bg-transparent",
       },
       behavior: {
@@ -70,7 +70,7 @@ const navigatorVariants = cva(
         sharp: "rounded-none",
       },
       bordered: {
-        true: "border-r border-graphite-border",
+        true: "border-r border-outline-variant",
         false: "",
       },
     },
@@ -95,7 +95,6 @@ NavigationRailScreen.displayName = "NavigationRail.Screen";
 export interface NavigationRailFABProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon: React.ReactNode;
-  /** The text label to show when the rail is expanded. */
   label?: React.ReactNode;
   variant?: "primary" | "secondary" | "tertiary" | "ghost";
 }
@@ -107,10 +106,8 @@ const NavigationRailFAB = React.forwardRef<
   const { isExpanded } = useNavigationRail();
   const localRef = useRef<HTMLButtonElement>(null);
 
-  // Merge refs
   React.useImperativeHandle(ref, () => localRef.current!);
 
-  // Add ripple effect
   const [, event] = useRipple({
     ref: localRef,
     color:
@@ -119,16 +116,21 @@ const NavigationRailFAB = React.forwardRef<
         : "var(--color-ripple-light)",
     duration: 400,
   });
-
+  const TextVariantClasses = {
+    primary: "text-on-primary-container",
+    secondary: "text-on-secondary-container",
+    tertiary: "text-on-tertiary-container",
+    ghost: "text-on-surface",
+  };
   const variantClasses = {
     primary:
-      "bg-graphite-primary text-graphite-primaryForeground hover:bg-graphite-primary/90 shadow-md hover:shadow-lg",
+      "bg-primary-container text-on-primary-container hover:bg-primary-container/90 shadow-md hover:shadow-lg",
     secondary:
-      "bg-graphite-secondary text-graphite-secondaryForeground hover:bg-graphite-secondary/80 shadow-sm hover:shadow-md",
+      "bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80 shadow-sm hover:shadow-md",
     tertiary:
-      "bg-white border border-graphite-border text-graphite-foreground hover:bg-gray-50 shadow-sm hover:shadow-md",
+      "bg-surface-container-high border border-outline-variant text-on-surface hover:bg-surface-container-highest shadow-sm hover:shadow-md",
     ghost:
-      "bg-transparent text-graphite-foreground hover:bg-black/5 shadow-none",
+      "bg-transparent text-on-surface hover:bg-surface-container-highest/50 shadow-none",
   };
 
   return (
@@ -137,11 +139,11 @@ const NavigationRailFAB = React.forwardRef<
         ref={localRef}
         type="button"
         onPointerDown={event}
-        layout // Crucial for smooth width resizing
+        layout
         initial={false}
         animate={{
-          width: isExpanded ? "auto" : "3.5rem", // 56px collapsed
-          borderRadius: "1rem", // 16px (M3 Standard)
+          width: isExpanded ? "auto" : "3.5rem",
+          borderRadius: "1rem",
         }}
         transition={{
           type: "spring",
@@ -151,13 +153,12 @@ const NavigationRailFAB = React.forwardRef<
         }}
         className={clsx(
           "h-14 relative flex items-center overflow-hidden transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           variantClasses[variant],
           className
         )}
         {...props}
       >
-        {/* Icon: Fixed container to prevent squishing */}
         <motion.div
           layout="position"
           className="min-w-[3.5rem] h-full flex items-center justify-center shrink-0 z-10"
@@ -165,7 +166,6 @@ const NavigationRailFAB = React.forwardRef<
           {icon}
         </motion.div>
 
-        {/* Label: Animate presence for fading in/out */}
         <div className="flex items-center h-full overflow-hidden">
           <AnimatePresence mode="popLayout" initial={false}>
             {isExpanded && label && (
@@ -174,7 +174,7 @@ const NavigationRailFAB = React.forwardRef<
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -5 }}
                 transition={{ duration: 0.15, delay: 0.05 }}
-                className="pr-6 font-semibold text-base whitespace-nowrap"
+                className="pr-6 font-semibold text-base text-inherit  whitespace-nowrap"
               >
                 {label}
               </motion.span>
@@ -208,14 +208,24 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   const finalShape = itemShape || navigatorShape;
 
   const localRef = useRef<HTMLButtonElement>(null);
+
+  // Dynamic Ripple: Dark on light backgrounds, Light if the active state is dark (Primary)
+  const rippleColor =
+    variant === "secondary" && isActive
+      ? "var(--color-ripple-light)" // Defined in theme.css as rgba(255,255,255, 0.1)
+      : "var(--color-ripple-dark)"; // Defined in theme.css as rgba(0,0,0, 0.1)
+
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: rippleColor,
     duration: 400,
   });
 
-  const activeAndHoverBg =
-    variant === "secondary" ? "bg-graphite-card" : "bg-graphite-secondary";
+  // Highlight color
+  const activeBg =
+    variant === "secondary" ? "bg-primary" : "bg-secondary-container";
+  const activeText =
+    variant === "secondary" ? "text-on-primary" : "text-on-secondary-container";
 
   const shapeToBorderRadius = {
     full: 9999,
@@ -239,14 +249,12 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
         onClick={() => onTabPress(name)}
         onPointerDown={event}
         className={clsx(
-          "relative z-10 flex h-14 w-full items-center justify-start transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+          "relative z-10 flex h-14 w-full items-center justify-start transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           "flex-row gap-4 px-4 py-2",
-          isActive
-            ? "text-graphite-primary font-semibold"
-            : "text-graphite-foreground/70",
+          isActive ? `${activeText} font-semibold` : "text-on-surface-variant",
           shapeToClassName[finalShape],
           !isActive && [
-            `after:absolute after:inset-0 after:z-[-1] after:${activeAndHoverBg} after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out`,
+            `after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out`,
             "hover:after:opacity-100 hover:after:scale-100",
             "disabled:after:opacity-0",
           ]
@@ -255,7 +263,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
         {isActive && (
           <motion.div
             layoutId={indicatorId}
-            className={clsx("absolute inset-0 z-0", activeAndHoverBg)}
+            className={clsx("absolute inset-0 z-0", activeBg)}
             style={{ borderRadius: shapeToBorderRadius[finalShape] }}
             transition={{
               type: "spring",
@@ -279,7 +287,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
               exit={{ width: 0, opacity: 0, transition: { duration: 0.1 } }}
               className="relative z-10 overflow-hidden whitespace-nowrap"
             >
-              <Typography variant="small" className="font-semibold">
+              <Typography variant="p" className="font-semibold text-inherit!">
                 {label}
               </Typography>
             </motion.div>
@@ -336,9 +344,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
     setIsExpanded(!isExpanded);
   };
 
-  // Separate children into Screens and FAB
   const childrenArray = Children.toArray(children);
-
   const screens = childrenArray
     .filter(
       (child): child is React.ReactElement<ScreenProps> =>
@@ -369,7 +375,6 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
 
   return (
     <NavigationRailContext.Provider value={contextValue}>
-      {/* Spacer for overlay mode to prevent content jump */}
       {isMobile && (
         <div style={{ width: finalCollapsedWidth, flexShrink: 0 }} />
       )}
@@ -381,7 +386,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-graphite-secondary/80 z-10"
+            className="fixed inset-0 bg-black/50 z-10"
             onClick={() => setIsExpanded(false)}
           />
         )}
@@ -418,7 +423,6 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
         }}
         {...props}
       >
-        {/* Header (Menu Toggle) */}
         <div
           className={clsx(
             "flex h-20 w-full shrink-0 items-center justify-end p-4 pr-7"
@@ -435,9 +439,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
           </IconButton>
         </div>
 
-        {/* FAB Area - Placed at the top, below header */}
         {fab && <div className="shrink-0">{fab}</div>}
-        {/* Screens - Centered vertically */}
         <ul className="flex flex-1 flex-col items-center justify-start gap-2 p-4 pt-0 pr-6">
           <Divider variant="dashed" />
           {screens.map((screen) => (

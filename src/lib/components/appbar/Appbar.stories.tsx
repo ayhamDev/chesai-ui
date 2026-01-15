@@ -13,6 +13,7 @@ import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
 import { AppBar, type AppBarProps } from "./index";
+import { Input } from "../input"; // Import Input
 
 const meta: Meta<typeof AppBar> = {
   title: "Components/AppBar",
@@ -72,7 +73,7 @@ const DummyContent = () => (
     <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 30 }).map((_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: strict
-        (<div key={i} className="h-48 rounded-2xl bg-black/5" />)
+        <div key={i} className="h-48 rounded-2xl bg-black/5" />
       ))}
     </div>
   </main>
@@ -198,14 +199,13 @@ export const LargeCollapsing: Story = {
       </Typography>
     ),
     largeHeaderContent: (
-      <div className="flex items-center gap-2 rounded-full bg-black/5 px-4 py-2">
-        <Search className="h-5 w-5 text-gray-500" />
-        <input
-          type="text"
-          placeholder="Search..."
-          className="w-full bg-transparent outline-none"
-        />
-      </div>
+      // Updated to use the Input component
+      <Input
+        variant="flat"
+        shape="full"
+        placeholder="Search..."
+        startContent={<Search className="h-5 w-5 text-gray-500" />}
+      />
     ),
   },
   render: renderWithScrollContainer,

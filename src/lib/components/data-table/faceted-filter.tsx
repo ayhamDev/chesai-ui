@@ -37,13 +37,13 @@ export function DataTableFacetedFilter<TData, TValue>({
         <Button
           variant="secondary"
           size="sm"
-          className="h-8 border-dashed bg-transparent border-graphite-border hover:bg-graphite-secondary"
+          className="h-8 border-dashed bg-transparent border-outline-variant hover:bg-secondary-container"
           startIcon={<PlusCircle className="h-4 w-4" />}
         >
           {title}
           {selectedValues?.size > 0 && (
             <>
-              <div className="mx-2 h-4 w-[1px] bg-graphite-border" />
+              <div className="mx-2 h-4 w-[1px] bg-outline-variant" />
               <Badge
                 variant="secondary"
                 shape="minimal"
@@ -101,7 +101,7 @@ export function DataTableFacetedFilter<TData, TValue>({
               }}
             >
               {option.icon && (
-                <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                <option.icon className="mr-2 h-4 w-4 text-on-surface-variant" />
               )}
               <span>{option.label}</span>
               {facets?.get(option.value) && (

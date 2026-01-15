@@ -12,7 +12,7 @@ interface SheetContextProps {
   shape: "full" | "minimal" | "sharp";
   hasSnapPoints: boolean;
   direction: "top" | "bottom" | "left" | "right";
-  variant: "primary" | "secondary" | "card"; // Added variant
+  variant: "primary" | "secondary" | "card";
 }
 
 const SheetContext = createContext<SheetContextProps>({
@@ -20,7 +20,7 @@ const SheetContext = createContext<SheetContextProps>({
   shape: "full",
   hasSnapPoints: false,
   direction: "bottom",
-  variant: "card", // Added default variant
+  variant: "card",
 });
 
 const useSheetContext = () => useContext(SheetContext);
@@ -30,18 +30,8 @@ type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
   side?: "left" | "right";
-  variant?: "primary" | "secondary" | "card"; // Added variant prop
-  /**
-   * If true, the sheet will always render as a bottom sheet,
-   * overriding the responsive behavior on desktop viewports.
-   * @default false
-   */
+  variant?: "primary" | "secondary" | "card";
   forceBottomSheet?: boolean;
-  /**
-   * If true, the sheet will always render as a side sheet,
-   * overriding the responsive behavior on mobile viewports.
-   * @default false
-   */
   forceSideSheet?: boolean;
 };
 
@@ -49,7 +39,7 @@ const SheetRoot: React.FC<SheetProps> = ({
   mode = "normal",
   shape = "full",
   side = "right",
-  variant = "card", // Destructure variant prop
+  variant = "card",
   forceBottomSheet = false,
   forceSideSheet = false,
   snapPoints,
@@ -67,7 +57,7 @@ const SheetRoot: React.FC<SheetProps> = ({
       value={{
         mode,
         shape,
-        variant, // Pass variant to context
+        variant,
         hasSnapPoints: renderAsSideSheet
           ? false
           : !!snapPoints && snapPoints.length > 0,
@@ -94,161 +84,157 @@ const SheetTitle = VaulDrawer.Title;
 const SheetDescription = VaulDrawer.Description;
 
 // --- CVA Variants for Content ---
-const contentVariants = cva(
-  "fixed z-50 flex flex-col shadow-lg", // Removed hardcoded background
-  {
-    variants: {
-      variant: {
-        // Added color variants
-        primary: "bg-graphite-primary text-graphite-primaryForeground",
-        secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
-        card: "bg-graphite-card text-graphite-foreground",
-      },
-      side: {
-        top: "inset-x-0 top-0",
-        bottom: "inset-x-0 bottom-0 max-h-[96%]",
-        left: "inset-y-0 left-0 w-full max-w-sm",
-        right: "inset-y-0 right-0 w-full max-w-sm",
-      },
-      height: {
-        snap: "h-full",
-        auto: "h-auto",
-      },
-      shape: {
-        full: "",
-        minimal: "",
-        sharp: "",
-      },
-      mode: {
-        normal: "",
-        detached: "",
-      },
+const contentVariants = cva("fixed z-50 flex flex-col shadow-lg", {
+  variants: {
+    variant: {
+      // Mapped to MD3 Surface Containers
+      primary: "bg-primary-container text-on-primary-container",
+      secondary: "bg-secondary-container text-on-secondary-container",
+      card: "bg-surface-container-low text-on-surface", // Standard Sheet
     },
-    compoundVariants: [
-      { side: "bottom", mode: "normal", className: "mx-auto max-w-xl" },
-      {
-        side: "bottom",
-        mode: "detached",
-        className: "inset-x-4 bottom-4 mx-auto max-w-lg",
-      },
-      {
-        side: "bottom",
-        mode: "normal",
-        shape: "full",
-        className: "rounded-t-3xl",
-      },
-      {
-        side: "bottom",
-        mode: "normal",
-        shape: "minimal",
-        className: "rounded-t-lg",
-      },
-      {
-        side: "bottom",
-        mode: "normal",
-        shape: "sharp",
-        className: "rounded-t-none",
-      },
-      {
-        side: "bottom",
-        mode: "detached",
-        shape: "full",
-        className: "rounded-2xl",
-      },
-      {
-        side: "bottom",
-        mode: "detached",
-        shape: "minimal",
-        className: "rounded-lg",
-      },
-      {
-        side: "bottom",
-        mode: "detached",
-        shape: "sharp",
-        className: "rounded-none",
-      },
-      {
-        side: "left",
-        shape: "full",
-        mode: "normal",
-        className: "rounded-r-2xl",
-      },
-      {
-        side: "left",
-        shape: "minimal",
-        mode: "normal",
-        className: "rounded-r-lg",
-      },
-      {
-        side: "left",
-        shape: "sharp",
-        mode: "normal",
-        className: "rounded-r-none",
-      },
-      {
-        side: "left",
-        shape: "full",
-        mode: "detached",
-        className: "left-4 rounded-2xl",
-      },
-      {
-        side: "left",
-        shape: "minimal",
-        mode: "detached",
-        className: "left-4 rounded-lg",
-      },
-      {
-        side: "left",
-        shape: "sharp",
-        mode: "detached",
-        className: "left-4 rounded-none",
-      },
-      {
-        side: "right",
-        shape: "full",
-        mode: "normal",
-        className: "rounded-l-2xl",
-      },
-      {
-        side: "right",
-        shape: "minimal",
-        mode: "normal",
-        className: "rounded-l-lg",
-      },
-      {
-        side: "right",
-        shape: "sharp",
-        mode: "normal",
-        className: "rounded-l-none",
-      },
-      {
-        side: "right",
-        shape: "full",
-        mode: "detached",
-        className: "top-4 bottom-4 right-4 rounded-2xl",
-      },
-      {
-        side: "right",
-        shape: "minimal",
-        mode: "detached",
-        className: "top-4 bottom-4 right-4 rounded-lg",
-      },
-      {
-        side: "right",
-        shape: "sharp",
-        mode: "detached",
-        className: "top-4 bottom-4 right-4 rounded-none",
-      },
-    ],
-    defaultVariants: {
-      variant: "card", // Added default variant
+    side: {
+      top: "inset-x-0 top-0",
+      bottom: "inset-x-0 bottom-0 max-h-[96%]",
+      left: "inset-y-0 left-0 w-full max-w-sm",
+      right: "inset-y-0 right-0 w-full max-w-sm",
+    },
+    height: {
+      snap: "h-full",
+      auto: "h-auto",
+    },
+    shape: {
+      full: "",
+      minimal: "",
+      sharp: "",
+    },
+    mode: {
+      normal: "",
+      detached: "",
+    },
+  },
+  compoundVariants: [
+    { side: "bottom", mode: "normal", className: "mx-auto max-w-xl" },
+    {
+      side: "bottom",
+      mode: "detached",
+      className: "inset-x-4 bottom-4 mx-auto max-w-lg",
+    },
+    {
+      side: "bottom",
+      mode: "normal",
+      shape: "full",
+      className: "rounded-t-3xl",
+    },
+    {
+      side: "bottom",
+      mode: "normal",
+      shape: "minimal",
+      className: "rounded-t-lg",
+    },
+    {
+      side: "bottom",
+      mode: "normal",
+      shape: "sharp",
+      className: "rounded-t-none",
+    },
+    {
+      side: "bottom",
+      mode: "detached",
+      shape: "full",
+      className: "rounded-2xl",
+    },
+    {
+      side: "bottom",
+      mode: "detached",
+      shape: "minimal",
+      className: "rounded-lg",
+    },
+    {
+      side: "bottom",
+      mode: "detached",
+      shape: "sharp",
+      className: "rounded-none",
+    },
+    {
+      side: "left",
       shape: "full",
       mode: "normal",
+      className: "rounded-r-2xl",
     },
-  }
-);
+    {
+      side: "left",
+      shape: "minimal",
+      mode: "normal",
+      className: "rounded-r-lg",
+    },
+    {
+      side: "left",
+      shape: "sharp",
+      mode: "normal",
+      className: "rounded-r-none",
+    },
+    {
+      side: "left",
+      shape: "full",
+      mode: "detached",
+      className: "left-4 rounded-2xl",
+    },
+    {
+      side: "left",
+      shape: "minimal",
+      mode: "detached",
+      className: "left-4 rounded-lg",
+    },
+    {
+      side: "left",
+      shape: "sharp",
+      mode: "detached",
+      className: "left-4 rounded-none",
+    },
+    {
+      side: "right",
+      shape: "full",
+      mode: "normal",
+      className: "rounded-l-2xl",
+    },
+    {
+      side: "right",
+      shape: "minimal",
+      mode: "normal",
+      className: "rounded-l-lg",
+    },
+    {
+      side: "right",
+      shape: "sharp",
+      mode: "normal",
+      className: "rounded-l-none",
+    },
+    {
+      side: "right",
+      shape: "full",
+      mode: "detached",
+      className: "top-4 bottom-4 right-4 rounded-2xl",
+    },
+    {
+      side: "right",
+      shape: "minimal",
+      mode: "detached",
+      className: "top-4 bottom-4 right-4 rounded-lg",
+    },
+    {
+      side: "right",
+      shape: "sharp",
+      mode: "detached",
+      className: "top-4 bottom-4 right-4 rounded-none",
+    },
+  ],
+  defaultVariants: {
+    variant: "card",
+    shape: "full",
+    mode: "normal",
+  },
+});
 
-// --- CONTENT & OTHER COMPONENTS ---
 type SheetContentProps = React.ComponentProps<typeof VaulDrawer.Content> &
   VariantProps<typeof contentVariants>;
 
@@ -259,13 +245,13 @@ const SheetContent = React.forwardRef<
   const {
     mode,
     shape: shapeContext,
-    variant: variantContext, // Read from context
+    variant: variantContext,
     hasSnapPoints,
     direction,
   } = useSheetContext();
 
   const shape = shapeProp || shapeContext;
-  const variant = variantProp || variantContext; // Prioritize prop
+  const variant = variantProp || variantContext;
 
   const style =
     mode === "detached"
@@ -283,7 +269,7 @@ const SheetContent = React.forwardRef<
             side: direction,
             mode,
             shape,
-            variant, // Pass variant to CVA
+            variant,
             height: direction === "bottom" && hasSnapPoints ? "snap" : "auto",
           }),
           className
@@ -333,10 +319,9 @@ const SheetGrabber = ({
       <div
         className={clsx(
           "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full",
-          // Adapt grabber color based on variant's foreground
           variant === "primary"
-            ? "bg-graphite-primaryForeground/40"
-            : "bg-graphite-foreground/40",
+            ? "bg-on-primary-container/40"
+            : "bg-on-surface-variant/40",
           className
         )}
         {...props}

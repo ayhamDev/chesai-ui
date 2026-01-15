@@ -1,5 +1,3 @@
-// src/components/time-picker.tsx
-
 "use client";
 
 import * as PopoverPrimitive from "@radix-ui/react-popover";
@@ -27,17 +25,15 @@ import {
   DialogTrigger,
 } from "../dialog";
 import { ElasticScrollArea } from "../elastic-scroll-area";
-// --- MAKE SURE THIS IMPORT PATH IS CORRECT ---
 import { inputWrapperVariants } from "../input";
 
-// --- 1. Internal TimeRoller Component (MODIFIED: Smoother Snapping) ---
 interface TimeRollerProps {
   items: (string | number)[];
   value: string | number;
   onValueChange: (newValue: string | number) => void;
 }
 
-const ITEM_HEIGHT = 36; // in pixels
+const ITEM_HEIGHT = 36;
 const VISIBLE_ITEMS = 5;
 
 const TimeRoller = React.forwardRef<HTMLDivElement, TimeRollerProps>(
@@ -129,7 +125,7 @@ const TimeRoller = React.forwardRef<HTMLDivElement, TimeRollerProps>(
           {items.map((item, index) => (
             <div
               key={`${item}-${index}`}
-              className="flex h-[36px] items-center justify-center text-xl text-graphite-foreground"
+              className="flex h-[36px] items-center justify-center text-xl text-on-surface"
               style={{ height: `${ITEM_HEIGHT}px` }}
             >
               {typeof item === "number" ? String(item).padStart(2, "0") : item}
@@ -144,7 +140,6 @@ const TimeRoller = React.forwardRef<HTMLDivElement, TimeRollerProps>(
 );
 TimeRoller.displayName = "TimeRoller";
 
-// --- 2. Internal TimePickerPanel Component (Unchanged) ---
 interface TimePickerPanelProps {
   value: Date;
   onValueChange: (newDate: Date) => void;
@@ -167,7 +162,9 @@ const TimePickerPanel: React.FC<TimePickerPanelProps> = ({
   return (
     <div className="relative flex items-center justify-center p-4">
       <div
-        className="pointer-events-none absolute inset-x-0 top-1/2 z-0 h-[36px] -translate-y-1/2 rounded-lg bg-graphite-secondary"
+        // FIX: Changed from bg-secondary-container/50 to bg-tertiary-container (solid)
+        // for distinct visibility against the dialog background.
+        className="pointer-events-none absolute inset-x-0 top-1/2 z-0 h-[36px] -translate-y-1/2 rounded-lg bg-primary/50"
         style={{ height: `${ITEM_HEIGHT}px` }}
       />
       <div className="z-10 flex items-center">
@@ -176,7 +173,7 @@ const TimePickerPanel: React.FC<TimePickerPanelProps> = ({
           value={displayHour}
           onValueChange={(newHour) => setHour(newHour as number)}
         />
-        <div className="pb-1 text-xl font-bold">:</div>
+        <div className="pb-1 text-xl font-bold text-on-surface">:</div>
         <TimeRoller
           items={minutesArray}
           value={minutes}
@@ -192,8 +189,6 @@ const TimePickerPanel: React.FC<TimePickerPanelProps> = ({
   );
 };
 
-// --- 3. Main Exported TimePicker Component (Unchanged) ---
-// @ts-ignore
 export interface TimePickerProps
   extends Omit<
     React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -218,7 +213,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
       value: controlledValue,
       onChange,
       variant: variantProp,
-      shape = "minimal", // <-- This now correctly applies the new minimal style
+      shape = "minimal",
       size = "md",
       disabled,
       className,
@@ -255,7 +250,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
       return (
         <div className="flex w-full flex-col gap-2">
           {label && (
-            <label className="block text-sm font-medium text-graphite-primary">
+            <label className="block text-sm font-medium text-primary">
               {label}
             </label>
           )}
@@ -276,6 +271,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
                     disabled,
                     isErrored: !!error,
                   }),
+                  "text-on-surface bg-surface-container-low",
                   className
                 )}
                 {...props}
@@ -286,20 +282,24 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
                 </span>
               </button>
             </DialogTrigger>
-            <DialogContent shape={shape} className="max-w-[320px]!">
+            <DialogContent
+              shape={shape}
+              variant="ghost"
+              className="max-w-[320px]! bg-surface-container-high"
+            >
               <DialogHeader>
                 <DialogTitle>{label || placeholder}</DialogTitle>
               </DialogHeader>
               <TimePickerPanel value={tempValue} onValueChange={setTempValue} />
               <DialogFooter className="flex justify-end gap-4">
-                <Button variant="secondary" onClick={() => setIsOpen(false)}>
+                <Button variant="ghost" onClick={() => setIsOpen(false)}>
                   Cancel
                 </Button>
                 <Button onClick={handleConfirm}>Done</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          {error && <p className="mt-2 text-sm text-error">{error}</p>}
         </div>
       );
     }
@@ -307,7 +307,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
     return (
       <div className="flex w-full flex-col gap-2">
         {label && (
-          <label className="block text-sm font-medium text-graphite-primary">
+          <label className="block text-sm font-medium text-primary">
             {label}
           </label>
         )}
@@ -325,6 +325,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
                   isErrored: !!error,
                   isFocused: isOpen,
                 }),
+                "text-on-surface bg-surface-container-low",
                 className
               )}
               {...props}
@@ -340,7 +341,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
               sideOffset={8}
               align="start"
               className={clsx(
-                "z-50 w-auto rounded-xl border border-graphite-border bg-graphite-card shadow-md",
+                "z-50 w-auto rounded-xl border border-outline-variant bg-surface-container-high shadow-md",
                 "data-[state=open]:animate-menu-enter",
                 "data-[state=closed]:animate-menu-exit"
               )}
@@ -352,7 +353,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
             </PopoverPrimitive.Content>
           </PopoverPrimitive.Portal>
         </PopoverPrimitive.Root>
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-2 text-sm text-error">{error}</p>}
       </div>
     );
   }

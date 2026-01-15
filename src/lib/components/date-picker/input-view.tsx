@@ -115,7 +115,8 @@ export const DateInputView = ({
           value={startInput}
           onChange={handleStartChange}
           placeholder="mm/dd/yyyy"
-          error={startError}
+          errorMessage={startError}
+          isInvalid={!!startError}
           autoFocus
         />
         {mode === "range" && (
@@ -124,7 +125,8 @@ export const DateInputView = ({
             value={endInput}
             onChange={handleEndChange}
             placeholder="mm/dd/yyyy"
-            error={endError}
+            errorMessage={endError}
+            isInvalid={!!endError}
           />
         )}
       </div>

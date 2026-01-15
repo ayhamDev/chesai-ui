@@ -6,8 +6,8 @@ import { clsx } from "clsx";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import React, { createContext, useContext, useRef } from "react";
 import useRipple from "use-ripple-hook";
+import { useTheme } from "../../context";
 
-// --- TYPES & CONTEXT ---
 type ContextMenuShape = "full" | "minimal" | "sharp";
 type ContextMenuSize = "sm" | "md" | "lg";
 
@@ -23,11 +23,10 @@ const ContextMenuContext = createContext<ContextMenuContextProps>({
 
 const useContextMenuContext = () => useContext(ContextMenuContext);
 
-// --- CVA VARIANTS ---
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-graphite-border bg-graphite-card text-graphite-foreground p-1.5",
+    "border border-outline-variant bg-surface-container text-on-surface p-1.5",
     "shadow-md",
   ],
   {
@@ -48,13 +47,11 @@ const itemVariants = cva(
   [
     "relative flex cursor-pointer select-none items-center gap-2 rounded-lg outline-none overflow-hidden z-0",
     "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
-    // Remove direct hover bg
-    "focus:bg-graphite-secondary/60 data-[highlighted]:bg-graphite-secondary/60",
-    "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-graphite-foreground/20",
+    "focus:bg-secondary-container/60 data-[highlighted]:bg-secondary-container/60",
+    "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/20",
     "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
     "[&_svg]:pointer-events-none [&_svg]:shrink-0",
-    // Bloom
-    "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
+    "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
     "hover:after:opacity-100 hover:after:scale-100",
     "hover:bg-transparent",
   ],
@@ -77,7 +74,6 @@ const itemVariants = cva(
   }
 );
 
-// --- ROOT COMPONENT ---
 interface ContextMenuProps extends RadixContextMenu.ContextMenuProps {
   shape?: ContextMenuShape;
   size?: ContextMenuSize;
@@ -95,14 +91,12 @@ const ContextMenuRoot: React.FC<ContextMenuProps> = ({
   );
 };
 
-// --- RE-EXPORTED PRIMITIVES ---
 const ContextMenuTrigger = RadixContextMenu.Trigger;
 const ContextMenuGroup = RadixContextMenu.Group;
 const ContextMenuPortal = RadixContextMenu.Portal;
 const ContextMenuSub = RadixContextMenu.Sub;
 const ContextMenuRadioGroup = RadixContextMenu.RadioGroup;
 
-// --- ANIMATED CONTENT ---
 const ContextMenuContent = React.forwardRef<
   React.ElementRef<typeof RadixContextMenu.Content>,
   React.ComponentPropsWithoutRef<typeof RadixContextMenu.Content>
@@ -129,7 +123,6 @@ const ContextMenuContent = React.forwardRef<
 });
 ContextMenuContent.displayName = RadixContextMenu.Content.displayName;
 
-// --- ENHANCED ITEM COMPONENTS ---
 const ContextMenuItem = React.forwardRef<
   React.ElementRef<typeof RadixContextMenu.Item>,
   React.ComponentPropsWithoutRef<typeof RadixContextMenu.Item> & {
@@ -140,8 +133,9 @@ const ContextMenuItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
     duration: 400,
+    opacity: 0.1,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -172,8 +166,9 @@ const ContextMenuCheckboxItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
     duration: 400,
+    opacity: 0.1,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -186,7 +181,7 @@ const ContextMenuCheckboxItem = React.forwardRef<
     >
       <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixContextMenu.ItemIndicator>
-          <Check className="h-4 w-4 animate-check-in" />
+          <Check className="h-4 w-4 animate-check-in text-primary" />
         </RadixContextMenu.ItemIndicator>
       </span>
       <span className="relative z-10">{children}</span>
@@ -203,8 +198,9 @@ const ContextMenuRadioItem = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
     duration: 400,
+    opacity: 0.1,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -217,7 +213,7 @@ const ContextMenuRadioItem = React.forwardRef<
     >
       <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixContextMenu.ItemIndicator>
-          <Circle className="h-2 w-2 fill-current animate-check-in" />
+          <Circle className="h-2 w-2 fill-current animate-check-in text-primary" />
         </RadixContextMenu.ItemIndicator>
       </span>
       <span className="relative z-10">{children}</span>
@@ -236,8 +232,9 @@ const ContextMenuSubTrigger = React.forwardRef<
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
     duration: 400,
+    opacity: 0.1,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -283,7 +280,6 @@ const ContextMenuSubContent = React.forwardRef<
 });
 ContextMenuSubContent.displayName = RadixContextMenu.SubContent.displayName;
 
-// --- OTHER COMPONENTS ---
 const ContextMenuLabel = React.forwardRef<
   React.ElementRef<typeof RadixContextMenu.Label>,
   React.ComponentPropsWithoutRef<typeof RadixContextMenu.Label> & {
@@ -293,7 +289,7 @@ const ContextMenuLabel = React.forwardRef<
   <RadixContextMenu.Label
     ref={ref}
     className={clsx(
-      "px-3 py-2 text-xs font-medium text-graphite-foreground/70 tracking-wide",
+      "px-3 py-2 text-xs font-medium text-on-surface-variant tracking-wide",
       inset && "pl-8",
       className
     )}
@@ -308,7 +304,7 @@ const ContextMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <RadixContextMenu.Separator
     ref={ref}
-    className={clsx("-mx-1 my-1.5 h-px bg-graphite-border/60", className)}
+    className={clsx("-mx-1 my-1.5 h-px bg-outline-variant", className)}
     {...props}
   />
 ));
@@ -321,7 +317,7 @@ const ContextMenuShortcut = ({
   return (
     <span
       className={clsx(
-        "ml-auto text-xs font-mono tracking-wider text-graphite-foreground/50",
+        "ml-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
         className
       )}
       {...props}
@@ -330,7 +326,6 @@ const ContextMenuShortcut = ({
 };
 ContextMenuShortcut.displayName = "ContextMenuShortcut";
 
-// --- COMPOUND EXPORT ---
 export const ContextMenu = Object.assign(ContextMenuRoot, {
   Trigger: ContextMenuTrigger,
   Content: ContextMenuContent,

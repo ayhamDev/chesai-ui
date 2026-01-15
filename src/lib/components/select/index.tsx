@@ -1,642 +1,323 @@
 "use client";
 
 import * as SelectPrimitive from "@radix-ui/react-select";
-import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
-import { Check, ChevronDown, Circle } from "lucide-react";
-import React, { createContext, useContext, useRef, useState } from "react";
-import useRipple from "use-ripple-hook";
-import { Button } from "../button";
+import { Check, ChevronDown } from "lucide-react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../dialog";
+  getSelectSlotClassNames,
+  selectContentVariants,
+  selectSlots,
+  selectStyles,
+} from "./select-styles";
 
-// --- CONTEXT ---
+// --- Context ---
 interface SelectContextProps {
-  variant: "primary" | "secondary";
-  shape: "full" | "minimal" | "sharp";
   size: "sm" | "md" | "lg";
+  position: "item-aligned" | "popper";
 }
-
 const SelectContext = createContext<SelectContextProps>({
-  variant: "primary",
-  shape: "minimal",
   size: "md",
+  position: "popper",
 });
 
-const useSelectContext = () => useContext(SelectContext);
-
-// --- CVA VARIANTS ---
-const selectTriggerVariants = cva(
-  "flex items-center justify-between transition-all duration-200 w-full px-4 border-2 text-left text-graphite-foreground [&_[data-placeholder]]:text-graphite-foreground/70",
-  {
-    variants: {
-      variant: {
-        primary: "bg-graphite-card hover:bg-graphite-secondary/40",
-        secondary: "bg-graphite-secondary hover:bg-graphite-primary/10",
-      },
-      shape: {
-        full: "rounded-full",
-        minimal: "rounded-2xl",
-        sharp: "rounded-none",
-      },
-      size: {
-        sm: "h-10 text-sm",
-        md: "h-12 text-base",
-        lg: "h-14 text-lg",
-      },
-      isErrored: { true: "" },
-      disabled: {
-        true: "bg-graphite-secondary opacity-50 cursor-not-allowed hover:bg-graphite-secondary",
-      },
-    },
-    compoundVariants: [
-      {
-        variant: "primary",
-        isErrored: false,
-        className:
-          "border-graphite-border data-[state=open]:border-graphite-primary",
-      },
-      {
-        variant: "secondary",
-        isErrored: false,
-        className:
-          "border-transparent data-[state=open]:border-graphite-primary",
-      },
-      {
-        isErrored: true,
-        className: "border-red-500 data-[state=open]:border-red-600",
-      },
-    ],
-    defaultVariants: {
-      variant: "primary",
-      shape: "minimal",
-      size: "md",
-    },
-  }
-);
-
-const selectContentVariants = cva(
-  "relative z-50 min-w-[8rem] overflow-hidden border shadow-md",
-  {
-    variants: {
-      variant: {
-        primary:
-          "bg-graphite-card text-graphite-foreground border-graphite-border",
-        secondary:
-          "bg-graphite-secondary text-graphite-secondaryForeground border-transparent",
-      },
-      shape: {
-        full: "rounded-3xl",
-        minimal: "rounded-xl",
-        sharp: "rounded-none",
-      },
-    },
-    defaultVariants: {
-      variant: "primary",
-      shape: "minimal",
-    },
-  }
-);
-
-const selectItemVariants = cva(
-  "relative flex w-full cursor-pointer select-none items-center rounded-lg pr-2 pl-8 outline-none overflow-hidden transition-colors duration-150 ease-in-out data-[highlighted]:bg-graphite-secondary/80 focus:bg-graphite-secondary/80 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-  {
-    variants: {
-      size: {
-        sm: "py-2 text-sm",
-        md: "py-2 text-base",
-        lg: "py-2.5 text-lg",
-      },
-      shape: {
-        full: "",
-        minimal: "",
-        sharp: "!rounded-none",
-      },
-    },
-    defaultVariants: {
-      size: "md",
-    },
-  }
-);
-
-// --- PRIMITIVE COMPONENTS (For Desktop Popover) ---
-
-const SelectGroup = SelectPrimitive.Group;
-const SelectValue = SelectPrimitive.Value;
-
-interface SelectProps extends SelectPrimitive.SelectProps {
-  children: React.ReactNode;
-  variant?: SelectContextProps["variant"];
-  shape?: SelectContextProps["shape"];
-  size?: SelectContextProps["size"];
-}
-
-const Select: React.FC<SelectProps> = ({
-  children,
-  variant = "primary",
-  shape = "minimal",
-  size = "md",
-  ...props
-}) => {
-  return (
-    <SelectContext.Provider value={{ variant, shape, size }}>
-      <SelectPrimitive.Root {...props}>{children}</SelectPrimitive.Root>
-    </SelectContext.Provider>
-  );
-};
-
-interface SelectTriggerProps
-  extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> {
-  error?: string;
-  variant?: "primary" | "secondary";
-  shape?: "full" | "minimal" | "sharp";
+// --- Types ---
+export interface SelectProps
+  extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root> {
+  variant?: "flat" | "bordered" | "underlined" | "faded";
+  color?: "primary" | "secondary" | "error";
   size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
+  label?: React.ReactNode;
+  labelPlacement?: "inside" | "outside" | "outside-left";
+  placeholder?: string;
+  description?: React.ReactNode;
+  errorMessage?: React.ReactNode;
+  startContent?: React.ReactNode;
+  isInvalid?: boolean;
+  className?: string;
+  classNames?: Partial<Record<keyof typeof selectSlots, string>>;
+  items?: { value: string; label: string; disabled?: boolean }[];
+  children?: React.ReactNode;
+  position?: "item-aligned" | "popper";
 }
 
-const SelectTrigger = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Trigger>,
-  SelectTriggerProps
->(
+export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
   (
-    { className, children, variant, shape, size, error, disabled, ...props },
+    {
+      children,
+      variant = "flat",
+      color = "primary",
+      size = "md",
+      shape = "minimal",
+      label,
+      labelPlacement = "inside",
+      placeholder,
+      description,
+      errorMessage,
+      startContent,
+      isInvalid = false,
+      className,
+      classNames,
+      items,
+      value,
+      defaultValue,
+      onValueChange,
+      open,
+      onOpenChange,
+      disabled,
+      position = "popper",
+      ...props
+    },
     ref
   ) => {
-    const context = useSelectContext();
-    return (
-      <SelectPrimitive.Trigger
-        ref={ref}
-        disabled={disabled}
-        className={selectTriggerVariants({
-          variant: variant || context.variant,
-          shape: shape || context.shape,
-          size,
-          isErrored: !!error,
-          disabled,
-          className,
-        })}
-        {...props}
+    const [internalValue, setInternalValue] = useState(defaultValue || "");
+    const isControlled = value !== undefined;
+    const currentValue = isControlled ? value : internalValue;
+
+    const isFilled = !!currentValue || !!placeholder || open === true;
+
+    const dynamicStyles = getSelectSlotClassNames({
+      variant,
+      size,
+      shape,
+      labelPlacement,
+      isInvalid,
+      isFilled,
+      hasStartContent: !!startContent,
+    });
+
+    const handleValueChange = (val: string) => {
+      if (!isControlled) setInternalValue(val);
+      onValueChange?.(val);
+    };
+
+    const labelContent = label ? (
+      <span
+        className={clsx(
+          selectSlots.label,
+          dynamicStyles.label,
+          classNames?.label
+        )}
       >
-        {children}
-        <SelectPrimitive.Icon asChild>
-          <ChevronDown className="h-4 w-4 opacity-50" />
-        </SelectPrimitive.Icon>
-      </SelectPrimitive.Trigger>
+        {label}
+      </span>
+    ) : null;
+
+    const helperWrapper = useMemo(() => {
+      const shouldShowError = isInvalid && errorMessage;
+      const hasContent = shouldShowError || description;
+
+      if (!hasContent) return null;
+
+      return (
+        <div
+          className={clsx(selectSlots.helperWrapper, classNames?.helperWrapper)}
+        >
+          {shouldShowError ? (
+            <div
+              className={clsx(
+                selectSlots.errorMessage,
+                classNames?.errorMessage
+              )}
+            >
+              {errorMessage}
+            </div>
+          ) : (
+            <div
+              className={clsx(selectSlots.description, classNames?.description)}
+            >
+              {description}
+            </div>
+          )}
+        </div>
+      );
+    }, [isInvalid, errorMessage, description, classNames]);
+
+    const isOutside =
+      labelPlacement === "outside" || labelPlacement === "outside-left";
+
+    return (
+      <SelectContext.Provider value={{ size, position }}>
+        <SelectPrimitive.Root
+          value={value}
+          defaultValue={defaultValue}
+          onValueChange={handleValueChange}
+          open={open}
+          onOpenChange={onOpenChange}
+          disabled={disabled}
+          {...props}
+        >
+          <div
+            className={clsx(
+              selectSlots.base,
+              selectStyles({ labelPlacement }),
+              className,
+              classNames?.base
+            )}
+            data-filled={isFilled}
+            data-invalid={isInvalid}
+            data-disabled={disabled}
+            data-has-label={!!label}
+          >
+            {isOutside && labelContent}
+
+            <SelectPrimitive.Trigger
+              ref={ref}
+              className={clsx(
+                selectSlots.trigger,
+                dynamicStyles.trigger,
+                classNames?.trigger
+              )}
+            >
+              {!isOutside && labelContent}
+
+              <div
+                className={clsx(
+                  selectSlots.innerWrapper,
+                  dynamicStyles.innerWrapper, // Changed: Applied dynamic alignment class here
+                  classNames?.innerWrapper
+                )}
+              >
+                {startContent && (
+                  <span className="text-on-surface-variant/70 flex-shrink-0 flex items-center">
+                    {startContent}
+                  </span>
+                )}
+                <SelectPrimitive.Value
+                  placeholder={placeholder}
+                  className={clsx(
+                    selectSlots.value,
+                    dynamicStyles.value,
+                    classNames?.value
+                  )}
+                />
+              </div>
+
+              <SelectPrimitive.Icon asChild>
+                <ChevronDown
+                  className={clsx(
+                    selectSlots.selectorIcon,
+                    dynamicStyles.selectorIcon,
+                    classNames?.selectorIcon
+                  )}
+                />
+              </SelectPrimitive.Icon>
+            </SelectPrimitive.Trigger>
+
+            {helperWrapper}
+
+            <SelectPrimitive.Portal>
+              <SelectPrimitive.Content
+                position={position}
+                className={clsx(
+                  selectContentVariants({ position, shape, variant }),
+                  "max-h-[var(--radix-select-content-available-height)]"
+                )}
+                sideOffset={position === "popper" ? 4 : 0}
+                align={position === "popper" ? "center" : undefined}
+              >
+                <SelectPrimitive.Viewport
+                  className={clsx(
+                    "w-full",
+                    position === "popper" ? "p-1" : "p-0"
+                  )}
+                >
+                  {items
+                    ? items.map((item) => (
+                        <SelectItem
+                          key={item.value}
+                          value={item.value}
+                          disabled={item.disabled}
+                        >
+                          {item.label}
+                        </SelectItem>
+                      ))
+                    : children}
+                </SelectPrimitive.Viewport>
+              </SelectPrimitive.Content>
+            </SelectPrimitive.Portal>
+          </div>
+        </SelectPrimitive.Root>
+      </SelectContext.Provider>
     );
   }
 );
-SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
+Select.displayName = "Select";
 
-const SelectContent = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
->(({ className, children, position = "item-aligned", ...props }, ref) => {
-  const { variant, shape } = useSelectContext();
-  return (
-    <SelectPrimitive.Portal>
-      <SelectPrimitive.Content
-        ref={ref}
-        className={clsx(
-          selectContentVariants({ variant, shape }),
-          position === "popper"
-            ? "data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit w-[var(--radix-select-trigger-width)]"
-            : "data-[state=open]:animate-select-enter data-[state=closed]:animate-select-exit",
-          "data-[side=bottom]:origin-top data-[side=top]:origin-bottom ",
-          className
-        )}
-        position={position}
-        {...props}
-      >
-        <SelectPrimitive.Viewport
-          className={clsx(
-            "p-1",
-            position === "popper" && [
-              "max-h-64",
-              "[mask-image:linear-gradient(to_bottom,transparent,black_1rem,black_calc(100%-1rem),transparent)]",
-            ],
-            position === "popper" && "w-full"
-          )}
-        >
-          {children}
-        </SelectPrimitive.Viewport>
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Portal>
-  );
-});
-SelectContent.displayName = SelectPrimitive.Content.displayName;
+// --- Subcomponents ---
 
-const SelectItem = React.forwardRef<
+const selectItemVariants = cva(
+  "relative flex w-full cursor-pointer select-none items-center pl-8 pr-2 text-sm outline-none focus:bg-secondary-container focus:text-on-secondary-container data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+  {
+    variants: {
+      size: {
+        sm: "text-xs",
+        md: "text-sm",
+        lg: "text-base",
+      },
+      isPopper: {
+        true: "rounded-lg py-1.5",
+        false: "rounded-none py-3",
+      },
+    },
+    defaultVariants: {
+      size: "md",
+      isPopper: true,
+    },
+  }
+);
+
+export const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, ...props }, ref) => {
-  const { shape, variant, size } = useSelectContext();
-  const localRef = useRef<HTMLDivElement>(null);
-  const rippleColor = "var(--color-ripple-light)";
-
-  const [, event] = useRipple({
-    ref: localRef,
-    color: rippleColor,
-    duration: 400,
-    disabled: props.disabled,
-  });
-
-  React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
+  const { size, position } = useContext(SelectContext);
+  const isPopper = position === "popper";
 
   return (
     <SelectPrimitive.Item
-      ref={localRef}
-      onPointerDown={event}
-      className={clsx(selectItemVariants({ size, shape }), className)}
+      ref={ref}
+      className={clsx(selectItemVariants({ size, isPopper }), className)}
       {...props}
     >
       <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <Check className="h-4 w-4 text-graphite-primary" />
+          <Check className="h-4 w-4" />
         </SelectPrimitive.ItemIndicator>
       </span>
-      <SelectPrimitive.ItemText className="truncate">
-        {children}
-      </SelectPrimitive.ItemText>
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
   );
 });
 SelectItem.displayName = SelectPrimitive.Item.displayName;
 
-const SelectLabel = React.forwardRef<
+export const SelectLabel = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
->(({ className, ...props }, ref) => {
-  const { size } = useSelectContext();
-  return (
-    <SelectPrimitive.Label
-      ref={ref}
-      className={clsx(
-        "py-1.5 pl-8 pr-2 font-semibold",
-        {
-          "text-sm": size === "sm",
-          "text-base": size === "md",
-          "text-lg": size === "lg",
-        },
-        className
-      )}
-      {...props}
-    />
-  );
-});
+>(({ className, ...props }, ref) => (
+  <SelectPrimitive.Label
+    ref={ref}
+    className={clsx(
+      "py-1.5 pl-8 pr-2 text-sm font-semibold text-on-surface",
+      className
+    )}
+    {...props}
+  />
+));
 SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
-const SelectSeparator = React.forwardRef<
+export const SelectSeparator = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Separator
     ref={ref}
-    className={clsx("-mx-1 my-1 h-px bg-graphite-border", className)}
+    className={clsx("-mx-1 my-1 h-px bg-outline-variant", className)}
     {...props}
   />
 ));
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
 
-// --- HELPER COMPONENT FOR MOBILE DIALOG ITEMS ---
-interface DialogSelectItemProps {
-  item: { value: string; label: string; disabled?: boolean };
-  isSelected: boolean;
-  onSelect: (value: string) => void;
-  variant: "primary" | "secondary";
-  viewType?: "sheet" | "modal";
-}
-
-const DialogSelectItem: React.FC<DialogSelectItemProps> = ({
-  item,
-  isSelected,
-  onSelect,
-  variant,
-  viewType = "sheet",
-}) => {
-  const localRef = useRef<HTMLButtonElement>(null);
-  const rippleColor =
-    variant === "primary"
-      ? "var(--color-ripple-light)"
-      : "var(--color-ripple-dark)";
-
-  const [, event] = useRipple({
-    ref: localRef,
-    color: rippleColor,
-    duration: 400,
-    disabled: item.disabled,
-  });
-
-  // Modal style (Radio button look)
-  if (viewType === "modal") {
-    return (
-      <button
-        ref={localRef}
-        type="button"
-        onPointerDown={event}
-        disabled={item.disabled}
-        onClick={() => onSelect(item.value)}
-        className={clsx(
-          "relative flex w-full cursor-pointer select-none items-center py-3 px-6 text-left outline-none overflow-hidden",
-          "transition-colors duration-150 ease-in-out",
-          "focus:bg-graphite-secondary/80 hover:bg-graphite-secondary/50",
-          "disabled:pointer-events-none disabled:opacity-50"
-        )}
-      >
-        <div className="flex items-center gap-4 w-full">
-          {/* Radio Indicator */}
-          <div
-            className={clsx(
-              "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
-              isSelected
-                ? "border-graphite-primary"
-                : "border-graphite-foreground/40"
-            )}
-          >
-            {isSelected && (
-              <div className="h-2.5 w-2.5 rounded-full bg-graphite-primary" />
-            )}
-          </div>
-          <span
-            className={clsx(
-              "truncate text-base",
-              isSelected ? "font-medium text-graphite-foreground" : ""
-            )}
-          >
-            {item.label}
-          </span>
-        </div>
-      </button>
-    );
-  }
-
-  // Sheet style (Checkmark look)
-  return (
-    <button
-      ref={localRef}
-      type="button"
-      onPointerDown={event}
-      disabled={item.disabled}
-      onClick={() => onSelect(item.value)}
-      className={clsx(
-        "relative flex w-full cursor-pointer select-none items-center rounded-lg py-3 pl-8 pr-2 text-left text-sm outline-none overflow-hidden",
-        "transition-colors duration-150 ease-in-out",
-        "focus:bg-graphite-secondary/80",
-        isSelected && "font-semibold text-graphite-primary",
-        "disabled:pointer-events-none disabled:opacity-50"
-      )}
-    >
-      <span className="relative z-10 flex items-center w-full">
-        {isSelected && (
-          <span className="absolute -left-6 flex h-3.5 w-3.5 items-center justify-center">
-            <Check className="h-4 w-4 text-graphite-primary" />
-          </span>
-        )}
-        <span className="truncate">{item.label}</span>
-      </span>
-    </button>
-  );
-};
-
-// --- MAIN WRAPPER COMPONENT ---
-
-interface SelectWrapperProps
-  extends Omit<SelectProps, "children" | "onChange"> {
-  variant?: "primary" | "secondary";
-  shape?: "full" | "minimal" | "sharp";
-  size?: "sm" | "md" | "lg";
-  label?: string;
-  error?: string;
-  placeholder?: string;
-  items: { value: string; label: string; disabled?: boolean }[];
-  id?: string;
-  contentPosition?: React.ComponentProps<typeof SelectContent>["position"];
-  onValueChange?: (value: string) => void;
-  value?: string;
-  className?: string;
-  /**
-   * Controls the appearance when on mobile devices.
-   * - `sheet`: (Default) Displays as a bottom sheet with checkmarks.
-   * - `modal`: Displays as a centered Android-style dialog with radio buttons.
-   */
-  mobileViewType?: "sheet" | "modal";
-}
-
-const SelectInput = React.forwardRef<HTMLButtonElement, SelectWrapperProps>(
-  (
-    {
-      label,
-      error,
-      placeholder,
-      items,
-      id,
-      variant = "primary",
-      shape = "minimal",
-      size = "md",
-      disabled,
-      contentPosition = "item-aligned",
-      value,
-      onValueChange,
-      className,
-      mobileViewType = "sheet",
-      ...props
-    },
-    ref
-  ) => {
-    const isMobile = useMediaQuery("(max-width: 768px)");
-    const uniqueId = React.useId();
-    const [isOpen, setIsOpen] = useState(false);
-    const [tempValue, setTempValue] = useState(value);
-    const selectId = id || uniqueId;
-
-    if (isMobile && contentPosition === "popper") {
-      const handleOpenChange = (open: boolean) => {
-        if (open) {
-          setTempValue(value);
-        }
-        setIsOpen(open);
-      };
-
-      const handleConfirm = () => {
-        if (tempValue !== undefined) {
-          onValueChange?.(tempValue);
-        }
-        setIsOpen(false);
-      };
-
-      const displayLabel =
-        items.find((item) => item.value === value)?.label || placeholder;
-
-      // Determine class names based on view type
-      const contentClasses =
-        mobileViewType === "modal"
-          ? "fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[90vw] max-w-sm rounded-[28px] p-0 overflow-hidden shadow-2xl border-none"
-          : "fixed bottom-0 m-0 w-full max-w-full rounded-b-none rounded-t-2xl p-4";
-
-      const headerClasses =
-        mobileViewType === "modal"
-          ? "text-left px-6 pt-6 pb-2"
-          : "text-left mb-2";
-
-      const titleClasses = mobileViewType === "modal" ? "text-2xl" : "";
-
-      const footerClasses =
-        mobileViewType === "modal"
-          ? "flex justify-end gap-2 p-6 pt-2"
-          : "flex justify-end gap-4 mt-4";
-
-      return (
-        <div className="w-full flex flex-col gap-2">
-          {label && (
-            <div className="block text-sm font-medium text-graphite-foreground">
-              {label}
-            </div>
-          )}
-          <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>
-              <button
-                ref={ref}
-                type="button"
-                id={selectId}
-                disabled={disabled}
-                className={clsx(
-                  selectTriggerVariants({
-                    variant,
-                    shape,
-                    size,
-                    isErrored: !!error,
-                    disabled,
-                  }),
-                  className
-                )}
-                {...props}
-              >
-                <span className="truncate">{displayLabel}</span>
-                <ChevronDown className="h-4 w-4 opacity-50" />
-              </button>
-            </DialogTrigger>
-            <DialogContent shape={shape} className={contentClasses}>
-              <DialogHeader className={headerClasses}>
-                <DialogTitle className={titleClasses}>
-                  {label || placeholder}
-                </DialogTitle>
-              </DialogHeader>
-              <div
-                className={clsx(
-                  "overflow-y-auto",
-                  mobileViewType === "sheet"
-                    ? "mt-4 max-h-[40vh] [mask-image:linear-gradient(to_bottom,transparent,black_1rem,black_calc(100%-1rem),transparent)]"
-                    : "max-h-[50vh] py-2"
-                )}
-              >
-                {items.map((item) => (
-                  <DialogSelectItem
-                    key={item.value}
-                    item={item}
-                    isSelected={tempValue === item.value}
-                    onSelect={setTempValue}
-                    variant={variant}
-                    viewType={mobileViewType}
-                  />
-                ))}
-              </div>
-              <DialogFooter className={footerClasses}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsOpen(false)}
-                  className={
-                    mobileViewType === "modal"
-                      ? "text-graphite-primary hover:bg-graphite-primary/10 rounded-full px-4"
-                      : ""
-                  }
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  variant={mobileViewType === "modal" ? "ghost" : "primary"}
-                  onClick={handleConfirm}
-                  className={
-                    mobileViewType === "modal"
-                      ? "text-graphite-primary hover:bg-graphite-primary/10 rounded-full px-4"
-                      : ""
-                  }
-                >
-                  OK
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-        </div>
-      );
-    }
-
-    // --- Standard Desktop/Item-Aligned View ---
-    return (
-      <div className="w-full flex flex-col gap-2">
-        {label && (
-          <label
-            htmlFor={selectId}
-            className="block text-sm font-medium text-graphite-foreground"
-          >
-            {label}
-          </label>
-        )}
-        <Select
-          disabled={disabled}
-          variant={variant}
-          shape={shape}
-          size={size}
-          value={value}
-          onValueChange={onValueChange}
-          {...props}
-        >
-          <SelectTrigger
-            id={selectId}
-            ref={ref}
-            size={size}
-            error={error}
-            disabled={disabled}
-            className={className}
-          >
-            <span className="truncate">
-              <SelectValue placeholder={placeholder} />
-            </span>
-          </SelectTrigger>
-          <SelectContent position={contentPosition}>
-            {items.map((item) => (
-              <SelectItem
-                key={item.value}
-                value={item.value}
-                disabled={item.disabled}
-              >
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      </div>
-    );
-  }
-);
-SelectInput.displayName = "SelectInput";
-
-export {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectInput,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-};
+export const SelectGroup = SelectPrimitive.Group;

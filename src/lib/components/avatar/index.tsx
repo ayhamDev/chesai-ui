@@ -6,8 +6,6 @@ import { clsx } from "clsx";
 import { User } from "lucide-react";
 import React, { useState } from "react";
 
-// --- CVA VARIANTS ---
-// This CVA is now used by ALL avatar types for the root container.
 const avatarVariants = cva(
   "relative flex shrink-0 select-none items-center justify-center overflow-hidden align-middle font-medium",
   {
@@ -32,7 +30,6 @@ const avatarVariants = cva(
   }
 );
 
-// --- HELPER FUNCTION ---
 const getInitials = (name: string) => {
   const words = name.split(" ").filter(Boolean);
   if (words.length === 0) return "?";
@@ -40,7 +37,6 @@ const getInitials = (name: string) => {
   return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
 };
 
-// --- PROP DEFINITION ---
 export interface AvatarProps
   extends React.ComponentPropsWithoutRef<typeof RadixAvatar.Root>,
     VariantProps<typeof avatarVariants> {
@@ -49,7 +45,6 @@ export interface AvatarProps
   variant?: "default" | "count";
 }
 
-// --- COMPONENT IMPLEMENTATION ---
 export const Avatar = React.forwardRef<
   React.ElementRef<typeof RadixAvatar.Root>,
   AvatarProps
@@ -72,9 +67,6 @@ export const Avatar = React.forwardRef<
 
     const showSkeleton = src && loadingStatus === "loading";
 
-    // ============================ THIS IS THE FIX ============================
-    // The "count" variant now uses the same Radix primitives for consistency.
-    // It renders a Root container and a Fallback, ensuring styles are applied correctly.
     if (variant === "count") {
       return (
         <RadixAvatar.Root
@@ -83,7 +75,7 @@ export const Avatar = React.forwardRef<
           {...props}
         >
           <RadixAvatar.Fallback
-            className="flex h-full w-full items-center justify-center bg-graphite-secondary text-graphite-secondaryForeground"
+            className="flex h-full w-full items-center justify-center bg-secondary-container text-on-secondary-container"
             delayMs={0}
           >
             {fallback}
@@ -91,9 +83,7 @@ export const Avatar = React.forwardRef<
         </RadixAvatar.Root>
       );
     }
-    // ========================== END OF FIX ===================================
 
-    // Default variant logic remains the same
     const fallbackContent = fallback ? (
       getInitials(fallback)
     ) : (
@@ -107,7 +97,7 @@ export const Avatar = React.forwardRef<
         {...props}
       >
         {showSkeleton && (
-          <div className="absolute inset-0 z-10 animate-pulse bg-graphite-secondary" />
+          <div className="absolute inset-0 z-10 animate-pulse bg-surface-container-highest" />
         )}
 
         <RadixAvatar.Image
@@ -123,7 +113,7 @@ export const Avatar = React.forwardRef<
           }}
         />
         <RadixAvatar.Fallback
-          className="flex h-full w-full items-center justify-center bg-graphite-secondary text-graphite-secondaryForeground"
+          className="flex h-full w-full items-center justify-center bg-secondary-container text-on-secondary-container"
           delayMs={0}
         >
           {fallbackContent}

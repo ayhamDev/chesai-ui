@@ -26,16 +26,18 @@ const useItemContext = () => React.useContext(ItemContext);
 // --- CVA Variants ---
 const itemVariants = cva(
   // Added z-0 to establish stacking context for bloom effect
-  "group/item relative flex flex-wrap items-center border text-sm outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 overflow-hidden z-0",
+  "group/item relative flex flex-wrap items-center border text-sm outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 overflow-hidden z-0",
   {
     variants: {
       variant: {
-        primary: "bg-graphite-card border-graphite-border",
-        secondary: "bg-graphite-secondary border-transparent",
+        primary:
+          "bg-surface-container-low border-outline-variant text-on-surface",
+        secondary:
+          "bg-surface-container-high border-transparent text-on-surface",
         ghost:
-          "bg-transparent border-transparent " +
-          // Bloom Effect
-          "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-250 after:ease-out " +
+          "bg-transparent border-transparent text-on-surface " +
+          // Bloom Effect: Uses Secondary Container for a subtle highlight
+          "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-250 after:ease-out " +
           "hover:after:opacity-100 hover:after:scale-100",
       },
       size: {
@@ -75,7 +77,7 @@ const itemMediaVariants = cva(
     variants: {
       variant: {
         default: "",
-        icon: "bg-graphite-secondary border border-graphite-border [&_svg:not([class*='size-'])]:text-graphite-foreground/80",
+        icon: "bg-secondary-container border border-transparent text-on-secondary-container [&_svg:not([class*='size-'])]:opacity-80",
         avatar: "overflow-hidden",
       },
       size: {
@@ -120,7 +122,7 @@ const ItemSeparator = React.forwardRef<
   <div
     ref={ref}
     data-slot="item-separator"
-    className={clsx("h-px w-full bg-graphite-border", className)}
+    className={clsx("h-px w-full bg-outline-variant", className)}
     {...props}
   />
 ));
@@ -136,9 +138,7 @@ const Item = React.forwardRef<
     direction?: "horizontal" | "vertical";
     asChild?: boolean;
     disabled?: boolean;
-    /** If true, the ripple effect on click will be disabled. */
     disableRipple?: boolean;
-    /** Callback fired when the item is pressed for 500ms. */
     onLongPress?: (
       event:
         | React.PointerEvent<HTMLDivElement>
@@ -170,7 +170,7 @@ const Item = React.forwardRef<
 
     const [, event] = useRipple({
       ref: localRef,
-      color: "var(--color-ripple-light)",
+      color: "var(--color-ripple-dark)",
       duration: 400,
       disabled: disabled || disableRipple,
     });
@@ -260,7 +260,7 @@ const ItemContent = React.forwardRef<
       ref={ref}
       data-slot="item-content"
       className={clsx(
-        "flex flex-1 flex-col gap-0.5 min-w-0 z-10", // Added z-10 to stay above pseudo
+        "flex flex-1 flex-col gap-0.5 min-w-0 z-10",
         direction === "vertical" && "items-center",
         className
       )}
@@ -280,7 +280,7 @@ const ItemTitle = React.forwardRef<
       ref={ref}
       data-slot="item-title"
       className={clsx(
-        "flex w-fit items-center gap-2 text-base font-semibold leading-snug text-graphite-foreground",
+        "flex w-fit items-center gap-2 text-base font-semibold leading-snug text-on-surface",
         direction === "vertical" && "justify-center",
         className
       )}
@@ -298,7 +298,7 @@ const ItemDescription = React.forwardRef<
     ref={ref}
     data-slot="item-description"
     className={clsx(
-      "text-graphite-foreground/70 line-clamp-2 text-sm font-normal leading-normal",
+      "text-on-surface-variant line-clamp-2 text-sm font-normal leading-normal",
       className
     )}
     {...props}
@@ -316,7 +316,7 @@ const ItemActions = React.forwardRef<
       ref={ref}
       data-slot="item-actions"
       className={clsx(
-        "flex items-center gap-2 z-10", // Added z-10
+        "flex items-center gap-2 z-10",
         direction === "horizontal" ? "ml-auto pl-4" : "mt-2",
         className
       )}

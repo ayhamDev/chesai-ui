@@ -9,10 +9,10 @@ const appBarVariants = cva(
   {
     variants: {
       appBarColor: {
-        background: "bg-graphite-background text-graphite-foreground",
-        card: "bg-graphite-card text-graphite-foreground",
-        primary: "bg-graphite-primary text-graphite-primaryForeground",
-        secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
+        background: "bg-background text-on-background",
+        card: "bg-surface-container-low text-on-surface",
+        primary: "bg-primary-container text-on-primary-container",
+        secondary: "bg-secondary-container text-on-secondary-container",
       },
       shadow: {
         none: "shadow-none",
@@ -27,9 +27,7 @@ const appBarVariants = cva(
 );
 
 export interface AppBarSharedProps {
-  // --- MOVED HERE to allow access via StackRouter options ---
   appBarColor?: "background" | "card" | "primary" | "secondary";
-
   scrollBehavior?: "sticky" | "conditionally-sticky";
   animatedBehavior?: Array<"none" | "appbar-color" | "fold" | "shadow">;
   animatedColor?: "background" | "card" | "primary" | "secondary";

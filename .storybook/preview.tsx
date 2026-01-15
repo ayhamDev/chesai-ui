@@ -1,14 +1,15 @@
 import type { Preview } from "@storybook/react-vite";
 import { themes } from "@storybook/theming";
 import "../src/lib/tailwind/theme.css";
-// import { Card } from "../src/lib/components/card";
+import { ThemeProvider } from "../src/lib/context/ThemeProvider";
+import { useEffect } from "react";
 const preview: Preview = {
   parameters: {
     darkMode: {
       // Add the class names you defined in your CSS
       classTarget: "html",
-      darkClass: "theme-dark",
-      lightClass: "theme-light",
+      darkClass: "dark",
+      lightClass: "light",
       // Set the default theme for Storybook
       current: "light",
       stylePreview: true,
@@ -25,6 +26,11 @@ const preview: Preview = {
       },
     },
   },
+  decorators: [
+    (Story) => {
+      return <Story />;
+    },
+  ],
 };
 
 export default preview;

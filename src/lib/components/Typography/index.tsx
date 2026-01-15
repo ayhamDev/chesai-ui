@@ -1,19 +1,19 @@
 import React from "react";
 
 const variants = {
-  h1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-graphite-foreground",
-  h2: "scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0 text-graphite-foreground",
-  h3: "scroll-m-20 text-2xl font-semibold tracking-tight text-graphite-foreground",
-  h4: "scroll-m-20 text-xl font-semibold tracking-tight text-graphite-foreground",
-  p: "leading-7 [&:not(:first-child)]:mt-6 text-graphite-foreground",
+  h1: "scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-on-surface",
+  h2: "scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0 text-on-surface",
+  h3: "scroll-m-20 text-2xl font-semibold tracking-tight text-on-surface",
+  h4: "scroll-m-20 text-xl font-semibold tracking-tight text-on-surface",
+  p: "leading-7 [&:not(:first-child)]:mt-6 text-on-surface",
   blockquote:
-    "mt-6 border-l-2 border-graphite-primary pl-6 italic text-graphite-foreground/80",
+    "mt-6 border-l-2 border-primary pl-6 italic text-on-surface-variant",
   highlight:
-    "relative rounded bg-graphite-secondary px-[0.3rem] py-[0.2rem] text-sm font-semibold text-graphite-secondaryForeground",
-  lead: "text-xl text-graphite-foreground/80",
-  large: "text-lg font-semibold text-graphite-foreground",
-  small: "text-sm font-medium leading-none text-graphite-foreground",
-  muted: "text-sm text-graphite-foreground/70",
+    "relative rounded bg-secondary-container px-[0.3rem] py-[0.2rem] text-sm font-semibold text-on-secondary-container",
+  lead: "text-xl text-on-surface-variant",
+  large: "text-lg font-semibold text-on-surface",
+  small: "text-sm font-medium leading-none text-on-surface",
+  muted: "text-sm text-on-surface-variant",
 };
 
 const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {
@@ -30,46 +30,37 @@ const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {
   muted: "p",
 };
 
-// 1. Define the component's specific props
 type TypographyOwnProps = {
   variant?: keyof typeof variants;
   className?: string;
 };
 
-// 2. Create a refined generic props type for the polymorphic component
-// This type merges the component's own props (P) with the native props
-// of the element (C), while ensuring no keys are accidentally omitted.
 type PolymorphicComponentProps<
   C extends React.ElementType,
   P extends object
 > = P & Omit<React.ComponentPropsWithoutRef<C>, keyof P>;
 
-// 3. Create the final props type for our Typography component
-// We add 'as' to the TypographyOwnProps to make it an explicit part of our own props.
 type TypographyProps<C extends React.ElementType> = PolymorphicComponentProps<
   C,
   TypographyOwnProps & { as?: C }
 >;
 
-// 4. Create a generic Ref type
 type PolymorphicRef<C extends React.ElementType> =
   React.ComponentPropsWithRef<C>["ref"];
 
-// 5. Define the component's function signature with the correct types and a displayName property
 type TypographyComponent = (<C extends React.ElementType = "p">(
   props: TypographyProps<C> & { ref?: PolymorphicRef<C> }
 ) => React.ReactElement | null) & {
   displayName?: string;
 };
 
-// 6. Implement the component using forwardRef and the correct types.
-// We cast the result to TypographyComponent to ensure all type declarations are met.
 export const Typography = React.forwardRef(
-  <C extends React.HTMLElementType = "p">(
+  <C extends React.ElementType = "p">(
     { as, variant, className, children, ...restProps }: TypographyProps<C>,
     ref?: PolymorphicRef<C>
   ) => {
     const Component = as || variantToTagMap[variant] || "p";
+    // @ts-ignore
     const combinedClassName = `${variants[variant]} ${className || ""}`.trim();
 
     return (

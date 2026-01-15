@@ -1,7 +1,7 @@
 "use client";
 
 import { type Column } from "@tanstack/react-table";
-import { Filter, X } from "lucide-react";
+import { Filter } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../button";
 import {
@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "../dropdown-menu";
 import { Input } from "../input";
-import { SelectInput } from "../select";
+import { Select } from "../select"; // FIX: Imported as Select
 
 interface DataTableNumericFilterProps<TData, TValue> {
   column?: Column<TData, TValue>;
@@ -71,9 +71,9 @@ export function DataTableNumericFilter<TData, TValue>({
         <DropdownMenuLabel>Filter {title}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="flex flex-col gap-3 my-2">
-          <SelectInput
+          <Select
             size="sm"
-            variant="secondary"
+            variant="flat"
             value={operator}
             onValueChange={setOperator}
             items={[
@@ -86,7 +86,7 @@ export function DataTableNumericFilter<TData, TValue>({
           <Input
             type="number"
             size="sm"
-            variant="secondary"
+            variant="flat"
             placeholder="Value..."
             value={value}
             onChange={(e) => setValue(e.target.value)}

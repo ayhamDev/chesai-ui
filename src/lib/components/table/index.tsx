@@ -34,16 +34,14 @@ export const useTableContext = () => {
 
 // --- CVA Variants ---
 
-// 1. Container Variants
-// Added overflow-x-auto to ensure the table is scrollable on small screens by default
 export const tableContainerVariants = cva(
   "w-full overflow-hidden overflow-x-auto",
   {
     variants: {
       variant: {
         primary:
-          "rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-sm",
-        secondary: "rounded-none bg-transparent text-graphite-foreground",
+          "rounded-xl border border-outline-variant bg-surface-container-low text-on-surface shadow-sm",
+        secondary: "rounded-none bg-transparent text-on-surface",
       },
     },
     defaultVariants: {
@@ -56,16 +54,16 @@ export const tableVariants = cva(
   "w-full text-sm caption-bottom border-collapse"
 );
 
-// 2. Header Variants
+// Header Variants
 export const thVariants = cva(
   "h-10 px-4 text-left align-middle font-semibold [&:has([role=checkbox])]:pr-0 transition-colors",
   {
     variants: {
       variant: {
         primary:
-          "bg-graphite-secondary/50 text-graphite-foreground border-b border-graphite-border",
+          "bg-surface-container/50 text-on-surface border-b border-outline-variant",
         secondary:
-          "bg-transparent text-graphite-foreground/60 border-b-2 border-graphite-border",
+          "bg-transparent text-on-surface-variant border-b-2 border-outline-variant",
       },
       density: {
         default: "py-3",
@@ -78,16 +76,17 @@ export const thVariants = cva(
   }
 );
 
-// 3. Row Variants
+// Row Variants
 export const trVariants = cva(
-  "transition-colors data-[state=selected]:bg-graphite-secondary/60",
+  // Selected state uses Secondary Container (Standard MD3)
+  "transition-colors data-[state=selected]:bg-secondary-container/60",
   {
     variants: {
       variant: {
         primary:
-          "border-b border-graphite-border hover:bg-graphite-secondary/40",
+          "border-b border-outline-variant hover:bg-surface-container-highest/50",
         secondary:
-          "border-b border-graphite-border/50 border-dashed hover:bg-graphite-secondary/20",
+          "border-b border-outline-variant/50 border-dashed hover:bg-surface-container-highest/30",
       },
     },
     defaultVariants: {
@@ -96,7 +95,6 @@ export const trVariants = cva(
   }
 );
 
-// 4. Cell Variants
 export const tdVariants = cva(
   "p-4 align-middle [&:has([role=checkbox])]:pr-0",
   {
@@ -189,9 +187,7 @@ export interface TableRootProps<TData>
   density?: TableDensity;
   variant?: TableVariant;
   renderContextMenu?: (row: Row<TData>) => React.ReactNode;
-  /** If true, renders skeleton rows in the table body. */
   isLoading?: boolean;
-  /** Number of skeleton rows to render when loading. @default 10 */
   skeletonCount?: number;
 }
 
@@ -258,7 +254,7 @@ export const TableRoot = <TData extends {}>({
               <tr>
                 <td
                   colSpan={table.getAllColumns().length}
-                  className="h-24 text-center text-graphite-foreground/70"
+                  className="h-24 text-center text-on-surface-variant"
                 >
                   No results.
                 </td>

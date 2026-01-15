@@ -1,18 +1,16 @@
 "use client";
 
-import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { type Table } from "@tanstack/react-table";
 import { useDebounce } from "@uidotdev/usehooks";
-import { clsx } from "clsx";
 import { Filter, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "../badge";
 import { Button } from "../button";
+import { Dialog, DialogContent, DialogTrigger } from "../dialog";
 import { Input } from "../input";
-import { SelectInput } from "../select";
+import { Select } from "../select"; // FIX: Imported as Select
 import { Typography } from "../typography";
 import { type AdvancedFilterValue, type FilterOperator } from "./filter-utils";
-import { Dialog, DialogContent, DialogTrigger } from "../dialog";
 
 interface DataTableAdvancedFilterProps<TData> {
   table: Table<TData>;
@@ -39,7 +37,6 @@ const getColumnLabel = (column: any) => {
   return column.id.charAt(0).toUpperCase() + column.id.slice(1);
 };
 
-// Sub-component for individual filter row to handle local state and debouncing
 const AdvancedFilterRow = ({
   filter,
   table,
@@ -79,11 +76,11 @@ const AdvancedFilterRow = ({
   if (!column) return null;
 
   return (
-    <div className="flex items-center gap-2 p-2 rounded-lg bg-graphite-secondary/30 border border-graphite-border/50">
+    <div className="flex items-center gap-2 p-2 rounded-lg bg-surface-container-high/30 border border-outline-variant/50">
       <div className="w-[120px] flex-shrink-0">
-        <SelectInput
+        <Select
           size="sm"
-          variant="secondary"
+          variant="faded" // Updated variant
           value={filter.id}
           onValueChange={(newId) => {
             if (newId !== filter.id) {
@@ -101,9 +98,9 @@ const AdvancedFilterRow = ({
         />
       </div>
       <div className="w-[180px] flex-shrink-0">
-        <SelectInput
+        <Select
           size="sm"
-          variant="secondary"
+          variant="faded" // Updated variant
           value={initialFilterValue.operator}
           onValueChange={(val) => {
             table.getColumn(filter.id)?.setFilterValue({
@@ -117,7 +114,7 @@ const AdvancedFilterRow = ({
       <div className="flex-1 min-w-0">
         <Input
           size="sm"
-          variant="secondary"
+          variant="faded" // Updated variant
           placeholder="Value..."
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
@@ -126,7 +123,7 @@ const AdvancedFilterRow = ({
       <Button
         variant="ghost"
         size="sm"
-        className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+        className="h-8 w-8 p-0 text-error hover:text-error hover:bg-error/10"
         onClick={() => removeFilter(filter.id)}
       >
         <Trash2 className="h-4 w-4" />
@@ -159,7 +156,7 @@ export function DataTableAdvancedFilter<TData>({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} variant="basic">
       <DialogTrigger asChild>
         <Button
           variant="secondary"
@@ -196,7 +193,7 @@ export function DataTableAdvancedFilter<TData>({
 
         <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto">
           {activeFilters.length === 0 ? (
-            <div className="py-8 text-center text-graphite-foreground/50 text-sm border-2 border-dashed border-graphite-border rounded-lg">
+            <div className="py-8 text-center text-on-surface-variant/50 text-sm border-2 border-dashed border-outline-variant rounded-lg">
               No active filters
             </div>
           ) : (

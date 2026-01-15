@@ -1,6 +1,3 @@
-// 1. Install this dependency first:
-// npm install @uidotdev/usehooks
-
 import {
   arrow,
   autoUpdate,
@@ -15,7 +12,6 @@ import {
   useInteractions,
   useRole,
 } from "@floating-ui/react";
-// 2. Import the new hooks from the library
 import { useLongPress, useMediaQuery } from "@uidotdev/usehooks";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
@@ -30,12 +26,12 @@ import React, {
   useState,
 } from "react";
 
-// CVA definition remains unchanged
 const tooltipVariants = cva("font-semibold relative z-50", {
   variants: {
     variant: {
-      primary: "bg-graphite-primary text-graphite-primaryForeground",
-      secondary: "bg-graphite-secondary text-graphite-secondaryForeground",
+      // MD3 Tooltips use Inverse Surface
+      primary: "bg-inverse-surface text-inverse-on-surface",
+      secondary: "bg-surface-container-highest text-on-surface",
     },
     size: {
       sm: "px-2 py-1 text-xs",
@@ -60,7 +56,7 @@ export interface TooltipProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
 }
-// Context type remains unchanged
+
 interface TooltipContextType {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -92,8 +88,6 @@ export const useTooltip = (): TooltipContextType => {
   return context;
 };
 
-// ==================== TooltipProvider (Refactored) ====================
-
 export const TooltipProvider = ({
   children,
 }: {
@@ -101,8 +95,6 @@ export const TooltipProvider = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const arrowRef = useRef<HTMLDivElement>(null);
-
-  // 3. Use useMediaQuery to detect touch devices reliably
   const isTouchDevice = useMediaQuery("(pointer: coarse)");
 
   const data = useFloating({
@@ -120,29 +112,23 @@ export const TooltipProvider = ({
   });
 
   const context = data.context;
-
-  // Interactions from @floating-ui/react
   const hover = useHover(context, { enabled: !isTouchDevice, move: false });
   const focus = useFocus(context, { enabled: !isTouchDevice });
   const dismiss = useDismiss(context, { referencePress: !isTouchDevice });
   const role = useRole(context, { role: "tooltip" });
 
-  // 4. Use useLongPress from the library
-  // The callback is only passed if it's a touch device, otherwise it's null.
   const longPressEvents = useLongPress(
     isTouchDevice ? () => setIsOpen(true) : null,
-    { threshold: 500 } // Long press duration
+    { threshold: 500 }
   );
 
-  // useInteractions only manages the Floating UI native hooks
   const interactions = useInteractions([hover, focus, dismiss, role]);
 
   const value = useMemo(
     () => ({
       isOpen,
       setIsOpen,
-      // 5. Manually merge the props from useInteractions and useLongPress
-      getReferenceProps: (userProps) => ({
+      getReferenceProps: (userProps: any) => ({
         ...interactions.getReferenceProps(userProps),
         ...(isTouchDevice ? longPressEvents : {}),
       }),
@@ -170,9 +156,6 @@ export const TooltipProvider = ({
   );
 };
 
-// =====================================================================
-
-// TooltipTrigger and mergeRefs remain unchanged
 function mergeRefs<T>(
   refs: Array<React.MutableRefObject<T> | React.LegacyRef<T> | null | undefined>
 ): React.RefCallback<T> {
@@ -186,6 +169,7 @@ function mergeRefs<T>(
     });
   };
 }
+
 export const TooltipTrigger = React.forwardRef<
   HTMLElement,
   React.HTMLProps<HTMLElement> & { asChild?: boolean }
@@ -219,7 +203,6 @@ export const TooltipTrigger = React.forwardRef<
   );
 });
 
-// Tooltip component remains unchanged
 export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
   ({ className, variant, size, shape, style, children, ...props }, ref) => {
     const context = useTooltip();
@@ -244,9 +227,11 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
       bottom: "top",
       left: "right",
     }[context.placement.split("-")[0]] as string;
+
+    // Invert arrow color
     const arrowColorClass = {
-      primary: "bg-graphite-primary",
-      secondary: "bg-graphite-secondary",
+      primary: "bg-inverse-surface",
+      secondary: "bg-surface-container-highest",
     }[variant || "primary"];
 
     return (

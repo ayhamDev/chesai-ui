@@ -12,6 +12,7 @@ import React, {
 } from "react";
 import useRipple from "use-ripple-hook";
 import { Typography } from "../typography";
+import { useTheme } from "../../context";
 
 // --- TYPE DEFINITIONS & CONTEXT ---
 
@@ -29,7 +30,6 @@ interface BottomTabsContextProps {
   mode: "attached" | "detached";
   navigatorShape: "full" | "minimal" | "sharp";
   indicatorId: string;
-  // --- NEW PROP ---
   showLabels: boolean;
 }
 
@@ -46,7 +46,7 @@ const useBottomTabs = () => {
 
 // --- CVA VARIANTS ---
 
-const navigatorVariants = cva("w-full bg-graphite-card", {
+const navigatorVariants = cva("w-full bg-surface-container", {
   variants: {
     mode: {
       attached: "",
@@ -58,7 +58,7 @@ const navigatorVariants = cva("w-full bg-graphite-card", {
       sharp: "rounded-none",
     },
     bordered: {
-      true: "border-t border-graphite-border",
+      true: "border-t border-outline-variant",
       false: "",
     },
     shadow: {
@@ -95,7 +95,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     itemLayout,
     indicatorId,
     navigatorShape,
-    showLabels, // --- CONSUME NEW PROP ---
+    showLabels,
   } = useBottomTabs();
 
   const isActive = activeTab === name;
@@ -104,8 +104,9 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   const localRef = useRef<HTMLButtonElement>(null);
   const [, event] = useRipple({
     ref: localRef,
-    color: "var(--color-ripple-light)",
+    color: "var(--color-ripple-dark)",
     duration: 400,
+    opacity: 0.1,
   });
 
   const isHorizontal = itemLayout === "inline" && isActive && showLabels;
@@ -132,14 +133,14 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
         onClick={() => onTabPress(name)}
         onPointerDown={event}
         className={clsx(
-          "relative z-10 flex h-16 w-full items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2",
+          "relative z-10 flex h-16 w-full items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           isHorizontal ? "flex-row gap-2 px-4 py-2" : "flex-col gap-1 p-2",
           isActive
-            ? "text-graphite-primary font-semibold"
-            : "text-graphite-foreground/70",
+            ? "text-on-secondary-container font-semibold"
+            : "text-on-surface-variant",
           shapeToClassName[finalShape],
           !isActive && [
-            "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out",
+            "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out",
             "hover:after:opacity-100 hover:after:scale-100",
             "disabled:after:opacity-0",
           ]
@@ -148,19 +149,18 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
         {isActive && (
           <motion.div
             layoutId={indicatorId}
-            className="absolute inset-0 z-0 bg-graphite-secondary"
+            className="absolute inset-0 z-0 bg-secondary-container"
             style={{ borderRadius: shapeToBorderRadius[finalShape] }}
             transition={{
               type: "spring",
               stiffness: 300,
-              damping: 20, // Lower damping = more "expressive" bounce
-              mass: 1.2, // Higher mass = feels more "physical"
+              damping: 20,
+              mass: 1.2,
             }}
           />
         )}
         <div className="relative z-10">{icon({ isActive })}</div>
 
-        {/* --- CONDITIONALLY RENDER LABELS --- */}
         {showLabels && (
           <AnimatePresence>
             {isHorizontal ? (
@@ -206,7 +206,6 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   activeTab: string;
   onTabPress: (name: string) => void;
   itemLayout?: "stacked" | "inline";
-  // --- NEW PROP ---
   showLabels?: boolean;
 }
 
@@ -219,7 +218,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   shape = "full",
   bordered = true,
   shadow = "lg",
-  showLabels = true, // Default to true
+  showLabels = true,
   className,
   ...props
 }) => {
@@ -244,7 +243,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
       mode,
       navigatorShape: shape,
       indicatorId,
-      showLabels, // --- PASS TO CONTEXT ---
+      showLabels,
     }),
     [activeTab, onTabPress, itemLayout, mode, shape, indicatorId, showLabels]
   );

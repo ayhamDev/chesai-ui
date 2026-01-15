@@ -2,11 +2,12 @@
 
 import { X } from "lucide-react";
 import React, { forwardRef, useMemo } from "react";
-import { type UseTextareaProps, useTextarea } from "./use-textarea";
+import { NumberInputStepper } from "./number-input-stepper";
+import { type UseNumberInputProps, useNumberInput } from "./use-number-input";
 
-export interface TextareaProps extends UseTextareaProps {}
+export interface NumberInputProps extends UseNumberInputProps {}
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
   (props, ref) => {
     const {
       Component,
@@ -18,6 +19,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       shouldLabelBeOutside,
       errorMessage,
       isInvalid,
+      hideStepper,
       getBaseProps,
       getLabelProps,
       getInputProps,
@@ -27,7 +29,9 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       getDescriptionProps,
       getErrorMessageProps,
       getClearButtonProps,
-    } = useTextarea({ ...props, ref });
+      getStepperWrapperProps,
+      getStepperButtonProps,
+    } = useNumberInput({ ...props, ref });
 
     const labelContent = label ? (
       <label {...getLabelProps()}>{label}</label>
@@ -71,9 +75,21 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     const innerWrapper = (
       <div {...getInnerWrapperProps()}>
         {startContent}
-        <textarea {...getInputProps()} />
-        {endContent}
+        <input {...getInputProps()} />
         {clearButton}
+        {endContent}
+        {!hideStepper && (
+          <div {...getStepperWrapperProps()}>
+            <NumberInputStepper
+              {...getStepperButtonProps("up")}
+              direction="up"
+            />
+            <NumberInputStepper
+              {...getStepperButtonProps("down")}
+              direction="down"
+            />
+          </div>
+        )}
       </div>
     );
 
@@ -91,4 +107,4 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   }
 );
 
-Textarea.displayName = "Textarea";
+NumberInput.displayName = "NumberInput";

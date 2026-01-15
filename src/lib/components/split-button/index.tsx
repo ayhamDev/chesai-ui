@@ -3,8 +3,6 @@ import React from "react";
 
 type ButtonShape = "full" | "minimal" | "sharp";
 
-// Define a type for the children we expect. They must be ReactElements
-// and we expect them to have a className prop.
 type SplitButtonChildren = [
   React.ReactElement<{ className?: string }>,
   React.ReactElement<{ className?: string }>
@@ -21,13 +19,11 @@ export const SplitButton = ({
   shape = "full",
   ...props
 }: SplitButtonProps) => {
-  // A runtime check for safety, though TypeScript now enforces the type
   if (React.Children.count(children) !== 2) {
     console.error("SplitButton requires exactly two children.");
     return null;
   }
 
-  // TypeScript now knows mainAction and dropdownTrigger have a .props.className property
   const [mainAction, dropdownTrigger] = children;
 
   const shapeClasses: Record<ButtonShape, { left: string; right: string }> = {
@@ -38,7 +34,7 @@ export const SplitButton = ({
 
   const clonedMainAction = React.cloneElement(mainAction, {
     className: clsx(
-      mainAction.props.className, // No more error here
+      mainAction.props.className,
       shapeClasses[shape].left,
       shape === "sharp" ? "!rounded-r-none" : "!rounded-r-xs"
     ),
@@ -46,7 +42,7 @@ export const SplitButton = ({
 
   const clonedDropdownTrigger = React.cloneElement(dropdownTrigger, {
     className: clsx(
-      dropdownTrigger.props.className, // No more error here
+      dropdownTrigger.props.className,
       shapeClasses[shape].right,
       shape === "sharp" ? "!rounded-l-none" : "!rounded-l-xs"
     ),

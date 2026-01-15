@@ -4,7 +4,7 @@ import { type Column } from "@tanstack/react-table";
 import { useState } from "react";
 import { Button } from "../button";
 import { Input } from "../input";
-import { SelectInput } from "../select";
+import { Select } from "../select"; // FIX: Imported as Select
 import { Typography } from "../typography";
 
 export type NumericFilterValue = {
@@ -57,9 +57,9 @@ export function ColumnFilterDialog<TData, TValue>({
           Filter by {column.id}
         </Typography>
         <div className="flex flex-col gap-4">
-          <SelectInput
+          <Select
             size="sm"
-            variant="secondary"
+            variant="flat"
             value={operator}
             onValueChange={setOperator}
             items={[
@@ -71,7 +71,7 @@ export function ColumnFilterDialog<TData, TValue>({
           />
           <Input
             size="sm"
-            variant="secondary"
+            variant="flat"
             placeholder="Value..."
             value={value}
             onChange={(e) => setValue(e.target.value)}

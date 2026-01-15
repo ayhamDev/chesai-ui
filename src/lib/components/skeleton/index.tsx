@@ -7,7 +7,7 @@ function Skeleton({
   return (
     <div
       className={clsx(
-        "animate-pulse rounded-md bg-graphite-secondary",
+        "animate-pulse rounded-md bg-surface-container-highest",
         className
       )}
       {...props}

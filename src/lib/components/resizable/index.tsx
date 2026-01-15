@@ -58,7 +58,6 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // We store the initial mouse/touch position and initial width to calculate delta
     const dragInfo = useRef<{ startX: number; startWidth: number } | null>(
       null
     );
@@ -71,7 +70,6 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
           startX: clientX,
           startWidth: leftWidth,
         };
-        // Disable text selection while dragging
         document.body.style.userSelect = "none";
         document.body.style.cursor = "col-resize";
       },
@@ -119,7 +117,6 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
       };
     }, [isDragging, handleMove]);
 
-    // Merge forwarded ref with local ref
     const setRefs = useCallback(
       (node: HTMLDivElement | null) => {
         // @ts-ignore
@@ -182,7 +179,6 @@ ResizablePaneRight.displayName = "Resizable.PaneRight";
 // --- Handle Component ---
 
 const handleVariants = cva(
-  // Base: Invisible hit area (w-4) centering a visible line
   "relative z-10 flex w-4 -ml-2 h-full cursor-col-resize items-center justify-center outline-none group",
   {
     variants: {
@@ -199,11 +195,11 @@ const visibleLineVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-graphite-border",
-        pill: "h-12 w-1 rounded-full bg-graphite-border group-hover:h-16 group-hover:bg-graphite-foreground/30",
+        default: "bg-outline-variant",
+        pill: "h-12 w-1 rounded-full bg-outline-variant group-hover:h-16 group-hover:bg-primary/50",
       },
       isDragging: {
-        true: "!bg-graphite-primary/50 !w-1 !h-full opacity-100", // Active state
+        true: "!bg-primary/50 !w-1 !h-full opacity-100",
         false: "",
       },
     },
@@ -214,7 +210,6 @@ const visibleLineVariants = cva(
 );
 
 interface ResizableHandleProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Visual style of the handle. 'pill' mimics the Android handle in your image. */
   variant?: "default" | "pill";
 }
 
@@ -232,13 +227,13 @@ const ResizableHandle = React.forwardRef<HTMLDivElement, ResizableHandleProps>(
         className={clsx(handleVariants({ isDragging }), className)}
         {...props}
       >
-        {/* The visual line */}
         <div className={clsx(visibleLineVariants({ isDragging, variant }))} />
 
-        {/* The floating handle indicator (Purple pill in your screenshot) */}
+        {/* Floating Handle Indicator */}
         <div
           className={clsx(
-            "absolute flex items-center justify-center w-6 h-12 rounded-full bg-graphite-secondary text-graphite-primary  shadow-sm transition-all duration-200 transform",
+            // Use secondary container for the handle grip
+            "absolute flex items-center justify-center w-6 h-12 rounded-full bg-secondary-container text-on-secondary-container shadow-sm transition-all duration-200 transform",
             isDragging
               ? "opacity-100 scale-100"
               : "opacity-0 scale-75 pointer-events-none group-hover:opacity-100 group-hover:scale-90"
@@ -251,8 +246,6 @@ const ResizableHandle = React.forwardRef<HTMLDivElement, ResizableHandleProps>(
   }
 );
 ResizableHandle.displayName = "Resizable.Handle";
-
-// --- Exports ---
 
 export const Resizable = Object.assign(ResizableRoot, {
   PaneLeft: ResizablePaneLeft,
