@@ -87,7 +87,6 @@ export const getInputSlotClassNames = (
     wrapperClasses.push(
       'bg-surface-container-low hover:bg-surface-container-highest',
       'group-data-[focus=true]:bg-surface-container-highest',
-      'shadow-sm',
     )
   } else if (variant === 'faded') {
     wrapperClasses.push(
@@ -194,7 +193,7 @@ export const inputWrapperVariants = cva(
   {
     variants: {
       variant: {
-        flat: 'bg-surface-container-low hover:bg-surface-container-highest shadow-sm',
+        flat: 'bg-surface-container-low hover:bg-surface-container-highest',
         faded: 'bg-surface-container/30 border-2 border-surface-container-highest/50 hover:bg-surface-container/50',
         bordered: 'bg-transparent border-2 border-outline-variant hover:border-on-surface-variant',
         underlined: 'bg-transparent border-b-2 border-outline-variant px-0 shadow-none',

@@ -4,7 +4,7 @@ import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Divide, Menu } from "lucide-react";
+import { ChevronLeft, Menu } from "lucide-react";
 import React, {
   Children,
   createContext,
@@ -14,9 +14,9 @@ import React, {
   useState,
 } from "react";
 import useRipple from "use-ripple-hook";
+import { Divider } from "../divider";
 import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
-import { Divider } from "../divider";
 
 // --- TYPE DEFINITIONS & CONTEXT ---
 

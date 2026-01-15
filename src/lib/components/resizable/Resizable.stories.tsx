@@ -173,7 +173,7 @@ const ComposeModal = ({
   onOpenChange: (open: boolean) => void;
 }) => {
   return (
-    <Dialog variant="basic" open={open} onOpenChange={onOpenChange}>
+    <Dialog variant="fullscreen" open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full max-w-2xl !p-0 overflow-hidden h-[600px] flex flex-col shadow-2xl rounded-t-xl sm:rounded-xl">
         <DialogHeader className="bg-[#f2f6fc] dark:bg-graphite-secondary px-4 py-3 border-b border-graphite-border flex flex-row items-center justify-between !space-y-0">
           <DialogTitle className="text-sm font-semibold">
