@@ -135,7 +135,7 @@ const ContextMenuItem = React.forwardRef<
     ref: localRef,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    opacity: 0.1,
+    // Fix: Removed opacity
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -168,7 +168,7 @@ const ContextMenuCheckboxItem = React.forwardRef<
     ref: localRef,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    opacity: 0.1,
+    // Fix: Removed opacity
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -200,7 +200,7 @@ const ContextMenuRadioItem = React.forwardRef<
     ref: localRef,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    opacity: 0.1,
+    // Fix: Removed opacity
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -234,7 +234,7 @@ const ContextMenuSubTrigger = React.forwardRef<
     ref: localRef,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    opacity: 0.1,
+    // Fix: Removed opacity
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 

@@ -98,7 +98,7 @@ export function DataTableColumnHeader<TData, TValue>({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DialogContent className="p-0 w-auto min-w-[300px]">
+        <DialogContent variant="surface" className="p-0 w-auto min-w-[300px]">
           <ColumnFilterDialog
             column={column}
             onClose={() => setIsFilterOpen(false)}

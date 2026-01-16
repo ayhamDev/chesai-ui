@@ -20,7 +20,7 @@ import React, {
   useState,
 } from "react";
 import useRipple from "use-ripple-hook";
-import { ShallowRouter, useRouter, useRouterOptions } from "../shallow-router";
+import { ShallowRouter, useRouter } from "../shallow-router";
 
 type TabVariant = "primary" | "secondary";
 type PageTransition = "slide" | "fade";
@@ -235,7 +235,7 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
       ref: localRef,
       color: "var(--color-primary)",
       duration: 450,
-      opacity: 0.1,
+      // Fix: Removed opacity
     });
     React.useImperativeHandle(ref, () => localRef.current!);
 

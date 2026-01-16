@@ -39,14 +39,13 @@ export type RouteProp<
 > = Route<T, R>;
 
 export interface NavigationProp<T extends Record<string, object | undefined>> {
-  navigate: <R extends keyof T>(name: R, params: T[R]) => void;
+  navigate: <R extends keyof T>(name: R, params?: T[R]) => void;
   push: <R extends keyof T>(name: R, params?: T[R]) => void;
-  replace: <R extends keyof T>(name: R, params: T[R]) => void;
+  replace: <R extends keyof T>(name: R, params?: T[R]) => void;
   goBack: () => void;
   pop: (count?: number) => void;
   popToTop: () => void;
   canGoBack: () => boolean;
-  // --- ADDED: setOptions method ---
   setOptions: (options: Partial<StackScreenOptions>) => void;
   addListener: (
     event: NavigationEvent,
@@ -121,7 +120,6 @@ export interface StackScreenComponent<
   props: {
     name: R;
     component?: React.ComponentType<StackScreenProps<T, R>>;
-    // --- ADDED: Support for children render prop ---
     children?: (props: StackScreenProps<T, R>) => React.ReactNode;
     options?:
       | StackScreenOptions
@@ -298,12 +296,24 @@ interface StackNavigatorProps<T extends Record<string, object | undefined>> {
         route: RouteProp<T, keyof T>;
         navigation: NavigationProp<T>;
       }) => StackScreenOptions);
+  /**
+   * 'memory': Routes are stored in memory/history state. The URL bar does not change path (default).
+   * 'path': Routes update the browser URL path.
+   */
+  mode?: "memory" | "path";
+  /**
+   * The base URL path for 'path' mode.
+   * e.g., "/app" if your router is mounted at mydomain.com/app
+   */
+  basePath?: string;
 }
 
 const StackNavigator = <T extends Record<string, object | undefined>>({
   initialRouteName,
   children,
   screenOptions: globalScreenOptions,
+  mode = "memory",
+  basePath = "",
 }: StackNavigatorProps<T>) => {
   const screens = useMemo(() => {
     const screenConfig: Record<
@@ -323,15 +333,72 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     return screenConfig;
   }, [children]);
 
-  // --- ADDED: State to hold dynamic options set via setOptions ---
   const [dynamicOptions, setDynamicOptions] = useState<
     Record<string, Partial<StackScreenOptions>>
   >({});
 
-  const [state, setState] = useState<StackNavigationState<T>>(() => {
-    if (typeof window !== "undefined" && window.history.state?.routes) {
-      return window.history.state as StackNavigationState<T>;
+  // Helper to extract params from URL query string
+  const getParamsFromUrl = () => {
+    if (typeof window === "undefined") return undefined;
+    const search = new URLSearchParams(window.location.search);
+    const params: Record<string, string> = {};
+    search.forEach((value, key) => {
+      params[key] = value;
+    });
+    return Object.keys(params).length > 0 ? (params as any) : undefined;
+  };
+
+  // Helper to construct URL for 'path' mode
+  const constructUrl = (name: string, params?: object) => {
+    if (mode !== "path") return undefined;
+
+    let url = `${basePath}/${String(name)}`;
+    // Normalize double slashes
+    url = url.replace(/\/+/g, "/");
+
+    if (params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.set(key, String(value));
+        }
+      });
+      const searchString = searchParams.toString();
+      if (searchString) url += `?${searchString}`;
     }
+    return url;
+  };
+
+  const [state, setState] = useState<StackNavigationState<T>>(() => {
+    if (typeof window !== "undefined") {
+      // 1. Try to restore from history state
+      if (window.history.state?.routes) {
+        return window.history.state as StackNavigationState<T>;
+      }
+
+      // 2. If 'path' mode, try to hydration from current URL
+      if (mode === "path") {
+        const path = window.location.pathname;
+        const currentPathName = path.replace(basePath, "").replace(/^\//, "");
+
+        // Find if the current URL matches a defined screen
+        if (currentPathName && screens[currentPathName]) {
+          const params = getParamsFromUrl();
+          return {
+            index: 0,
+            routes: [
+              {
+                key: `${String(currentPathName)}-${Date.now()}`,
+                name: currentPathName as keyof T,
+                params: params,
+              },
+            ],
+          };
+        }
+      }
+    }
+
+    // 3. Fallback to initialRouteName
     return {
       index: 0,
       routes: [
@@ -351,11 +418,25 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     transitionEnd: new Set(),
   }).current;
 
+  // Sync state to history on mount or change
   useLayoutEffect(() => {
-    if (typeof window !== "undefined" && !window.history.state?.routes) {
-      window.history.replaceState({ ...window.history.state, ...state }, "");
+    if (typeof window !== "undefined") {
+      const currentState = window.history.state;
+      // Only replace if the state structure doesn't match our router structure
+      if (!currentState?.routes) {
+        const currentRoute = state.routes[state.index];
+        const url = constructUrl(
+          currentRoute.name as string,
+          currentRoute.params
+        );
+        window.history.replaceState(
+          { ...currentState, ...state },
+          "",
+          url // This updates the URL on initial load/hydration
+        );
+      }
     }
-  }, [state]);
+  }, [state, mode, basePath]);
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
@@ -380,42 +461,57 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         const newRoute: Route<T, keyof T> = {
           key: `${String(name)}-${Date.now()}`,
           name,
-          params,
+          params: params as any,
         };
         const newState: StackNavigationState<T> = {
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        window.history.pushState({ ...window.history.state, ...newState }, "");
+
+        const url = constructUrl(name as string, params as any);
+        window.history.pushState(
+          { ...window.history.state, ...newState },
+          "",
+          url
+        );
         setState(newState);
       },
       push: (name, params) => {
         const newRoute: Route<T, keyof T> = {
           key: `${String(name)}-${Date.now()}`,
           name,
-          params,
+          params: params as any,
         };
         const newState: StackNavigationState<T> = {
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-        window.history.pushState({ ...window.history.state, ...newState }, "");
+
+        const url = constructUrl(name as string, params as any);
+        window.history.pushState(
+          { ...window.history.state, ...newState },
+          "",
+          url
+        );
         setState(newState);
       },
       replace: (name, params) => {
         const newRoute: Route<T, keyof T> = {
           key: `${String(name)}-${Date.now()}`,
           name,
-          params,
+          params: params as any,
         };
         const newRoutes = [...state.routes.slice(0, -1), newRoute];
         const newState: StackNavigationState<T> = {
           index: newRoutes.length - 1,
           routes: newRoutes,
         };
+
+        const url = constructUrl(name as string, params as any);
         window.history.replaceState(
           { ...window.history.state, ...newState },
-          ""
+          "",
+          url
         );
         setState(newState);
       },
@@ -435,15 +531,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         }
       },
       canGoBack,
-      // --- ADDED: setOptions implementation ---
       setOptions: (options) => {
-        // Use the current route key to scope options
-        // We need access to the route key that invoked this.
-        // This closure captures currentRoute from the outer scope, which might be stale in callbacks.
-        // However, in React Context usage, components usually call this in useEffect.
-        // To be safe, we will rely on the fact that `currentRoute` in the render scope is correct for the active screen.
-        // A better approach for multi-screen stacks is to pass the route key to setOptions, but NavigationProp is standard.
-        // We will assume setOptions affects the *active* route.
         setDynamicOptions((prev) => ({
           ...prev,
           [currentRoute.key]: { ...prev[currentRoute.key], ...options },
@@ -458,7 +546,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
       },
       scrollContainerRef,
     };
-  }, [state.index, state.routes, listeners, currentRoute]);
+  }, [state.index, state.routes, listeners, currentRoute, mode, basePath]);
 
   const activeScreenOptions = useMemo(() => {
     const resolvedGlobalOptions =
@@ -476,7 +564,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     return {
       ...resolvedGlobalOptions,
       ...resolvedLocalOptions,
-      ...dynamicOpts, // Merge dynamic options last
+      ...dynamicOpts,
       headerStyle: {
         ...resolvedGlobalOptions.headerStyle,
         ...resolvedLocalOptions.headerStyle,
@@ -593,7 +681,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                         route={route as RouteProp<T, keyof T>}
                       />
                     ) : ChildrenRender ? (
-                      // Handle Children as function
                       ChildrenRender({
                         navigation,
                         route: route as RouteProp<T, keyof T>,

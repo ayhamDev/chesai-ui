@@ -24,10 +24,11 @@ export function useTextarea(props: UseTextareaProps) {
     ...otherProps
   } = props
 
-  // We reuse useInput logic for state management, but we'll override the rendering props
-  // Note: useInput expects HTMLInputElement, but we are casting mostly for logic reuse
+  // Use the useInput hook but we need to override how refs are handled
+  // We grab the DOM ref from useInput, which is typed as HTMLInputElement there,
+  // but we know we will use it on a TextArea here.
   const {
-    domRef: inputRef, // This is typed as HTMLInputElement in useInput
+    domRef: inputRef, // Rename to inputRef for clarity
     label,
     description,
     errorMessage,
@@ -45,14 +46,16 @@ export function useTextarea(props: UseTextareaProps) {
     getClearButtonProps,
   } = useInput(props as any)
 
-  // Correctly typed ref for Textarea
+  // Explicitly creating a ref for textarea to satisfy TS
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
   const [isFocused, setIsFocused] = useState(false)
 
-  // Sync refs
+  // Sync refs: When ref changes, update both
   React.useImperativeHandle(ref, () => textareaRef.current!)
 
   // --- Auto Resize Logic ---
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <none>
   useLayoutEffect(() => {
     if (disableAutosize || !textareaRef.current) return
 
@@ -143,6 +146,7 @@ export function useTextarea(props: UseTextareaProps) {
     }
   }
 
+  // Override getInputProps to return TextArea compatible props
   const getInputProps = () => ({
     ref: textareaRef,
     'data-slot': 'input',
@@ -154,6 +158,7 @@ export function useTextarea(props: UseTextareaProps) {
     defaultValue: props.defaultValue,
     onFocus: handleFocus,
     onBlur: handleBlur,
+    // Fix: Explicitly type event handlers
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       onChange?.(e)
       onValueChange?.(e.target.value)

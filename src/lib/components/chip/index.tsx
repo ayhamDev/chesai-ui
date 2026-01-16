@@ -44,7 +44,7 @@ export const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
       ref: rippleRef,
       color: rippleColor,
       duration: 400,
-      opacity: 0.1,
+      // Fix: Removed invalid opacity property
       disabled: disabled,
     });
 

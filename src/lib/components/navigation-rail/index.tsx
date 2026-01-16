@@ -20,7 +20,7 @@ import { Typography } from "../typography";
 
 // --- TYPE DEFINITIONS & CONTEXT ---
 
-export interface ScreenProps {
+export interface NavigationRailScreenProps {
   name: string;
   label: React.ReactNode;
   icon: (props: { isActive: boolean }) => React.ReactNode;
@@ -85,7 +85,7 @@ const navigatorVariants = cva(
 
 // --- SUB-COMPONENTS ---
 
-const NavigationRailScreen: React.FC<ScreenProps> = () => {
+const NavigationRailScreen: React.FC<NavigationRailScreenProps> = () => {
   return null;
 };
 NavigationRailScreen.displayName = "NavigationRail.Screen";
@@ -116,12 +116,7 @@ const NavigationRailFAB = React.forwardRef<
         : "var(--color-ripple-light)",
     duration: 400,
   });
-  const TextVariantClasses = {
-    primary: "text-on-primary-container",
-    secondary: "text-on-secondary-container",
-    tertiary: "text-on-tertiary-container",
-    ghost: "text-on-surface",
-  };
+
   const variantClasses = {
     primary:
       "bg-primary-container text-on-primary-container hover:bg-primary-container/90 shadow-md hover:shadow-lg",
@@ -142,14 +137,14 @@ const NavigationRailFAB = React.forwardRef<
         layout
         initial={false}
         animate={{
-          width: isExpanded ? "auto" : "3.5rem",
+          width: isExpanded ? label!.toString().length * 100 : "3.5rem",
           borderRadius: "1rem",
         }}
         transition={{
           type: "spring",
           stiffness: 300,
-          damping: 25,
-          mass: 0.8,
+          damping: 24,
+          mass: 1,
         }}
         className={clsx(
           "h-14 relative flex items-center overflow-hidden transition-colors",
@@ -157,7 +152,8 @@ const NavigationRailFAB = React.forwardRef<
           variantClasses[variant],
           className
         )}
-        {...props}
+        // Fix: Cast props to allow passing standard HTML attributes without conflicting with Motion props like onDrag
+        {...(props as any)}
       >
         <motion.div
           layout="position"
@@ -190,7 +186,7 @@ NavigationRailFAB.displayName = "NavigationRail.FAB";
 // --- TAB ITEM ---
 
 interface TabItemProps {
-  screen: ScreenProps;
+  screen: NavigationRailScreenProps;
 }
 
 const TabItem: React.FC<TabItemProps> = ({ screen }) => {
@@ -212,13 +208,14 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   // Dynamic Ripple: Dark on light backgrounds, Light if the active state is dark (Primary)
   const rippleColor =
     variant === "secondary" && isActive
-      ? "var(--color-ripple-light)" // Defined in theme.css as rgba(255,255,255, 0.1)
-      : "var(--color-ripple-dark)"; // Defined in theme.css as rgba(0,0,0, 0.1)
+      ? "var(--color-ripple-light)"
+      : "var(--color-ripple-dark)";
 
   const [, event] = useRipple({
     ref: localRef,
     color: rippleColor,
     duration: 400,
+    // Fix: Removed invalid opacity
   });
 
   // Highlight color
@@ -347,7 +344,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   const childrenArray = Children.toArray(children);
   const screens = childrenArray
     .filter(
-      (child): child is React.ReactElement<ScreenProps> =>
+      (child): child is React.ReactElement<NavigationRailScreenProps> =>
         React.isValidElement(child) && child.type === NavigationRailScreen
     )
     .map((child) => child.props);
@@ -421,7 +418,8 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
           minWidth: "96px",
           ...style,
         }}
-        {...props}
+        // Fix: Cast props to avoid type clash with MotionProps vs HTMLAttributes
+        {...(props as any)}
       >
         <div
           className={clsx(

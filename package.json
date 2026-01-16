@@ -1,6 +1,6 @@
 {
   "name": "chesai-ui",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/ayhamDev/chesai-ui"
@@ -50,10 +50,5 @@
     "@tailwindcss/oxide",
     "esbuild"
   ],
-  "types": "./dist/index.d.ts",
-  "dependencies": {
-    "@types/flubber": "^0.4.0",
-    "flubber": "^0.4.2",
-    "swiper": "^12.0.3"
-  }
+  "types": "./dist/index.d.ts"
 }

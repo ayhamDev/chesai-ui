@@ -76,11 +76,12 @@ const AdvancedFilterRow = ({
   if (!column) return null;
 
   return (
-    <div className="flex items-center gap-2 p-2 rounded-lg bg-surface-container-high/30 border border-outline-variant/50">
+    <div className="flex items-center gap-2 p-2 rounded-lg  border border-outline-variant/50">
       <div className="w-[120px] flex-shrink-0">
         <Select
           size="sm"
-          variant="faded" // Updated variant
+          variant="flat" // Updated variant
+          position="item-aligned"
           value={filter.id}
           onValueChange={(newId) => {
             if (newId !== filter.id) {
@@ -100,7 +101,8 @@ const AdvancedFilterRow = ({
       <div className="w-[180px] flex-shrink-0">
         <Select
           size="sm"
-          variant="faded" // Updated variant
+          position="item-aligned"
+          variant="flat" // Updated variant
           value={initialFilterValue.operator}
           onValueChange={(val) => {
             table.getColumn(filter.id)?.setFilterValue({
@@ -114,7 +116,7 @@ const AdvancedFilterRow = ({
       <div className="flex-1 min-w-0">
         <Input
           size="sm"
-          variant="faded" // Updated variant
+          variant="flat" // Updated variant
           placeholder="Value..."
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
@@ -176,7 +178,7 @@ export function DataTableAdvancedFilter<TData>({
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[600px]!">
+      <DialogContent variant="surface" className="max-w-[600px]!">
         <div className="flex items-center justify-between mb-4">
           <Typography variant="small" className="font-semibold">
             Filters

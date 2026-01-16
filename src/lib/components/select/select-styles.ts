@@ -118,7 +118,6 @@ export const getSelectSlotClassNames = (
       'bg-surface-container-low hover:bg-surface-container-highest',
       'data-[state=open]:bg-surface-container-highest',
       'focus:bg-surface-container-highest', // Removed ring
-      'shadow-sm',
     )
   } else if (variant === 'faded') {
     triggerClasses.push(

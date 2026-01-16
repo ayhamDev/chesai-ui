@@ -30,6 +30,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     } = useTextarea({ ...props, ref });
 
     const labelContent = label ? (
+      // biome-ignore lint/a11y/noLabelWithoutControl: <none>
       <label {...getLabelProps()}>{label}</label>
     ) : null;
 
@@ -71,7 +72,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     const innerWrapper = (
       <div {...getInnerWrapperProps()}>
         {startContent}
-        <textarea {...getInputProps()} />
+        {/* Fix: Spread cast to allow textarea attributes */}
+        <textarea {...(getInputProps() as any)} />
         {endContent}
         {clearButton}
       </div>

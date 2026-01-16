@@ -1,146 +1,158 @@
+/* src/lib/components/layout/grid.tsx */
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import { AnimatePresence, motion, type HTMLMotionProps } from "framer-motion";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, HTMLMotionProps } from "framer-motion";
+import React from "react";
 
-// Breakpoints matching Tailwind default or project config
-const BREAKPOINTS = {
-  sm: 640,
-  md: 768,
-  lg: 1024,
-  xl: 1280,
-  "2xl": 1536,
+// --- TYPES ---
+
+// Consistent with other components in the codebase
+const BREAKPOINTS = ["sm", "md", "lg", "xl", "2xl"] as const;
+type BreakpointKey = (typeof BREAKPOINTS)[number];
+
+type ResponsiveCols =
+  | number
+  | (Partial<Record<BreakpointKey, number>> & {
+      default?: number;
+    });
+
+type GapSize = "none" | "xs" | "sm" | "md" | "lg" | "xl";
+
+// --- UTILS ---
+
+const gapMap: Record<GapSize, string> = {
+  none: "gap-0",
+  xs: "gap-1",
+  sm: "gap-2",
+  md: "gap-4",
+  lg: "gap-6",
+  xl: "gap-8",
 };
 
-const gridVariants = cva("grid", {
-  variants: {
-    gap: {
-      none: "gap-0",
-      sm: "gap-2",
-      md: "gap-4",
-      lg: "gap-6",
-      xl: "gap-8",
-    },
-    align: {
-      start: "items-start",
-      center: "items-center",
-      end: "items-end",
-      stretch: "items-stretch",
-    },
-  },
-  defaultVariants: {
-    gap: "md",
-    align: "stretch",
-  },
-});
+/**
+ * transform a columns prop into tailwind classes.
+ * NOTE: For this to work with Tailwind JIT, the classes must be statically extractable
+ * or safe-listed. If 'grid-cols-5' isn't in your bundle, this might fail.
+ * Alternatively, we could use inline styles for vars, but classes are cleaner for SSR.
+ */
+const getColumnClasses = (columns: ResponsiveCols): string => {
+  if (typeof columns === "number") {
+    return `grid-cols-${columns}`;
+  }
 
-type BreakpointKey = keyof typeof BREAKPOINTS;
-// Allow object to be partial but define structure clearly for TS
-type ResponsiveObject<T> = Partial<Record<BreakpointKey, T>> & {
-  default?: T;
+  const classes: string[] = [];
+
+  if (columns.default) classes.push(`grid-cols-${columns.default}`);
+  if (columns.sm) classes.push(`sm:grid-cols-${columns.sm}`);
+  if (columns.md) classes.push(`md:grid-cols-${columns.md}`);
+  if (columns.lg) classes.push(`lg:grid-cols-${columns.lg}`);
+  if (columns.xl) classes.push(`xl:grid-cols-${columns.xl}`);
+  if (columns["2xl"]) classes.push(`2xl:grid-cols-${columns["2xl"]}`);
+
+  return classes.join(" ");
 };
-type ResponsiveProp<T> = T | ResponsiveObject<T>;
 
-export interface GridProps
-  extends Omit<HTMLMotionProps<"div">, "children">,
-    VariantProps<typeof gridVariants> {
-  children: React.ReactNode;
-  /** Number of columns. Can be a number or an object for responsive breakpoints. */
-  columns?: ResponsiveProp<number>;
-  /** If true, children will stagger in when the grid mounts. */
-  stagger?: boolean;
+// --- COMPONENT: GRID ITEM ---
+
+export interface GridItemProps extends HTMLMotionProps<"div"> {
+  colSpan?: number | Partial<Record<BreakpointKey | "default", number>>;
+  rowSpan?: number;
 }
 
-export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
-  (
-    { className, children, columns = 1, gap, align, stagger = false, ...props },
-    ref
-  ) => {
-    const gridRef = useRef<HTMLDivElement>(null);
-    const [containerWidth, setContainerWidth] = useState(0);
+const getSpanClasses = (span: GridItemProps["colSpan"]): string => {
+  if (!span) return "";
+  if (typeof span === "number") return `col-span-${span}`;
 
-    // --- NEW: Use ResizeObserver to measure the container width ---
-    useEffect(() => {
-      const element = gridRef.current;
-      if (!element) return;
+  const classes: string[] = [];
+  if (span.default) classes.push(`col-span-${span.default}`);
+  if (span.sm) classes.push(`sm:col-span-${span.sm}`);
+  if (span.md) classes.push(`md:col-span-${span.md}`);
+  if (span.lg) classes.push(`lg:col-span-${span.lg}`);
+  if (span.xl) classes.push(`xl:col-span-${span.xl}`);
 
-      const observer = new ResizeObserver((entries) => {
-        if (entries[0]) {
-          setContainerWidth(entries[0].contentRect.width);
-        }
-      });
+  return classes.join(" ");
+};
 
-      observer.observe(element);
-      return () => observer.disconnect();
-    }, []);
-
-    const currentCols = useMemo(() => {
-      if (typeof columns === "number") return columns;
-
-      const colsObj = columns as ResponsiveObject<number>;
-      const width = containerWidth;
-
-      // Order matters: check largest first
-      if (width >= BREAKPOINTS["2xl"] && colsObj["2xl"] !== undefined)
-        return colsObj["2xl"];
-      if (width >= BREAKPOINTS.xl && colsObj.xl !== undefined)
-        return colsObj.xl;
-      if (width >= BREAKPOINTS.lg && colsObj.lg !== undefined)
-        return colsObj.lg;
-      if (width >= BREAKPOINTS.md && colsObj.md !== undefined)
-        return colsObj.md;
-      if (width >= BREAKPOINTS.sm && colsObj.sm !== undefined)
-        return colsObj.sm;
-
-      return colsObj.default || 1;
-    }, [columns, containerWidth]);
-    // --- END NEW ---
-
-    const variants = stagger
-      ? {
-          hidden: { opacity: 0 },
-          show: {
-            opacity: 1,
-            transition: {
-              staggerChildren: 0.05,
-            },
-          },
-        }
-      : undefined;
-
-    // --- NEW: Combine refs ---
-    const combinedRef = (node: HTMLDivElement) => {
-      // @ts-ignore
-      gridRef.current = node;
-      if (typeof ref === "function") {
-        ref(node);
-      } else if (ref) {
-        ref.current = node;
-      }
-    };
-
+export const GridItem = React.forwardRef<HTMLDivElement, GridItemProps>(
+  ({ children, className, colSpan, rowSpan, ...props }, ref) => {
     return (
       <motion.div
-        ref={combinedRef}
-        layout
-        variants={variants}
-        initial={stagger ? "hidden" : undefined}
-        animate={stagger ? "show" : undefined}
-        className={clsx(gridVariants({ gap, align, className }))}
-        style={{
-          gridTemplateColumns: `repeat(${currentCols}, minmax(0, 1fr))`,
-          ...props.style,
-        }}
+        ref={ref}
+        layout // Animates position when other items are removed
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className={clsx(
+          getSpanClasses(colSpan),
+          rowSpan && `row-span-${rowSpan}`,
+          className
+        )}
         {...props}
       >
-        <AnimatePresence mode="popLayout">{children}</AnimatePresence>
+        {children}
       </motion.div>
     );
   }
 );
+GridItem.displayName = "GridItem";
 
-export const GridItem = motion.div;
+// --- COMPONENT: GRID ---
+
+export interface GridProps extends HTMLMotionProps<"div"> {
+  columns?: ResponsiveCols;
+  gap?: GapSize;
+  children: React.ReactNode;
+  /**
+   * If true, children are not auto-wrapped in AnimatePresence.
+   * Use this if you want to control the AnimatePresence manually or for static grids.
+   */
+  disableAnimatePresence?: boolean;
+}
+
+export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
+  (
+    {
+      children,
+      columns = 1,
+      gap = "md",
+      className,
+      disableAnimatePresence = false,
+      ...props
+    },
+    ref
+  ) => {
+    const colClasses = getColumnClasses(columns);
+
+    const Content = (
+      <motion.div
+        ref={ref}
+        layout // Handles the container resizing smoothly
+        className={clsx("grid", colClasses, gapMap[gap], className)}
+        {...props}
+      >
+        {disableAnimatePresence ? (
+          children
+        ) : (
+          <AnimatePresence mode="popLayout" initial={false}>
+            {React.Children.map(children, (child) => {
+              if (!React.isValidElement(child)) return child;
+
+              // If the child is already a GridItem (or motion component), pass it through.
+              // Otherwise, we might want to wrap it to ensure exit animations work,
+              // but usually, it's better to let the user use <GridItem> for explicit control.
+              // Here we just render the child, assuming the key is set on the child
+              // for AnimatePresence to track it.
+              return child;
+            })}
+          </AnimatePresence>
+        )}
+      </motion.div>
+    );
+
+    return Content;
+  }
+);
 
 Grid.displayName = "Grid";

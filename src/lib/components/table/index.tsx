@@ -40,7 +40,7 @@ export const tableContainerVariants = cva(
     variants: {
       variant: {
         primary:
-          "rounded-xl border border-outline-variant bg-surface-container-low text-on-surface shadow-sm",
+          "rounded-xl border border-outline-variant/50 bg-surface-container-low text-on-surface ",
         secondary: "rounded-none bg-transparent text-on-surface",
       },
     },
@@ -63,7 +63,7 @@ export const thVariants = cva(
         primary:
           "bg-surface-container/50 text-on-surface border-b border-outline-variant",
         secondary:
-          "bg-transparent text-on-surface-variant border-b-2 border-outline-variant",
+          "bg-transparent text-on-surface-variant border-b border-outline-variant",
       },
       density: {
         default: "py-3",

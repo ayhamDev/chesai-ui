@@ -38,7 +38,7 @@ export {
 interface DataTableProps<TData> extends Omit<TableRootProps<TData>, "table"> {
   data: TData[];
   columns: ColumnDef<TData>[];
-
+  variant: "primary" | "secondary";
   // Server Side Props
   pageCount?: number;
   pagination?: PaginationState;
@@ -76,6 +76,7 @@ export function DataTable<TData>({
   density = "default",
   renderContextMenu,
   bulkActions,
+  variant = "primary",
   ...tableProps
 }: DataTableProps<TData>) {
   const [internalRowSelection, setInternalRowSelection] = React.useState({});
@@ -134,6 +135,7 @@ export function DataTable<TData>({
       filterFn: advancedFilterFn,
     },
   });
+  console.log(variant);
 
   return (
     <DataTableContext.Provider value={{ table }}>
@@ -142,6 +144,7 @@ export function DataTable<TData>({
           {toolbarChildren}
         </DataTableToolbar>
         <Table
+          variant={variant}
           table={table}
           density={density}
           renderContextMenu={renderContextMenu}

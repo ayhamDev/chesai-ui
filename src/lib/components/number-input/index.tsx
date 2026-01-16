@@ -72,10 +72,17 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
       getDescriptionProps,
     ]);
 
+    // Extract input props to fix specific type issues
+    const { inputMode, ...inputPropsRest } = getInputProps();
+
     const innerWrapper = (
       <div {...getInnerWrapperProps()}>
         {startContent}
-        <input {...getInputProps()} />
+        <input
+          {...inputPropsRest}
+          // Fix: Explicitly cast inputMode to specific literal types accepted by React
+          inputMode={inputMode as "decimal" | "numeric"}
+        />
         {clearButton}
         {endContent}
         {!hideStepper && (

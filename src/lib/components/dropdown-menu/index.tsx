@@ -112,6 +112,7 @@ const DropdownMenuItem = React.forwardRef<
     ref: localRef,
     color: "var(--color-ripple-dark)",
     duration: 400,
+    // Fix: Removed opacity
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -141,7 +142,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   const [, event] = useRipple({
     ref: localRef,
     color: "var(--color-ripple-dark)",
-    opacity: 0.1,
+    // Fix: Removed opacity
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -179,7 +180,7 @@ const DropdownMenuRadioItem = React.forwardRef<
   const [, event] = useRipple({
     ref: localRef,
     color: "var(--color-ripple-dark)",
-    opacity: 0.1,
+    // Fix: Removed opacity
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -218,7 +219,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   const [, event] = useRipple({
     ref: localRef,
     color: "var(--color-ripple-dark)",
-    opacity: 0.1,
+    // Fix: Removed opacity
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);

@@ -12,11 +12,10 @@ import React, {
 } from "react";
 import useRipple from "use-ripple-hook";
 import { Typography } from "../typography";
-import { useTheme } from "../../context";
 
 // --- TYPE DEFINITIONS & CONTEXT ---
 
-export interface ScreenProps {
+export interface BottomTabsScreenProps {
   name: string;
   label: React.ReactNode;
   icon: (props: { isActive: boolean }) => React.ReactNode;
@@ -76,7 +75,7 @@ const navigatorVariants = cva("w-full bg-surface-container", {
   ],
 });
 
-const BottomTabsScreen: React.FC<ScreenProps> = () => {
+const BottomTabsScreen: React.FC<BottomTabsScreenProps> = () => {
   return null;
 };
 BottomTabsScreen.displayName = "BottomTabs.Screen";
@@ -84,7 +83,7 @@ BottomTabsScreen.displayName = "BottomTabs.Screen";
 // --- TAB ITEM ---
 
 interface TabItemProps {
-  screen: ScreenProps;
+  screen: BottomTabsScreenProps;
 }
 
 const TabItem: React.FC<TabItemProps> = ({ screen }) => {
@@ -106,7 +105,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     ref: localRef,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    opacity: 0.1,
+    // Fix: Removed invalid opacity property
   });
 
   const isHorizontal = itemLayout === "inline" && isActive && showLabels;
@@ -202,7 +201,9 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   shape?: "full" | "minimal" | "sharp";
   bordered?: boolean;
   shadow?: "none" | "sm" | "md" | "lg";
-  children: React.ReactElement<ScreenProps> | React.ReactElement<ScreenProps>[];
+  children:
+    | React.ReactElement<BottomTabsScreenProps>
+    | React.ReactElement<BottomTabsScreenProps>[];
   activeTab: string;
   onTabPress: (name: string) => void;
   itemLayout?: "stacked" | "inline";
@@ -228,7 +229,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
     () =>
       Children.toArray(children)
         .filter(
-          (child): child is React.ReactElement<ScreenProps> =>
+          (child): child is React.ReactElement<BottomTabsScreenProps> =>
             React.isValidElement(child) && child.type === BottomTabsScreen
         )
         .map((child) => child.props),

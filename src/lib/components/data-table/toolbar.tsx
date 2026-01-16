@@ -40,9 +40,9 @@ export function DataTableToolbar<TData>({
 
   return (
     <Card
-      padding="sm"
+      padding="none"
       variant="surface"
-      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-2"
+      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-2 px-2"
     >
       <div className="flex flex-1 items-center gap-2 w-full overflow-x-auto no-scrollbar flex-wrap">
         <div className="w-full max-w-sm min-w-[200px]">

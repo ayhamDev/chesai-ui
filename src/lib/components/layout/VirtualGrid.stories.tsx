@@ -45,7 +45,7 @@ export const Default: Story = {
       <VirtualGrid
         data={bigData}
         columns={{ default: 1, sm: 2, md: 3, lg: 4, xl: 5 }}
-        gap={16}
+        gap={20}
         padding={24}
         estimateRowHeight={200}
         renderItem={(item) => (

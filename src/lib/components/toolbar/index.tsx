@@ -281,7 +281,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       ref: localRef,
       color: rippleColor,
       duration: 400,
-      opacity: 0.1,
+      // Fix: Removed opacity
     });
 
     const [isPressed, setIsPressed] = useState(false);
@@ -380,7 +380,7 @@ const ToolbarToggleItem = React.forwardRef<
       ref: localRef,
       color: "var(--color-on-surface)",
       duration: 400,
-      opacity: 0.1,
+      // Fix: Removed opacity
     });
 
     const [isPressed, setIsPressed] = useState(false);

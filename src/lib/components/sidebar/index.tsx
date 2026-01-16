@@ -556,7 +556,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
       ref: localRef,
       color: rippleColor,
       duration: 300,
-      opacity: 0.1,
+      // Fix: Removed opacity
     });
 
     const [isPressed, setIsPressed] = useState(false);
@@ -690,7 +690,7 @@ const SidebarGroup = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={clsx("flex flex-col gap-1 py-2", className)} {...props} />
+  <div className="flex flex-col gap-1 py-2" {...props} />
 );
 
 const SidebarLabel = ({

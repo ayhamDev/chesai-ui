@@ -203,12 +203,17 @@ const columns: ColumnDef<Payment>[] = [
 // --- STORIES ---
 
 export const Default: Story = {
+  args: {
+    variant: "secondary"
+  },
+
   name: "1. Default Table",
+
   render: (args) => (
     <Card className="w-full">
       <DataTable data={sampleData} columns={columns} density={args.density} />
     </Card>
-  ),
+  )
 };
 
 export const WithBulkActions: Story = {
