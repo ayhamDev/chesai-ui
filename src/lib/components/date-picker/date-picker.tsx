@@ -295,10 +295,12 @@ export const DatePicker = ({
           shape={shape}
           className={clsx(
             "gap-0 overflow-hidden bg-surface-container-high p-0 transition-[width,height]",
-            !isFullscreen && [
-              "min-w-[320px] max-w-[420px]! shadow-2xl",
-              shapeStyles[shape], // Apply border-radius to the wrapper
-            ],
+            !isFullscreen
+              ? [
+                  "min-w-[320px] max-w-[420px]! shadow-2xl",
+                  shapeStyles[shape], // Apply border-radius to the wrapper
+                ]
+              : [shapeStyles[shape], "max-w-[500px]!"],
           )}
           padding="none"
         >
