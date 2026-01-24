@@ -25,7 +25,6 @@ const useItemContext = () => React.useContext(ItemContext);
 
 // --- CVA Variants ---
 const itemVariants = cva(
-  // Added z-0 to establish stacking context for bloom effect
   "group/item relative flex flex-wrap items-center border text-sm outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 overflow-hidden z-0",
   {
     variants: {
@@ -36,7 +35,6 @@ const itemVariants = cva(
           "bg-surface-container-high border-transparent text-on-surface",
         ghost:
           "bg-transparent border-transparent text-on-surface " +
-          // Bloom Effect: Uses Secondary Container for a subtle highlight
           "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-250 after:ease-out " +
           "hover:after:opacity-100 hover:after:scale-100",
       },
@@ -68,7 +66,7 @@ const itemVariants = cva(
       shape: "minimal",
       direction: "horizontal",
     },
-  }
+  },
 );
 
 const itemMediaVariants = cva(
@@ -96,7 +94,7 @@ const itemMediaVariants = cva(
       size: "md",
       shape: "minimal",
     },
-  }
+  },
 );
 
 // --- Compound Components ---
@@ -142,7 +140,7 @@ const Item = React.forwardRef<
     onLongPress?: (
       event:
         | React.PointerEvent<HTMLDivElement>
-        | React.MouseEvent<HTMLDivElement>
+        | React.MouseEvent<HTMLDivElement>,
     ) => void;
   }
 >(
@@ -161,7 +159,7 @@ const Item = React.forwardRef<
       onPointerDown,
       ...props
     },
-    ref
+    ref,
   ) => {
     const Comp = asChild ? Slot : "div";
 
@@ -169,7 +167,7 @@ const Item = React.forwardRef<
     React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
     const [, event] = useRipple({
-      ref: localRef,
+      ref: localRef as React.RefObject<HTMLElement>, // FIX: Cast ref
       color: "var(--color-ripple-dark)",
       duration: 400,
       disabled: disabled || disableRipple,
@@ -213,13 +211,13 @@ const Item = React.forwardRef<
               padding,
               className,
             }),
-            disabled && "opacity-50 cursor-not-allowed"
+            disabled && "opacity-50 cursor-not-allowed",
           )}
           {...finalProps}
         />
       </ItemContext.Provider>
     );
-  }
+  },
 );
 Item.displayName = "Item";
 
@@ -242,7 +240,7 @@ const ItemMedia = React.forwardRef<
           shape,
           className,
         }),
-        direction === "horizontal" ? "mb-auto" : "mb-2"
+        direction === "horizontal" ? "mb-auto" : "mb-2",
       )}
       {...props}
     />
@@ -262,7 +260,7 @@ const ItemContent = React.forwardRef<
       className={clsx(
         "flex flex-1 flex-col gap-0.5 min-w-0 z-10",
         direction === "vertical" && "items-center",
-        className
+        className,
       )}
       {...props}
     />
@@ -282,7 +280,7 @@ const ItemTitle = React.forwardRef<
       className={clsx(
         "flex w-fit items-center gap-2 text-base font-semibold leading-snug text-on-surface",
         direction === "vertical" && "justify-center",
-        className
+        className,
       )}
       {...props}
     />
@@ -299,7 +297,7 @@ const ItemDescription = React.forwardRef<
     data-slot="item-description"
     className={clsx(
       "text-on-surface-variant line-clamp-2 text-sm font-normal leading-normal",
-      className
+      className,
     )}
     {...props}
   />
@@ -318,7 +316,7 @@ const ItemActions = React.forwardRef<
       className={clsx(
         "flex items-center gap-2 z-10",
         direction === "horizontal" ? "ml-auto pl-4" : "mt-2",
-        className
+        className,
       )}
       {...props}
     />
@@ -335,7 +333,7 @@ const ItemHeader = React.forwardRef<
     data-slot="item-header"
     className={clsx(
       "flex basis-full items-center justify-between gap-2",
-      className
+      className,
     )}
     {...props}
   />
@@ -351,7 +349,7 @@ const ItemFooter = React.forwardRef<
     data-slot="item-footer"
     className={clsx(
       "flex basis-full items-center justify-between gap-2 mt-2",
-      className
+      className,
     )}
     {...props}
   />

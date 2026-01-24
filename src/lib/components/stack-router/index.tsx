@@ -26,7 +26,7 @@ import { STACK_TRANSITIONS } from "./transitions";
 
 export interface Route<
   T extends Record<string, object | undefined>,
-  R extends keyof T
+  R extends keyof T,
 > {
   key: string;
   name: R;
@@ -35,7 +35,7 @@ export interface Route<
 
 export type RouteProp<
   T extends Record<string, object | undefined>,
-  R extends keyof T
+  R extends keyof T,
 > = Route<T, R>;
 
 export interface NavigationProp<T extends Record<string, object | undefined>> {
@@ -49,18 +49,18 @@ export interface NavigationProp<T extends Record<string, object | undefined>> {
   setOptions: (options: Partial<StackScreenOptions>) => void;
   addListener: (
     event: NavigationEvent,
-    callback: NavigationEventCallback
+    callback: NavigationEventCallback,
   ) => () => void;
   removeListener: (
     event: NavigationEvent,
-    callback: NavigationEventCallback
+    callback: NavigationEventCallback,
   ) => void;
   scrollContainerRef: RefObject<any | null>;
 }
 
 export interface StackScreenProps<
   T extends Record<string, object | undefined>,
-  R extends keyof T
+  R extends keyof T,
 > {
   navigation: NavigationProp<T>;
   route: RouteProp<T, R>;
@@ -72,7 +72,7 @@ export type NavigationEventCallback = (event: {
 }) => void;
 
 export interface StackNavigationState<
-  T extends Record<string, object | undefined>
+  T extends Record<string, object | undefined>,
 > {
   index: number;
   routes: Route<T, keyof T>[];
@@ -115,7 +115,7 @@ export interface StackScreenOptions {
 
 export interface StackScreenComponent<
   T extends Record<string, object | undefined>,
-  R extends keyof T
+  R extends keyof T,
 > {
   props: {
     name: R;
@@ -140,7 +140,7 @@ export function useNavigation<T extends Record<string, object | undefined>>() {
   const navigation = useContext(NavigationContext);
   if (!navigation) {
     throw new Error(
-      "useNavigation must be used within a screen of a StackNavigator."
+      "useNavigation must be used within a screen of a StackNavigator.",
     );
   }
   return navigation as NavigationProp<T>;
@@ -148,12 +148,12 @@ export function useNavigation<T extends Record<string, object | undefined>>() {
 
 export function useRoute<
   T extends Record<string, object | undefined>,
-  R extends keyof T
+  R extends keyof T,
 >() {
   const route = useContext(RouteContext);
   if (!route) {
     throw new Error(
-      "useRoute must be used within a screen of a StackNavigator."
+      "useRoute must be used within a screen of a StackNavigator.",
     );
   }
   return route as RouteProp<T, R>;
@@ -323,12 +323,12 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     React.Children.forEach(
       children,
       (
-        child: React.ReactElement<StackScreenComponent<T, keyof T>["props"]>
+        child: React.ReactElement<StackScreenComponent<T, keyof T>["props"]>,
       ) => {
         if (React.isValidElement(child)) {
           screenConfig[child.props.name as string] = child.props;
         }
-      }
+      },
     );
     return screenConfig;
   }, [children]);
@@ -427,12 +427,12 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         const currentRoute = state.routes[state.index];
         const url = constructUrl(
           currentRoute.name as string,
-          currentRoute.params
+          currentRoute.params,
         );
         window.history.replaceState(
           { ...currentState, ...state },
           "",
-          url // This updates the URL on initial load/hydration
+          url, // This updates the URL on initial load/hydration
         );
       }
     }
@@ -472,7 +472,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         window.history.pushState(
           { ...window.history.state, ...newState },
           "",
-          url
+          url,
         );
         setState(newState);
       },
@@ -491,7 +491,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         window.history.pushState(
           { ...window.history.state, ...newState },
           "",
-          url
+          url,
         );
         setState(newState);
       },
@@ -511,7 +511,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         window.history.replaceState(
           { ...window.history.state, ...newState },
           "",
-          url
+          url,
         );
         setState(newState);
       },
@@ -587,7 +587,8 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
   const activeAnimationOption = activeScreenOptions.animation || "default";
   const activeAnimationConfig =
     typeof activeAnimationOption === "string"
-      ? STACK_TRANSITIONS[activeAnimationOption] || STACK_TRANSITIONS.default
+      ? // @ts-expect-error
+        STACK_TRANSITIONS[activeAnimationOption] || STACK_TRANSITIONS.default
       : activeAnimationOption;
 
   const handleAnimationStart = (isPop: boolean) => {
@@ -669,9 +670,10 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
                 style={style}
                 className={clsx(
                   "absolute inset-x-0 bottom-0 top-0 bg-graphite-background",
-                  pageClassName
+                  pageClassName,
                 )}
               >
+                {/* @ts-expect-error */}
                 <NavigationContext.Provider value={navigation}>
                   {/* @ts-ignore */}
                   <RouteContext.Provider value={route}>
@@ -699,10 +701,10 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
 // --- Factory Function ---
 export function createStackNavigator<
-  T extends Record<string, object | undefined>
+  T extends Record<string, object | undefined>,
 >() {
   const Screen = <R extends keyof T>(
-    _props: StackScreenComponent<T, R>["props"]
+    _props: StackScreenComponent<T, R>["props"],
   ) => {
     return null;
   };

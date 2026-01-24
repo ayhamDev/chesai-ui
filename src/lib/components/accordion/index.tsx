@@ -20,7 +20,7 @@ const useAccordionContext = () => {
   const context = useContext(AccordionContext);
   if (!context) {
     throw new Error(
-      "useAccordionContext must be used within an AccordionContext.Provider"
+      "useAccordionContext must be used within an AccordionContext.Provider",
     );
   }
   return context;
@@ -91,7 +91,7 @@ const AccordionRoot = React.forwardRef<
       children,
       ...props
     },
-    ref
+    ref,
   ) => (
     <AccordionContext.Provider value={{ variant, shape, layout }}>
       <AccordionPrimitive.Root
@@ -102,17 +102,17 @@ const AccordionRoot = React.forwardRef<
             (shape === "full"
               ? "rounded-2xl overflow-hidden"
               : shape === "minimal"
-              ? "rounded-xl overflow-hidden"
-              : "rounded-none overflow-hidden"),
+                ? "rounded-xl overflow-hidden"
+                : "rounded-none overflow-hidden"),
           layout === "separated" && "space-y-2",
-          className
+          className,
         )}
         {...props}
       >
         {children}
       </AccordionPrimitive.Root>
     </AccordionContext.Provider>
-  )
+  ),
 );
 AccordionRoot.displayName = "Accordion";
 
@@ -139,12 +139,14 @@ const AccordionTrigger = React.forwardRef<
 >(({ className, children, disableRipple = false, ...props }, ref) => {
   const localRef = useRef<HTMLButtonElement | null>(null);
   const [, event] = useRipple({
-    ref: localRef,
+    // FIX: Cast ref to HTMLElement for useRipple compatibility
+    ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
     duration: 400,
     disabled: disableRipple,
   });
-  React.useImperativeHandle(ref, () => localRef.current);
+  // FIX: Ensure non-null return for imperative handle
+  React.useImperativeHandle(ref, () => localRef.current!);
 
   return (
     <AccordionPrimitive.Header className="flex">
@@ -154,7 +156,7 @@ const AccordionTrigger = React.forwardRef<
         className={clsx(
           "relative flex flex-1 items-center justify-between p-4 font-semibold text-on-surface transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           "[&[data-state=open]>svg]:rotate-180",
-          className
+          className,
         )}
         {...props}
       >

@@ -71,20 +71,6 @@ const DatePickerHeader = ({
           {viewMode === "calendar" ? "Select date" : "Enter date"}
         </Typography>
         <div className="flex items-center gap-1">
-          <IconButton
-            variant="ghost"
-            size="sm"
-            onClick={onToggleView}
-            aria-label={
-              viewMode === "calendar" ? "Switch to input" : "Switch to calendar"
-            }
-          >
-            {viewMode === "calendar" ? (
-              <Edit2 className="h-4 w-4" />
-            ) : (
-              <CalendarIcon className="h-4 w-4" />
-            )}
-          </IconButton>
           {isFullscreen && (
             <IconButton variant="ghost" size="sm" onClick={onClose}>
               <X className="h-5 w-5" />
@@ -92,12 +78,28 @@ const DatePickerHeader = ({
           )}
         </div>
       </div>
-      <Typography
-        variant="display-small"
-        className="text-3xl font-normal leading-tight text-on-surface transition-all"
-      >
-        {formattedDate}
-      </Typography>
+      <div className="flex justify-between items-baseline">
+        <Typography
+          variant="display-small"
+          className="text-3xl font-normal leading-tight text-on-surface transition-all"
+        >
+          {formattedDate}
+        </Typography>
+        <IconButton
+          variant="ghost"
+          size="sm"
+          onClick={onToggleView}
+          aria-label={
+            viewMode === "calendar" ? "Switch to input" : "Switch to calendar"
+          }
+        >
+          {viewMode === "calendar" ? (
+            <Edit2 className="h-4 w-4" />
+          ) : (
+            <CalendarIcon className="h-4 w-4" />
+          )}
+        </IconButton>
+      </div>
     </div>
   );
 };

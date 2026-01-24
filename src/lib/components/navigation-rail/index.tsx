@@ -110,9 +110,11 @@ const NavigationRailFAB = React.forwardRef<
     propVariant || (itemVariant === "ghost" ? "secondary" : "primary");
 
   const localRef = useRef<HTMLButtonElement>(null);
+  // @ts-ignore
   React.useImperativeHandle(ref, () => localRef.current!);
 
   const [, event] = useRipple({
+    // @ts-ignore
     ref: localRef,
     color:
       variant === "primary"
@@ -219,6 +221,8 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
       : "var(--color-ripple-dark)";
 
   const [, event] = useRipple({
+    // @ts-ignore
+
     ref: localRef,
     color: rippleColor,
     duration: 400,

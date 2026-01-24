@@ -4,6 +4,11 @@ import { QRCode } from "./index";
 const meta: Meta<typeof QRCode> = {
   title: "Components/Data/QRCode",
   component: QRCode,
+  subcomponents: {
+    "QRCode.Canvas": QRCode.Canvas,
+    "QRCode.Toolbar": QRCode.Toolbar,
+    "QRCode.Content": QRCode.Content,
+  },
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
@@ -13,11 +18,18 @@ const meta: Meta<typeof QRCode> = {
     size: { control: { type: "range", min: 100, max: 500, step: 10 } },
     dotShape: {
       control: "select",
-      options: ["square", "circle", "rounded", "diamond"],
+      options: ["square", "circle", "rounded", "diamond", "classy"],
+      description: "Shape of the data modules",
     },
-    cornerShape: {
+    cornerFrameShape: {
       control: "select",
-      options: ["square", "rounded", "extra-rounded", "circle"],
+      options: ["square", "rounded", "extra-rounded", "circle", "leaf"],
+      description: "Shape of the outer finder patterns (Eyes)",
+    },
+    cornerDotShape: {
+      control: "select",
+      options: ["square", "circle", "rounded", "diamond"],
+      description: "Shape of the inner finder patterns (Eyeballs)",
     },
     color: { control: "color" },
     cornerColor: { control: "color" },
@@ -40,9 +52,36 @@ export const Default: Story = {
   args: {
     value: "https://chesai-ui.com",
     size: 250,
-    dotShape: "rounded",
-    cornerShape: "extra-rounded",
-    variant: "primary",
+    dotShape: "circle",
+    cornerFrameShape: "rounded",
+    cornerDotShape: "rounded",
+    variant: "ghost",
+    ecLevel: "M",
+    shadow: "none",
+    showToolbar: true,
+  },
+};
+
+export const CustomShapes: Story = {
+  name: "Custom Shapes Configuration",
+  args: {
+    value: "https://example.com/custom-shapes",
+    size: 280,
+    variant: "secondary",
+    dotShape: "classy",
+    cornerFrameShape: "rounded",
+    cornerDotShape: "diamond",
+    color: "var(--md-sys-color-primary)",
+    cornerColor: "var(--md-sys-color-tertiary)",
+    shadow: "sm",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Mix and match `dotShape`, `cornerFrameShape`, and `cornerDotShape` to create unique QR styles.",
+      },
+    },
   },
 };
 
@@ -52,7 +91,8 @@ export const MaterialYouStyle: Story = {
     value: "https://material.io",
     size: 280,
     dotShape: "circle",
-    cornerShape: "extra-rounded",
+    cornerFrameShape: "extra-rounded",
+    cornerDotShape: "circle",
     variant: "secondary",
     shadow: "sm",
     // Use CSS vars for theme consistency
@@ -67,7 +107,8 @@ export const WithLogo: Story = {
     value: "https://github.com",
     size: 300,
     dotShape: "square",
-    cornerShape: "square",
+    cornerFrameShape: "square",
+    cornerDotShape: "square",
     variant: "white",
     shadow: "md",
     color: "#000000",
@@ -88,7 +129,8 @@ export const CustomColors: Story = {
         cornerColor="white"
         className="bg-white/10 backdrop-blur-md"
         dotShape="diamond"
-        cornerShape="rounded"
+        cornerFrameShape="rounded"
+        cornerDotShape="diamond"
       />
     </div>
   ),
@@ -97,45 +139,34 @@ export const CustomColors: Story = {
   },
 };
 
-export const WithToolbar: Story = {
-  name: "With Action Toolbar",
-  args: {
-    value: "https://github.com/ayhamdev",
-    size: 250,
-    dotShape: "circle",
-    cornerShape: "circle",
-    variant: "secondary",
-    showToolbar: true,
-    shadow: "md",
-  },
+export const ComposableStructure: Story = {
+  name: "Composable Structure",
   parameters: {
     docs: {
       description: {
         story:
-          "Enable the `showToolbar` prop to display Copy, Download, and Share buttons. The QR code creates a high-resolution PNG on the fly for these actions.",
+          "You can use the `QRCode` component as a wrapper and compose `QRCode.Canvas`, `QRCode.Content`, and `QRCode.Toolbar` as direct children.",
       },
     },
   },
-};
-export const WithToolbarAndData: Story = {
-  name: "With Toolbar & Data Display",
+  render: (args) => (
+    <QRCode {...args} showToolbar={false} showData={false}>
+      <div className="mb-4 text-center font-bold text-lg opacity-70">
+        Scan Me
+      </div>
+      <QRCode.Canvas />
+      <div className="my-4">
+        <QRCode.Toolbar />
+      </div>
+      <QRCode.Content />
+    </QRCode>
+  ),
   args: {
-    value: "https://github.com/ayhamdev",
-    size: 250,
+    value: "https://example.com/composable",
+    size: 220,
+    variant: "secondary",
     dotShape: "rounded",
-    cornerShape: "rounded",
-    variant: "secondary",
-    showToolbar: true,
-    showData: true,
-    shadow: "md",
-    cornerColor: "var(--md-sys-color-primary)",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Enable `showToolbar` to display actions and `showData` to display the QR content in a styled pill.",
-      },
-    },
+    cornerFrameShape: "circle",
+    cornerDotShape: "circle",
   },
 };

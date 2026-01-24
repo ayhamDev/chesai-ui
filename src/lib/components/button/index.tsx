@@ -15,6 +15,10 @@ export const buttonVariants = cva(
           "bg-primary text-on-primary hover:shadow-md disabled:bg-primary/70 disabled:text-on-primary/70 hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-primary",
         secondary:
           "bg-secondary-container text-on-secondary-container disabled:bg-secondary-container/70 disabled:text-on-secondary-container/70 hover:bg-secondary-container/80 focus:ring-2 focus:ring-offset-2 focus:ring-primary",
+        tertiary:
+          "bg-tertiary-container text-on-tertiary-container disabled:bg-tertiary-container/70 disabled:text-on-tertiary-container/70 hover:bg-tertiary-container/80 focus:ring-2 focus:ring-offset-2 focus:ring-tertiary",
+        outline:
+          "bg-transparent border border-outline text-primary disabled:opacity-50 disabled:border-outline/50 hover:bg-primary/10 focus:ring-2 focus:ring-offset-2 focus:ring-primary",
         destructive:
           "bg-error text-on-error disabled:bg-error/70 hover:bg-error/90 focus:ring-2 focus:ring-offset-2 focus:ring-error",
         ghost:
@@ -48,7 +52,14 @@ export const buttonVariants = cva(
 );
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "destructive" | "ghost" | "link";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "tertiary"
+    | "outline"
+    | "destructive"
+    | "ghost"
+    | "link";
   size?: "xs" | "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
   isLoading?: boolean;
@@ -79,7 +90,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // MD3 State Layer Logic:
     // Dark backgrounds (Primary, Destructive) -> White ripple (approx 10-12%)
-    // Light backgrounds (Secondary, Ghost) -> Black/Primary ripple (approx 10-12%)
+    // Light/Transparent backgrounds (Secondary, Tertiary, Outline, Ghost) -> Black/Primary ripple (approx 10-12%)
     const rippleColor =
       variant === "primary" || variant === "destructive"
         ? "var(--color-ripple-dark)" // Defined in theme.css as rgba(255,255,255, 0.1)

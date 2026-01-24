@@ -61,10 +61,10 @@ interface TooltipContextType {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   getReferenceProps: (
-    userProps?: React.HTMLProps<HTMLElement> | undefined
+    userProps?: React.HTMLProps<HTMLElement> | undefined,
   ) => Record<string, unknown>;
   getFloatingProps: (
-    userProps?: React.HTMLProps<HTMLElement> | undefined
+    userProps?: React.HTMLProps<HTMLElement> | undefined,
   ) => Record<string, unknown>;
   floatingStyles: React.CSSProperties;
   refs: {
@@ -82,7 +82,7 @@ export const useTooltip = (): TooltipContextType => {
   const context = useContext(TooltipContext);
   if (context == null) {
     throw new Error(
-      "Tooltip components must be wrapped in <TooltipProvider />"
+      "Tooltip components must be wrapped in <TooltipProvider />",
     );
   }
   return context;
@@ -118,8 +118,9 @@ export const TooltipProvider = ({
   const role = useRole(context, { role: "tooltip" });
 
   const longPressEvents = useLongPress(
+    // @ts-ignore
     isTouchDevice ? () => setIsOpen(true) : null,
-    { threshold: 500 }
+    { threshold: 500 },
   );
 
   const interactions = useInteractions([hover, focus, dismiss, role]);
@@ -148,16 +149,19 @@ export const TooltipProvider = ({
       data.refs,
       data.middlewareData,
       data.placement,
-    ]
+    ],
   );
 
   return (
+    // @ts-ignore
     <TooltipContext.Provider value={value}>{children}</TooltipContext.Provider>
   );
 };
 
 function mergeRefs<T>(
-  refs: Array<React.MutableRefObject<T> | React.LegacyRef<T> | null | undefined>
+  refs: Array<
+    React.MutableRefObject<T> | React.LegacyRef<T> | null | undefined
+  >,
 ): React.RefCallback<T> {
   return (value) => {
     refs.forEach((ref) => {
@@ -178,7 +182,7 @@ export const TooltipTrigger = React.forwardRef<
   const childrenRef = (children as any)?.ref;
   const ref = useMemo(
     () => mergeRefs([propRef, childrenRef, context.refs.setReference]),
-    [propRef, childrenRef, context.refs.setReference]
+    [propRef, childrenRef, context.refs.setReference],
   );
   if (!isValidElement(children)) {
     console.warn("TooltipTrigger expects a single React element as a child");
@@ -199,7 +203,7 @@ export const TooltipTrigger = React.forwardRef<
       ref,
       ...props,
       ...childProps,
-    })
+    }),
   );
 });
 
@@ -209,7 +213,7 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
     const [isMounted, setIsMounted] = useState(false);
     const mergedRef = useMemo(
       () => mergeRefs([ref, context.refs.setFloating]),
-      [ref, context.refs.setFloating]
+      [ref, context.refs.setFloating],
     );
     useEffect(() => {
       if (context.isOpen) {
@@ -261,6 +265,6 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
         </div>
       </FloatingPortal>
     );
-  }
+  },
 );
 Tooltip.displayName = "Tooltip";

@@ -40,31 +40,16 @@ interface RefreshIndicatorProps {
 export interface ElasticScrollAreaProps extends ComponentPropsWithoutRef<
   typeof ScrollAreaPrimitive.Root
 > {
-  /** The primary scrolling direction of the content. @default "vertical" */
   orientation?: "vertical" | "horizontal";
   elasticity?: boolean;
   dampingFactor?: number;
-  /**
-   * Controls scrollbar visibility.
-   * `auto`: Default browser behavior.
-   * `always`/`visible`: Always visible.
-   * `scroll`: Visible only when scrolling.
-   * `hidden`: Never visible.
-   * @default "auto"
-   */
   scrollbarVisibility?: "auto" | "always" | "scroll" | "hidden" | "visible";
   pullToRefresh?: boolean;
   onRefresh?: () => Promise<unknown>;
   pullThreshold?: number;
   RefreshIndicatorComponent?: ComponentType<RefreshIndicatorProps>;
-  /** Callback fired when the user scrolls up. */
   onScrollUp?: () => void;
-  /** Callback fired when the user scrolls down. */
   onScrollDown?: () => void;
-  /**
-   * CSS classes applied directly to the internal Radix Viewport element.
-   * Use this to override internal display behaviors (e.g., `[&>div]:!block`).
-   */
   viewportClassName?: string;
 }
 
@@ -87,9 +72,11 @@ const DefaultRefreshIndicator: FC<RefreshIndicatorProps> = ({
     </motion.div>
   );
 };
+
 // --- OVERSCROLL & PULL-TO-REFRESH LOGIC HOOK ---
 const useElasticAndRefresh = (
-  viewportRef: RefObject<HTMLDivElement>,
+  // FIX: Allow the ref to be potentially null
+  viewportRef: RefObject<HTMLDivElement | null>,
   motionValue: MotionValue<number>,
   options: {
     orientation: "vertical" | "horizontal";
@@ -347,7 +334,6 @@ const ElasticScrollAreaRoot = forwardRef<
         const currentScrollTop = event.currentTarget.scrollTop;
         const scrollDelta = currentScrollTop - lastScrollTop.current;
 
-        // Prevent firing on small jitters or bounce-back
         if (Math.abs(scrollDelta) < 5) return;
 
         if (scrollDelta > 0) {
@@ -356,7 +342,6 @@ const ElasticScrollAreaRoot = forwardRef<
           onScrollUp?.();
         }
 
-        // Update last scroll position, clamping at 0 for iOS bounce.
         lastScrollTop.current = Math.max(0, currentScrollTop);
       },
       [onScrollDown, onScrollUp],

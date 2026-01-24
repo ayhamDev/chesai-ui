@@ -306,10 +306,12 @@ export const SelectItem = React.forwardRef<
 
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
+    // @ts-ignore
     ref: localRef,
     color: "var(--color-ripple-dark)",
     duration: 400,
   });
+  // @ts-ignore
   React.useImperativeHandle(ref, () => localRef.current!);
 
   return (

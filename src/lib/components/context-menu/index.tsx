@@ -40,20 +40,19 @@ const contentVariants = cva(
     defaultVariants: {
       shape: "minimal",
     },
-  }
+  },
 );
 
 const itemVariants = cva(
   [
     "relative flex cursor-pointer select-none items-center gap-2 rounded-lg outline-none overflow-hidden z-0",
-    "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)]",
+    "transition-colors duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
     "focus:bg-secondary-container/60 data-[highlighted]:bg-secondary-container/60",
     "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/20",
     "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
     "[&_svg]:pointer-events-none [&_svg]:shrink-0",
     "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
     "hover:after:opacity-100 hover:after:scale-100",
-    "hover:bg-transparent",
   ],
   {
     variants: {
@@ -71,7 +70,7 @@ const itemVariants = cva(
     defaultVariants: {
       size: "md",
     },
-  }
+  },
 );
 
 interface ContextMenuProps extends RadixContextMenu.ContextMenuProps {
@@ -114,7 +113,7 @@ const ContextMenuContent = React.forwardRef<
           "data-[side=bottom]:origin-top",
           "data-[side=left]:origin-right",
           "data-[side=right]:origin-left",
-          className
+          className,
         )}
         {...props}
       />
@@ -132,10 +131,9 @@ const ContextMenuItem = React.forwardRef<
   const { shape, size } = useContextMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
-    ref: localRef,
+    ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    // Fix: Removed opacity
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -146,7 +144,7 @@ const ContextMenuItem = React.forwardRef<
       className={clsx(
         itemVariants({ size, shape }),
         inset && "pl-8",
-        className
+        className,
       )}
       {...props}
     >
@@ -165,10 +163,9 @@ const ContextMenuCheckboxItem = React.forwardRef<
   const { shape, size } = useContextMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
-    ref: localRef,
+    ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    // Fix: Removed opacity
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -197,10 +194,9 @@ const ContextMenuRadioItem = React.forwardRef<
   const { shape, size } = useContextMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
-    ref: localRef,
+    ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    // Fix: Removed opacity
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -231,10 +227,9 @@ const ContextMenuSubTrigger = React.forwardRef<
   const { shape, size } = useContextMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
-    ref: localRef,
+    ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    // Fix: Removed opacity
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -245,7 +240,7 @@ const ContextMenuSubTrigger = React.forwardRef<
       className={clsx(
         itemVariants({ size, shape }),
         inset && "pl-8",
-        className
+        className,
       )}
       {...props}
     >
@@ -272,7 +267,7 @@ const ContextMenuSubContent = React.forwardRef<
         "data-[state=closed]:data-[side=right]:animate-submenu-exit-right",
         "data-[state=open]:data-[side=left]:animate-submenu-enter-left",
         "data-[state=closed]:data-[side=left]:animate-submenu-exit-left",
-        className
+        className,
       )}
       {...props}
     />
@@ -291,7 +286,7 @@ const ContextMenuLabel = React.forwardRef<
     className={clsx(
       "px-3 py-2 text-xs font-medium text-on-surface-variant tracking-wide",
       inset && "pl-8",
-      className
+      className,
     )}
     {...props}
   />
@@ -318,7 +313,7 @@ const ContextMenuShortcut = ({
     <span
       className={clsx(
         "ml-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
-        className
+        className,
       )}
       {...props}
     />

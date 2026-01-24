@@ -174,8 +174,6 @@ export const PieChart = ({
             nameKey={index}
             stroke="none"
             animationDuration={1200}
-            // 2. IMPORTANT: Remove 'activeShape' and use 'shape'
-            // We pass the selection state into the shape renderer manually
             shape={(props: any) => (
               <AnimatedSector
                 {...props}
@@ -183,7 +181,7 @@ export const PieChart = ({
                 cornerRadius={cornerRadius}
               />
             )}
-            activeIndex={activeIndex}
+            // FIX: Removed invalid 'activeIndex' prop
             onMouseEnter={onPieEnter}
             onMouseLeave={onPieLeave}
           >

@@ -34,7 +34,7 @@ const MenubarRoot: React.FC<MenubarProps> = ({
       <RadixMenubar.Root
         className={clsx(
           "flex h-10 items-center space-x-1 rounded-lg bg-transparent p-1",
-          className
+          className,
         )}
         {...props}
       />
@@ -59,7 +59,7 @@ const contentVariants = cva(
     defaultVariants: {
       shape: "minimal",
     },
-  }
+  },
 );
 
 const MenubarMenu = RadixMenubar.Menu;
@@ -80,7 +80,7 @@ const MenubarTrigger = React.forwardRef<
       "focus:bg-surface-container-highest",
       "data-[state=open]:bg-surface-container-highest",
       "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
-      "hover:after:opacity-100 hover:after:scale-100"
+      "hover:after:opacity-100 hover:after:scale-100",
     )}
     {...props}
   />
@@ -93,7 +93,7 @@ const MenubarContent = React.forwardRef<
 >(
   (
     { className, align = "start", alignOffset = -4, sideOffset = 8, ...props },
-    ref
+    ref,
   ) => {
     const { shape } = useMenubarContext();
     return (
@@ -111,13 +111,13 @@ const MenubarContent = React.forwardRef<
             "data-[side=bottom]:origin-top",
             "data-[side=left]:origin-right",
             "data-[side=right]:origin-left",
-            className
+            className,
           )}
           {...props}
         />
       </MenubarPortal>
     );
-  }
+  },
 );
 MenubarContent.displayName = RadixMenubar.Content.displayName;
 
@@ -138,11 +138,14 @@ const MenubarItem = React.forwardRef<
   }
 >(({ className, inset, ...props }, ref) => {
   const { shape } = useMenubarContext();
-  const localRef = useRef<HTMLDivElement>(null);
+  const localRef = React.useRef<HTMLButtonElement>(null);
+  React.useImperativeHandle(ref, () => localRef?.current as any);
+
   const { theme } = useTheme();
   console.log(theme);
 
   const [, event] = useRipple({
+    // @ts-ignore
     ref: localRef,
     color:
       theme === "dark"
@@ -150,10 +153,10 @@ const MenubarItem = React.forwardRef<
         : "var(--color-ripple-light)",
     duration: 400,
   });
-  React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
   return (
     <RadixMenubar.Item
+      // @ts-ignore
       ref={localRef}
       onPointerDown={event}
       className={clsx(
@@ -161,7 +164,7 @@ const MenubarItem = React.forwardRef<
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         shape === "sharp" && "!rounded-none",
-        className
+        className,
       )}
       {...props}
     />
@@ -176,6 +179,7 @@ const MenubarCheckboxItem = React.forwardRef<
   const { shape } = useMenubarContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
+    // @ts-ignore
     ref: localRef,
     color: "var(--color-ripple-dark)",
     duration: 400,
@@ -190,7 +194,7 @@ const MenubarCheckboxItem = React.forwardRef<
         itemStyles,
         "pl-8 pr-3",
         shape === "sharp" && "!rounded-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -212,6 +216,7 @@ const MenubarRadioItem = React.forwardRef<
   const { shape } = useMenubarContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
+    // @ts-ignore
     ref: localRef,
     color: "var(--color-ripple-dark)",
     duration: 400,
@@ -226,7 +231,7 @@ const MenubarRadioItem = React.forwardRef<
         itemStyles,
         "pl-8 pr-3",
         shape === "sharp" && "!rounded-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -250,6 +255,7 @@ const MenubarSubTrigger = React.forwardRef<
   const { shape } = useMenubarContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
+    // @ts-ignore
     ref: localRef,
     color: "var(--color-ripple-dark)",
     duration: 400,
@@ -266,7 +272,7 @@ const MenubarSubTrigger = React.forwardRef<
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         shape === "sharp" && "!rounded-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -293,7 +299,7 @@ const MenubarSubContent = React.forwardRef<
         "data-[state=closed]:data-[side=right]:animate-submenu-exit-right",
         "data-[state=open]:data-[side=left]:animate-submenu-enter-left",
         "data-[state=closed]:data-[side=left]:animate-submenu-exit-left",
-        className
+        className,
       )}
       {...props}
     />
@@ -312,7 +318,7 @@ const MenubarLabel = React.forwardRef<
     className={clsx(
       "px-3 py-2 text-xs font-medium text-on-surface-variant tracking-wide",
       inset && "pl-8",
-      className
+      className,
     )}
     {...props}
   />
@@ -339,7 +345,7 @@ const MenubarShortcut = ({
     <span
       className={clsx(
         "ml-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
-        className
+        className,
       )}
       {...props}
     />

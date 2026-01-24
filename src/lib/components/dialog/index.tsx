@@ -69,12 +69,6 @@ export interface DialogProps {
   onOpenChange: (open: boolean) => void;
   children: ReactNode;
   variant?: DialogVariant;
-  /**
-   * The animation style of the dialog.
-   * - `default`: A subtle scale and fade.
-   * - `material3`: The official Material 3 specification (Slide down, grow, fade).
-   * @default "default"
-   */
   animation?: DialogAnimationType;
 }
 
@@ -135,7 +129,6 @@ DialogTrigger.displayName = "DialogTrigger";
 
 // --- ANIMATION VARIANTS ---
 
-// 1. Default (Subtle Scale)
 const basicDialogVariants: Variants = {
   hidden: { opacity: 0, scale: 0.9 },
   visible: {
@@ -156,7 +149,6 @@ const basicDialogVariants: Variants = {
   },
 };
 
-// 2. Fullscreen
 const fullscreenDialogVariants: Variants = {
   hidden: { y: "100%", opacity: 0 },
   visible: {
@@ -168,7 +160,7 @@ const fullscreenDialogVariants: Variants = {
     },
   },
   exit: {
-    y: "100%", // Slide fully out
+    y: "100%",
     opacity: 1,
     transition: {
       duration: DURATION.medium2,
@@ -177,7 +169,6 @@ const fullscreenDialogVariants: Variants = {
   },
 };
 
-// 3. Material Design 3 (New)
 const material3DialogVariants: Variants = {
   hidden: {
     opacity: 0,
@@ -204,7 +195,6 @@ const material3DialogVariants: Variants = {
   },
 };
 
-// --- BACKDROP VARIANTS ---
 const defaultBackdropVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
@@ -295,24 +285,18 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
     const isFullscreen = dialogVariant === "fullscreen";
     const isMD3 = animation === "material3";
 
-    // Determine Backdrop Variant
     let backdropVariants = defaultBackdropVariants;
     if (isMD3) backdropVariants = material3ScrimVariants;
 
-    // Determine Dialog Variant
     let dialogVariants = basicDialogVariants;
     if (isFullscreen) dialogVariants = fullscreenDialogVariants;
     else if (isMD3) dialogVariants = material3DialogVariants;
 
-    // Determine Backdrop Opacity Class
     let backdropClass = "bg-black/50";
     if (isMD3 && !isFullscreen) backdropClass = "bg-black/30";
 
-    const handleDragEnd = (
-      event: MouseEvent | TouchEvent | PointerEvent,
-      info: PanInfo,
-    ) => {
-      // Dismiss if dragged down by 150px or flicked down with velocity
+    const handleDragEnd = (event: any, info: PanInfo) => {
+      // FIX: Use 'any' for event
       if (info.offset.y > 150 || info.velocity.y > 400) {
         onOpenChange(false);
       }
@@ -361,9 +345,9 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   exit="exit"
                   drag={isFullscreen ? "y" : false}
                   dragControls={dragControls}
-                  dragListener={false} // We manually start drag via the handle
-                  dragConstraints={{ top: 0, bottom: 0 }} // Snap back if not dismissed
-                  dragElastic={{ top: 0, bottom: 1 }} // Rubber band effect at bottom
+                  dragListener={false}
+                  dragConstraints={{ top: 0, bottom: 0 }}
+                  dragElastic={{ top: 0, bottom: 1 }}
                   onDragEnd={handleDragEnd}
                   className={clsx(
                     "relative z-10 flex flex-col",
@@ -380,33 +364,12 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   style={{
                     willChange: "transform, opacity, height, width",
                     backfaceVisibility: "hidden",
-                    // Use translate3d to ensure GPU acceleration
                   }}
                 >
-                  {/* Fullscreen Gesture Handle & Zone */}
                   {isFullscreen && (
-                    <>
-                      {/* Visual Pill */}
-                      <div className="absolute left-1/2 top-2 z-50 -translate-x-1/2 opacity-80 pointer-events-none">
-                        <div className="h-1.5 w-12 rounded-full bg-on-surface-variant/40" />
-                      </div>
-
-                      {/* Touch Zone (Header Area) */}
-                      <div
-                        className="absolute left-0 right-0 top-0 z-40 h-16 touch-none"
-                        onPointerDown={(e) => {
-                          // Prevent drag if clicking a button/input inside the header
-                          if (
-                            (e.target as HTMLElement).closest(
-                              "button, a, input, [role='button']",
-                            )
-                          ) {
-                            return;
-                          }
-                          dragControls.start(e);
-                        }}
-                      />
-                    </>
+                    <div className="absolute left-1/2 top-2 z-50 -translate-x-1/2 opacity-80 pointer-events-none">
+                      <div className="h-1.5 w-12 rounded-full bg-on-surface-variant/40" />
+                    </div>
                   )}
 
                   {isFullscreen ? (
@@ -418,6 +381,25 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                       style={{
                         willChange: "opacity",
                         transform: "translate3d(0, 0, 0)",
+                      }}
+                      onPointerDown={(e) => {
+                        // 1. Check if we are clicking an interactive element
+                        const target = e.target as HTMLElement;
+                        if (
+                          target.closest(
+                            "button, a, input, select, textarea, [role='button'], [role='menuitem']",
+                          )
+                        ) {
+                          return;
+                        }
+
+                        // 2. Only allow drag start from the top header area (approx 72px)
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const y = e.clientY - rect.top;
+                        if (y > 72) return;
+
+                        // 3. Start Drag
+                        dragControls.start(e);
                       }}
                     >
                       {children}
@@ -475,8 +457,6 @@ const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row items-center justify-between",
           "px-6 py-4 sm:px-8 sm:py-6",
-          // Z-index ensures content sits below the drag capture zone if needed,
-          // though the capture zone is absolute on top.
           "relative",
           "bg-surface-container-high",
           "border-b border-outline-variant",

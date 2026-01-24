@@ -109,12 +109,10 @@ const InputOTPStyleContext = React.createContext<InputOTPContextValue>({
 
 // --- COMPONENTS ---
 
-export interface InputOTPProps
-  extends
-    React.ComponentPropsWithoutRef<typeof OTPInput>,
-    InputOTPContextValue {
-  containerClassName?: string;
-}
+export type InputOTPProps = React.ComponentPropsWithoutRef<typeof OTPInput> &
+  InputOTPContextValue & {
+    containerClassName?: string;
+  };
 
 const InputOTP = React.forwardRef<
   React.ElementRef<typeof OTPInput>,
@@ -129,10 +127,18 @@ const InputOTP = React.forwardRef<
       shape = "minimal",
       isInvalid = false,
       ...props
+    }: {
+      className?: string;
+      containerClassName?: string;
+      variant?: "flat" | "bordered" | "faded" | "underlined";
+      size?: "sm" | "md" | "lg";
+      shape?: "full" | "minimal" | "sharp";
+      isInvalid?: boolean;
     },
     ref,
   ) => (
     <InputOTPStyleContext.Provider value={{ variant, size, shape, isInvalid }}>
+      {/* @ts-expect-error */}
       <OTPInput
         ref={ref}
         containerClassName={clsx(

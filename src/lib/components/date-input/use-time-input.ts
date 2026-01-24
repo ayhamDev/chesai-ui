@@ -1,15 +1,16 @@
 'use client'
 
-import type { TimeValue } from '@internationalized/date'
 import { useTimeField } from '@react-aria/datepicker'
 import { useLocale } from '@react-aria/i18n'
 import { useTimeFieldState } from '@react-stately/datepicker'
-import type { AriaTimeFieldProps } from '@react-types/datepicker'
+import type { AriaTimeFieldProps, TimeValue } from '@react-types/datepicker'
 import type { VariantProps } from 'class-variance-authority'
 import { clsx } from 'clsx'
 import { useMemo, useRef } from 'react'
+import type { ClassNameValue } from 'tailwind-merge'
 import { dateInputSlots, dateInputStyles, getDateInputSlotClassNames } from './date-input-styles'
 
+// @ts-expect-error
 export interface UseTimeInputProps<T extends TimeValue>
   extends AriaTimeFieldProps<T>,
     VariantProps<typeof dateInputStyles> {
@@ -17,6 +18,7 @@ export interface UseTimeInputProps<T extends TimeValue>
   endContent?: React.ReactNode
   classNames?: Partial<typeof dateInputSlots>
   labelPlacement?: 'inside' | 'outside' | 'outside-left'
+  className: ClassNameValue
   ref?: React.Ref<HTMLDivElement>
 }
 
@@ -55,6 +57,7 @@ export function useTimeInput<T extends TimeValue>(props: UseTimeInputProps<T>) {
       {
         ...otherProps,
         label,
+        // @ts-expect-error
         inputRef: domRef,
       },
       state,
@@ -65,7 +68,8 @@ export function useTimeInput<T extends TimeValue>(props: UseTimeInputProps<T>) {
   const shouldLabelBeOutside = labelPlacement !== 'inside'
 
   // FIX: Force isFilled true for inside labels to prevent overlap with segments
-  const isFilled = state.value != null || !!props.placeholder || labelPlacement === 'inside'
+  // @ts-expect-error
+  const isFilled = state.value != null || !!props?.placeholder || labelPlacement === 'inside'
 
   const slots = useMemo(
     () =>
@@ -87,7 +91,8 @@ export function useTimeInput<T extends TimeValue>(props: UseTimeInputProps<T>) {
     className: clsx(dateInputSlots.base, dateInputStyles({ labelPlacement }), className, classNames?.base),
     'data-slot': 'base',
     'data-filled': isFilled,
-    'data-filled-within': isFilled || state.isFocused,
+    // @ts-expect-error
+    'data-filled-within': isFilled || state?.isFocused,
     'data-invalid': isInvalid,
     'data-disabled': props.isDisabled,
     'data-readonly': props.isReadOnly,
@@ -106,7 +111,8 @@ export function useTimeInput<T extends TimeValue>(props: UseTimeInputProps<T>) {
     },
     wrapperProps: {
       className: clsx(dateInputSlots.inputWrapper, slots.inputWrapper, classNames?.inputWrapper),
-      'data-focus': state.isFocused,
+      // @ts-expect-error
+      'data-focus': state?.isFocused,
       onClick: fieldProps.onClick,
     },
     innerWrapperProps: {

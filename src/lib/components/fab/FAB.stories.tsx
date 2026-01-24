@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from "../dropdown-menu"; // Assuming this is the correct path
+} from "../dropdown-menu";
 import { FAB } from "./index";
 
 const meta: Meta<typeof FAB> = {
@@ -17,14 +17,13 @@ const meta: Meta<typeof FAB> = {
   component: FAB,
   tags: ["autodocs"],
   argTypes: {
-    // --- NEW: Added variant control ---
     variant: {
       control: "select",
-      options: ["primary", "secondary", "tertiary"],
+      options: ["primary", "secondary", "tertiary", "outline"],
     },
     size: {
       control: "select",
-      options: ["sm", "md", "lg"],
+      options: ["sm", "md", "lg", "xl"],
     },
     shape: {
       control: "select",
@@ -38,7 +37,8 @@ const meta: Meta<typeof FAB> = {
     icon: <Plus className="h-7 w-7" />,
     children: "Create New",
     "aria-label": "Create New Item",
-    variant: "primary", // Set default variant for controls
+    variant: "primary",
+    size: "md",
   },
 };
 
@@ -52,21 +52,69 @@ export const Default: Story = {
   },
 };
 
-// --- NEW STORY to showcase variants ---
 export const AllVariants: Story = {
   name: "All Variants",
   render: (args) => (
     <div className="flex flex-col items-start space-y-6">
-      <p className="font-semibold">Primary</p>
-      <div className="flex items-center gap-4 ">
+      <div className="flex items-center gap-4">
         <FAB {...args} variant="primary" isExtended={false} />
         <FAB {...args} variant="primary" isExtended={true} />
+        <span className="text-sm text-gray-500">Primary</span>
       </div>
-      <p className="font-semibold">Secondary</p>
+
       <div className="flex items-center gap-4">
         <FAB {...args} variant="secondary" isExtended={false} />
         <FAB {...args} variant="secondary" isExtended={true} />
+        <span className="text-sm text-gray-500">Secondary</span>
       </div>
+
+      <div className="flex items-center gap-4">
+        <FAB {...args} variant="tertiary" isExtended={false} />
+        <FAB {...args} variant="tertiary" isExtended={true} />
+        <span className="text-sm text-gray-500">Tertiary</span>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <FAB {...args} variant="outline" isExtended={false} />
+        <FAB {...args} variant="outline" isExtended={true} />
+        <span className="text-sm text-gray-500">Outline</span>
+      </div>
+    </div>
+  ),
+};
+
+export const XLSize: Story = {
+  name: "Extra Large (XL)",
+  args: {
+    size: "xl",
+    variant: "primary",
+    icon: <Plus className="h-10 w-10" />,
+    children: "Big Action",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The XL size is significantly larger (96px), useful for primary screen actions or emphasized calls to action.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex items-center gap-6">
+      <FAB {...args} isExtended={false} />
+      <FAB {...args} isExtended={true} />
+    </div>
+  ),
+};
+
+export const AllSizes: Story = {
+  name: "All Sizes",
+  render: (args) => (
+    <div className="flex items-end gap-6">
+      <FAB {...args} size="sm" isExtended={false} />
+      <FAB {...args} size="md" isExtended={false} />
+      <FAB {...args} size="lg" isExtended={false} />
+      <FAB {...args} size="xl" isExtended={false} />
     </div>
   ),
 };
@@ -75,20 +123,20 @@ export const AllShapes: Story = {
   name: "All Shapes",
   render: (args) => (
     <div className="flex flex-col items-start space-y-6">
-      <p className="font-semibold">Shape: Full</p>
       <div className="flex items-center gap-4">
         <FAB {...args} shape="full" isExtended={false} />
         <FAB {...args} shape="full" isExtended={true} />
+        <span className="text-sm text-gray-500">Full</span>
       </div>
-      <p className="font-semibold">Shape: Minimal</p>
       <div className="flex items-center gap-4">
         <FAB {...args} shape="minimal" isExtended={false} />
         <FAB {...args} shape="minimal" isExtended={true} />
+        <span className="text-sm text-gray-500">Minimal</span>
       </div>
-      <p className="font-semibold">Shape: Sharp</p>
       <div className="flex items-center gap-4">
         <FAB {...args} shape="sharp" isExtended={false} />
         <FAB {...args} shape="sharp" isExtended={true} />
+        <span className="text-sm text-gray-500">Sharp</span>
       </div>
     </div>
   ),

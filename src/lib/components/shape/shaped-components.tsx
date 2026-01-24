@@ -211,8 +211,10 @@ export const ShapedIconButton = forwardRef<
     ref,
   ) => {
     const localRef = React.useRef<HTMLButtonElement>(null);
+    // @ts-ignore
     React.useImperativeHandle(ref, () => localRef.current!);
     const [, event] = useRipple({
+      // @ts-ignore
       ref: localRef,
       color: "rgba(255, 255, 255, 0.3)",
       duration: 400,

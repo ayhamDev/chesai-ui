@@ -14,6 +14,8 @@ const cardVariants = cva(
         primary: "bg-surface-container-low",
         // Filled/Highlighted Card: Surface Container Highest
         secondary: "bg-surface-container-highest",
+        // NEW: Tertiary variant
+        tertiary: "bg-tertiary-container text-on-tertiary-container",
         // Glass effect
         glass:
           "bg-surface-container-lowest backdrop-blur-lg border border-white/10",
@@ -77,11 +79,17 @@ const cardVariants = cva(
       elevation: "none",
       hoverEffect: false,
     },
-  }
+  },
 );
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "primary" | "secondary" | "glass" | "ghost" | "surface";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "tertiary"
+    | "glass"
+    | "ghost"
+    | "surface";
   shape?: "full" | "minimal" | "sharp";
   padding?: "none" | "sm" | "md" | "lg";
   elevation?: "none" | 1 | 2 | 3 | 4 | 5;
@@ -106,26 +114,18 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       onPointerDown,
       ...props
     },
-    ref
+    ref,
   ) => {
     const localRef = useRef<HTMLDivElement>(null);
     useImperativeHandle(ref, () => localRef.current!);
 
-    // Card ripple is usually dark (black @ 10%) because cards are light in light mode
-    // In dark mode, cards are dark, so ripple should be white @ 10%
-    // Our CSS vars color-ripple-light/dark handle the opacity.
-    // We choose the variable based on expected background contrast or just use standard logic.
-    // Ideally, this should detect theme, but sticking to "on-surface" logic (which is black in light, white in dark) works best.
-
-    // NOTE: Using --color-on-surface with opacity directly in JS isn't easy without reading computed styles.
-    // We will use the theme variables defined in theme.css
     const rippleColor =
-      variant === "glass"
+      variant === "glass" || variant === "tertiary"
         ? "var(--color-ripple-dark)"
         : "var(--color-ripple-light)";
 
     const [, event] = useRipple({
-      ref: localRef,
+      ref: localRef as React.RefObject<HTMLElement>,
       color: rippleColor,
       duration: 600,
       disabled: !enableRipple,
@@ -144,7 +144,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
             elevation,
             hoverEffect,
           }),
-          className
+          className,
         )}
         onPointerDown={(e) => {
           if (enableRipple) event(e);
@@ -153,7 +153,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 Card.displayName = "Card";

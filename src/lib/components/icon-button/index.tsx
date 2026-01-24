@@ -13,6 +13,10 @@ export const iconButtonVariants = cva(
           "bg-primary disabled:bg-primary/70 text-on-primary hover:opacity-90 focus:ring-1 focus:ring-offset-2 focus:ring-primary",
         secondary:
           "bg-secondary-container disabled:bg-secondary-container/70 text-on-secondary-container hover:bg-secondary-container/80 focus:ring-1 focus:ring-offset-2 focus:ring-primary",
+        tertiary:
+          "bg-tertiary-container disabled:bg-tertiary-container/70 text-on-tertiary-container hover:bg-tertiary-container/80 focus:ring-1 focus:ring-offset-2 focus:ring-tertiary",
+        outline:
+          "bg-transparent border border-outline text-primary disabled:opacity-50 disabled:border-outline/50 hover:bg-primary/10 focus:ring-1 focus:ring-offset-2 focus:ring-primary",
         destructive:
           "bg-error text-on-error disabled:bg-error/70 hover:bg-error/90 focus:ring-1 focus:ring-offset-2 focus:ring-error",
         ghost:
@@ -46,7 +50,14 @@ export const iconButtonVariants = cva(
 );
 
 export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "destructive" | "ghost" | "link";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "tertiary"
+    | "outline"
+    | "destructive"
+    | "ghost"
+    | "link";
   size?: "xs" | "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
   isLoading?: boolean;

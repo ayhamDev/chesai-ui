@@ -10,7 +10,14 @@ const meta: Meta<typeof Card> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "glass", "ghost", "surface"],
+      options: [
+        "primary",
+        "secondary",
+        "tertiary",
+        "glass",
+        "ghost",
+        "surface",
+      ],
     },
     shape: {
       control: "select",
@@ -51,6 +58,26 @@ export const Default: Story = {
         components inside it.
       </Typography>
     </Card>
+  ),
+};
+
+export const ColorVariants: Story = {
+  name: "Color Variants",
+  render: () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <Card variant="primary" className="p-6">
+        <Typography variant="h4">Primary</Typography>
+        <Typography variant="muted">bg-surface-container-low</Typography>
+      </Card>
+      <Card variant="secondary" className="p-6">
+        <Typography variant="h4">Secondary</Typography>
+        <Typography variant="muted">bg-surface-container-highest</Typography>
+      </Card>
+      <Card variant="tertiary" className="p-6">
+        <Typography variant="h4">Tertiary</Typography>
+        <Typography variant="muted">bg-tertiary-container</Typography>
+      </Card>
+    </div>
   ),
 };
 
@@ -145,7 +172,7 @@ export const GlassVariant: Story = {
     >
       <Card {...args} className="max-w-md cursor-pointer">
         <Typography variant="h3">Glass Card</Typography>
-        <Typography variant="p" className="!text-white/80">
+        <Typography variant="p" className="text-white/80!">
           Click to see the light ripple effect against the blurred backdrop.
         </Typography>
       </Card>

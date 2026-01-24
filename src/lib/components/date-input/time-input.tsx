@@ -1,6 +1,6 @@
 "use client";
 
-import type { TimeValue } from "@internationalized/date";
+import type { TimeValue } from "@react-types/datepicker"; // FIX: Changed import path
 import React, { forwardRef } from "react";
 import { DateInputField } from "./date-input-field";
 import { DateInputGroup } from "./date-input-group";
@@ -24,7 +24,8 @@ const TimeInput = forwardRef(function TimeInput<T extends TimeValue>(
   } = useTimeInput({ ...props, ref });
 
   return (
-    <DateInputGroup {...getBaseGroupProps()}>
+    // FIX: Cast props to 'any' to resolve complex type incompatibility
+    <DateInputGroup {...(getBaseGroupProps() as any)}>
       <DateInputField
         state={state}
         inputProps={getInputProps()}

@@ -37,7 +37,7 @@ const useBottomTabs = () => {
   const context = useContext(BottomTabsContext);
   if (!context) {
     throw new Error(
-      "BottomTabs components must be used within a <BottomTabs.Navigator>"
+      "BottomTabs components must be used within a <BottomTabs.Navigator>",
     );
   }
   return context;
@@ -102,10 +102,10 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 
   const localRef = useRef<HTMLButtonElement>(null);
   const [, event] = useRipple({
-    ref: localRef,
+    // FIX: Cast ref to HTMLElement
+    ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    // Fix: Removed invalid opacity property
   });
 
   const isHorizontal = itemLayout === "inline" && isActive && showLabels;
@@ -142,7 +142,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
             "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out",
             "hover:after:opacity-100 hover:after:scale-100",
             "disabled:after:opacity-0",
-          ]
+          ],
         )}
       >
         {isActive && (
@@ -230,10 +230,10 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
       Children.toArray(children)
         .filter(
           (child): child is React.ReactElement<BottomTabsScreenProps> =>
-            React.isValidElement(child) && child.type === BottomTabsScreen
+            React.isValidElement(child) && child.type === BottomTabsScreen,
         )
         .map((child) => child.props),
-    [children]
+    [children],
   );
 
   const contextValue = useMemo(
@@ -246,7 +246,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
       indicatorId,
       showLabels,
     }),
-    [activeTab, onTabPress, itemLayout, mode, shape, indicatorId, showLabels]
+    [activeTab, onTabPress, itemLayout, mode, shape, indicatorId, showLabels],
   );
 
   return (
@@ -259,7 +259,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
             bordered: mode === "attached" ? bordered : false,
             shadow: mode === "detached" ? shadow : undefined,
             className,
-          })
+          }),
         )}
         {...props}
       >

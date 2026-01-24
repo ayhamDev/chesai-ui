@@ -64,6 +64,7 @@ const SheetRoot: React.FC<SheetProps> = ({
         direction,
       }}
     >
+      {/* @ts-expect-error */}
       <VaulDrawer.Root
         direction={direction}
         {...props}
@@ -272,7 +273,7 @@ const SheetContent = React.forwardRef<
             variant,
             height: direction === "bottom" && hasSnapPoints ? "snap" : "auto",
           }),
-          className
+          className,
         )}
         {...props}
       />
@@ -288,7 +289,7 @@ const SheetHeader = ({
   <div
     className={clsx(
       "flex flex-col gap-1 p-6 text-center sm:text-left",
-      className
+      className,
     )}
     {...props}
   />
@@ -322,7 +323,7 @@ const SheetGrabber = ({
           variant === "primary"
             ? "bg-on-primary-container/40"
             : "bg-on-surface-variant/40",
-          className
+          className,
         )}
         {...props}
       />

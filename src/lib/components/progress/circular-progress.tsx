@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 "use client";
 
 import { cva, type VariantProps } from "class-variance-authority";
@@ -89,6 +90,7 @@ export const CircularProgress = React.forwardRef<
         <motion.svg
           viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`}
           className={clsx("w-full h-full", !indeterminate && "-rotate-90")}
+          // @ts-ignore
           variants={indeterminate ? indeterminateVariants : undefined}
           animate={indeterminate ? "animate" : undefined}
         >

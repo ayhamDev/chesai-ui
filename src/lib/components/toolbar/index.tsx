@@ -72,7 +72,7 @@ const toolbarVariants = cva(
       padding: "sm",
       gap: "sm",
     },
-  }
+  },
 );
 
 const separatorVariants = cva("bg-outline-variant shrink-0 opacity-60", {
@@ -171,9 +171,13 @@ const ToolbarItemTooltip = ({
   );
 };
 
+// @ts-ignore
 export interface ToolbarProps
-  extends React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Root>,
-    VariantProps<typeof toolbarVariants> {}
+  extends
+    React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Root>,
+    VariantProps<typeof toolbarVariants> {
+  size: "sm" | "md" | "lg";
+}
 
 const ToolbarRoot = React.forwardRef<
   React.ElementRef<typeof ToolbarPrimitive.Root>,
@@ -188,12 +192,11 @@ const ToolbarRoot = React.forwardRef<
       shadow,
       padding,
       gap,
-      // @ts-ignore
       size = "md",
       children,
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <ToolbarContext.Provider
@@ -215,7 +218,7 @@ const ToolbarRoot = React.forwardRef<
               padding,
               gap,
             }),
-            className
+            className,
           )}
           {...props}
         >
@@ -223,7 +226,7 @@ const ToolbarRoot = React.forwardRef<
         </ToolbarPrimitive.Root>
       </ToolbarContext.Provider>
     );
-  }
+  },
 );
 ToolbarRoot.displayName = "Toolbar";
 
@@ -243,7 +246,8 @@ const ToolbarSeparator = React.forwardRef<
 ToolbarSeparator.displayName = "ToolbarSeparator";
 
 interface ToolbarButtonProps
-  extends React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Button>,
+  extends
+    React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Button>,
     VariantProps<typeof iconButtonVariants> {
   size?: ToolbarSize;
   shape?: ToolbarShape;
@@ -263,7 +267,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       shortcut,
       ...props
     },
-    ref
+    ref,
   ) => {
     const context = useToolbarContext();
     const finalSize = size || context.size;
@@ -274,10 +278,11 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
 
     const rippleColor =
       variant === "primary" || variant === "destructive"
-        ? "var(--color-on-primary)"
-        : "var(--color-primary)";
+        ? "var(--color-ripple-dark)"
+        : "var(--color-ripple-light)";
 
     const [, event] = useRipple({
+      // @ts-ignore
       ref: localRef,
       color: rippleColor,
       duration: 400,
@@ -287,7 +292,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     const [isPressed, setIsPressed] = useState(false);
 
     const hasText = React.Children.toArray(children).some(
-      (child) => typeof child === "string" || typeof child === "number"
+      (child) => typeof child === "string" || typeof child === "number",
     );
 
     const ButtonElement = (
@@ -306,7 +311,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
             shape: finalShape,
           }),
           hasText && "w-auto px-4 min-w-[auto] aspect-auto",
-          className
+          className,
         )}
         {...props}
       >
@@ -329,7 +334,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     }
 
     return ButtonElement;
-  }
+  },
 );
 ToolbarButton.displayName = "ToolbarButton";
 
@@ -344,7 +349,7 @@ const ToolbarToggleGroup = React.forwardRef<
       className={clsx(
         "flex items-center gap-0.5",
         orientation === "vertical" ? "flex-col w-full" : "flex-row",
-        className
+        className,
       )}
       {...props}
     />
@@ -353,7 +358,8 @@ const ToolbarToggleGroup = React.forwardRef<
 ToolbarToggleGroup.displayName = "ToolbarToggleGroup";
 
 interface ToolbarToggleItemProps
-  extends React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleItem>,
+  extends
+    React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleItem>,
     VariantProps<typeof toggleItemVariants> {
   size?: ToolbarSize;
   shape?: ToolbarShape;
@@ -367,7 +373,7 @@ const ToolbarToggleItem = React.forwardRef<
 >(
   (
     { className, variant, size, shape, children, tooltip, shortcut, ...props },
-    ref
+    ref,
   ) => {
     const context = useToolbarContext();
     const finalSize = size || context.size;
@@ -375,10 +381,14 @@ const ToolbarToggleItem = React.forwardRef<
 
     const localRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
-
+    const rippleColor =
+      variant === "primary" || variant === "default"
+        ? "var(--color-ripple-dark)" // Defined in theme.css as rgba(255,255,255, 0.1)
+        : "var(--color-ripple-light)"; // Defined in theme.css as rgba(0,0,0, 0.1)
     const [, event] = useRipple({
+      // @ts-ignore
       ref: localRef,
-      color: "var(--color-on-surface)",
+      color: rippleColor,
       duration: 400,
       // Fix: Removed opacity
     });
@@ -401,7 +411,7 @@ const ToolbarToggleItem = React.forwardRef<
             shape: finalShape,
           }),
           context.orientation === "vertical" && "w-full",
-          className
+          className,
         )}
         {...props}
       >
@@ -424,7 +434,7 @@ const ToolbarToggleItem = React.forwardRef<
     }
 
     return ItemElement;
-  }
+  },
 );
 ToolbarToggleItem.displayName = "ToolbarToggleItem";
 

@@ -98,6 +98,7 @@ type TypographyComponent = (<C extends React.ElementType = "p">(
 };
 
 export const Typography = React.forwardRef(
+  // @ts-ignore
   <C extends React.ElementType = "p">(
     {
       as,

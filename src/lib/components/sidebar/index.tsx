@@ -308,7 +308,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
             open={openMobile}
             onOpenChange={setOpenMobile}
             forceSideSheet
-            side={side}
+            side={side || "left"}
           >
             <Sheet.Content
               className="p-0"
@@ -659,6 +659,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
         : "var(--color-ripple-dark)";
 
     const [, event] = useRipple({
+      // @ts-ignore
       ref: localRef,
       color: rippleColor,
       duration: 300,

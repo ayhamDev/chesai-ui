@@ -22,8 +22,10 @@ import {
 } from "../dropdown-menu";
 import { ColumnFilterDialog } from "./column-filter-dialog";
 
-interface DataTableColumnHeaderProps<TData, TValue>
-  extends React.HTMLAttributes<HTMLDivElement> {
+interface DataTableColumnHeaderProps<
+  TData,
+  TValue,
+> extends React.HTMLAttributes<HTMLDivElement> {
   column: Column<TData, TValue>;
   title: string;
   enableColumnFilter?: boolean;
@@ -59,7 +61,8 @@ export function DataTableColumnHeader<TData, TValue>({
               ) : (
                 <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
               )}
-              {column.getFilterValue() && (
+              {/* FIX: Check if filter value is truthy before rendering */}
+              {!!column.getFilterValue() && (
                 <Filter className="ml-2 h-3 w-3 text-primary" />
               )}
             </Button>

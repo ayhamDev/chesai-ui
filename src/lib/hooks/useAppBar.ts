@@ -14,7 +14,8 @@ export type UseAppBarOptions = AppBarSharedProps
 
 export const useAppBar = (
   options: UseAppBarOptions & {
-    appBarColor?: 'background' | 'card' | 'primary' | 'secondary'
+    // FIX: Added 'surface-container' and 'transparent' to match AppBar component props
+    appBarColor?: 'background' | 'card' | 'primary' | 'secondary' | 'surface-container' | 'transparent'
   },
 ) => {
   const {

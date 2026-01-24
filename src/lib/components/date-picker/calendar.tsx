@@ -4,7 +4,12 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { format } from "date-fns";
-import { AnimatePresence, motion, type PanInfo } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  type PanInfo,
+  type Transition,
+} from "framer-motion";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useEffect, useRef, useState, memo } from "react";
 import useRipple from "use-ripple-hook";
@@ -15,8 +20,6 @@ import { type DateRange, useCalendar } from "../../hooks/use-calender";
 // --- VARIANTS & STYLES ---
 
 const calendarVariants = cva(
-  // Changed: Removed fixed w-[320px], added max-w-full.
-  // The background/shadow/rounding can now be stripped via className for seamless integration.
   "overflow-hidden select-none p-4 text-on-surface relative transition-colors duration-300",
   {
     variants: {
@@ -25,7 +28,6 @@ const calendarVariants = cva(
         minimal: "rounded-xl",
         sharp: "rounded-none",
       },
-      // Added a 'ghost' variant for embedding inside other containers
       variant: {
         default: "bg-surface-container-high shadow-xl w-[320px]",
         embedded: "bg-transparent shadow-none w-full border-none",
@@ -51,7 +53,6 @@ const getDayButtonClasses = (shape: "full" | "minimal" | "sharp") => {
     "relative z-10 w-10 h-10 flex items-center justify-center text-sm focus:outline-none overflow-hidden",
     "transition-colors duration-200",
     radiusClass,
-    // Bloom / Ripple Pseudo-element
     "after:absolute after:inset-0 after:z-[-1] after:bg-primary/5 after:opacity-0 after:scale-50 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
       "hover:after:opacity-100 hover:after:scale-100 " +
       "disabled:after:opacity-0",
@@ -62,7 +63,8 @@ const getDayButtonClasses = (shape: "full" | "minimal" | "sharp") => {
 };
 
 // --- ANIMATION CONFIG ---
-const transition = {
+const transition: Transition = {
+  // FIX: Explicitly type transition object
   type: "spring",
   stiffness: 300,
   damping: 30,
@@ -82,9 +84,10 @@ const slideVariants = {
 };
 
 // --- TYPES ---
+// FIX: Removed incorrect extension of React.HTMLAttributes
 export interface CalendarProps
   extends
-    React.HTMLAttributes<HTMLDivElement>,
+    Omit<React.HTMLAttributes<HTMLDivElement>, "onSelect">,
     VariantProps<typeof calendarVariants> {
   mode?: "single" | "range";
   value?: Date | DateRange;
@@ -93,11 +96,6 @@ export interface CalendarProps
   itemShape?: "full" | "minimal" | "sharp";
 }
 
-// ... [Keep DayButton, YearPicker, MonthPicker components EXACTLY as they were in previous steps] ...
-// (I will omit re-pasting the sub-components here to save space, assuming they are imported or present in the file)
-// Re-insert DayButton, YearPicker, MonthPicker here if copying full file.
-
-// --- RE-INSERTED SUB-COMPONENTS FOR COMPLETENESS ---
 interface DayButtonProps {
   day: Date;
   isCurrentMonth: boolean;
@@ -124,7 +122,7 @@ const DayButton = memo(
   }: DayButtonProps) => {
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [, event] = useRipple({
-      ref: buttonRef,
+      ref: buttonRef as React.RefObject<HTMLElement>, // FIX: Cast ref
       color: "var(--color-ripple-dark)",
       duration: 400,
     });

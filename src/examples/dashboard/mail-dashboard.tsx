@@ -4,16 +4,20 @@ import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
+  Archive,
+  ArrowLeft,
   Bold,
   Clock,
   File,
   Filter,
+  Forward,
   Inbox,
   LayoutGrid,
   Menu,
   MoreVertical,
   Paperclip,
   Plus,
+  Reply,
   Search,
   Send,
   Settings,
@@ -26,7 +30,9 @@ import React, { useMemo, useState } from "react";
 
 // --- Library Imports ---
 import { Avatar } from "../../lib/components/avatar";
+import { Badge } from "../../lib/components/badge";
 import { Button } from "../../lib/components/button";
+import { Checkbox } from "../../lib/components/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -34,16 +40,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../lib/components/dialog";
+import { ElasticScrollArea } from "../../lib/components/elastic-scroll-area";
 import { FAB } from "../../lib/components/fab";
 import { IconButton } from "../../lib/components/icon-button";
 import { Input } from "../../lib/components/input";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "../../lib/components/item";
 import { Separator } from "../../lib/components/separator";
 import { Sidebar, useSidebar } from "../../lib/components/sidebar";
 import { Textarea } from "../../lib/components/textarea";
 import { toast } from "../../lib/components/toast";
 import { Typography } from "../../lib/components/typography";
 
-// ... (Mock Data Generation - unchanged)
+// --- Mock Data Generation ---
 type LabelType = "work" | "personal" | "travel" | "important";
 
 interface MailItem {
@@ -146,8 +162,6 @@ const generateMails = (): MailItem[] => {
   });
 };
 
-// ... (Sub components)
-
 const MailLabelBadge = ({ label }: { label: LabelType }) => {
   const colors: Record<LabelType, string> = {
     work: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -159,24 +173,18 @@ const MailLabelBadge = ({ label }: { label: LabelType }) => {
   };
 
   return (
-    <span
-      className={clsx(
-        "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide",
-        colors[label],
-      )}
-    >
+    <Badge shape="full" className={clsx("border-none px-1.5", colors[label])}>
       {label}
-    </span>
+    </Badge>
   );
 };
 
-// ... (MailDashboard Component structure matches original)
+// --- MailDashboard Component ---
 
 export const MailDashboard = () => {
-  // --- STATE ---
   const [data, setData] = useState<MailItem[]>(() => generateMails());
   const [selectedMailId, setSelectedMailId] = useState<string | null>(null);
-  const [rowSelection, setRowSelection] = useState({});
+  const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -199,6 +207,13 @@ export const MailDashboard = () => {
     setData((prev) =>
       prev.map((mail) => (mail.id === id ? { ...mail, isRead: status } : mail)),
     );
+  };
+
+  const toggleSelection = (id: string) => {
+    setRowSelection((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
   };
 
   const handleDelete = (ids: string[]) => {
@@ -231,7 +246,7 @@ export const MailDashboard = () => {
               className={clsx(
                 "flex flex-col transition-all duration-300 ease-in-out",
                 isDetailOpen
-                  ? "w-1/2 min-w-[400px] border-r border-graphite-border"
+                  ? "w-1/2 min-w-[400px] border-r border-graphite-border hidden md:flex"
                   : "w-full",
               )}
             >
@@ -246,7 +261,7 @@ export const MailDashboard = () => {
                       .includes(searchQuery.toLowerCase()),
                 )}
                 rowSelection={rowSelection}
-                setRowSelection={setRowSelection}
+                toggleSelection={toggleSelection}
                 onRowClick={handleRowClick}
                 onToggleStar={toggleStar}
                 onDelete={handleDelete}
@@ -260,7 +275,7 @@ export const MailDashboard = () => {
                   animate={{ x: 0, opacity: 1 }}
                   exit={{ x: "100%", opacity: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="flex-1 bg-graphite-card min-w-[400px] shadow-2xl z-10"
+                  className="flex-1 bg-graphite-card shadow-2xl z-10 w-full md:w-auto absolute md:static inset-0"
                 >
                   <MailDetailView
                     mail={selectedMail}
@@ -278,12 +293,9 @@ export const MailDashboard = () => {
   );
 };
 
-// ... (DashboardSidebar, DashboardHeader - header uses native input for simplicity in original, kept as is or could be swapped for Input component. Kept as is to minimize regression risk on custom layout unless explicit request)
+// --- Sub-Components ---
 
 const DashboardSidebar = ({ onCompose }: { onCompose: () => void }) => {
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
-
   return (
     <Sidebar
       className="border-r border-graphite-border bg-graphite-background pt-2"
@@ -292,6 +304,17 @@ const DashboardSidebar = ({ onCompose }: { onCompose: () => void }) => {
       layout="inset"
       expandOnHover={true}
     >
+      <div className="px-4 pb-4">
+        <FAB
+          variant="primary"
+          icon={<Plus className="h-6 w-6" />}
+          isExtended={true}
+          onClick={onCompose}
+          className="w-full shadow-md"
+        >
+          Compose
+        </FAB>
+      </div>
       <Sidebar.Content>
         <Sidebar.Group>
           <Sidebar.Item icon={<Inbox size={20} />} isActive>
@@ -353,15 +376,14 @@ const DashboardHeader = ({
       </div>
 
       <div className="flex-1 max-w-2xl px-4">
-        {/* UPDATED: Using Input Component properly or keep native if simpler */}
         <Input
           value={searchValue}
           onChange={(e) => onSearch(e.target.value)}
           placeholder="Search mail"
-          variant="flat" // was secondary/ghost mix
+          variant="flat"
           shape="full"
           className="w-full"
-          classNames={{ input: "pl-2" }} // adjustments
+          classNames={{ input: "pl-2" }}
           startContent={
             <Search className="h-5 w-5 text-graphite-foreground/50" />
           }
@@ -374,10 +396,10 @@ const DashboardHeader = ({
       </div>
 
       <div className="flex items-center gap-2 min-w-[140px] justify-end">
-        <IconButton variant="ghost">
+        <IconButton variant="ghost" className="hidden sm:flex">
           <AlertCircle className="h-6 w-6 opacity-60" />
         </IconButton>
-        <IconButton variant="ghost">
+        <IconButton variant="ghost" className="hidden sm:flex">
           <Settings className="h-6 w-6 opacity-60" />
         </IconButton>
         <IconButton variant="ghost">
@@ -394,34 +416,255 @@ const DashboardHeader = ({
   );
 };
 
-// ... (MailList and MailDetailView - mostly table and display logic, no Inputs there)
-// skipping large chunks of unchanged display code...
-
 const MailList = ({
   data,
   rowSelection,
-  setRowSelection,
+  toggleSelection,
   onRowClick,
   onToggleStar,
   onDelete,
   compactMode,
-}: any) => {
-  // ... (Table implementation remains same)
-  // Just placeholder for the component
+}: {
+  data: MailItem[];
+  rowSelection: Record<string, boolean>;
+  toggleSelection: (id: string) => void;
+  onRowClick: (mail: MailItem) => void;
+  onToggleStar: (e: React.MouseEvent, id: string) => void;
+  onDelete: (ids: string[]) => void;
+  compactMode: boolean;
+}) => {
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-graphite-background p-4 flex items-center justify-center text-muted-foreground">
-      {/* Actual implementation was in previous artifact, assuming it's mostly Display/Table components */}
-      (Mail List Table Implementation)
+    <div className="h-full bg-graphite-background">
+      <ElasticScrollArea className="h-full">
+        <div className="p-2 pb-20">
+          <ItemGroup>
+            {data.map((mail) => (
+              <Item
+                key={mail.id}
+                variant={mail.isRead ? "ghost" : "secondary"}
+                shape="minimal"
+                padding={compactMode ? "sm" : "md"}
+                className={clsx(
+                  "cursor-pointer group hover:shadow-sm transition-all",
+                  rowSelection[mail.id] &&
+                    "bg-secondary-container border-primary/50",
+                )}
+                onClick={() => onRowClick(mail)}
+              >
+                <div
+                  className="flex items-center h-full mr-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={!!rowSelection[mail.id]}
+                    onChange={() => toggleSelection(mail.id)}
+                    className="mr-2"
+                  />
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    shape="full"
+                    onClick={(e) => onToggleStar(e, mail.id)}
+                    className={clsx(
+                      mail.isStarred
+                        ? "text-yellow-500"
+                        : "text-graphite-foreground/20 hover:text-graphite-foreground/50",
+                    )}
+                  >
+                    <Star
+                      className={clsx(
+                        "h-4 w-4",
+                        mail.isStarred ? "fill-current" : "",
+                      )}
+                    />
+                  </IconButton>
+                </div>
+
+                <ItemContent>
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <ItemTitle
+                      className={clsx(
+                        !mail.isRead && "font-bold text-foreground",
+                        "text-sm truncate",
+                      )}
+                    >
+                      {mail.sender.name}
+                    </ItemTitle>
+                    <Typography
+                      variant="small"
+                      className={clsx(
+                        "text-[10px] shrink-0",
+                        mail.isRead
+                          ? "opacity-50"
+                          : "font-bold text-primary opacity-100",
+                      )}
+                    >
+                      {new Date(mail.date).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </Typography>
+                  </div>
+
+                  <Typography
+                    variant="small"
+                    className={clsx(
+                      "truncate text-sm",
+                      !mail.isRead && "font-semibold text-foreground",
+                    )}
+                  >
+                    {mail.subject}
+                  </Typography>
+                  <ItemDescription className="line-clamp-1 text-xs opacity-70">
+                    {mail.snippet}
+                  </ItemDescription>
+
+                  {mail.labels.length > 0 && !compactMode && (
+                    <div className="flex gap-1 mt-2">
+                      {mail.labels.map((label) => (
+                        <MailLabelBadge key={label} label={label} />
+                      ))}
+                    </div>
+                  )}
+                </ItemContent>
+
+                <ItemActions className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete([mail.id]);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-error" />
+                  </IconButton>
+                  <IconButton variant="ghost" size="sm">
+                    <Archive className="h-4 w-4 text-graphite-foreground/50" />
+                  </IconButton>
+                </ItemActions>
+              </Item>
+            ))}
+          </ItemGroup>
+        </div>
+      </ElasticScrollArea>
     </div>
   );
 };
 
-const MailDetailView = ({ mail, onClose, onDelete }: any) => {
-  // ... (Detail view implementation remains same)
-  return <div>(Detail View)</div>;
+const MailDetailView = ({
+  mail,
+  onClose,
+  onDelete,
+}: {
+  mail: MailItem;
+  onClose: () => void;
+  onDelete: () => void;
+}) => {
+  return (
+    <div className="h-full flex flex-col bg-graphite-card">
+      <div className="flex items-center justify-between p-2 border-b border-graphite-border bg-graphite-card/95 backdrop-blur z-10 sticky top-0">
+        <div className="flex items-center gap-1">
+          <IconButton variant="ghost" onClick={onClose}>
+            <ArrowLeft className="h-5 w-5" />
+          </IconButton>
+          <IconButton variant="ghost">
+            <Archive className="h-5 w-5" />
+          </IconButton>
+          <IconButton variant="ghost" onClick={onDelete}>
+            <Trash2 className="h-5 w-5" />
+          </IconButton>
+          <IconButton variant="ghost">
+            <File className="h-5 w-5" />
+          </IconButton>
+        </div>
+        <div className="flex items-center gap-1">
+          <IconButton variant="ghost">
+            <Star
+              className={clsx(
+                "h-5 w-5",
+                mail.isStarred ? "text-yellow-500 fill-current" : "",
+              )}
+            />
+          </IconButton>
+          <IconButton variant="ghost">
+            <MoreVertical className="h-5 w-5" />
+          </IconButton>
+        </div>
+      </div>
+
+      <ElasticScrollArea className="flex-1">
+        <div className="p-6 md:p-8 max-w-3xl mx-auto">
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <Typography variant="h3" className="leading-tight">
+              {mail.subject}
+            </Typography>
+            <div className="flex gap-1 shrink-0 mt-1">
+              {mail.labels.map((label) => (
+                <MailLabelBadge key={label} label={label} />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 mb-8 pb-6 border-b border-graphite-border/50">
+            <Avatar src={mail.sender.avatar} size="lg" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline justify-between">
+                <Typography variant="large" className="font-bold truncate">
+                  {mail.sender.name}
+                </Typography>
+                <Typography variant="small" className="text-xs opacity-50">
+                  {new Date(mail.date).toLocaleString()}
+                </Typography>
+              </div>
+              <Typography variant="small" className="opacity-60 truncate">
+                {`<${mail.sender.email}>`}
+              </Typography>
+            </div>
+          </div>
+
+          <div className="prose dark:prose-invert max-w-none text-graphite-foreground/90">
+            <p className="whitespace-pre-wrap leading-relaxed">{mail.body}</p>
+          </div>
+
+          {mail.hasAttachment && (
+            <div className="mt-8 pt-4 border-t border-graphite-border/30">
+              <Typography variant="small" className="font-bold mb-3">
+                2 Attachments
+              </Typography>
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                <div className="w-32 h-24 bg-graphite-secondary rounded-lg border border-graphite-border flex items-center justify-center shrink-0">
+                  <File className="h-8 w-8 opacity-20" />
+                </div>
+                <div className="w-32 h-24 bg-graphite-secondary rounded-lg border border-graphite-border flex items-center justify-center shrink-0">
+                  <File className="h-8 w-8 opacity-20" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-12 flex gap-3">
+            <Button
+              variant="secondary"
+              shape="full"
+              startIcon={<Reply size={16} />}
+            >
+              Reply
+            </Button>
+            <Button
+              variant="secondary"
+              shape="full"
+              startIcon={<Forward size={16} />}
+            >
+              Forward
+            </Button>
+          </div>
+        </div>
+      </ElasticScrollArea>
+    </div>
+  );
 };
 
-// --- COMPOSE MODAL (UPDATED INPUT USAGE) ---
 const ComposeModal = ({
   open,
   onOpenChange,
@@ -449,17 +692,15 @@ const ComposeModal = ({
 
         <div className="flex-1 flex flex-col bg-graphite-card">
           <div className="border-b border-graphite-border/50">
-            {/* UPDATED INPUT */}
             <Input
               variant="flat"
               shape="sharp"
               placeholder="Recipients"
-              className="px-4 py-2" // applied to base
+              className="px-4 py-2"
               classNames={{ input: "text-sm" }}
             />
           </div>
           <div className="border-b border-graphite-border/50">
-            {/* UPDATED INPUT */}
             <Input
               variant="flat"
               shape="sharp"
@@ -468,13 +709,15 @@ const ComposeModal = ({
               classNames={{ input: "text-sm font-medium" }}
             />
           </div>
-          {/* UPDATED TEXTAREA */}
           <Textarea
             variant="flat"
             shape="sharp"
-            placeholder=""
-            className="flex-1 resize-none p-4 text-sm leading-relaxed"
-            classNames={{ innerWrapper: "h-full" }}
+            placeholder="Compose email..."
+            className="flex-1 resize-none p-0 text-sm leading-relaxed"
+            classNames={{
+              input: "p-4 h-full",
+              innerWrapper: "h-full",
+            }}
           />
         </div>
 
@@ -500,7 +743,7 @@ const ComposeModal = ({
             </IconButton>
           </div>
           <IconButton variant="ghost" size="sm">
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4 text-error" />
           </IconButton>
         </DialogFooter>
       </DialogContent>

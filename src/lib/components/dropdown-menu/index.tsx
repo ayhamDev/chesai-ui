@@ -44,7 +44,6 @@ const DropdownMenuRadioGroup = RadixDropdownMenu.RadioGroup;
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    // Standard MD3 Menu styling
     "border border-outline-variant bg-surface-container text-on-surface p-1.5",
     "shadow-md",
   ],
@@ -59,7 +58,7 @@ const contentVariants = cva(
     defaultVariants: {
       shape: "minimal",
     },
-  }
+  },
 );
 
 const DropdownMenuContent = React.forwardRef<
@@ -80,7 +79,7 @@ const DropdownMenuContent = React.forwardRef<
           "data-[side=bottom]:origin-top",
           "data-[side=left]:origin-right",
           "data-[side=right]:origin-left",
-          className
+          className,
         )}
         {...props}
       />
@@ -89,7 +88,6 @@ const DropdownMenuContent = React.forwardRef<
 });
 DropdownMenuContent.displayName = RadixDropdownMenu.Content.displayName;
 
-// Bloom uses secondary container for active state
 const itemStyles =
   "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden z-0 " +
   "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)] " +
@@ -109,10 +107,9 @@ const DropdownMenuItem = React.forwardRef<
   const { shape } = useDropdownMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
-    ref: localRef,
+    ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
     duration: 400,
-    // Fix: Removed opacity
   });
   React.useImperativeHandle(ref, () => localRef.current!);
 
@@ -125,7 +122,7 @@ const DropdownMenuItem = React.forwardRef<
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         shape === "sharp" && "!rounded-none",
-        className
+        className,
       )}
       {...props}
     />
@@ -140,9 +137,8 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   const { shape } = useDropdownMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
-    ref: localRef,
+    ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    // Fix: Removed opacity
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -155,7 +151,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
         itemStyles,
         "pl-8 pr-3",
         shape === "sharp" && "!rounded-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -178,9 +174,8 @@ const DropdownMenuRadioItem = React.forwardRef<
   const { shape } = useDropdownMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
-    ref: localRef,
+    ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    // Fix: Removed opacity
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -193,7 +188,7 @@ const DropdownMenuRadioItem = React.forwardRef<
         itemStyles,
         "pl-8 pr-3",
         shape === "sharp" && "!rounded-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -217,9 +212,8 @@ const DropdownMenuSubTrigger = React.forwardRef<
   const { shape } = useDropdownMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
-    ref: localRef,
+    ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    // Fix: Removed opacity
     duration: 400,
   });
   React.useImperativeHandle(ref, () => localRef.current!);
@@ -234,7 +228,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         shape === "sharp" && "!rounded-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -265,7 +259,7 @@ const DropdownMenuSubContent = React.forwardRef<
         "data-[state=closed]:data-[side=top]:animate-menu-exit",
         "data-[state=open]:data-[side=bottom]:animate-menu-enter",
         "data-[state=closed]:data-[side=bottom]:animate-menu-exit",
-        className
+        className,
       )}
       {...props}
     />
@@ -284,7 +278,7 @@ const DropdownMenuLabel = React.forwardRef<
     className={clsx(
       "px-3 py-2 text-xs font-medium text-on-surface-variant tracking-wide",
       inset && "pl-8",
-      className
+      className,
     )}
     {...props}
   />
@@ -311,7 +305,7 @@ const DropdownMenuShortcut = ({
     <span
       className={clsx(
         "ml-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
-        className
+        className,
       )}
       {...props}
     />

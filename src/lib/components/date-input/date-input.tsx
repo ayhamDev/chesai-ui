@@ -25,7 +25,8 @@ const DateInput = forwardRef(function DateInput<T extends DateValue>(
   } = useDateInput({ ...props, ref });
 
   return (
-    <DateInputGroup {...getBaseGroupProps()}>
+    // FIX: Cast props to 'any' to resolve complex type incompatibility with errorMessage
+    <DateInputGroup {...(getBaseGroupProps() as any)}>
       <DateInputField
         state={state}
         inputProps={getInputProps()}

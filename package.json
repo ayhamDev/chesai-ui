@@ -28,10 +28,11 @@
     "lint": "npx @biomejs/biome lint --write ./src",
     "format": "npx @biomejs/biome check --write --organize-imports-enabled=true ./src",
     "test": "vitest",
-    "test:cov": "vitest run --coverage",
-    "prepack": "json -f package.json -I -e \"delete this.devDependencies; delete this.dependencies\""
+    "test:cov": "vitest run --coverage"
   },
   "dependencies": {
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/core": "^8.0.1",
     "@floating-ui/react": "^0.27.16",
     "@internationalized/date": "^3.10.1",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -92,6 +93,7 @@
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-router": "^1.154.14",
     "@testing-library/react": "16.3.0",
+    "@types/flubber": "^0.4.0",
     "@types/geojson": "^7946.0.16",
     "@types/maplibre-gl": "^1.14.0",
     "@types/node": "^25.0.10",

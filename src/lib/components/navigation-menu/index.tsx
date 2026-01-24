@@ -13,7 +13,7 @@ export const navigationMenuTriggerStyle = cva(
   // Added z-0 and bloom effect
   "group inline-flex h-10 w-max items-center justify-center rounded-lg bg-transparent px-4 py-2 text-sm font-semibold transition-colors focus:bg-graphite-secondary focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-graphite-secondary/50 data-[state=open]:bg-graphite-secondary/50 relative z-0 overflow-hidden " +
     "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
-    "hover:after:opacity-100 hover:after:scale-100"
+    "hover:after:opacity-100 hover:after:scale-100",
 );
 
 // --- NEW: CVA for ContentItem ---
@@ -35,7 +35,7 @@ const NavigationMenuRoot = React.forwardRef<
     ref={ref}
     className={clsx(
       "relative z-10 flex max-w-max flex-1 items-center justify-center",
-      className
+      className,
     )}
     {...props}
   >
@@ -53,7 +53,7 @@ const NavigationMenuList = React.forwardRef<
     ref={ref}
     className={clsx(
       "group flex flex-1 list-none items-center justify-center space-x-1",
-      className
+      className,
     )}
     {...props}
   />
@@ -92,7 +92,7 @@ const NavigationMenuContent = React.forwardRef<
     ref={ref}
     className={clsx(
       "left-0 top-0 w-full data-[motion^=from-]:animate-nav-enter-from data-[motion^=to-]:animate-nav-exit-to data-[motion=from-end]:animate-nav-enter-from-right data-[motion=from-start]:animate-nav-enter-from-left data-[motion=to-end]:animate-nav-exit-to-right data-[motion=to-start]:animate-nav-exit-to-left md:absolute md:w-auto",
-      className
+      className,
     )}
     {...props}
   />
@@ -120,7 +120,7 @@ const NavigationMenuContentList = React.forwardRef<
         "grid gap-3 p-4",
         "w-[400px]",
         gridClasses[grid],
-        className
+        className,
       )}
       {...props}
     />
@@ -129,11 +129,10 @@ const NavigationMenuContentList = React.forwardRef<
 NavigationMenuContentList.displayName = "NavigationMenu.ContentList";
 
 // --- ContentItem Component ---
-interface ContentItemProps
-  extends Omit<
-    React.ComponentPropsWithoutRef<typeof NavigationMenuLink>,
-    "title"
-  > {
+interface ContentItemProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof NavigationMenuLink>,
+  "title"
+> {
   title: React.ReactNode;
   startIcon?: React.ReactNode;
   endAdornment?: React.ReactNode;
@@ -153,11 +152,12 @@ const NavigationMenuContentItem = React.forwardRef<
       onPointerDown,
       ...props
     },
-    ref
+    ref,
   ) => {
     const localRef = useRef<HTMLAnchorElement>(null);
     useImperativeHandle(ref, () => localRef.current as HTMLAnchorElement);
     const [, event] = useRipple({
+      // @ts-ignore
       ref: localRef,
       color: "var(--color-ripple-light)",
       duration: 400,
@@ -203,7 +203,7 @@ const NavigationMenuContentItem = React.forwardRef<
         </NavigationMenuLink>
       </li>
     );
-  }
+  },
 );
 NavigationMenuContentItem.displayName = "NavigationMenu.ContentItem";
 
@@ -216,7 +216,7 @@ const NavigationMenuViewport = React.forwardRef<
     <RadixNavigationMenu.Viewport
       className={clsx(
         "origin-top-center relative mt-2 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-lg data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out md:w-[var(--radix-navigation-menu-viewport-width)]",
-        className
+        className,
       )}
       ref={ref}
       {...props}
@@ -233,7 +233,7 @@ const NavigationMenuIndicator = React.forwardRef<
     ref={ref}
     className={clsx(
       "top-full z-[1] flex h-2.5 items-end justify-center overflow-hidden data-[state=visible]:animate-nav-fade-in data-[state=hidden]:animate-nav-fade-out",
-      className
+      className,
     )}
     {...props}
   >

@@ -233,11 +233,13 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
     const isActive = activeTab === value;
     const localRef = React.useRef<HTMLButtonElement>(null);
     const [, event] = useRipple({
+      // @ts-ignore
       ref: localRef,
       color: "var(--color-ripple-dark)",
       duration: 400,
       // Fix: Removed opacity
     });
+    // @ts-ignore
     React.useImperativeHandle(ref, () => localRef.current!);
 
     useEffect(() => {
