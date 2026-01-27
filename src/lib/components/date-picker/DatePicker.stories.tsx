@@ -82,22 +82,30 @@ export const Modal: Story = {
   },
 };
 
-export const Fullscreen: Story = {
-  name: "3. Fullscreen (Mobile)",
+// ... imports
+
+export const FullscreenInfinite: Story = {
+  name: "3. Fullscreen (Infinite Scroll)",
   args: {
     variant: "fullscreen",
-    label: "Travel Date",
+    label: "Depart - Return dates",
+    placeholder: "Select dates",
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
+    docs: {
+      description: {
+        story:
+          "The `fullscreen` variant now switches to an **Infinite Scroll Calendar** automatically, mimicking the native Android/Material You behavior.",
+      },
+    },
   },
   render: (args) => {
-    const [date, setDate] = useState<Date | undefined>(undefined);
+    const [date, setDate] = useState<Date | undefined>(new Date());
     return (
-      <div className="flex items-center justify-center h-screen w-full bg-graphite-background p-4">
-        <div className="w-full max-w-sm">
-          <DatePicker {...args} value={date} onChange={setDate} />
-        </div>
+      <div className="w-72">
+        {/* Using a dark background wrapper to simulate mobile dark mode context */}
+        <DatePicker {...args} value={date} onChange={setDate} />
       </div>
     );
   },

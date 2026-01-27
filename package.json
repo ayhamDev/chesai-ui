@@ -25,16 +25,22 @@
     "dev": "bunx storybook dev -p 8000",
     "build": "storybook build",
     "build:lib": "tsc && vite build",
+        "build:docs": "bun run ./scripts/generate-llm.ts",
     "lint": "npx @biomejs/biome lint --write ./src",
     "format": "npx @biomejs/biome check --write --organize-imports-enabled=true ./src",
     "test": "vitest",
-    "test:cov": "vitest run --coverage"
+    "test:cov": "vitest run --coverage",
+    "gen:context": "bun run ./scripts/context.ts",
+    "git:diff-merge": "git diff --unified=2000 $(git merge-base main HEAD)...HEAD",
+    "git:diff": "git diff --unified=2000 > git-changes.txt"
+
   },
   "dependencies": {
     "@capacitor/app": "^8.0.0",
     "@capacitor/core": "^8.0.1",
     "@floating-ui/react": "^0.27.16",
     "@internationalized/date": "^3.10.1",
+    "@mapbox/mapbox-gl-draw": "^1.5.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -95,6 +101,7 @@
     "@testing-library/react": "16.3.0",
     "@types/flubber": "^0.4.0",
     "@types/geojson": "^7946.0.16",
+    "@types/mapbox__mapbox-gl-draw": "^1.4.9",
     "@types/maplibre-gl": "^1.14.0",
     "@types/node": "^25.0.10",
     "@types/react": "^19.2.9",

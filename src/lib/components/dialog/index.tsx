@@ -33,6 +33,13 @@ import {
 import { DURATION, EASING } from "../stack-router/transitions";
 import { Typography } from "../typography";
 
+// --- HELPERS ---
+const smShapeStyles = {
+  full: "sm:rounded-[28px]",
+  minimal: "sm:rounded-xl",
+  sharp: "sm:rounded-none",
+};
+
 // --- CONTEXT and PORTAL ---
 type DialogVariant = "basic" | "fullscreen";
 type DialogAnimationType = "default" | "material3";
@@ -296,7 +303,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
     if (isMD3 && !isFullscreen) backdropClass = "bg-black/30";
 
     const handleDragEnd = (event: any, info: PanInfo) => {
-      // FIX: Use 'any' for event
+      // Logic to determine if drag was sufficient to close
       if (info.offset.y > 150 || info.velocity.y > 400) {
         onOpenChange(false);
       }
@@ -343,9 +350,10 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   initial="hidden"
                   animate="visible"
                   exit="exit"
+                  // Bind drag properties
                   drag={isFullscreen ? "y" : false}
                   dragControls={dragControls}
-                  dragListener={false}
+                  dragListener={false} // We manually start drag via onPointerDown
                   dragConstraints={{ top: 0, bottom: 0 }}
                   dragElastic={{ top: 0, bottom: 1 }}
                   onDragEnd={handleDragEnd}
@@ -355,7 +363,8 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                       ? [
                           "w-full bg-surface-container-high shadow-2xl",
                           "h-full sm:max-h-[90vh] sm:w-full sm:max-w-2xl",
-                          "sm:rounded-3xl",
+                          "rounded-none",
+                          smShapeStyles[shape],
                           "overflow-hidden",
                         ]
                       : "w-full max-w-lg",
@@ -364,6 +373,9 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   style={{
                     willChange: "transform, opacity, height, width",
                     backfaceVisibility: "hidden",
+                    // FIX: Prevents browser scrolling behavior on the Dialog container itself.
+                    // This allows the 'drag' gesture to be captured by Framer Motion on touch devices.
+                    touchAction: isFullscreen ? "none" : "auto",
                   }}
                 >
                   {isFullscreen && (
@@ -394,15 +406,28 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                         }
 
                         // 2. Only allow drag start from the top header area (approx 72px)
+                        // This calculation is crucial for "Sheet" behavior.
                         const rect = e.currentTarget.getBoundingClientRect();
                         const y = e.clientY - rect.top;
+
                         if (y > 72) return;
 
                         // 3. Start Drag
                         dragControls.start(e);
                       }}
                     >
-                      {children}
+                      {/* 
+                         We wrap children in a flex container that restores touch-action to "pan-y".
+                         This ensures that if the content inside is scrollable (like DialogBody),
+                         it works naturally, while the parent container prevents scrolling 
+                         to allow the Header Drag to work.
+                      */}
+                      <div
+                        className="flex h-full w-full flex-col"
+                        style={{ touchAction: "pan-y" }}
+                      >
+                        {children}
+                      </div>
                     </motion.div>
                   ) : (
                     <Card
@@ -460,6 +485,8 @@ const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
           "relative",
           "bg-surface-container-high",
           "border-b border-outline-variant",
+          // Header should not trigger scroll, aiding the drag
+          "touch-none select-none",
         ],
         props.className,
       )}
@@ -545,6 +572,9 @@ const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
           className={clsx(
             "flex-1 pt-0!",
             "px-6 py-4 transition-all sm:px-8 sm:py-6",
+            // Explicitly allow pan-y here to ensure scrolling works
+            // even though parent has touch-action: none
+            "touch-pan-y",
             className,
           )}
           elasticity={elasticity}

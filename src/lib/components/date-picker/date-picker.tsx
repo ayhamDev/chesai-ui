@@ -14,6 +14,7 @@ import { IconButton } from "../icon-button";
 import { inputWrapperVariants } from "../input";
 import { Typography } from "../typography";
 import { Calendar } from "./calendar";
+import { InfiniteCalendar } from "./infinite-calendar";
 
 // --- TYPES ---
 type DatePickerVariant = "docked" | "modal" | "fullscreen";
@@ -60,7 +61,7 @@ const DatePickerHeader = ({
     <div
       className={clsx(
         "flex flex-col gap-1 shrink-0 px-6 pb-4 transition-colors",
-        isFullscreen ? "border-b border-outline-variant/20 pt-2" : "pt-4",
+        isFullscreen ? "pt-2" : "pt-4",
       )}
     >
       <div className="mb-2 flex items-center justify-between">
@@ -111,12 +112,14 @@ const DatePickerBody = ({
   setTempDate,
   itemShape,
   shape = "minimal",
+  isFullscreen = false,
 }: {
   viewMode: "calendar" | "input";
   tempDate?: Date;
   setTempDate: (d: Date) => void;
   itemShape?: Shape;
   shape?: Shape;
+  isFullscreen?: boolean;
 }) => {
   const ariaDate = React.useMemo(() => {
     if (!tempDate || !isValid(tempDate)) return undefined;
@@ -158,17 +161,30 @@ const DatePickerBody = ({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="flex w-full justify-center px-2"
+          className={clsx(
+            "flex w-full justify-center",
+            isFullscreen ? "h-full" : "px-2",
+          )}
         >
-          <Calendar
-            mode="single"
-            value={tempDate}
-            onSelect={setTempDate}
-            itemShape={itemShape}
-            shape={shape}
-            variant="embedded"
-            className="w-full"
-          />
+          {isFullscreen ? (
+            // Fullscreen uses Infinite Vertical Scroll
+            <InfiniteCalendar
+              value={tempDate}
+              onSelect={setTempDate}
+              mode="single"
+            />
+          ) : (
+            // Modal/Docked uses Standard Horizontal Slide
+            <Calendar
+              mode="single"
+              value={tempDate}
+              onSelect={setTempDate}
+              itemShape={itemShape}
+              shape={shape}
+              variant="embedded"
+              className="w-full"
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>
@@ -291,20 +307,26 @@ export const DatePicker = ({
       >
         <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
         <DialogContent
+          variant="primary"
           // Enable Layout Animation ("size") to animate height/width changes automatically
           layout={!isFullscreen ? "size" : undefined}
           // Pass shape directly to DialogContent to affect the Card background
           shape={shape}
           className={clsx(
-            "gap-0 overflow-hidden bg-surface-container-high p-0 transition-[width,height]",
+            "gap-0 overflow-hidden p-0 transition-[width,height]",
             !isFullscreen
               ? [
                   "min-w-[320px] max-w-[420px]! shadow-2xl",
                   shapeStyles[shape], // Apply border-radius to the wrapper
                 ]
-              : [shapeStyles[shape], "max-w-[500px]!"],
+              : [
+                  // CHANGE: Removed `shapeStyles[shape]` here.
+                  // We let the DialogContent component handle the responsive shape
+                  // (Sharp on mobile/full-width, Rounded on desktop).
+                  "max-w-[500px]!",
+                ],
           )}
-          padding="none"
+          padding="sm"
         >
           {/* Header Area */}
           <DatePickerHeader
@@ -318,32 +340,23 @@ export const DatePicker = ({
           />
 
           {/* Calendar/Input Area */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden flex flex-col">
             <DatePickerBody
               viewMode={viewMode}
               tempDate={tempDate}
               setTempDate={(d) => setTempDate(d)}
               itemShape={itemShape}
               shape={shape}
+              isFullscreen={isFullscreen}
             />
           </div>
 
           {/* Action Buttons Area */}
-          <DialogFooter className="flex justify-end gap-2 border-t border-transparent p-3 pr-4">
-            <Button
-              variant="ghost"
-              onClick={handleCancel}
-              shape={shape}
-              className="text-primary font-medium hover:bg-primary/10"
-            >
+          <DialogFooter className="flex justify-end gap-2 border-t border-transparent p-3 pr-4 shrink-0  z-30">
+            <Button variant="ghost" onClick={handleCancel} shape={shape}>
               Cancel
             </Button>
-            <Button
-              variant="ghost"
-              onClick={handleConfirm}
-              shape={shape}
-              className="text-primary font-medium hover:bg-primary/10"
-            >
+            <Button variant="ghost" onClick={handleConfirm} shape={shape}>
               OK
             </Button>
           </DialogFooter>

@@ -26,7 +26,7 @@ const meta: Meta<typeof Sheet> = {
     },
     side: {
       control: "select",
-      options: ["left", "right"],
+      options: ["left", "right", "top", "bottom"],
       description:
         "Determines which side the sheet appears from on desktop viewports.",
     },
@@ -341,7 +341,7 @@ export const ControlledSnapping: Story = {
             <div
               className={clsx(
                 activeSnapPoint === 1 ? "overflow-auto" : "overflow-hidden",
-                "p-4"
+                "p-4",
               )}
             >
               <Typography>
@@ -437,7 +437,7 @@ export const AlwaysActive: Story = {
             <div
               className={clsx(
                 activeSnapPoint === 1 ? "overflow-auto" : "overflow-hidden",
-                "p-4"
+                "p-4",
               )}
             >
               <Typography>

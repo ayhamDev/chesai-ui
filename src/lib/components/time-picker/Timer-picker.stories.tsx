@@ -18,7 +18,7 @@ const meta: Meta<typeof TimePicker> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["docked", "modal", "fullscreen"],
+      options: ["docked", "modal"],
       description:
         "Overrides the default responsive behavior to force a specific variant.",
     },
@@ -66,27 +66,8 @@ export const Modal: Story = {
   },
 };
 
-export const Fullscreen: Story = {
-  name: "3. Fullscreen (Mobile Default)",
-  args: {
-    variant: "fullscreen",
-    label: "Alarm Time",
-  },
-  parameters: {
-    viewport: { defaultViewport: "mobile1" },
-  },
-  render: function Render(args) {
-    const [time, setTime] = useState<Date | undefined>(new Date());
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-graphite-background p-4">
-        <TimePicker {...args} value={time} onChange={(val) => setTime(val)} />
-      </div>
-    );
-  },
-};
-
 export const AllSizesAndShapes: Story = {
-  name: "4. Trigger Sizes & Shapes",
+  name: "3. Trigger Sizes & Shapes",
   render: () => (
     <div className="flex max-w-sm flex-col gap-8">
       <div>
@@ -118,7 +99,7 @@ export const AllSizesAndShapes: Story = {
 };
 
 export const Disabled: Story = {
-  name: "5. Disabled State",
+  name: "4. Disabled State",
   args: {
     label: "Start Time",
     disabled: true,

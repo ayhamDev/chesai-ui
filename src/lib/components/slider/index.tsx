@@ -403,3 +403,4 @@ export const Slider = React.forwardRef<
 );
 
 Slider.displayName = "Slider";
+export * from "./bar-line-slider";
