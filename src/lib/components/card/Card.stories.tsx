@@ -14,7 +14,7 @@ const meta: Meta<typeof Card> = {
         "primary",
         "secondary",
         "tertiary",
-        "glass",
+        "high-contrast",
         "ghost",
         "surface",
       ],
@@ -147,39 +147,6 @@ export const ElevationLevels: Story = {
   ),
 };
 
-export const GlassVariant: Story = {
-  name: "Glass Variant",
-  args: {
-    variant: "glass",
-    shape: "minimal",
-    enableRipple: true, // Ripple works great on glass too
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The `glass` variant creates a 'glassmorphism' effect. We've enabled ripple here to show it uses a lighter ripple color for better contrast on dark backgrounds.",
-      },
-    },
-  },
-  render: (args) => (
-    <div
-      className="w-full max-w-2xl h-96 flex items-center justify-center rounded-2xl overflow-hidden bg-cover bg-center"
-      style={{
-        backgroundImage:
-          "url(https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=1470&auto=format&fit=crop)",
-      }}
-    >
-      <Card {...args} className="max-w-md cursor-pointer">
-        <Typography variant="h3">Glass Card</Typography>
-        <Typography variant="p" className="text-white/80!">
-          Click to see the light ripple effect against the blurred backdrop.
-        </Typography>
-      </Card>
-    </div>
-  ),
-};
-
 export const Composition: Story = {
   name: "Composition Example",
   render: () => (
@@ -253,6 +220,51 @@ export const BorderedVsElevated: Story = {
         <Typography variant="h4">Both</Typography>
         <Typography variant="muted">Subtle stroke + Shadow</Typography>
       </Card>
+    </div>
+  ),
+};
+// ... existing imports
+export const HighContrast: Story = {
+  name: "High Contrast (Inverse)",
+  args: {
+    variant: "high-contrast",
+    shape: "minimal",
+    padding: "md",
+    enableRipple: true,
+  },
+  render: (args) => (
+    <div className="flex flex-col gap-6">
+      <Card {...args} className="max-w-md">
+        <Typography variant="h4" className="text-inherit!">
+          High Contrast Card
+        </Typography>
+        <Typography variant="p" className="text-inherit! opacity-80">
+          In Light Mode, I am dark. In Dark Mode, I am light/white. I use the
+          MD3 Inverse Surface tokens.
+        </Typography>
+      </Card>
+
+      <div className="flex gap-4">
+        <Card
+          {...args}
+          shape="full"
+          padding="sm"
+          className="w-32 h-32 flex items-center justify-center text-center"
+        >
+          <Typography variant="label-small" className="text-inherit!">
+            Inverse Full
+          </Typography>
+        </Card>
+        <Card
+          variant="primary"
+          bordered
+          shape="full"
+          padding="sm"
+          className="w-32 h-32 flex items-center justify-center text-center"
+        >
+          <Typography variant="label-small">Standard Outlined</Typography>
+        </Card>
+      </div>
     </div>
   ),
 };

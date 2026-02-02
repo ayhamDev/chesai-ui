@@ -448,7 +448,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
           <Dialog
             open={isOpen}
             onOpenChange={setIsOpen}
-            variant={variant === "fullscreen" ? "fullscreen" : "basic"}
+            variant={"basic"}
             animation="material3"
           >
             <DialogTrigger asChild>{TriggerButton}</DialogTrigger>

@@ -3,6 +3,7 @@ import { Compass, Home, Library, Radio } from "lucide-react";
 import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { BottomTabs } from "./index";
+
 const meta: Meta<typeof BottomTabs.Navigator> = {
   title: "Components/Navigators/BottomTabs",
   component: BottomTabs.Navigator,
@@ -13,7 +14,7 @@ const meta: Meta<typeof BottomTabs.Navigator> = {
     docs: {
       description: {
         component:
-          "A responsive and animated bottom navigation component, inspired by native mobile tab bars. It integrates with any routing library by exposing `activeTab` and `onTabPress` props.",
+          "A responsive and animated bottom navigation component. It integrates with any routing library by exposing `activeTab` and `onTabPress` props.",
       },
     },
   },
@@ -26,7 +27,8 @@ const meta: Meta<typeof BottomTabs.Navigator> = {
     itemLayout: {
       control: "select",
       options: ["stacked", "inline"],
-      description: "Controls the layout animation of the active tab item.",
+      description:
+        "Stacked: Labels always visible. Inline: Labels show only when active (Shift pattern).",
     },
     shape: {
       control: "select",
@@ -45,6 +47,11 @@ const meta: Meta<typeof BottomTabs.Navigator> = {
       description: "Toggles the top border for the `attached` mode.",
       if: { arg: "mode", eq: "attached" },
     },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+      description: "Sets the height of the container.",
+    },
     activeTab: { control: false },
     onTabPress: { action: "tabPressed" },
   },
@@ -53,10 +60,8 @@ const meta: Meta<typeof BottomTabs.Navigator> = {
 export default meta;
 type Story = StoryObj<typeof BottomTabs.Navigator>;
 
-// Helper component to render stories with routing context
 const RenderWithRouter = (args: any) => {
   const { path: activeTab, push: onTabPress } = useRouter();
-
   const iconSize = 24;
   const initialTab = "home";
 
@@ -92,8 +97,8 @@ const RenderWithRouter = (args: any) => {
   );
 };
 
-export const AttachedDefault: Story = {
-  name: "1. Attached (Default)",
+export const StackedDefault: Story = {
+  name: "1. Stacked (Labels Always)",
   args: {
     mode: "attached",
     itemLayout: "stacked",
@@ -107,8 +112,8 @@ export const AttachedDefault: Story = {
   ),
 };
 
-export const AttachedWithInlineAnimation: Story = {
-  name: "2. Attached (Inline Item Layout)",
+export const InlineShift: Story = {
+  name: "2. Inline (Label only when active)",
   args: {
     mode: "attached",
     itemLayout: "inline",
@@ -119,7 +124,7 @@ export const AttachedWithInlineAnimation: Story = {
     docs: {
       description: {
         story:
-          "When `itemLayout` is `inline`, the active tab's label animates horizontally, creating a common native mobile pattern.",
+          "When `itemLayout` is `inline`, it uses a 'Shift' pattern: labels are hidden for inactive tabs and slide up into view only when the tab is active.",
       },
     },
   },
@@ -150,88 +155,16 @@ export const AttachedWithShapes: Story = {
           <RenderWithRouter {...args} mode="attached" shape="minimal" />
         </ShallowRouter>
       </div>
-      <div>
-        <Typography variant="small" className="font-bold mb-2 text-center">
-          Sharp Shape
-        </Typography>
-        <ShallowRouter paramName="tab3">
-          <RenderWithRouter {...args} mode="attached" shape="sharp" />
-        </ShallowRouter>
-      </div>
     </div>
-  ),
-};
-
-// Helper for the new story
-const RenderWithRouterForMixedShapes = (args: any) => {
-  const { path: activeTab, push: onTabPress } = useRouter();
-  const iconSize = 24;
-  const initialTab = "home";
-
-  return (
-    <div className="w-96">
-      <BottomTabs.Navigator
-        {...args}
-        activeTab={activeTab === "/" ? initialTab : activeTab.substring(1)}
-        onTabPress={(tab) => onTabPress(`/${tab}`)}
-      >
-        <BottomTabs.Screen
-          name="home"
-          label="Home"
-          icon={() => <Home size={iconSize} />}
-          shape="full" // Override: This item will be a circle
-        />
-        <BottomTabs.Screen
-          name="browse"
-          label="Browse"
-          icon={() => <Compass size={iconSize} />}
-          // No shape prop: This item will inherit "minimal" from the navigator
-        />
-        <BottomTabs.Screen
-          name="radio"
-          label="Radio"
-          icon={() => <Radio size={iconSize} />}
-          shape="sharp" // Override: This item will be a square
-        />
-        <BottomTabs.Screen
-          name="library"
-          label="Library"
-          icon={() => <Library size={iconSize} />}
-          shape="full" // Override: This item will be a circle
-        />
-      </BottomTabs.Navigator>
-    </div>
-  );
-};
-
-export const MixedItemShapes: Story = {
-  name: "4. Mixed Item Shapes",
-  args: {
-    mode: "attached",
-    shape: "minimal", // The bar itself is minimal
-    bordered: true,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "You can override the shape for individual tab items by setting the `shape` prop on the `<BottomTabs.Screen>` component. If an item doesn't have a shape, it inherits from the parent `<BottomTabs.Navigator>`.",
-      },
-    },
-  },
-  render: (args) => (
-    <ShallowRouter paramName="tab4">
-      <RenderWithRouterForMixedShapes {...args} />
-    </ShallowRouter>
   ),
 };
 
 export const Detached: Story = {
-  name: "5. Detached (Floating)",
+  name: "4. Detached (Floating)",
   args: {
     mode: "detached",
     shape: "full",
-    itemLayout: "stacked",
+    itemLayout: "inline",
     shadow: "lg",
   },
   render: (args) => (
@@ -241,45 +174,13 @@ export const Detached: Story = {
   ),
 };
 
-export const DetachedWithShadows: Story = {
-  name: "6. Detached (Shadow Variants)",
-  render: (args) => (
-    <div className="flex flex-col gap-12">
-      <div>
-        <Typography variant="small" className="font-bold mb-2 text-center">
-          Small Shadow (sm)
-        </Typography>
-        <ShallowRouter paramName="tab1">
-          <RenderWithRouter {...args} mode="detached" shadow="sm" />
-        </ShallowRouter>
-      </div>
-      <div>
-        <Typography variant="small" className="font-bold mb-2 text-center">
-          Medium Shadow (md)
-        </Typography>
-        <ShallowRouter paramName="tab2">
-          <RenderWithRouter {...args} mode="detached" shadow="md" />
-        </ShallowRouter>
-      </div>
-      <div>
-        <Typography variant="small" className="font-bold mb-2 text-center">
-          Large Shadow (lg)
-        </Typography>
-        <ShallowRouter paramName="tab3">
-          <RenderWithRouter {...args} mode="detached" shadow="lg" />
-        </ShallowRouter>
-      </div>
-    </div>
-  ),
-};
-
 export const NoLabels: Story = {
-  name: "7. No Labels",
+  name: "5. No Labels",
   args: {
     mode: "detached",
     showLabels: false,
     shape: "full",
-    shadow: "sm"
+    shadow: "sm",
   },
   render: (args) => (
     <ShallowRouter paramName="tab_no_labels">

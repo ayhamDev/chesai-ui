@@ -136,7 +136,7 @@ export const getMultiSelectSlotClassNames = (
       labelClasses += ' absolute top-1/2 -translate-y-1/2 font-normal'
 
       const filledLabelState = [
-        'group-data-[filled=true]:top-3 group-data-[filled=true]:-translate-y-0',
+        'group-data-[filled=true]:top-1.5 group-data-[filled=true]:-translate-y-0',
         'group-data-[filled=true]:scale-85',
         'group-data-[filled=true]:opacity-70',
       ].join(' ')

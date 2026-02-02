@@ -14,6 +14,7 @@ import React, {
   useState,
 } from "react";
 import useRipple from "use-ripple-hook";
+import { useLayout } from "../../context/layout-context";
 import { Divider } from "../divider";
 import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
@@ -33,8 +34,9 @@ interface NavigationRailContextProps {
   isExpanded: boolean;
   navigatorShape: "full" | "minimal" | "sharp";
   indicatorId: string;
-  variant: "primary" | "secondary" | "ghost" | "surface";
-  itemVariant: "primary" | "secondary" | "ghost"; // Controls item look
+  variant: "primary" | "secondary" | "tertiary" | "ghost" | "surface";
+  itemVariant: "primary" | "secondary" | "tertiary" | "ghost"; // Controls item look
+  isRtl: boolean; // Add isRtl to internal context
 }
 
 const NavigationRailContext = createContext<NavigationRailContextProps | null>(
@@ -59,6 +61,7 @@ const navigatorVariants = cva(
       variant: {
         primary: "bg-surface-container-low",
         secondary: "bg-surface-container-high",
+        tertiary: "bg-tertiary-container text-on-tertiary-container",
         surface: "bg-surface",
         ghost: "bg-transparent",
       },
@@ -67,15 +70,21 @@ const navigatorVariants = cva(
         overlay: "absolute",
       },
       shape: {
-        full: "rounded-r-3xl",
-        minimal: "rounded-r-xl",
+        // Changed to logical properties (rounded-e-* handles right in LTR, left in RTL)
+        full: "rounded-e-3xl",
+        minimal: "rounded-e-xl",
         sharp: "rounded-none",
       },
       bordered: {
-        true: "border-r border-outline-variant",
+        // Changed to logical property (border-e handles right in LTR, left in RTL)
+        true: "border-e border-outline-variant",
         false: "",
       },
     },
+    compoundVariants: [
+      // Tertiary shouldn't have a border usually as it's colored
+      { variant: "tertiary", bordered: true, className: "border-transparent!" },
+    ],
     defaultVariants: {
       variant: "primary",
       behavior: "push",
@@ -105,7 +114,7 @@ const NavigationRailFAB = React.forwardRef<
   NavigationRailFABProps
 >(({ icon, label, className, variant: propVariant, ...props }, ref) => {
   // Use context itemVariant to influence default if prop not provided
-  const { isExpanded, itemVariant } = useNavigationRail();
+  const { isExpanded, itemVariant, isRtl } = useNavigationRail();
   const variant =
     propVariant || (itemVariant === "ghost" ? "secondary" : "primary");
 
@@ -129,10 +138,13 @@ const NavigationRailFAB = React.forwardRef<
     secondary:
       "bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80 shadow-sm hover:shadow-md",
     tertiary:
-      "bg-surface-container-high border border-outline-variant text-on-surface hover:bg-surface-container-highest shadow-sm hover:shadow-md",
+      "bg-tertiary-container text-on-tertiary-container hover:bg-tertiary-container/80 shadow-sm hover:shadow-md",
     ghost:
       "bg-transparent text-on-surface hover:bg-surface-container-highest/50 shadow-none",
   };
+
+  // Determine slide direction based on RTL
+  const slideX = isRtl ? 5 : -5;
 
   return (
     <div className="w-full px-4 mb-6 mt-2 flex justify-start">
@@ -175,11 +187,12 @@ const NavigationRailFAB = React.forwardRef<
           <AnimatePresence mode="popLayout" initial={false}>
             {isExpanded && label && (
               <motion.span
-                initial={{ opacity: 0, x: -5 }}
+                initial={{ opacity: 0, x: slideX }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -5 }}
+                exit={{ opacity: 0, x: slideX }}
                 transition={{ duration: 0.15, delay: 0.05 }}
-                className="pr-6 font-semibold text-base text-inherit whitespace-nowrap"
+                // Changed pr-6 to pe-6 (padding-end) for RTL support
+                className="pe-6 font-semibold text-base text-inherit whitespace-nowrap"
               >
                 {label}
               </motion.span>
@@ -214,15 +227,17 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 
   const localRef = useRef<HTMLButtonElement>(null);
 
-  // Dynamic Ripple based on itemVariant
-  const rippleColor =
-    itemVariant === "primary" && isActive
-      ? "var(--color-ripple-light)"
-      : "var(--color-ripple-dark)";
+  // Dynamic Ripple based on itemVariant and active state
+  // Solid active states (primary/tertiary) usually need lighter ripple on dark text,
+  // or darker ripple on light text. Standard MD3 -> Primary/Tertiary are filled.
+  const isSolidFilled =
+    isActive && (itemVariant === "primary" || itemVariant === "tertiary");
+  const rippleColor = isSolidFilled
+    ? "var(--color-ripple-light)"
+    : "var(--color-ripple-dark)";
 
   const [, event] = useRipple({
     // @ts-ignore
-
     ref: localRef,
     color: rippleColor,
     duration: 400,
@@ -235,6 +250,9 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   if (itemVariant === "primary") {
     activeBg = "bg-primary";
     activeText = "text-on-primary";
+  } else if (itemVariant === "tertiary") {
+    activeBg = "bg-tertiary-container";
+    activeText = "text-on-tertiary-container";
   } else if (itemVariant === "ghost") {
     activeBg = "bg-transparent";
     activeText = "text-primary font-bold";
@@ -266,6 +284,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
           "flex-row gap-4 px-4 py-2",
           isActive ? `${activeText} font-semibold` : "text-on-surface-variant",
           shapeToClassName[finalShape],
+          // Hover effect for non-active items
           !isActive && [
             `after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out`,
             "hover:after:opacity-100 hover:after:scale-100",
@@ -319,8 +338,8 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
   activeTab: string;
   onTabPress: (name: string) => void;
-  variant?: "primary" | "secondary" | "ghost" | "surface"; // Background color
-  itemVariant?: "primary" | "secondary" | "ghost"; // Item style
+  variant?: "primary" | "secondary" | "tertiary" | "ghost" | "surface"; // Background color
+  itemVariant?: "primary" | "secondary" | "tertiary" | "ghost"; // Item style
   width?: string | number;
   expandedWidth?: string | number;
 }
@@ -342,6 +361,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   const indicatorId = React.useId();
   const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { isRtl } = useLayout(); // Access Layout Context
 
   const handleMouseEnter = () => {
     if (!isMobile) {
@@ -380,6 +400,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
       indicatorId,
       variant,
       itemVariant,
+      isRtl,
     }),
     [
       activeTab,
@@ -389,6 +410,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
       indicatorId,
       variant,
       itemVariant,
+      isRtl,
     ],
   );
 
@@ -448,7 +470,8 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
       >
         <div
           className={clsx(
-            "flex h-20 w-full shrink-0 items-center justify-end p-4 pr-7",
+            // Use pe-7 (padding-end) for the toggle button area
+            "flex h-20 w-full shrink-0 items-center justify-end p-4 pe-7",
           )}
         >
           <IconButton
@@ -458,12 +481,17 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
             onClick={isMobile ? toggleExpanded : undefined}
             aria-label={isExpanded ? "Collapse Menu" : "Expand Menu"}
           >
-            {isExpanded ? <ChevronLeft /> : <Menu />}
+            {isExpanded ? (
+              // Rotate arrow in RTL mode so it points correctly
+              <ChevronLeft className={clsx("w-5 h-5", isRtl && "rotate-180")} />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
           </IconButton>
         </div>
 
         {fab && <div className="shrink-0">{fab}</div>}
-        <ul className="flex flex-1 flex-col items-center justify-start gap-2 p-4 pt-0 pr-6">
+        <ul className="flex flex-1 flex-col items-center justify-start gap-2 p-4 pt-0 pe-6">
           <Divider variant="dashed" />
           {screens.map((screen) => (
             <TabItem key={screen.name} screen={screen} />

@@ -188,7 +188,7 @@ const material3DialogVariants: Variants = {
     scale: 1,
     transition: {
       duration: DURATION.long2,
-      ease: EASING.expressiveSlowSpatial,
+      ease: EASING.emphasizedDecelerate,
     },
   },
   exit: {
@@ -197,7 +197,7 @@ const material3DialogVariants: Variants = {
     scale: 0.9,
     transition: {
       duration: DURATION.short3,
-      ease: EASING.expressiveFastEffects,
+      ease: EASING.emphasizedAccelerate,
     },
   },
 };

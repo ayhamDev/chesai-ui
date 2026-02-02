@@ -10,6 +10,7 @@ import MapGL, {
   MapProvider,
   type MapRef,
   type ViewState,
+  type ViewStateChangeEvent,
 } from "react-map-gl/maplibre";
 import { useTheme } from "../../context/ThemeProvider";
 import { BASEMAPS } from "./map-utils";
@@ -42,12 +43,17 @@ const mapContainerVariants = cva(
   },
 );
 
-// @ts-ignore
 export interface MapProps
   extends
     React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof mapContainerVariants> {
   initialViewState?: Partial<ViewState>;
+  // Controlled props
+  longitude?: number;
+  latitude?: number;
+  zoom?: number;
+  onMove?: (evt: ViewStateChangeEvent) => void;
+
   mapStyle?: string | StyleSpecification;
   scrollZoom?: boolean;
   dragPan?: boolean;
@@ -69,6 +75,10 @@ export const MapRoot = React.forwardRef<MapRef, MapProps>(
         pitch: 0,
         bearing: 0,
       },
+      longitude,
+      latitude,
+      zoom,
+      onMove,
       mapStyle,
       children,
       scrollZoom = true,
@@ -80,7 +90,10 @@ export const MapRoot = React.forwardRef<MapRef, MapProps>(
     ref,
   ) => {
     const { theme: resolvedTheme } = useTheme();
-    const [viewState, setViewState] = useState(initialViewState);
+
+    // Internal state for uncontrolled usage
+    const [internalViewState, setInternalViewState] =
+      useState(initialViewState);
     const internalMapRef = useRef<MapRef>(null);
 
     const effectiveStyle = useMemo(() => {
@@ -99,6 +112,27 @@ export const MapRoot = React.forwardRef<MapRef, MapProps>(
       if (typeof ref === "function") ref(node);
       else if (ref) ref.current = node;
     };
+
+    // Determine if we are controlled or uncontrolled
+    const isControlled = longitude !== undefined && latitude !== undefined;
+
+    const handleMove = (evt: ViewStateChangeEvent) => {
+      if (onMove) {
+        onMove(evt);
+      }
+      if (!isControlled) {
+        setInternalViewState(evt.viewState);
+      }
+    };
+
+    const currentViewState = isControlled
+      ? {
+          ...initialViewState,
+          longitude,
+          latitude,
+          zoom: zoom ?? initialViewState.zoom,
+        }
+      : internalViewState;
 
     return (
       <MapProvider>
@@ -132,8 +166,8 @@ export const MapRoot = React.forwardRef<MapRef, MapProps>(
           <MapGL
             key={resolvedTheme}
             ref={setRef}
-            {...viewState}
-            onMove={(evt) => setViewState(evt.viewState)}
+            {...currentViewState}
+            onMove={handleMove}
             mapStyle={effectiveStyle}
             scrollZoom={scrollZoom}
             dragPan={dragPan}

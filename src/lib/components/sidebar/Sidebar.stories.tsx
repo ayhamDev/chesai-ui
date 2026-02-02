@@ -10,15 +10,16 @@ import {
   Users,
 } from "lucide-react";
 import React from "react";
+import { LayoutProvider } from "../../context/layout-context";
 import { Avatar } from "../avatar";
 import { Badge } from "../badge";
 import { Divider } from "../divider";
 import { IconButton } from "../icon-button";
+import { LayoutDirectionToggle } from "../layout-toggle";
 import { Separator } from "../separator";
 import { Typography } from "../typography";
 import { Sidebar, useSidebar } from "./index";
 
-// ... (Meta config matches original) ...
 const meta: Meta<typeof Sidebar> = {
   title: "Components/Navigators/Sidebar",
   component: Sidebar,
@@ -69,9 +70,14 @@ const meta: Meta<typeof Sidebar> = {
   },
   decorators: [
     (Story) => (
-      <div className="h-screen w-full bg-graphite-background flex">
-        <Story />
-      </div>
+      <LayoutProvider>
+        <div className="h-screen w-full bg-graphite-background flex relative">
+          <div className="absolute top-4 right-4 z-50">
+            <LayoutDirectionToggle />
+          </div>
+          <Story />
+        </div>
+      </LayoutProvider>
     ),
   ],
 };
@@ -79,7 +85,6 @@ const meta: Meta<typeof Sidebar> = {
 export default meta;
 type Story = StoryObj<typeof Sidebar>;
 
-// ... (SidebarContentExample and default stories unchanged - omitting for brevity as they are correct) ...
 const SidebarContentExample = ({
   elasticity = false,
 }: {
@@ -161,15 +166,14 @@ const SidebarContentExample = ({
           <Sidebar.Group>
             <Sidebar.Label>Archive</Sidebar.Label>
             {Array.from({ length: 15 }).map((_, i) => (
-              <Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>
-                Archive Item {i + 1}
-              </Sidebar.Item>
+              // @ts-ignore
+              (<Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>Archive Item {i + 1}
+              </Sidebar.Item>)
             ))}
           </Sidebar.Group>
         )}
       </Sidebar.Content>
       <Divider variant="dashed" />
-
       <Sidebar.Footer className="justify-between">
         <div className="flex items-center gap-3 overflow-hidden">
           <Avatar
@@ -200,11 +204,11 @@ export const Default: Story = {
   name: "1. Playground (All Props)",
   args: {
     layout: "inset",
-    variant: "ghost",
+    variant: "primary",
     shape: "minimal",
     itemShape: "full",
     itemSize: "md",
-    itemVariant: "primary",
+    itemVariant: "tertiary",
     expandOnHover: true,
   },
   render: (args) => (
@@ -218,8 +222,12 @@ export const Default: Story = {
           <Separator orientation="vertical" className="h-6" />
           <Typography variant="h4">Playground</Typography>
         </header>
-        <div className="flex-1 flex items-center justify-center text-graphite-foreground/50">
-          Adjust the controls in the panel to change the sidebar style.
+        <div className="flex-1 flex flex-col items-center justify-center text-graphite-foreground/50 text-center">
+          <Typography variant="large">Adjust Sidebar Controls</Typography>
+          <Typography variant="body-small" className="mt-2">
+            Use the layout toggle in the top right to switch between LTR and
+            RTL.
+          </Typography>
         </div>
       </main>
     </Sidebar.Provider>

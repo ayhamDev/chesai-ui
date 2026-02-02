@@ -39,7 +39,7 @@ export interface SearchViewProps {
 
 // --- ANIMATION CONFIG ---
 const MD3_EASE = EASING.emphasizedDecelerate;
-const TRANSITION_DURATION = DURATION.medium4;
+const TRANSITION_DURATION = DURATION.medium3;
 
 export const SearchView = ({
   value,

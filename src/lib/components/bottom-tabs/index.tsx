@@ -15,10 +15,12 @@ import { Typography } from "../typography";
 
 // --- TYPE DEFINITIONS & CONTEXT ---
 
+export type BottomTabsSize = "sm" | "md" | "lg";
+
 export interface BottomTabsScreenProps {
   name: string;
   label: React.ReactNode;
-  icon: (props: { isActive: boolean }) => React.ReactNode;
+  icon: (props: { isActive: boolean; size: number }) => React.ReactNode;
   shape?: "full" | "minimal" | "sharp";
 }
 
@@ -30,6 +32,7 @@ interface BottomTabsContextProps {
   navigatorShape: "full" | "minimal" | "sharp";
   indicatorId: string;
   showLabels: boolean;
+  size: BottomTabsSize;
 }
 
 const BottomTabsContext = createContext<BottomTabsContextProps | null>(null);
@@ -45,35 +48,38 @@ const useBottomTabs = () => {
 
 // --- CVA VARIANTS ---
 
-const navigatorVariants = cva("w-full bg-surface-container", {
-  variants: {
-    mode: {
-      attached: "",
-      detached: "p-2",
+const navigatorVariants = cva(
+  "w-full bg-surface-container transition-all duration-300",
+  {
+    variants: {
+      mode: {
+        attached: "",
+        detached: "p-2",
+      },
+      shape: {
+        full: "",
+        minimal: "",
+        sharp: "rounded-none",
+      },
+      bordered: {
+        true: "border-t border-outline-variant",
+        false: "",
+      },
+      shadow: {
+        none: "shadow-none",
+        sm: "shadow-sm",
+        md: "shadow-md",
+        lg: "shadow-lg",
+      },
     },
-    shape: {
-      full: "",
-      minimal: "",
-      sharp: "rounded-none",
-    },
-    bordered: {
-      true: "border-t border-outline-variant",
-      false: "",
-    },
-    shadow: {
-      none: "shadow-none",
-      sm: "shadow-sm",
-      md: "shadow-md",
-      lg: "shadow-lg",
-    },
+    compoundVariants: [
+      { mode: "detached", shape: "full", className: "rounded-full" },
+      { mode: "detached", shape: "minimal", className: "rounded-xl" },
+      { mode: "attached", shape: "full", className: "rounded-t-3xl" },
+      { mode: "attached", shape: "minimal", className: "rounded-t-xl" },
+    ],
   },
-  compoundVariants: [
-    { mode: "detached", shape: "full", className: "rounded-full" },
-    { mode: "detached", shape: "minimal", className: "rounded-xl" },
-    { mode: "attached", shape: "full", className: "rounded-t-3xl" },
-    { mode: "attached", shape: "minimal", className: "rounded-t-xl" },
-  ],
-});
+);
 
 const BottomTabsScreen: React.FC<BottomTabsScreenProps> = () => {
   return null;
@@ -95,6 +101,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     indicatorId,
     navigatorShape,
     showLabels,
+    size,
   } = useBottomTabs();
 
   const isActive = activeTab === name;
@@ -102,13 +109,33 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 
   const localRef = useRef<HTMLButtonElement>(null);
   const [, event] = useRipple({
-    // FIX: Cast ref to HTMLElement
     ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
     duration: 400,
   });
 
-  const isHorizontal = itemLayout === "inline" && isActive && showLabels;
+  const isShiftLayout = itemLayout === "inline";
+
+  // Configuration mapping for sizes
+  const sizeConfigs = {
+    sm: {
+      height: "h-12",
+      iconSize: 20,
+      typography: "label-small" as const,
+    },
+    md: {
+      height: "h-16",
+      iconSize: 24,
+      typography: "label-medium" as const,
+    },
+    lg: {
+      height: "h-20",
+      iconSize: 28,
+      typography: "label-large" as const,
+    },
+  };
+
+  const config = sizeConfigs[size];
 
   const shapeToBorderRadius = {
     full: 9999,
@@ -132,16 +159,13 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
         onClick={() => onTabPress(name)}
         onPointerDown={event}
         className={clsx(
-          "relative z-10 flex h-16 w-full items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-          isHorizontal ? "flex-row gap-2 px-4 py-2" : "flex-col gap-1 p-2",
-          isActive
-            ? "text-on-secondary-container font-semibold"
-            : "text-on-surface-variant",
+          "relative z-10 flex w-full flex-col items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          config.height,
+          isActive ? "text-on-secondary-container" : "text-on-surface-variant",
           shapeToClassName[finalShape],
           !isActive && [
             "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out",
             "hover:after:opacity-100 hover:after:scale-100",
-            "disabled:after:opacity-0",
           ],
         )}
       >
@@ -153,42 +177,48 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
             transition={{
               type: "spring",
               stiffness: 300,
-              damping: 20,
-              mass: 1.2,
+              damping: 28,
+              mass: 1,
             }}
           />
         )}
-        <div className="relative z-10">{icon({ isActive })}</div>
 
-        {showLabels && (
-          <AnimatePresence>
-            {isHorizontal ? (
-              <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{
-                  width: "auto",
-                  opacity: 1,
-                  transition: { delay: 0.1, duration: 0.2 },
-                }}
-                exit={{ width: 0, opacity: 0, transition: { duration: 0.1 } }}
-                className="relative z-10 overflow-hidden whitespace-nowrap"
-              >
-                <Typography variant="small" className="font-semibold">
-                  {label}
-                </Typography>
-              </motion.div>
-            ) : (
-              <div className="relative z-10">
-                <Typography
-                  variant="small"
-                  className={isActive ? "font-semibold" : ""}
+        <motion.div
+          layout
+          className="relative z-10 flex flex-col items-center justify-center"
+        >
+          <div className="relative z-10">
+            {icon({ isActive, size: config.iconSize })}
+          </div>
+
+          {showLabels && (
+            <AnimatePresence initial={false}>
+              {(isActive || !isShiftLayout) && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0, y: 4 }}
+                  animate={{
+                    height: "auto",
+                    opacity: 1,
+                    y: 0,
+                    transition: { type: "spring", stiffness: 400, damping: 30 },
+                  }}
+                  exit={{ height: 0, opacity: 0, y: 4 }}
+                  className="relative z-10 overflow-hidden whitespace-nowrap"
                 >
-                  {label}
-                </Typography>
-              </div>
-            )}
-          </AnimatePresence>
-        )}
+                  <Typography
+                    variant={config.typography}
+                    className={clsx(
+                      "mt-0.5 font-semibold leading-none",
+                      !isActive && "opacity-80",
+                    )}
+                  >
+                    {label}
+                  </Typography>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
+        </motion.div>
       </button>
     </li>
   );
@@ -199,6 +229,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   mode?: "attached" | "detached";
   shape?: "full" | "minimal" | "sharp";
+  size?: BottomTabsSize;
   bordered?: boolean;
   shadow?: "none" | "sm" | "md" | "lg";
   children:
@@ -217,6 +248,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   mode = "attached",
   itemLayout = "stacked",
   shape = "full",
+  size = "md",
   bordered = true,
   shadow = "lg",
   showLabels = true,
@@ -245,8 +277,18 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
       navigatorShape: shape,
       indicatorId,
       showLabels,
+      size,
     }),
-    [activeTab, onTabPress, itemLayout, mode, shape, indicatorId, showLabels],
+    [
+      activeTab,
+      onTabPress,
+      itemLayout,
+      mode,
+      shape,
+      indicatorId,
+      showLabels,
+      size,
+    ],
   );
 
   return (

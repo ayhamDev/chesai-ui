@@ -5,6 +5,7 @@ import React, {
   useContext,
   useLayoutEffect,
   useState,
+  useEffect,
 } from "react";
 
 export type Direction = "ltr" | "rtl";
@@ -13,6 +14,7 @@ interface LayoutContextType {
   direction: Direction;
   setDirection: (dir: Direction) => void;
   toggleDirection: () => void;
+  isRtl: boolean;
 }
 
 const LayoutContext = createContext<LayoutContextType | null>(null);
@@ -28,21 +30,36 @@ export const useLayout = () => {
 interface LayoutProviderProps {
   children: React.ReactNode;
   initialDirection?: Direction;
+  storageKey?: string;
 }
 
 export const LayoutProvider: React.FC<LayoutProviderProps> = ({
   children,
   initialDirection = "ltr",
+  storageKey = "layout-direction",
 }) => {
-  const [direction, setDirection] = useState<Direction>(initialDirection);
+  // Initialize from storage if available
+  const [direction, setDirection] = useState<Direction>(() => {
+    if (typeof window !== "undefined") {
+      return (
+        (localStorage.getItem(storageKey) as Direction) || initialDirection
+      );
+    }
+    return initialDirection;
+  });
+
+  // Persist to storage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(storageKey, direction);
+    }
+  }, [direction, storageKey]);
 
   // Sync direction with HTML attribute
-  // We use useLayoutEffect to prevent flash of unstyled content (FOUC)
   useLayoutEffect(() => {
     document.documentElement.dir = direction;
     document.documentElement.style.direction = direction;
 
-    // Optional: Add a class for CSS selectors if needed
     if (direction === "rtl") {
       document.documentElement.classList.add("rtl");
       document.documentElement.classList.remove("ltr");
@@ -58,7 +75,12 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
 
   return (
     <LayoutContext.Provider
-      value={{ direction, setDirection, toggleDirection }}
+      value={{
+        direction,
+        setDirection,
+        toggleDirection,
+        isRtl: direction === "rtl",
+      }}
     >
       {children}
     </LayoutContext.Provider>

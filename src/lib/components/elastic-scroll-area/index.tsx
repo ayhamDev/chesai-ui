@@ -14,9 +14,9 @@ import {
   type ComponentPropsWithoutRef,
   type ComponentType,
   type ElementRef,
+  forwardRef,
   type FC,
   type RefObject,
-  forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -31,7 +31,7 @@ const SNAP_BACK_STIFFNESS = 300;
 const SNAP_BACK_DAMPING = 30;
 const DEFAULT_PULL_THRESHOLD = 80;
 
-// --- TYPE DEFINITIONS (MODIFIED) ---
+// --- TYPE DEFINITIONS ---
 interface RefreshIndicatorProps {
   pullProgress: MotionValue<number>;
   isRefreshing: boolean;
@@ -75,7 +75,6 @@ const DefaultRefreshIndicator: FC<RefreshIndicatorProps> = ({
 
 // --- OVERSCROLL & PULL-TO-REFRESH LOGIC HOOK ---
 const useElasticAndRefresh = (
-  // FIX: Allow the ref to be potentially null
   viewportRef: RefObject<HTMLDivElement | null>,
   motionValue: MotionValue<number>,
   options: {
@@ -146,7 +145,7 @@ const useElasticAndRefresh = (
       const delta = isVertical ? event.deltaY : event.deltaX;
 
       const isAtStart = scrollPos <= 0;
-      const isAtEnd = scrollPos >= scrollDim - clientDim;
+      const isAtEnd = scrollPos >= scrollDim - clientDim - 1; // Tolerance
       const isScrollingTowardsStart = delta < 0;
       const isScrollingTowardsEnd = delta > 0;
 
@@ -154,27 +153,31 @@ const useElasticAndRefresh = (
         (isAtStart && isScrollingTowardsStart) ||
         (isAtEnd && isScrollingTowardsEnd)
       ) {
-        event.preventDefault();
+        // Only prevent default if we are actually overscrolling
         const currentVal = motionValue.get();
-        const resistance = Math.abs(currentVal) / MAX_OVERSCROLL_DESKTOP;
-        const adjustedDelta = delta * damping * (1 - resistance);
-        const newVal = Math.max(
-          -MAX_OVERSCROLL_DESKTOP,
-          Math.min(MAX_OVERSCROLL_DESKTOP, currentVal - adjustedDelta),
-        );
-        motionValue.set(newVal);
+        // If we are starting to overscroll or already overscrolling
+        if (Math.abs(currentVal) > 0 || Math.abs(delta) > 1) {
+          event.preventDefault();
+          const resistance = Math.abs(currentVal) / MAX_OVERSCROLL_DESKTOP;
+          const adjustedDelta = delta * damping * (1 - resistance);
+          const newVal = Math.max(
+            -MAX_OVERSCROLL_DESKTOP,
+            Math.min(MAX_OVERSCROLL_DESKTOP, currentVal - adjustedDelta),
+          );
+          motionValue.set(newVal);
 
-        if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
-        wheelTimeoutRef.current = setTimeout(() => {
-          const finalVal = motionValue.get();
-          if (Math.abs(finalVal) > 0) {
-            if (isRefreshEnabled && finalVal >= pullThreshold) {
-              triggerRefresh();
-            } else {
-              springToZero();
+          if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
+          wheelTimeoutRef.current = setTimeout(() => {
+            const finalVal = motionValue.get();
+            if (Math.abs(finalVal) > 0) {
+              if (isRefreshEnabled && finalVal >= pullThreshold) {
+                triggerRefresh();
+              } else {
+                springToZero();
+              }
             }
-          }
-        }, 50);
+          }, 50);
+        }
       }
     };
 
@@ -208,16 +211,24 @@ const useElasticAndRefresh = (
 
       const delta = currentPosVal - startPos.current;
       const isAtStart = scrollPos <= 0;
-      const isAtEnd = scrollPos >= scrollDim - clientDim;
+      const isAtEnd = scrollPos >= scrollDim - clientDim - 1;
       const isPullingTowardsEnd = delta < 0;
       const isPullingTowardsStart = delta > 0;
 
+      // Only engage elastic if we are at boundary AND pulling away from it
       if (
         (isAtStart && isPullingTowardsStart) ||
         (isAtEnd && isPullingTowardsEnd)
       ) {
-        isOverscrolling.current = true;
-        motionValue.set(delta * damping);
+        // Allow slight deadzone before engaging
+        if (Math.abs(delta) > 5 || isOverscrolling.current) {
+          isOverscrolling.current = true;
+          // Apply damping to touch delta as well
+          const dampedDelta = delta * 0.5;
+          motionValue.set(dampedDelta);
+          // Prevent default to stop browser overscroll glow/nav
+          if (event.cancelable) event.preventDefault();
+        }
       } else {
         if (isOverscrolling.current) {
           isOverscrolling.current = false;
@@ -400,7 +411,7 @@ const ElasticScrollAreaRoot = forwardRef<
 );
 ElasticScrollAreaRoot.displayName = "ElasticScrollArea";
 
-// --- STYLED SUB-COMPONENTS (MODIFIED) ---
+// --- STYLED SUB-COMPONENTS ---
 const ScrollBar = forwardRef<
   ElementRef<typeof ScrollAreaPrimitive.Scrollbar>,
   ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Scrollbar> & {

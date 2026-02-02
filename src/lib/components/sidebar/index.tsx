@@ -19,6 +19,7 @@ import React, {
   useState,
 } from "react";
 import useRipple from "use-ripple-hook";
+import { useLayout } from "../../context/layout-context";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { FAB, type FABProps } from "../fab";
 import { IconButton } from "../icon-button";
@@ -29,8 +30,13 @@ import { EASING } from "../stack-router/transitions";
 type SidebarState = "expanded" | "collapsed";
 type SidebarSize = "sm" | "md" | "lg";
 type SidebarShape = "sharp" | "minimal" | "full";
-type SidebarVariant = "primary" | "secondary" | "ghost" | "surface";
-type SidebarItemVariant = "primary" | "secondary" | "ghost";
+type SidebarVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "ghost"
+  | "surface";
+type SidebarItemVariant = "primary" | "secondary" | "tertiary" | "ghost";
 type SidebarSide = "left" | "right";
 
 // --- Context ---
@@ -44,8 +50,9 @@ interface SidebarContextProps {
   size: SidebarSize;
   shape: SidebarShape;
   variant: SidebarVariant;
-  itemVariant: SidebarItemVariant; // Controls item styling separately
+  itemVariant: SidebarItemVariant;
   side: SidebarSide;
+  isRtl: boolean;
 }
 
 const SidebarContext = createContext<SidebarContextProps | null>(null);
@@ -71,6 +78,7 @@ export const SidebarProvider = ({
   );
   const [openMobile, setOpenMobile] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { isRtl } = useLayout();
 
   const toggleSidebar = () => {
     if (isMobile) {
@@ -94,6 +102,7 @@ export const SidebarProvider = ({
         variant: "primary",
         itemVariant: "primary",
         side: "left",
+        isRtl,
       }}
     >
       {children}
@@ -108,16 +117,14 @@ const sidebarVariants = cva(
     variants: {
       layout: {
         sidebar: "h-full",
-        // Adjusted height calc to prevent overflow with margins
         floating:
           "my-2 h-[calc(100%-1rem)] border border-outline-variant shadow-lg",
-        // Removed bg-transparent to allow variant colors to show
         inset: "h-full",
       },
       variant: {
-        // BACKGROUND VARIANTS ONLY
         primary: "bg-surface-container-low",
         secondary: "bg-surface-container-highest",
+        tertiary: "bg-tertiary-container text-on-tertiary-container",
         surface: "bg-surface",
         ghost: "bg-transparent",
       },
@@ -136,6 +143,7 @@ const sidebarVariants = cva(
       },
     },
     compoundVariants: [
+      // LOGICAL PROPERTY MAPPING:
       {
         layout: "sidebar",
         side: "left",
@@ -182,21 +190,26 @@ const sidebarVariants = cva(
         shape: "sharp",
         className: "rounded-none",
       },
-      // Floating margins
-      { layout: "floating", side: "left", className: "ms-3" },
-      { layout: "floating", side: "right", className: "me-3" },
+      // Floating margins using logical properties
+      { layout: "floating", side: "left", className: "ms-3" }, // margin-start
+      { layout: "floating", side: "right", className: "me-3" }, // margin-end
       { layout: "floating", shape: "minimal", className: "rounded-2xl" },
       { layout: "floating", shape: "full", className: "rounded-3xl" },
       { layout: "floating", shape: "sharp", className: "rounded-none" },
       {
         overlay: true,
         side: "left",
-        className: "left-0 border-e border-outline-variant",
+        className: "start-0 border-e border-outline-variant", // start-0
       },
       {
         overlay: true,
         side: "right",
-        className: "right-0 border-s border-outline-variant",
+        className: "end-0 border-s border-outline-variant", // end-0
+      },
+      // Tertiary Variant border override (usually tertiary containers don't need borders)
+      {
+        variant: "tertiary",
+        className: "border-transparent!",
       },
     ],
     defaultVariants: {
@@ -220,7 +233,7 @@ interface SidebarProps
   mobileLayout?: "sheet" | "push";
   itemSize?: SidebarSize;
   itemShape?: SidebarShape;
-  itemVariant?: SidebarItemVariant; // Controls the default look of items
+  itemVariant?: SidebarItemVariant;
   expandOnHover?: boolean;
   overlay?: boolean;
 }
@@ -255,6 +268,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       isMobile,
       openMobile,
       setOpenMobile,
+      isRtl,
     } = useSidebar();
     const isCollapsed = state === "collapsed";
 
@@ -268,24 +282,30 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
           body.style.width = "100vw";
           body.style.overflowX = "hidden";
           if (side === "left") {
-            body.style.marginLeft = mobileWidth;
+            if (isRtl) body.style.marginRight = mobileWidth;
+            else body.style.marginLeft = mobileWidth;
           } else {
-            body.style.marginLeft = `-${mobileWidth}`;
+            if (isRtl) body.style.marginLeft = mobileWidth;
+            else body.style.marginRight = mobileWidth;
+            if (!isRtl) body.style.marginLeft = `-${mobileWidth}`;
+            else body.style.marginRight = `-${mobileWidth}`;
           }
         } else {
           body.style.marginLeft = "";
+          body.style.marginRight = "";
           body.style.width = "";
           body.style.overflowX = "";
         }
 
         return () => {
           body.style.marginLeft = "";
+          body.style.marginRight = "";
           body.style.width = "";
           body.style.overflowX = "";
           body.style.transition = "";
         };
       }
-    }, [isMobile, openMobile, mobileLayout, mobileWidth, side]);
+    }, [isMobile, openMobile, mobileLayout, mobileWidth, side, isRtl]);
 
     const contextValue = {
       state,
@@ -299,16 +319,25 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       variant: variant || "primary",
       itemVariant: itemVariant || "primary",
       side: side || "left",
+      isRtl,
     };
 
     if (isMobile) {
       if (mobileLayout === "sheet") {
+        const physicalSide = isRtl
+          ? side === "left"
+            ? "right"
+            : "left"
+          : side === "left"
+            ? "left"
+            : "right";
+
         return (
           <Sheet
             open={openMobile}
             onOpenChange={setOpenMobile}
             forceSideSheet
-            side={side || "left"}
+            side={physicalSide}
           >
             <Sheet.Content
               className="p-0"
@@ -331,25 +360,33 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
           </Sheet>
         );
       } else {
-        // Push Layout
+        const isStart = side === "left";
+        const xHidden = isStart
+          ? isRtl
+            ? "100%"
+            : "-100%"
+          : isRtl
+            ? "-100%"
+            : "100%";
+
         return (
           <SidebarContext.Provider value={contextValue}>
             <AnimatePresence>
               {/* @ts-ignore */}
               <motion.aside
                 ref={ref}
-                initial={{ x: side === "left" ? "-100%" : "100%" }}
+                initial={{ x: xHidden }}
                 animate={{
-                  x: openMobile ? "0%" : side === "left" ? "-100%" : "100%",
+                  x: openMobile ? "0%" : xHidden,
                 }}
                 transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
                 className={clsx(
                   "fixed top-0 bottom-0 z-50 flex flex-col overflow-hidden shadow-2xl",
-                  side === "left" ? "left-0" : "right-0",
+                  isStart ? "start-0" : "end-0",
                   variant === "secondary"
                     ? "bg-surface-container-high"
                     : "bg-surface-container-low",
-                  variant === "primary" && "border-r border-outline-variant",
+                  variant === "primary" && "border-e border-outline-variant",
                   className,
                 )}
                 style={{ width: mobileWidth }}
@@ -513,7 +550,7 @@ const SidebarFooter = React.forwardRef<
 ));
 SidebarFooter.displayName = "Sidebar.Footer";
 
-// --- Sidebar FAB (NEW FIX) ---
+// --- Sidebar FAB ---
 export interface SidebarFABProps extends Omit<FABProps, "isExtended"> {
   label: React.ReactNode;
 }
@@ -522,14 +559,12 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
   ({ className, icon, label, ...props }, ref) => {
     const { state, isMobile } = useSidebar();
     const isCollapsed = !isMobile && state === "collapsed";
-    // FAB is extended when sidebar is expanded
     const isExtended = !isCollapsed;
 
     return (
       <div
         className={clsx(
           "mb-2 flex",
-          // When collapsed, center the FAB and remove side padding to prevent offset
           isCollapsed ? "justify-center px-0" : "px-3",
           className,
         )}
@@ -543,7 +578,7 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
 );
 SidebarFAB.displayName = "Sidebar.FAB";
 
-// --- Item Variants (Refactored) ---
+// --- Item Variants ---
 const sidebarItemVariants = cva(
   "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 overflow-hidden z-0",
   {
@@ -556,6 +591,7 @@ const sidebarItemVariants = cva(
       itemVariant: {
         primary: "",
         secondary: "",
+        tertiary: "",
         ghost: "",
       },
       size: {
@@ -570,7 +606,7 @@ const sidebarItemVariants = cva(
       },
     },
     compoundVariants: [
-      // Primary Item: Active = High Contrast Primary
+      // Primary
       {
         itemVariant: "primary",
         isActive: true,
@@ -582,8 +618,7 @@ const sidebarItemVariants = cva(
         className:
           "text-on-surface-variant hover:text-on-surface after:bg-surface-container-highest",
       },
-
-      // Secondary Item: Active = Tonal Secondary Container
+      // Secondary
       {
         itemVariant: "secondary",
         isActive: true,
@@ -596,8 +631,19 @@ const sidebarItemVariants = cva(
         className:
           "text-on-surface-variant hover:text-on-surface after:bg-secondary-container/50",
       },
-
-      // Ghost Item: Active = Transparent + Text Color or Subtle BG
+      // Tertiary
+      {
+        itemVariant: "tertiary",
+        isActive: true,
+        className: "bg-tertiary-container text-on-tertiary-container font-bold",
+      },
+      {
+        itemVariant: "tertiary",
+        isActive: false,
+        className:
+          "text-on-surface-variant hover:text-on-surface after:bg-tertiary-container/50",
+      },
+      // Ghost
       {
         itemVariant: "ghost",
         isActive: true,
@@ -648,15 +694,17 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
     const localRef = useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current!);
 
-    // Determine effective variant
     const effectiveVariant = itemVariant || contextItemVariant;
 
-    // Dynamic Ripple Color
-    // If Primary active -> White ripple. Else -> Dark ripple.
-    const rippleColor =
-      effectiveVariant === "primary" && isActive
-        ? "var(--color-ripple-light)"
-        : "var(--color-ripple-dark)";
+    // Determine ripple color based on variant and active state
+    // Tertiary usually needs dark ripple in light mode, light ripple in dark mode (on-tertiary-container)
+    // Here we simplify by checking if it's a solid colored active state (Primary/Tertiary usually)
+    const isSolidActive =
+      isActive &&
+      (effectiveVariant === "primary" || effectiveVariant === "tertiary");
+    const rippleColor = isSolidActive
+      ? "var(--color-ripple-light)" // Light ripple for dark backgrounds
+      : "var(--color-ripple-dark)"; // Dark ripple for light/transparent backgrounds
 
     const [, event] = useRipple({
       // @ts-ignore
@@ -667,6 +715,15 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
 
     const [isPressed, setIsPressed] = useState(false);
     const iconSize = props.size === "lg" ? 24 : props.size === "sm" ? 16 : 20;
+
+    // Dot styling for collapsed state
+    // We try to match the contrast of the active variant
+    let dotClass = "bg-primary";
+    if (effectiveVariant === "primary" && isActive) dotClass = "bg-on-primary";
+    if (effectiveVariant === "secondary" && isActive)
+      dotClass = "bg-on-secondary-container";
+    if (effectiveVariant === "tertiary" && isActive)
+      dotClass = "bg-on-tertiary-container";
 
     return (
       <button
@@ -714,33 +771,48 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
         <AnimatePresence>
           {!isCollapsed && children && (
             <motion.span
-              initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+              initial={{ opacity: 0, width: 0, marginInlineStart: 0 }}
               animate={{
                 opacity: 1,
                 width: "auto",
-                marginLeft: "0.75rem",
+                marginInlineStart: "0.75rem", // Logical Margin
               }}
-              exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+              exit={{ opacity: 0, width: 0, marginInlineStart: 0 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="flex-1 overflow-hidden whitespace-nowrap text-left min-w-0 relative z-10"
+              className="flex-1 overflow-hidden whitespace-nowrap text-start min-w-0 relative z-10"
             >
               {children}
             </motion.span>
           )}
         </AnimatePresence>
 
-        <AnimatePresence>
-          {!isCollapsed && badge && (
+        {/* Badge: Shows full badge when expanded, small dot when collapsed */}
+        <AnimatePresence mode="wait">
+          {!isCollapsed && badge ? (
             <motion.div
+              key="badge-expanded"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
-              className="ml-auto shrink-0 relative z-10"
+              className="ms-auto shrink-0 relative z-10" // Logical margin-start
             >
               {badge}
             </motion.div>
-          )}
+          ) : isCollapsed && badge ? (
+            <motion.div
+              key="badge-collapsed"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute top-2 right-2 z-20 pointer-events-none"
+            >
+              <div
+                className={clsx("h-2 w-2 rounded-full shadow-sm", dotClass)}
+              />
+            </motion.div>
+          ) : null}
         </AnimatePresence>
       </button>
     );
@@ -753,10 +825,24 @@ const SidebarTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<typeof IconButton>
 >(({ className, ...props }, ref) => {
-  const { state, toggleSidebar, isMobile, side } = useSidebar();
+  const { state, toggleSidebar, isMobile, side, isRtl } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const OpenIcon = side === "left" ? PanelLeftOpen : PanelRightOpen;
-  const CloseIcon = side === "left" ? PanelLeftClose : PanelRightClose;
+
+  const isStart = side === "left";
+  const OpenIcon = isStart
+    ? isRtl
+      ? PanelRightOpen
+      : PanelLeftOpen
+    : isRtl
+      ? PanelLeftOpen
+      : PanelRightOpen;
+  const CloseIcon = isStart
+    ? isRtl
+      ? PanelRightClose
+      : PanelLeftClose
+    : isRtl
+      ? PanelLeftClose
+      : PanelRightClose;
 
   return (
     <IconButton

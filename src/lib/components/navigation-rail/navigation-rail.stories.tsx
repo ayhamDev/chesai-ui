@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Compass, Home, Library, Plus } from "lucide-react";
+import { LayoutProvider } from "../../context/layout-context";
+import { LayoutDirectionToggle } from "../layout-toggle";
 import { ShallowRouter, useRouter } from "../shallow-router";
 import { Typography } from "../typography";
 import { NavigationRail } from "./index";
@@ -25,7 +27,7 @@ const meta: Meta<typeof NavigationRail.Navigator> = {
     },
     itemVariant: {
       control: "select",
-      options: ["primary", "secondary", "ghost"],
+      options: ["primary", "secondary", "tertiary", "ghost"],
     },
     shape: {
       control: "select",
@@ -39,9 +41,14 @@ const meta: Meta<typeof NavigationRail.Navigator> = {
   },
   decorators: [
     (Story) => (
-      <div className="h-[600px] w-full bg-graphite-background flex">
-        <Story />
-      </div>
+      <LayoutProvider>
+        <div className="h-[600px] w-full bg-graphite-background flex relative overflow-hidden">
+          <div className="absolute top-4 right-4 z-50">
+            <LayoutDirectionToggle />
+          </div>
+          <Story />
+        </div>
+      </LayoutProvider>
     ),
   ],
 };
@@ -65,10 +72,8 @@ const RenderWithLayout = (args: any) => {
         <NavigationRail.FAB
           variant="secondary"
           icon={<Plus size={20} />}
-          label="label"
-        >
-          Label
-        </NavigationRail.FAB>
+          label="Create"
+        />
 
         <NavigationRail.Screen
           name="home"
@@ -86,14 +91,19 @@ const RenderWithLayout = (args: any) => {
           icon={() => <Library size={iconSize} />}
         />
       </NavigationRail.Navigator>
-      <main className="flex-1 p-6 flex flex-col bg-graphite-background">
+      <main className="flex-1 p-6 flex flex-col bg-graphite-background transition-all duration-300">
         <header className="h-16 border-b border-graphite-border flex items-center px-4 gap-4 bg-graphite-card rounded-xl mb-4">
           <Typography variant="h4" className="capitalize">
             {activeTab === "/" ? initialTab : activeTab.substring(1)}
           </Typography>
         </header>
-        <div className="flex-1 flex items-center justify-center text-graphite-foreground/50 rounded-xl bg-graphite-card">
+        <div className="flex-1 flex flex-col items-center justify-center text-graphite-foreground/50 rounded-xl bg-graphite-card p-8 text-center gap-4">
           <Typography variant="large">Main Content Area</Typography>
+          <Typography variant="body-small">
+            Toggle the direction button in the top right corner to test RTL
+            behavior. <br /> Note how the Rail border, border-radius, and FAB
+            animation flip correctly.
+          </Typography>
         </div>
       </main>
     </>
@@ -103,10 +113,10 @@ const RenderWithLayout = (args: any) => {
 export const Default: Story = {
   name: "1. Default (Push on Desktop)",
   args: {
-    variant: "secondary",
+    variant: "ghost",
     shape: "minimal",
-    bordered: true,
-    itemVariant: "primary"
+    bordered: false,
+    itemVariant: "primary",
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
@@ -119,6 +129,9 @@ export const OverlayOnMobile: Story = {
   name: "2. Overlay on Mobile",
   args: {
     ...Default.args,
+    variant: "primary",
+    shape: "full",
+    bordered: false,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
@@ -129,14 +142,6 @@ export const OverlayOnMobile: Story = {
       },
     },
   },
-  /*************  ✨ Windsurf Command ⭐  *************/
-  /**
-   * Renders the navigation rail with a ShallowRouter context.
-   * The ShallowRouter context is necessary for the rail to determine the active tab.
-   * @param {object} args - Arguments passed from the story.
-   * @returns {JSX.Element} - The rendered navigation rail.
-   */
-  /*******  1731affb-b1ad-4ed0-89c2-e80713fc5c32  *******/
   render: (args) => (
     <ShallowRouter paramName="tab">
       <RenderWithLayout {...args} />

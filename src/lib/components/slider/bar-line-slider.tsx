@@ -19,12 +19,12 @@ export interface BarLineSliderProps extends Omit<
   barHeight?: string;
   /**
    * The height of the inactive line.
-   * @default "h-1"
+   * @default "h-1.5"
    */
   lineHeight?: string;
   /**
    * Tailwind color classes for the active bar.
-   * @default "bg-lime-200"
+   * @default "bg-[#bef264]"
    */
   activeColor?: string;
   /**
@@ -57,9 +57,6 @@ export const BarLineSlider = React.forwardRef<
     },
     ref,
   ) => {
-    // Height mapping for the container to ensure it fits the largest element
-    const containerHeight = barHeight;
-
     return (
       <SliderPrimitive.Root
         ref={ref}
@@ -71,8 +68,9 @@ export const BarLineSlider = React.forwardRef<
         onValueChange={onValueChange}
         disabled={disabled}
         className={clsx(
-          "relative flex w-full touch-none select-none items-center group cursor-pointer",
-          containerHeight,
+          "relative flex w-full touch-none select-none items-center group cursor-grab active:cursor-grabbing",
+          // The container height determines the touch target size
+          barHeight,
           className,
         )}
         {...props}
@@ -87,28 +85,43 @@ export const BarLineSlider = React.forwardRef<
             )}
           />
 
-          {/* The Active Bar (Fills height) */}
-          {/* REMOVED: transition-all to fix drag delay */}
+          {/* The Active Bar */}
           <SliderPrimitive.Range
-            className={clsx("absolute h-full rounded-full", activeColor)}
-          />
+            className={clsx(
+              "absolute h-full rounded-full overflow-hidden",
+              activeColor,
+              // SOLUTION:
+              // 1. Min-width ensures it's never smaller than a circle (h-12 -> min-w-12 usually 3rem)
+              // We use `min-w-[var(--radix-slider-range-height)]` logic by matching the height class.
+              // Assuming standard tailwind spacing, we map h-12 to min-w-12.
+              // If you use custom arbitrary heights, use `min-w-[...px]` to match.
+              barHeight === "h-12" ? "min-w-12" : "min-w-[3rem]",
+            )}
+          >
+            {/* 
+              Icon Container:
+              Absolute positioned to the right side of the active bar.
+              Aspect square ensures it stays a perfect circle at the tip.
+            */}
+            <div className="absolute right-0 top-0 h-full aspect-square flex items-center justify-center pointer-events-none">
+              <div className="text-black">{icon}</div>
+            </div>
+          </SliderPrimitive.Range>
         </SliderPrimitive.Track>
 
-        {/* The Handle / Thumb */}
-        {/* REMOVED: transition-transform duration-100 to fix drag delay */}
+        {/* 
+          The Handle / Thumb 
+          We keep the thumb for drag interaction/accessibility, 
+          but we make it invisible because the visual "thumb" is now 
+          inside the Range component above.
+        */}
         <SliderPrimitive.Thumb
           className={clsx(
-            "block focus:outline-none focus-visible:scale-110",
-            // We make the thumb physically large to cover the end of the bar,
-            // but transparent so we only see the icon.
-            "w-12 h-12 rounded-full",
-            "flex items-center justify-center",
-            "bg-transparent shadow-none",
+            "block focus:outline-none",
+            "w-12 h-12 rounded-full", // Match physical size for touch target
+            "bg-transparent shadow-none", // Invisible
           )}
-        >
-          {/* Icon positioning */}
-          <div className="text-black pointer-events-none">{icon}</div>
-        </SliderPrimitive.Thumb>
+        />
       </SliderPrimitive.Root>
     );
   },

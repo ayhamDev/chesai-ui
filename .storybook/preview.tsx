@@ -2,6 +2,7 @@ import type { Preview } from "@storybook/react-vite";
 import { themes } from "@storybook/theming";
 import "../src/lib/tailwind/theme.css";
 import "../src/lib/tailwind/typography.css";
+import { LayoutProvider } from "../src/lib/context/layout-context";
 const preview: Preview = {
   parameters: {
     darkMode: {
@@ -27,7 +28,11 @@ const preview: Preview = {
   },
   decorators: [
     (Story) => {
-      return <Story />;
+      return (
+        <LayoutProvider>
+          <Story />
+        </LayoutProvider>
+      );
     },
   ],
 };

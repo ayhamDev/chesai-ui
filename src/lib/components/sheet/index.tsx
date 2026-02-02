@@ -6,13 +6,23 @@ import { clsx } from "clsx";
 import React, { createContext, useContext } from "react";
 import { Drawer as VaulDrawer } from "vaul";
 
+// --- Types ---
+// Matches Card variants exactly
+type SheetVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "high-contrast"
+  | "ghost"
+  | "surface";
+
 // --- Context ---
 interface SheetContextProps {
   mode: "normal" | "detached";
   shape: "full" | "minimal" | "sharp";
   hasSnapPoints: boolean;
   direction: "top" | "bottom" | "left" | "right";
-  variant: "primary" | "secondary" | "card";
+  variant: SheetVariant;
 }
 
 const SheetContext = createContext<SheetContextProps>({
@@ -20,7 +30,7 @@ const SheetContext = createContext<SheetContextProps>({
   shape: "full",
   hasSnapPoints: false,
   direction: "bottom",
-  variant: "card",
+  variant: "primary",
 });
 
 const useSheetContext = () => useContext(SheetContext);
@@ -30,7 +40,7 @@ type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
   side?: "left" | "right";
-  variant?: "primary" | "secondary" | "card";
+  variant?: SheetVariant;
   forceBottomSheet?: boolean;
   forceSideSheet?: boolean;
 };
@@ -39,7 +49,7 @@ const SheetRoot: React.FC<SheetProps> = ({
   mode = "normal",
   shape = "full",
   side = "right",
-  variant = "card",
+  variant = "primary",
   forceBottomSheet = false,
   forceSideSheet = false,
   snapPoints,
@@ -85,156 +95,168 @@ const SheetTitle = VaulDrawer.Title;
 const SheetDescription = VaulDrawer.Description;
 
 // --- CVA Variants for Content ---
-const contentVariants = cva("fixed z-50 flex flex-col shadow-lg", {
-  variants: {
-    variant: {
-      // Mapped to MD3 Surface Containers
-      primary: "bg-primary-container text-on-primary-container",
-      secondary: "bg-secondary-container text-on-secondary-container",
-      card: "bg-surface-container-low text-on-surface", // Standard Sheet
+const contentVariants = cva(
+  "fixed z-50 flex flex-col shadow-lg transition-colors duration-300",
+  {
+    variants: {
+      variant: {
+        // Matches Card.Primary (Surface Container Low)
+        primary: "bg-surface-container-low text-on-surface",
+        // Matches Card.Secondary (Surface Container Highest)
+        secondary: "bg-surface-container-highest text-on-surface",
+        // Matches Card.Tertiary (Tertiary Container)
+        tertiary: "bg-tertiary-container text-on-tertiary-container",
+        // Matches Card.HighContrast (Inverse Surface)
+        "high-contrast": "bg-inverse-surface text-inverse-on-surface",
+        // Matches Card.Ghost (Transparent) - No blur
+        ghost: "bg-transparent text-on-surface shadow-none",
+        // Matches Card.Surface (Surface)
+        surface: "bg-surface text-on-surface",
+      },
+      side: {
+        top: "inset-x-0 top-0",
+        bottom: "inset-x-0 bottom-0 max-h-[96%]",
+        left: "inset-y-0 left-0 w-full max-w-sm",
+        right: "inset-y-0 right-0 w-full max-w-sm",
+      },
+      height: {
+        snap: "h-full",
+        auto: "h-auto",
+      },
+      shape: {
+        full: "",
+        minimal: "",
+        sharp: "",
+      },
+      mode: {
+        normal: "",
+        detached: "",
+      },
     },
-    side: {
-      top: "inset-x-0 top-0",
-      bottom: "inset-x-0 bottom-0 max-h-[96%]",
-      left: "inset-y-0 left-0 w-full max-w-sm",
-      right: "inset-y-0 right-0 w-full max-w-sm",
-    },
-    height: {
-      snap: "h-full",
-      auto: "h-auto",
-    },
-    shape: {
-      full: "",
-      minimal: "",
-      sharp: "",
-    },
-    mode: {
-      normal: "",
-      detached: "",
+    compoundVariants: [
+      // --- Layout & Shape Logic ---
+      { side: "bottom", mode: "normal", className: "mx-auto max-w-xl" },
+      {
+        side: "bottom",
+        mode: "detached",
+        className: "inset-x-4 bottom-4 mx-auto max-w-lg",
+      },
+      {
+        side: "bottom",
+        mode: "normal",
+        shape: "full",
+        className: "rounded-t-3xl",
+      },
+      {
+        side: "bottom",
+        mode: "normal",
+        shape: "minimal",
+        className: "rounded-t-lg",
+      },
+      {
+        side: "bottom",
+        mode: "normal",
+        shape: "sharp",
+        className: "rounded-t-none",
+      },
+      {
+        side: "bottom",
+        mode: "detached",
+        shape: "full",
+        className: "rounded-2xl",
+      },
+      {
+        side: "bottom",
+        mode: "detached",
+        shape: "minimal",
+        className: "rounded-lg",
+      },
+      {
+        side: "bottom",
+        mode: "detached",
+        shape: "sharp",
+        className: "rounded-none",
+      },
+      {
+        side: "left",
+        shape: "full",
+        mode: "normal",
+        className: "rounded-r-2xl",
+      },
+      {
+        side: "left",
+        shape: "minimal",
+        mode: "normal",
+        className: "rounded-r-lg",
+      },
+      {
+        side: "left",
+        shape: "sharp",
+        mode: "normal",
+        className: "rounded-r-none",
+      },
+      {
+        side: "left",
+        shape: "full",
+        mode: "detached",
+        className: "left-4 rounded-2xl",
+      },
+      {
+        side: "left",
+        shape: "minimal",
+        mode: "detached",
+        className: "left-4 rounded-lg",
+      },
+      {
+        side: "left",
+        shape: "sharp",
+        mode: "detached",
+        className: "left-4 rounded-none",
+      },
+      {
+        side: "right",
+        shape: "full",
+        mode: "normal",
+        className: "rounded-l-2xl",
+      },
+      {
+        side: "right",
+        shape: "minimal",
+        mode: "normal",
+        className: "rounded-l-lg",
+      },
+      {
+        side: "right",
+        shape: "sharp",
+        mode: "normal",
+        className: "rounded-l-none",
+      },
+      {
+        side: "right",
+        shape: "full",
+        mode: "detached",
+        className: "top-4 bottom-4 right-4 rounded-2xl",
+      },
+      {
+        side: "right",
+        shape: "minimal",
+        mode: "detached",
+        className: "top-4 bottom-4 right-4 rounded-lg",
+      },
+      {
+        side: "right",
+        shape: "sharp",
+        mode: "detached",
+        className: "top-4 bottom-4 right-4 rounded-none",
+      },
+    ],
+    defaultVariants: {
+      variant: "primary",
+      shape: "full",
+      mode: "normal",
     },
   },
-  compoundVariants: [
-    { side: "bottom", mode: "normal", className: "mx-auto max-w-xl" },
-    {
-      side: "bottom",
-      mode: "detached",
-      className: "inset-x-4 bottom-4 mx-auto max-w-lg",
-    },
-    {
-      side: "bottom",
-      mode: "normal",
-      shape: "full",
-      className: "rounded-t-3xl",
-    },
-    {
-      side: "bottom",
-      mode: "normal",
-      shape: "minimal",
-      className: "rounded-t-lg",
-    },
-    {
-      side: "bottom",
-      mode: "normal",
-      shape: "sharp",
-      className: "rounded-t-none",
-    },
-    {
-      side: "bottom",
-      mode: "detached",
-      shape: "full",
-      className: "rounded-2xl",
-    },
-    {
-      side: "bottom",
-      mode: "detached",
-      shape: "minimal",
-      className: "rounded-lg",
-    },
-    {
-      side: "bottom",
-      mode: "detached",
-      shape: "sharp",
-      className: "rounded-none",
-    },
-    {
-      side: "left",
-      shape: "full",
-      mode: "normal",
-      className: "rounded-r-2xl",
-    },
-    {
-      side: "left",
-      shape: "minimal",
-      mode: "normal",
-      className: "rounded-r-lg",
-    },
-    {
-      side: "left",
-      shape: "sharp",
-      mode: "normal",
-      className: "rounded-r-none",
-    },
-    {
-      side: "left",
-      shape: "full",
-      mode: "detached",
-      className: "left-4 rounded-2xl",
-    },
-    {
-      side: "left",
-      shape: "minimal",
-      mode: "detached",
-      className: "left-4 rounded-lg",
-    },
-    {
-      side: "left",
-      shape: "sharp",
-      mode: "detached",
-      className: "left-4 rounded-none",
-    },
-    {
-      side: "right",
-      shape: "full",
-      mode: "normal",
-      className: "rounded-l-2xl",
-    },
-    {
-      side: "right",
-      shape: "minimal",
-      mode: "normal",
-      className: "rounded-l-lg",
-    },
-    {
-      side: "right",
-      shape: "sharp",
-      mode: "normal",
-      className: "rounded-l-none",
-    },
-    {
-      side: "right",
-      shape: "full",
-      mode: "detached",
-      className: "top-4 bottom-4 right-4 rounded-2xl",
-    },
-    {
-      side: "right",
-      shape: "minimal",
-      mode: "detached",
-      className: "top-4 bottom-4 right-4 rounded-lg",
-    },
-    {
-      side: "right",
-      shape: "sharp",
-      mode: "detached",
-      className: "top-4 bottom-4 right-4 rounded-none",
-    },
-  ],
-  defaultVariants: {
-    variant: "card",
-    shape: "full",
-    mode: "normal",
-  },
-});
+);
 
 type SheetContentProps = React.ComponentProps<typeof VaulDrawer.Content> &
   VariantProps<typeof contentVariants>;
@@ -261,6 +283,7 @@ const SheetContent = React.forwardRef<
 
   return (
     <SheetPortal>
+      {/* Removed backdrop-blur-sm */}
       <VaulDrawer.Overlay className="fixed inset-0 z-50 bg-black/50" />
       <VaulDrawer.Content
         ref={ref}
@@ -319,10 +342,13 @@ const SheetGrabber = ({
     <div className="flex-shrink-0 p-4">
       <div
         className={clsx(
-          "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full",
-          variant === "primary"
-            ? "bg-on-primary-container/40"
-            : "bg-on-surface-variant/40",
+          "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full opacity-40",
+          // Adapt grabber color based on background variant
+          variant === "high-contrast"
+            ? "bg-inverse-on-surface"
+            : variant === "tertiary"
+              ? "bg-on-tertiary-container"
+              : "bg-on-surface-variant",
           className,
         )}
         {...props}
@@ -342,3 +368,15 @@ export const Sheet = Object.assign(SheetRoot, {
   Footer: SheetFooter,
   Grabber: SheetGrabber,
 });
+
+// Added Named Exports
+export {
+  SheetTrigger,
+  SheetContent,
+  SheetClose,
+  SheetTitle,
+  SheetDescription,
+  SheetHeader,
+  SheetFooter,
+  SheetGrabber,
+};

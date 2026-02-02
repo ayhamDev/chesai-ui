@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import clsx from "clsx";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "../button";
 import { Typography } from "../typography";
-import { Sheet } from "./index"; // Assuming your component file is named index.tsx
+import { Sheet } from "./index";
 
 const meta: Meta<typeof Sheet> = {
   title: "Components/Sheet",
@@ -14,15 +14,22 @@ const meta: Meta<typeof Sheet> = {
     docs: {
       description: {
         component:
-          "A versatile and responsive sheet component. It renders as a bottom sheet on mobile viewports and intelligently transitions to a side sheet (drawer) on desktop. This behavior can be overridden.",
+          "A versatile and responsive sheet component. It renders as a bottom sheet on mobile viewports and intelligently transitions to a side sheet (drawer) on desktop. Now supports all standard Card variants (Primary, Secondary, Tertiary, High Contrast, Ghost).",
       },
     },
   },
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "card"],
-      description: "The color variant of the sheet.",
+      options: [
+        "primary",
+        "secondary",
+        "tertiary",
+        "high-contrast",
+        "ghost",
+        "surface",
+      ],
+      description: "The visual style of the sheet.",
     },
     side: {
       control: "select",
@@ -43,30 +50,19 @@ const meta: Meta<typeof Sheet> = {
     },
     forceBottomSheet: {
       control: "boolean",
-      description:
-        "If true, forces the component to render as a bottom sheet on all screen sizes.",
     },
     forceSideSheet: {
       control: "boolean",
-      description:
-        "If true, forces the component to render as a side sheet on all screen sizes.",
     },
-    // Vaul-specific props
     snapPoints: {
       control: "object",
-      description: "Array of snap points for the bottom sheet mode.",
     },
     fadeFromIndex: {
       control: "number",
-      description:
-        "Required when snapPoints are used. Snap points are disabled on desktop.",
     },
     dismissible: {
       control: "boolean",
     },
-    // We don't control these directly but show their action
-    activeSnapPoint: { control: false },
-    setActiveSnapPoint: { action: "snapPointChanged" },
   },
 };
 
@@ -80,12 +76,15 @@ const DummyContent = () => (
       Sheet Content
     </Typography>
     <Typography variant="p">
-      This is the main content area. If the content becomes too long, this area
-      will automatically become scrollable.
+      This is the main content area. It adapts to the variant colors
+      automatically.
     </Typography>
     <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {Array.from({ length: 12 }).map((_, i) => (
-        <div key={`dummy-item-${i}`} className="h-24 rounded-2xl bg-black/5" />
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={`dummy-item-${i}`}
+          className="h-24 rounded-2xl bg-black/5 dark:bg-white/10"
+        />
       ))}
     </div>
   </div>
@@ -94,19 +93,12 @@ const DummyContent = () => (
 // --- STORIES ---
 
 export const ResponsiveBehavior: Story = {
-  name: "1. Responsive Behavior (Default)",
+  name: "1. Responsive Behavior (Primary)",
   args: {
     side: "right",
     mode: "normal",
     shape: "full",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "**This is the primary use case.** By default, the component is a **bottom sheet** on mobile and a **side sheet** on desktop. Resize your browser window to see the transition.",
-      },
-    },
+    variant: "primary",
   },
   render: (args) => (
     <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
@@ -141,91 +133,118 @@ export const ResponsiveBehavior: Story = {
   ),
 };
 
-export const ForceBottomSheet: Story = {
-  name: "2. Force Bottom Sheet on Desktop",
-  args: {
-    ...ResponsiveBehavior.args,
-    forceBottomSheet: true,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Set `forceBottomSheet={true}` to override the responsive behavior and always render a bottom sheet, even on large screens.",
-      },
-    },
-  },
-  render: (args) => <ResponsiveBehavior.render {...args} />,
-};
-
-export const ForceSideSheet: Story = {
-  name: "3. Force Side Sheet on Mobile",
-  args: {
-    ...ResponsiveBehavior.args,
-    forceSideSheet: true,
-    side: "left",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Set `forceSideSheet={true}` to override the responsive behavior and always render a side sheet, even on small screens. This is useful for main navigation drawers that need to be consistent across all devices.",
-      },
-    },
-    // Set a mobile viewport to demonstrate the override
-    viewport: {
-      defaultViewport: "mobile1",
-    },
-  },
-  render: (args) => <ResponsiveBehavior.render {...args} />,
-};
-
 export const ColorVariants: Story = {
-  name: "4. Color Variants",
+  name: "2. Color Variants",
   args: {
     side: "right",
     forceSideSheet: true, // Force side sheet to better see colors on desktop
   },
   render: (args) => (
-    <div className="flex h-[500px] w-full items-center justify-center gap-4 bg-graphite-background p-12">
-      {/* Card Variant */}
-      <Sheet {...args} variant="card">
+    <div className="flex h-[600px] w-full flex-col items-center justify-center gap-4 bg-graphite-background p-8">
+      <div className="flex gap-4 flex-wrap justify-center">
+        {/* Primary */}
+        <Sheet {...args} variant="primary">
+          <Sheet.Trigger asChild>
+            <Button>Primary</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="h3">Primary</Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+
+        {/* Secondary */}
+        <Sheet {...args} variant="secondary">
+          <Sheet.Trigger asChild>
+            <Button variant="secondary">Secondary</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="h3">Secondary</Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+
+        {/* Tertiary */}
+        <Sheet {...args} variant="tertiary">
+          <Sheet.Trigger asChild>
+            <Button variant="tertiary">Tertiary</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="h3">Tertiary</Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+      </div>
+
+      <div className="flex gap-4 flex-wrap justify-center">
+        {/* High Contrast */}
+        <Sheet {...args} variant="high-contrast">
+          <Sheet.Trigger asChild>
+            <Button variant="outline">High Contrast</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="h3" className="text-inherit">
+                High Contrast
+              </Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+
+        {/* Surface */}
+        <Sheet {...args} variant="surface">
+          <Sheet.Trigger asChild>
+            <Button variant="ghost">Surface</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="h3">Surface</Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+      </div>
+    </div>
+  ),
+};
+
+export const HighContrastSheet: Story = {
+  name: "3. High Contrast (Inverse)",
+  args: {
+    variant: "high-contrast",
+    side: "right",
+    forceBottomSheet: true, // Show grabber behavior
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `high-contrast` variant uses the inverse surface colors. Note how the grabber handle automatically adjusts its opacity/color to remain visible against the dark background.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
+      <Sheet {...args}>
         <Sheet.Trigger asChild>
-          <Button>Card (Default)</Button>
+          <Button variant="primary">Open High Contrast</Button>
         </Sheet.Trigger>
         <Sheet.Content>
+          <Sheet.Grabber />
           <Sheet.Header>
-            <Sheet.Title>
-              <Typography variant="h3">Card Variant</Typography>
-            </Sheet.Title>
-          </Sheet.Header>
-          <DummyContent />
-        </Sheet.Content>
-      </Sheet>
-      {/* Secondary Variant */}
-      <Sheet {...args} variant="secondary">
-        <Sheet.Trigger asChild>
-          <Button>Secondary</Button>
-        </Sheet.Trigger>
-        <Sheet.Content>
-          <Sheet.Header>
-            <Sheet.Title>
-              <Typography variant="h3">Secondary Variant</Typography>
-            </Sheet.Title>
-          </Sheet.Header>
-          <DummyContent />
-        </Sheet.Content>
-      </Sheet>
-      {/* Primary Variant */}
-      <Sheet {...args} variant="primary">
-        <Sheet.Trigger asChild>
-          <Button>Primary</Button>
-        </Sheet.Trigger>
-        <Sheet.Content>
-          <Sheet.Header>
-            <Sheet.Title>
-              <Typography variant="h3">Primary Variant</Typography>
-            </Sheet.Title>
+            <Typography variant="h3" className="text-inherit">
+              Inverse Sheet
+            </Typography>
+            <Typography variant="p" className="text-inherit opacity-80">
+              This uses the `inverse-surface` token.
+            </Typography>
           </Sheet.Header>
           <DummyContent />
         </Sheet.Content>
@@ -234,61 +253,28 @@ export const ColorVariants: Story = {
   ),
 };
 
-export const SideSheetLeft: Story = {
-  name: "5. Side Sheet (Left)",
-  args: {
-    ...ResponsiveBehavior.args,
-    side: "left",
-    forceSideSheet: true,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Use the `side` prop to control the drawer's position on desktop.",
-      },
-    },
-  },
-  render: (args) => <ResponsiveBehavior.render {...args} />,
-};
-
 export const DetachedMode: Story = {
-  name: "6. Detached Mode",
+  name: "4. Detached Mode",
   args: {
     ...ResponsiveBehavior.args,
     mode: "detached",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The `detached` mode adds a margin, making the sheet appear to float. This works responsively for both bottom and side sheet variants.",
-      },
-    },
+    variant: "secondary",
   },
   render: (args) => <ResponsiveBehavior.render {...args} />,
 };
 
 export const WithSnappingPoints: Story = {
-  name: "7. With Snapping Points",
+  name: "5. With Snapping (Bottom Sheet)",
   args: {
-    snapPoints: [0.3, 0.7, 1],
-    fadeFromIndex: 0,
-    forceBottomSheet: true, // Snapping is a bottom sheet feature
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "**Snapping only works in bottom sheet mode.** If the component renders as a side sheet on desktop, snap points are automatically disabled. Here, we use `forceBottomSheet` to demonstrate them on a large screen.",
-      },
-    },
+    snapPoints: [0.3, 0.6, 1],
+    forceBottomSheet: true,
+    variant: "surface",
   },
   render: (args) => (
     <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
       <Sheet {...args}>
         <Sheet.Trigger asChild>
-          <Button>Open Snapping Sheet</Button>
+          <Button variant="outline">Open Snappable</Button>
         </Sheet.Trigger>
         <Sheet.Content>
           <Sheet.Grabber />
@@ -297,191 +283,4 @@ export const WithSnappingPoints: Story = {
       </Sheet>
     </div>
   ),
-};
-
-export const ControlledSnapping: Story = {
-  name: "8. Controlled Snapping",
-  args: {
-    snapPoints: ["300px", 1],
-    fadeFromIndex: 0,
-    forceBottomSheet: true,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Manually control the snap point from outside the component using the `activeSnapPoint` and `setActiveSnapPoint` props. This only works in bottom sheet mode.",
-      },
-    },
-  },
-  render: function Render(args) {
-    const [activeSnapPoint, setActiveSnapPoint] = useState<
-      string | number | null
-    >(args.snapPoints![0]);
-    return (
-      <div className="flex h-[500px] w-full flex-col items-center justify-center gap-4 bg-graphite-background p-12">
-        <Typography variant="large">External Controls</Typography>
-
-        <Sheet
-          {...args}
-          activeSnapPoint={activeSnapPoint}
-          setActiveSnapPoint={setActiveSnapPoint}
-        >
-          <Sheet.Trigger asChild>
-            <Button>Open Controlled Sheet</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Grabber />
-            <Sheet.Header>
-              <Typography variant="h3">
-                Current Snap: {String(activeSnapPoint)}
-              </Typography>
-            </Sheet.Header>
-
-            <div
-              className={clsx(
-                activeSnapPoint === 1 ? "overflow-auto" : "overflow-hidden",
-                "p-4",
-              )}
-            >
-              <Typography>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                Explicabo, eligendi! Voluptates nobis nam animi similique vero
-                tenetur sunt velit? Maxime numquam neque ducimus recusandae quae
-                non laudantium eum officiis nostrum. Cupiditate veritatis facere
-                reiciendis cum fuga iste, ab qui animi culpa ducimus sed
-                molestias? Qui, facilis alias? Ipsum sunt corrupti mollitia
-                libero a quibusdam, rerum dignissimos, quam magni id unde.
-                Quaerat, modi suscipit odio laboriosam alias, eum recusandae
-                quod, aut nobis quidem explicabo impedit optio possimus amet ea.
-                Non odio, placeat vel officia iusto vitae accusamus velit sint
-                quo facere. Est et eius, esse culpa inventore sequi eum soluta
-                perspiciatis illo minima, facilis nobis sed numquam similique.
-                Soluta, ipsa eum enim amet dolorum error nemo at ab. Sit,
-                repudiandae autem. Reiciendis quo eveniet molestias dolore
-                exercitationem? Tenetur deleniti magni facere! Ducimus explicabo
-                alias deleniti perferendis delectus accusamus deserunt tenetur
-                iste dolor ullam, odio aliquid autem aut illum ad officiis
-                vitae. Ipsam repellat neque ab debitis accusantium cupiditate
-                laudantium, rem perferendis mollitia repudiandae architecto
-                voluptatibus laborum et eius nemo iste harum nisi unde
-                asperiores tempora placeat officia esse quia. Vitae, odit? Ipsa,
-                similique rem. Minus eveniet totam quidem quia asperiores
-                nostrum cupiditate corporis error expedita. Consequatur
-                aspernatur, sint eum corporis, nisi earum dicta sed quae
-                molestias sunt ipsa ex magni porro. Distinctio animi facilis
-                doloremque beatae libero laudantium ducimus aliquam molestias,
-                voluptates amet fugiat facere perferendis deserunt harum dicta
-                eveniet quis sed deleniti repellendus veniam ullam reiciendis?
-                Accusantium reprehenderit laudantium nemo. Quod nemo omnis hic
-                optio laudantium saepe magni veniam excepturi, tenetur alias
-                eveniet quibusdam, quidem recusandae quasi? Ipsum error
-                accusamus corporis. Cum nesciunt ab repellat vitae consequatur
-                et qui nemo. Magnam deserunt libero cumque magni ea pariatur,
-                iusto consectetur, natus, ducimus sunt eum! Quisquam aliquid
-                fugit suscipit architecto sunt quas at optio neque porro
-                expedita, placeat dolor perferendis sequi tempora?
-              </Typography>
-            </div>
-          </Sheet.Content>
-        </Sheet>
-      </div>
-    );
-  },
-};
-
-export const AlwaysActive: Story = {
-  name: "9. AlwaysActive (Non Modal)",
-  args: {
-    snapPoints: ["300px", 1],
-    dismissible: false,
-    forceBottomSheet: true,
-    variant: "secondary",
-    fadeFromIndex: 1,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Manually control the snap point from outside the component using the `activeSnapPoint` and `setActiveSnapPoint` props. This only works in bottom sheet mode.",
-      },
-    },
-  },
-
-  render: function Render(args) {
-    const [activeSnapPoint, setActiveSnapPoint] = useState<
-      string | number | null
-    >(args.snapPoints![0]);
-    const [IsModal, setIsModal] = useState(false);
-    useEffect(() => {
-      setIsModal(activeSnapPoint === 1 ? true : false);
-    }, [activeSnapPoint]);
-    return (
-      <div className="flex h-[500px] w-full flex-col items-center justify-center gap-4 bg-graphite-background p-12">
-        <Button>Clickable Even When Sheet Is Open</Button>
-        <Sheet
-          {...args}
-          open={true}
-          modal={false}
-          activeSnapPoint={activeSnapPoint}
-          setActiveSnapPoint={setActiveSnapPoint}
-        >
-          <Sheet.Content>
-            <Sheet.Grabber />
-            <Sheet.Header>
-              <Typography variant="h3">
-                Current Snap: {String(activeSnapPoint)}
-              </Typography>
-            </Sheet.Header>
-
-            <div
-              className={clsx(
-                activeSnapPoint === 1 ? "overflow-auto" : "overflow-hidden",
-                "p-4",
-              )}
-            >
-              <Typography>
-                Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                Explicabo, eligendi! Voluptates nobis nam animi similique vero
-                tenetur sunt velit? Maxime numquam neque ducimus recusandae quae
-                non laudantium eum officiis nostrum. Cupiditate veritatis facere
-                reiciendis cum fuga iste, ab qui animi culpa ducimus sed
-                molestias? Qui, facilis alias? Ipsum sunt corrupti mollitia
-                libero a quibusdam, rerum dignissimos, quam magni id unde.
-                Quaerat, modi suscipit odio laboriosam alias, eum recusandae
-                quod, aut nobis quidem explicabo impedit optio possimus amet ea.
-                Non odio, placeat vel officia iusto vitae accusamus velit sint
-                quo facere. Est et eius, esse culpa inventore sequi eum soluta
-                perspiciatis illo minima, facilis nobis sed numquam similique.
-                Soluta, ipsa eum enim amet dolorum error nemo at ab. Sit,
-                repudiandae autem. Reiciendis quo eveniet molestias dolore
-                exercitationem? Tenetur deleniti magni facere! Ducimus explicabo
-                alias deleniti perferendis delectus accusamus deserunt tenetur
-                iste dolor ullam, odio aliquid autem aut illum ad officiis
-                vitae. Ipsam repellat neque ab debitis accusantium cupiditate
-                laudantium, rem perferendis mollitia repudiandae architecto
-                voluptatibus laborum et eius nemo iste harum nisi unde
-                asperiores tempora placeat officia esse quia. Vitae, odit? Ipsa,
-                similique rem. Minus eveniet totam quidem quia asperiores
-                nostrum cupiditate corporis error expedita. Consequatur
-                aspernatur, sint eum corporis, nisi earum dicta sed quae
-                molestias sunt ipsa ex magni porro. Distinctio animi facilis
-                doloremque beatae libero laudantium ducimus aliquam molestias,
-                voluptates amet fugiat facere perferendis deserunt harum dicta
-                eveniet quis sed deleniti repellendus veniam ullam reiciendis?
-                Accusantium reprehenderit laudantium nemo. Quod nemo omnis hic
-                optio laudantium saepe magni veniam excepturi, tenetur alias
-                eveniet quibusdam, quidem recusandae quasi? Ipsum error
-                accusamus corporis. Cum nesciunt ab repellat vitae consequatur
-                et qui nemo. Magnam deserunt libero cumque magni ea pariatur,
-                iusto consectetur, natus, ducimus sunt eum! Quisquam aliquid
-                fugit suscipit architecto sunt quas at optio neque porro
-                expedita, placeat dolor perferendis sequi tempora?
-              </Typography>
-            </div>
-          </Sheet.Content>
-        </Sheet>
-      </div>
-    );
-  },
 };

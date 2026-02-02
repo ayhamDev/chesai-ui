@@ -1,48 +1,48 @@
+"use client";
+
 import React from "react";
 import { clsx } from "clsx";
 
-// Defines the mapping from our component 'variant' prop to the CSS classes
-// defined in src/lib/tailwind/typography.css
+// Removed "text-on-surface" and "text-on-surface-variant" from these strings
+// to allow inheritance from parents like High Contrast Cards.
 const variants = {
   // --- MD3 Token Mappings ---
-  "display-large": "display-large text-on-surface",
-  "display-medium": "display-medium text-on-surface",
-  "display-small": "display-small text-on-surface",
+  "display-large": "display-large",
+  "display-medium": "display-medium",
+  "display-small": "display-small",
 
-  "headline-large": "headline-large text-on-surface",
-  "headline-medium": "headline-medium text-on-surface",
-  "headline-small": "headline-small text-on-surface",
+  "headline-large": "headline-large",
+  "headline-medium": "headline-medium",
+  "headline-small": "headline-small",
 
-  "title-large": "title-large text-on-surface",
-  "title-medium": "title-medium text-on-surface",
-  "title-small": "title-small text-on-surface",
+  "title-large": "title-large",
+  "title-medium": "title-medium",
+  "title-small": "title-small",
 
-  "body-large": "body-large text-on-surface",
-  "body-medium": "body-medium text-on-surface",
-  "body-small": "body-small text-on-surface",
+  "body-large": "body-large",
+  "body-medium": "body-medium",
+  "body-small": "body-small",
 
-  "label-large": "label-large text-on-surface",
-  "label-medium": "label-medium text-on-surface",
-  "label-small": "label-small text-on-surface",
+  "label-large": "label-large",
+  "label-medium": "label-medium",
+  "label-small": "label-small",
 
-  // --- Legacy / Semantic Aliases (Mapped to closest MD3 equivalent) ---
-  h1: "headline-large text-on-surface",
-  h2: "headline-medium text-on-surface",
-  h3: "headline-small text-on-surface",
-  h4: "title-large text-on-surface",
-  p: "body-large text-on-surface",
-  lead: "body-large text-on-surface-variant",
-  large: "body-large font-semibold text-on-surface",
-  small: "body-small text-on-surface",
-  muted: "body-medium text-on-surface-variant",
+  // --- Legacy / Semantic Aliases ---
+  h1: "headline-large",
+  h2: "headline-medium",
+  h3: "headline-small",
+  h4: "title-large",
+  p: "body-large",
+  lead: "body-large opacity-80", // Replaced color class with opacity for better inheritance
+  large: "body-large font-semibold",
+  small: "body-small",
+  muted: "body-medium opacity-70",
   blockquote:
-    "body-large text-on-surface-variant border-l-2 border-primary pl-4 italic my-4",
+    "body-large border-l-2 border-primary pl-4 italic my-4 opacity-80",
   code: "relative rounded bg-secondary-container px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold text-on-secondary-container",
 };
 
-// Defines the default HTML tag for each variant if 'as' prop is not provided
 const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {
-  // MD3
   "display-large": "h1",
   "display-medium": "h1",
   "display-small": "h1",
@@ -58,8 +58,6 @@ const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {
   "label-large": "span",
   "label-medium": "span",
   "label-small": "span",
-
-  // Legacy
   h1: "h1",
   h2: "h2",
   h3: "h3",
@@ -93,12 +91,9 @@ type PolymorphicRef<C extends React.ElementType> =
 
 type TypographyComponent = (<C extends React.ElementType = "p">(
   props: TypographyProps<C> & { ref?: PolymorphicRef<C> },
-) => React.ReactElement | null) & {
-  displayName?: string;
-};
+) => React.ReactElement | null) & { displayName?: string };
 
 export const Typography = React.forwardRef(
-  // @ts-ignore
   <C extends React.ElementType = "p">(
     {
       as,
@@ -109,12 +104,8 @@ export const Typography = React.forwardRef(
     }: TypographyProps<C>,
     ref?: PolymorphicRef<C>,
   ) => {
-    // Determine the HTML tag: User prop > Map > Fallback "p"
     const Component = as || variantToTagMap[variant] || "p";
-
-    // Get the CSS class from the map. Fallback to body-medium if invalid variant passed.
     const variantClass = variants[variant] || variants["body-medium"];
-
     const combinedClassName = clsx(variantClass, className);
 
     return (

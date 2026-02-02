@@ -24,6 +24,10 @@ const meta: Meta<typeof Select> = {
       control: "select",
       options: ["inside", "outside", "outside-left"],
     },
+    mobileLayout: {
+      control: "select",
+      options: ["default", "bottom-sheet", "dialog"],
+    },
     disabled: { control: "boolean" },
     isInvalid: { control: "boolean" },
   },
@@ -39,6 +43,12 @@ const animals = [
   { value: "lion", label: "Lion" },
   { value: "tiger", label: "Tiger" },
   { value: "giraffe", label: "Giraffe" },
+  { value: "cat2", label: "Cat2" },
+  { value: "dog2", label: "Dog2" },
+  { value: "elephant2", label: "Elephant2" },
+  { value: "lion2", label: "Lion2" },
+  { value: "tiger2", label: "Tiger2" },
+  { value: "giraffe2", label: "Giraffe2" },
 ];
 
 export const Default: Story = {
@@ -46,7 +56,8 @@ export const Default: Story = {
     label: "Favorite Animal",
     placeholder: "Select an animal",
     items: animals,
-    labelPlacement: "inside"
+    labelPlacement: "inside",
+    mobileLayout: "dialog"
   },
 };
 
