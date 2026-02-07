@@ -1,7 +1,7 @@
 {
   "name": "chesai-ui",
   "private": false,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "packageManager": "pnpm@10.12.1",
   "repository": {
     "type": "git",
