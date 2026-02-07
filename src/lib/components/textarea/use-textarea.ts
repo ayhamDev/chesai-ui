@@ -24,11 +24,7 @@ export function useTextarea(props: UseTextareaProps) {
     ...otherProps
   } = props
 
-  // Use the useInput hook but we need to override how refs are handled
-  // We grab the DOM ref from useInput, which is typed as HTMLInputElement there,
-  // but we know we will use it on a TextArea here.
   const {
-    domRef: inputRef, // Rename to inputRef for clarity
     label,
     description,
     errorMessage,
@@ -46,42 +42,30 @@ export function useTextarea(props: UseTextareaProps) {
     getClearButtonProps,
   } = useInput(props as any)
 
-  // Explicitly creating a ref for textarea to satisfy TS
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-
   const [isFocused, setIsFocused] = useState(false)
 
-  // Sync refs: When ref changes, update both
   React.useImperativeHandle(ref, () => textareaRef.current!)
 
-  // --- Auto Resize Logic ---
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <none>
   useLayoutEffect(() => {
     if (disableAutosize || !textareaRef.current) return
 
     const textarea = textareaRef.current
-
     const adjustHeight = () => {
-      textarea.style.height = 'auto' // Reset height
-
-      const singleRowHeight = 24 // Approximation or calculate via computed styles
+      textarea.style.height = 'auto'
+      const singleRowHeight = 24
       const minHeight = minRows * singleRowHeight
       const maxHeight = maxRows * singleRowHeight
-
       const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight)
-
       textarea.style.height = `${newHeight}px`
       textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden'
     }
 
     textarea.addEventListener('input', adjustHeight)
-    // Initial adjustment
     adjustHeight()
-
     return () => textarea.removeEventListener('input', adjustHeight)
   }, [minRows, maxRows, disableAutosize, props.value, props.defaultValue])
 
-  // Styles
   const isFilled = !!props.value || !!props.placeholder || isFocused
 
   const dynamicStyles = getTextareaSlotClassNames({
@@ -146,7 +130,6 @@ export function useTextarea(props: UseTextareaProps) {
     }
   }
 
-  // Override getInputProps to return TextArea compatible props
   const getInputProps = () => ({
     ref: textareaRef,
     'data-slot': 'input',
@@ -158,7 +141,6 @@ export function useTextarea(props: UseTextareaProps) {
     defaultValue: props.defaultValue,
     onFocus: handleFocus,
     onBlur: handleBlur,
-    // Fix: Explicitly type event handlers
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       onChange?.(e)
       onValueChange?.(e.target.value)

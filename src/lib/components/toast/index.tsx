@@ -1,62 +1,114 @@
 "use client";
 
-import { Toaster as Sonner } from "sonner";
+import { cva, type VariantProps } from "class-variance-authority";
+import { clsx } from "clsx";
+import React from "react";
+import { Toaster as Sonner, toast as sonnerToast } from "sonner";
+import { useTheme } from "../../context/ThemeProvider";
 
-type ToasterProps = React.ComponentProps<typeof Sonner>;
+// --- VARIANTS ---
 
-/**
- * A styled wrapper around the `sonner` library, configured to match the
- * Material Design 3 theme tokens defined in chesai-ui.
- */
-const Toaster = ({ ...props }: ToasterProps) => {
-  // Optional: Hook into your theme provider if you need to force a specific mode
-  // const { theme = "system" } = useTheme();
+const toastVariants = cva(
+  // Base Layout & Typography
+  // CHANGED: Added 'flex-wrap' to allow items to flow to the next line.
+  // CHANGED: Added '[&>[data-button]:first-of-type]:ml-auto' to target the first action button
+  // (whichever comes first in DOM) and push it to the right, effectively aligning the button row to the end.
+  "group toast group-[.toaster]:flex group-[.toaster]:flex-wrap group-[.toaster]:gap-3 group-[.toaster]:items-start group-[.toaster]:w-full md:group-[.toaster]:w-[356px] group-[.toaster]:p-4 group-[.toaster]:font-manrope group-[.toaster]:text-sm group-[.toaster]:pointer-events-auto group-[.toaster]:transition-all group-[.toaster]:border group-[.toaster]:select-none [&>[data-button]:first-of-type]:ml-auto",
+  {
+    variants: {
+      variant: {
+        primary:
+          "group-[.toaster]:bg-surface-container-low group-[.toaster]:text-on-surface group-[.toaster]:border-outline-variant/50",
+        secondary:
+          "group-[.toaster]:bg-surface-container-high group-[.toaster]:text-on-surface group-[.toaster]:border-outline-variant/50",
+        tertiary:
+          "group-[.toaster]:bg-tertiary-container group-[.toaster]:text-on-tertiary-container group-[.toaster]:border-tertiary-container",
+        "high-contrast":
+          "group-[.toaster]:bg-inverse-surface group-[.toaster]:text-inverse-on-surface group-[.toaster]:border-inverse-surface",
+        ghost:
+          "group-[.toaster]:bg-surface-container-low/80 group-[.toaster]:backdrop-blur-md group-[.toaster]:text-on-surface group-[.toaster]:border-outline-variant/30",
+        surface:
+          "group-[.toaster]:bg-surface group-[.toaster]:text-on-surface group-[.toaster]:border-outline-variant",
+      },
+      shape: {
+        full: "group-[.toaster]:rounded-[28px]", // MD3 Pill
+        minimal: "group-[.toaster]:rounded-xl", // Standard
+        sharp: "group-[.toaster]:rounded-none", // Industrial
+      },
+      shadow: {
+        none: "group-[.toaster]:shadow-none",
+        sm: "group-[.toaster]:shadow-sm",
+        md: "group-[.toaster]:shadow-md",
+        lg: "group-[.toaster]:shadow-xl",
+      },
+    },
+    defaultVariants: {
+      variant: "secondary",
+      shape: "minimal",
+      shadow: "lg",
+    },
+  },
+);
+
+// --- TYPES ---
+
+type ToasterProps = React.ComponentProps<typeof Sonner> &
+  VariantProps<typeof toastVariants>;
+
+// --- COMPONENT ---
+
+const Toaster = ({
+  variant = "secondary",
+  shape = "minimal",
+  shadow = "lg",
+  position = "bottom-right",
+  ...props
+}: ToasterProps) => {
+  const { resolvedTheme } = useTheme();
 
   return (
     <Sonner
-      // We rely on CSS variables, so 'system' usually works best,
-      // but you can pass the active theme string here if needed.
-      theme="system"
+      theme={resolvedTheme as "light" | "dark"}
       className="toaster group"
+      position={position}
+      // ... icons
       toastOptions={{
+        unstyled: true,
         classNames: {
-          // --- Main Container ---
-          // MD3 uses Surface Container High for Toasts/Snackbars to separate from body content
-          toast:
-            "group toast group-[.toaster]:bg-surface-container-high group-[.toaster]:text-on-surface " +
-            "group-[.toaster]:border-outline-variant/50 group-[.toaster]:border " +
-            "group-[.toaster]:shadow-xl group-[.toaster]:rounded-xl " +
-            "group-[.toaster]:p-4 group-[.toaster]:gap-3 " +
-            "font-manrope",
-
-          // --- Typography ---
-          title:
-            "group-[.toast]:font-bold group-[.toast]:text-sm group-[.toast]:text-on-surface",
+          toast: clsx(
+            toastVariants({ variant, shape, shadow }),
+            "group-data-[type=error]:bg-error-container group-data-[type=error]:text-on-error-container group-data-[type=error]:border-error/20",
+            "group-data-[type=warning]:bg-surface-container-high group-data-[type=warning]:border-yellow-500/50",
+            "group-data-[type=success]:bg-surface-container-high group-data-[type=success]:border-green-500/50",
+          ),
+          // CHANGED: Width calculation forces the content to fill the first line, ensuring buttons wrap.
+          // 2.5rem = 40px (covers 20px icon + 12px gap + buffer).
+          content: "w-[calc(100%-2.5rem)]",
+          title: "group-[.toast]:font-bold group-[.toast]:text-base",
           description:
-            "group-[.toast]:text-on-surface-variant group-[.toast]:text-xs group-[.toast]:leading-relaxed",
+            "group-[.toast]:text-xs group-[.toast]:opacity-90 group-[.toast]:leading-relaxed",
 
-          // --- Buttons ---
-          actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-on-primary group-[.toast]:font-semibold group-[.toast]:rounded-lg group-[.toast]:text-xs group-[.toast]:h-8 group-[.toast]:px-3",
-          cancelButton:
-            "group-[.toast]:bg-surface-container-highest group-[.toast]:text-on-surface group-[.toast]:hover:bg-surface-container group-[.toast]:font-medium group-[.toast]:rounded-lg group-[.toast]:text-xs group-[.toast]:h-8 group-[.toast]:px-3",
+          // --- BUTTONS ---
+          // Removed manual alignment classes since parent flex container handles it now.
+          actionButton: clsx(
+            "group-[.toast]:bg-primary group-[.toast]:text-on-primary",
+            "group-[.toast]:font-semibold group-[.toast]:text-xs",
+            "group-[.toast]:h-8 group-[.toast]:px-3 group-[.toast]:w-auto",
+            "group-[.toast]:rounded-lg",
+            "group-[.toast]:shrink-0",
+            "group-[.toast]:transition-transform group-[.toast]:active:scale-95",
+          ),
+          cancelButton: clsx(
+            "group-[.toast]:bg-secondary-container group-[.toast]:text-on-secondary-container",
+            "group-[.toast]:font-semibold group-[.toast]:text-xs",
+            "group-[.toast]:h-8 group-[.toast]:px-3 group-[.toast]:w-auto",
+            "group-[.toast]:rounded-lg",
+            "group-[.toast]:shrink-0",
+            "group-[.toast]:transition-transform group-[.toast]:active:scale-95",
+          ),
 
-          // --- State Colors (Icons & Titles) ---
-          // Success: No strict MD3 token, so we fallback to standard green but style it like the system
-          success:
-            "group-[.toast]:text-green-600 dark:group-[.toast]:text-green-400 [&_svg]:!text-green-600 dark:[&_svg]:!text-green-400",
-
-          // Error: Uses your --md-sys-color-error
-          error: "group-[.toast]:text-error [&_svg]:!text-error",
-
-          // Info: Uses your --md-sys-color-primary
-          info: "group-[.toast]:text-primary [&_svg]:!text-primary",
-
-          // Warning: Uses your --md-sys-color-tertiary
-          warning: "group-[.toast]:text-tertiary [&_svg]:!text-tertiary",
-
-          // --- Loader ---
-          loader: "group-[.toast]:text-on-surface-variant",
+          // Icon alignment
+          icon: "group-data-[type=error]:text-on-error-container group-[.toast]:self-start group-[.toast]:mt-0.5 group-[.toast]:shrink-0",
         },
       }}
       {...props}
@@ -64,6 +116,4 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
-// Re-export the toast function from sonner for easy access
-export { toast } from "sonner";
-export { Toaster };
+export { sonnerToast as toast, Toaster };

@@ -1,93 +1,121 @@
 "use client";
 
 import { type Column } from "@tanstack/react-table";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../button";
 import { Input } from "../input";
-import { Select } from "../select"; // FIX: Imported as Select
+import { Select } from "../select";
 import { Typography } from "../typography";
-
-export type NumericFilterValue = {
-  operator: "eq" | "neq" | "lt" | "gt";
-  value: number | string;
-};
+import { type FilterOperator, type AdvancedFilterValue } from "./filter-utils";
 
 interface ColumnFilterDialogProps<TData, TValue> {
   column: Column<TData, TValue>;
   onClose: () => void;
 }
 
+const TEXT_OPERATORS = [
+  { value: "contains", label: "Contains" },
+  { value: "notContains", label: "Doesn't contain" },
+  { value: "eq", label: "Equals" },
+  { value: "startsWith", label: "Starts with" },
+  { value: "endsWith", label: "Ends with" },
+];
+
+const NUMBER_OPERATORS = [
+  { value: "eq", label: "Equals (=)" },
+  { value: "neq", label: "Not Equals (≠)" },
+  { value: "gt", label: "Greater Than (>)" },
+  { value: "lt", label: "Less Than (<)" },
+  { value: "gte", label: "Greater or Equal (≥)" },
+  { value: "lte", label: "Less or Equal (≤)" },
+];
+
 export function ColumnFilterDialog<TData, TValue>({
   column,
   onClose,
 }: ColumnFilterDialogProps<TData, TValue>) {
-  const currentFilter = column.getFilterValue() as NumericFilterValue | string;
-  const isNumeric =
-    typeof currentFilter === "object" &&
-    currentFilter !== null &&
-    "operator" in currentFilter;
+  // Infer type if not provided in meta
+  const firstValue = column.getFacetedRowModel().rows[0]?.getValue(column.id);
+  const inferredType = typeof firstValue === "number" ? "number" : "text";
+  const type = column.columnDef.meta?.filterType || inferredType;
+
+  const currentFilter = column.getFilterValue() as AdvancedFilterValue;
 
   const [operator, setOperator] = useState<string>(
-    isNumeric ? (currentFilter as NumericFilterValue).operator : "eq"
+    currentFilter?.operator || (type === "number" ? "gt" : "contains"),
   );
   const [value, setValue] = useState<string>(
-    isNumeric
-      ? String((currentFilter as NumericFilterValue).value || "")
-      : String(currentFilter || "")
+    currentFilter?.value?.toString() || "",
   );
 
   const applyFilter = () => {
     if (value === "") {
       column.setFilterValue(undefined);
     } else {
-      column.setFilterValue({ operator, value: Number(value) });
+      column.setFilterValue({
+        operator: operator as FilterOperator,
+        value: type === "number" ? Number(value) : value,
+      });
     }
     onClose();
   };
 
-  const clearFilter = () => {
-    column.setFilterValue(undefined);
-    onClose();
-  };
-
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex flex-col gap-2">
-        <Typography variant="small" className="font-semibold">
-          Filter by {column.id}
+    <div className="flex flex-col gap-4 p-4 min-w-[280px]">
+      <div className="flex flex-col gap-1">
+        <Typography
+          variant="label-large"
+          className="font-bold opacity-70 uppercase tracking-tighter"
+        >
+          Filter Column
         </Typography>
-        <div className="flex flex-col gap-4">
-          <Select
-            size="sm"
-            variant="flat"
-            value={operator}
-            onValueChange={setOperator}
-            items={[
-              { value: "eq", label: "Equals (=)" },
-              { value: "neq", label: "Not Equal (!=)" },
-              { value: "lt", label: "Less Than (<)" },
-              { value: "gt", label: "Greater Than (>)" },
-            ]}
-          />
-          <Input
-            size="sm"
-            variant="flat"
-            placeholder="Value..."
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") applyFilter();
-            }}
-          />
-        </div>
+        <Typography variant="h4" className="truncate">
+          {typeof column.columnDef.header === "string"
+            ? column.columnDef.header
+            : column.id}
+        </Typography>
       </div>
-      <div className="flex justify-between">
-        <Button variant="ghost" size="sm" onClick={clearFilter}>
+
+      <div className="flex flex-col gap-3">
+        <Select
+          size="sm"
+          label="Condition"
+          variant="flat"
+          value={operator}
+          onValueChange={setOperator}
+          items={type === "number" ? NUMBER_OPERATORS : TEXT_OPERATORS}
+        />
+        <Input
+          size="sm"
+          label="Value"
+          variant="flat"
+          type={type === "number" ? "number" : "text"}
+          placeholder="Type a value..."
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && applyFilter()}
+        />
+      </div>
+
+      <div className="flex justify-between items-center mt-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            column.setFilterValue(undefined);
+            onClose();
+          }}
+        >
           Clear
         </Button>
-        <Button variant="primary" size="sm" onClick={applyFilter}>
-          Apply
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" onClick={applyFilter}>
+            Apply
+          </Button>
+        </div>
       </div>
     </div>
   );

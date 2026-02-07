@@ -109,6 +109,12 @@ const SidebarContentExample = ({
         </div>
       </Sidebar.Header>
       <Sidebar.Content elasticity={elasticity}>
+        <Sidebar.FAB
+          icon={<Box />}
+          onClick={() => alert("FAB Clicked")}
+          label={"New Item"}
+          variant="secondary"
+        />
         <Sidebar.Group>
           <Sidebar.Item
             icon={<LayoutDashboard />}
@@ -167,8 +173,9 @@ const SidebarContentExample = ({
             <Sidebar.Label>Archive</Sidebar.Label>
             {Array.from({ length: 15 }).map((_, i) => (
               // @ts-ignore
-              (<Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>Archive Item {i + 1}
-              </Sidebar.Item>)
+              <Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>
+                Archive Item {i + 1}
+              </Sidebar.Item>
             ))}
           </Sidebar.Group>
         )}
@@ -204,12 +211,12 @@ export const Default: Story = {
   name: "1. Playground (All Props)",
   args: {
     layout: "inset",
-    variant: "primary",
+    variant: "ghost",
     shape: "minimal",
     itemShape: "full",
-    itemSize: "md",
-    itemVariant: "tertiary",
-    expandOnHover: true,
+    itemSize: "lg",
+    itemVariant: "primary",
+    expandOnHover: false,
   },
   render: (args) => (
     <Sidebar.Provider>

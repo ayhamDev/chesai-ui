@@ -7,6 +7,7 @@ export const inputStyles = cva('group flex flex-col data-[hidden=true]:hidden w-
       faded: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
       bordered: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
       underlined: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      ghost: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
     },
     color: {
       primary: 'text-primary',
@@ -75,7 +76,7 @@ export const getInputSlotClassNames = (
   props: VariantProps<typeof inputStyles> & {
     isFilled?: boolean
     hasStartContent?: boolean
-    hasLabel?: boolean // Added this prop
+    hasLabel?: boolean
   },
 ) => {
   const { variant, size, labelPlacement, isInvalid, shape, hasStartContent, hasLabel } = props
@@ -91,6 +92,12 @@ export const getInputSlotClassNames = (
     wrapperClasses.push(
       'bg-surface-container-low hover:bg-surface-container-highest',
       'group-data-[focus=true]:bg-surface-container-highest',
+    )
+  } else if (variant === 'ghost') {
+    wrapperClasses.push(
+      'bg-transparent border-2 border-transparent',
+      // 'hover:bg-surface-container-highest/50',
+      // 'group-data-[focus=true]:bg-surface-container-highest',
     )
   } else if (variant === 'faded') {
     wrapperClasses.push(
@@ -115,12 +122,14 @@ export const getInputSlotClassNames = (
   }
 
   const labelColor = isInvalid ? 'text-error' : 'group-data-[focus=true]:text-primary text-on-surface-variant/70'
-
   const inputColor = isInvalid ? 'text-error placeholder:text-error/50' : 'text-on-surface'
 
   if (isInvalid) {
-    if (variant === 'flat') wrapperClasses.push('bg-error-container/20 !text-error')
-    else wrapperClasses.push('!border-error text-error')
+    if (variant === 'flat') {
+      wrapperClasses.push('bg-error-container/20 !text-error')
+    } else {
+      wrapperClasses.push('!border-error text-error')
+    }
   }
 
   let height = 'h-14'
@@ -167,7 +176,6 @@ export const getInputSlotClassNames = (
 
     labelClasses += ` ${filledLabelState}`
 
-    // FIX: Only apply padding shift if there is actually a label to move out of the way
     if (props.isFilled && hasLabel) {
       if (size === 'sm') inputPadding = 'pt-3'
       else inputPadding = 'pt-4'
@@ -190,7 +198,6 @@ export const getInputSlotClassNames = (
   }
 }
 
-// ... inputWrapperVariants remains the same ...
 export const inputWrapperVariants = cva(
   'relative w-full inline-flex tap-highlight-transparent flex-row items-center gap-3 transition-colors duration-200 ease-out overflow-hidden outline-none text-left',
   {
@@ -200,6 +207,7 @@ export const inputWrapperVariants = cva(
         faded: 'bg-surface-container/30 border-2 border-surface-container-highest/50 hover:bg-surface-container/50',
         bordered: 'bg-transparent border-2 border-outline-variant hover:border-on-surface-variant',
         underlined: 'bg-transparent border-b-2 border-outline-variant px-0 shadow-none',
+        ghost: 'bg-transparent border-2 border-transparent hover:bg-surface-container-highest/50',
       },
       size: {
         sm: 'h-12 py-1.5 px-3',
@@ -226,6 +234,7 @@ export const inputWrapperVariants = cva(
     },
     compoundVariants: [
       { variant: 'flat', isFocused: true, className: 'bg-surface-container-highest' },
+      { variant: 'ghost', isFocused: true, className: 'bg-surface-container-highest' },
       { variant: 'faded', isFocused: true, className: 'bg-surface-container/50 border-transparent' },
       { variant: 'bordered', isFocused: true, className: 'border-primary' },
       { variant: 'underlined', isFocused: true, className: 'border-primary' },
@@ -233,6 +242,7 @@ export const inputWrapperVariants = cva(
       { variant: 'bordered', isErrored: true, className: '!border-error text-error' },
       { variant: 'underlined', isErrored: true, className: '!border-error text-error' },
       { variant: 'faded', isErrored: true, className: '!border-error text-error' },
+      { variant: 'ghost', isErrored: true, className: '!border-error text-error' },
       { variant: 'underlined', shape: 'full', className: 'rounded-none px-0' },
       { variant: 'underlined', shape: 'minimal', className: 'rounded-none px-0' },
       { variant: 'underlined', shape: 'sharp', className: 'rounded-none px-0' },

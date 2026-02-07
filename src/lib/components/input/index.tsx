@@ -4,7 +4,6 @@ import { X } from "lucide-react";
 import React, { forwardRef, useMemo } from "react";
 import { type UseInputProps, useInput } from "./use-input";
 
-// Export the helper for other components (like TimePicker)
 export { inputWrapperVariants } from "./input-styles";
 
 export interface InputProps extends UseInputProps {}
@@ -17,7 +16,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
     isClearable,
     startContent,
     endContent,
-    labelPlacement,
     shouldLabelBeOutside,
     errorMessage,
     isInvalid,

@@ -5,7 +5,7 @@ import { getInputSlotClassNames, inputSlots, inputStyles } from './input-styles'
 export interface UseInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'color'> {
   ref?: React.Ref<HTMLInputElement>
   as?: React.ElementType
-  variant?: 'flat' | 'bordered' | 'underlined' | 'faded'
+  variant?: 'flat' | 'bordered' | 'underlined' | 'faded' | 'ghost'
   color?: 'primary' | 'secondary' | 'error'
   size?: 'sm' | 'md' | 'lg'
   shape?: 'full' | 'minimal' | 'sharp'
@@ -97,10 +97,8 @@ export function useInput(props: UseInputProps) {
     isInvalid,
     isFilled,
     hasStartContent: !!startContent,
-    hasLabel: !!label, // FIX: Pass this prop
+    hasLabel: !!label,
   })
-
-  // --- Props Generators ---
 
   const getBaseProps = () => ({
     'data-slot': 'base',

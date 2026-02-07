@@ -4,14 +4,13 @@ import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Mic, X } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
 import { Separator } from "../separator";
 import { DURATION, EASING } from "../stack-router/transitions";
 
-// --- PROPS ---
 export interface SearchViewProps {
   value: string;
   onChange: (value: string) => void;
@@ -25,20 +24,9 @@ export interface SearchViewProps {
   onOpenChange?: (open: boolean) => void;
   desktopRadius?: string | number;
   className?: string;
-  /**
-   * The presentation style of the expanded view.
-   * - `modal`: Centers the view on screen with a backdrop (Standard MD3).
-   * - `docked`: Expands from the trigger position, maintaining width (Like a menu).
-   * - `fullscreen`: Covers the entire screen (Standard Mobile).
-   *
-   * On mobile devices, this defaults to `fullscreen` regardless of setting.
-   * @default "modal"
-   */
   variant?: "modal" | "docked" | "fullscreen";
 }
 
-// --- ANIMATION CONFIG ---
-const MD3_EASE = EASING.emphasizedDecelerate;
 const TRANSITION_DURATION = DURATION.medium3;
 
 export const SearchView = ({
@@ -66,29 +54,25 @@ export const SearchView = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  // Determine effective variant (Mobile always forces fullscreen)
   const effectiveVariant = isMobile ? "fullscreen" : variant;
 
-  // --- ACTIONS ---
+  // --- RECT CAPTURE ---
+  const updateRect = useCallback(() => {
+    if (triggerRef.current) {
+      setTriggerRect(triggerRef.current.getBoundingClientRect());
+    }
+  }, []);
 
+  // --- OPEN/CLOSE HANDLERS ---
   const handleOpen = (e: React.MouseEvent) => {
-    // --- SMART CLICK DETECTION ---
-    // If the user clicked on a button, link, or menu item nested inside the trigger,
-    // we assume they wanted to interact with that specific element, not open the search view.
     const target = e.target as HTMLElement;
     const isInteractive = target.closest(
       "button, a, [role='button'], [role='menuitem'], [role='option']",
     );
 
-    if (isInteractive) {
-      return;
-    }
+    if (isInteractive) return;
 
-    // Capture rect for animation origin
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setTriggerRect(rect);
-    }
+    updateRect();
 
     if (!isControlled) setInternalOpen(true);
     onOpenChange?.(true);
@@ -99,6 +83,7 @@ export const SearchView = ({
     onOpenChange?.(false);
   };
 
+  // --- ACTIONS ---
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onChange("");
@@ -112,7 +97,7 @@ export const SearchView = ({
     inputRef.current?.blur();
   };
 
-  // --- EFFECT: Lock Body & Focus ---
+  // Focus management
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -120,33 +105,22 @@ export const SearchView = ({
         inputRef.current?.focus();
       }, TRANSITION_DURATION * 1000);
       return () => {
-        clearTimeout(timer);
         document.body.style.overflow = "";
       };
     }
   }, [isOpen]);
 
-  // --- EFFECT: Handle Escape Key ---
+  // Keyboard management
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        handleClose();
-      }
+      if (e.key === "Escape" && isOpen) handleClose();
     };
-
-    if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-    }
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
+    if (isOpen) window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
-  // --- ANIMATION STATES ---
   const getAnimationTarget = () => {
     if (!triggerRect) return {};
-
     switch (effectiveVariant) {
       case "fullscreen":
         return {
@@ -161,9 +135,7 @@ export const SearchView = ({
         return {
           top: triggerRect.top,
           left: triggerRect.left,
-          x: 0,
           width: triggerRect.width,
-          // Expand downwards, but keep some padding from bottom of screen
           height: Math.min(600, window.innerHeight - triggerRect.top - 20),
           borderRadius: desktopRadius,
         };
@@ -180,11 +152,8 @@ export const SearchView = ({
     }
   };
 
-  // --- RENDER ---
-
   const ExpandedView = triggerRect && (
     <div className="fixed inset-0 z-[9999]" style={{ pointerEvents: "auto" }}>
-      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -194,14 +163,13 @@ export const SearchView = ({
         onClick={handleClose}
       />
 
-      {/* The Expanding Container */}
       <motion.div
         initial={{
           top: triggerRect.top,
           left: triggerRect.left,
           width: triggerRect.width,
           height: triggerRect.height,
-          borderRadius: "28px", // Start as pill
+          borderRadius: "28px",
           x: 0,
         }}
         animate={getAnimationTarget() as any}
@@ -220,18 +188,10 @@ export const SearchView = ({
         }}
         className={clsx(
           "absolute flex flex-col bg-surface-container-high shadow-2xl overflow-hidden transform-3d",
-          // If docked, we usually want slightly higher elevation or border
           effectiveVariant === "docked" && "shadow-3xl",
         )}
-        style={{
-          willChange: "top, left, width, height, border-radius, transform",
-        }}
       >
-        {/* 
-            HEADER CROSS-FADE AREA 
-        */}
         <div className="relative h-[56px] shrink-0">
-          {/* 1. REAL HEADER (Fades IN) */}
           <motion.div
             className="absolute inset-0 flex items-center px-2 gap-2 z-10"
             initial={{ opacity: 0 }}
@@ -240,13 +200,7 @@ export const SearchView = ({
             transition={{ duration: 0.2, delay: 0.1 }}
           >
             <div className="flex h-12 w-12 items-center justify-center shrink-0">
-              <IconButton
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleClose();
-                }}
-              >
+              <IconButton variant="ghost" onClick={handleClose}>
                 <ArrowLeft className="h-6 w-6 text-on-surface" />
               </IconButton>
             </div>
@@ -276,7 +230,7 @@ export const SearchView = ({
             </div>
           </motion.div>
 
-          {/* 2. FAKE DOCKED HEADER (Fades OUT) */}
+          {/* This is the "Ghost" content that fades out while expanding */}
           <motion.div
             className="absolute inset-0 flex items-center px-4 z-0 pointer-events-none"
             initial={{ opacity: 1 }}
@@ -298,7 +252,6 @@ export const SearchView = ({
 
         <Separator className="shrink-0" />
 
-        {/* RESULTS BODY WITH ELASTIC SCROLL */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -316,7 +269,6 @@ export const SearchView = ({
 
   return (
     <>
-      {/* TRIGGER */}
       <div
         ref={triggerRef}
         onClick={handleOpen}
@@ -331,17 +283,14 @@ export const SearchView = ({
         <div className="flex h-12 w-12 items-center justify-center text-on-surface shrink-0 -ml-2">
           {dockedLeadingIcon}
         </div>
-
         <div className="flex flex-1 items-center px-2 text-base text-on-surface-variant/60 truncate select-none">
           {value || placeholder}
         </div>
-
         <div className="flex items-center pl-2 shrink-0">
           {dockedTrailingIcon}
         </div>
       </div>
 
-      {/* PORTAL */}
       {typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence>{isOpen && ExpandedView}</AnimatePresence>,

@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
+import React from "react";
 
-// Removed "text-on-surface" and "text-on-surface-variant" from these strings
-// to allow inheritance from parents like High Contrast Cards.
+// MD3 Typography Tokens + Blockquote
 const variants = {
   // --- MD3 Token Mappings ---
   "display-large": "display-large",
@@ -27,19 +27,9 @@ const variants = {
   "label-medium": "label-medium",
   "label-small": "label-small",
 
-  // --- Legacy / Semantic Aliases ---
-  h1: "headline-large",
-  h2: "headline-medium",
-  h3: "headline-small",
-  h4: "title-large",
-  p: "body-large",
-  lead: "body-large opacity-80", // Replaced color class with opacity for better inheritance
-  large: "body-large font-semibold",
-  small: "body-small",
-  muted: "body-medium opacity-70",
+  // --- Extras ---
   blockquote:
-    "body-large border-l-2 border-primary pl-4 italic my-4 opacity-80",
-  code: "relative rounded bg-secondary-container px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold text-on-secondary-container",
+    "body-large border-l-4 border-primary pl-4 italic my-4 opacity-80",
 };
 
 const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {
@@ -58,23 +48,37 @@ const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {
   "label-large": "span",
   "label-medium": "span",
   "label-small": "span",
-  h1: "h1",
-  h2: "h2",
-  h3: "h3",
-  h4: "h4",
-  p: "p",
-  lead: "p",
-  large: "div",
-  small: "small",
-  muted: "p",
   blockquote: "blockquote",
-  code: "code",
 };
+
+const highlightVariants = cva(
+  "font-mono text-sm font-semibold inline-block align-baseline leading-none mx-0.5",
+  {
+    variants: {
+      highlightedVariant: {
+        primary: "bg-primary-container text-on-primary-container",
+        secondary: "bg-secondary-container text-on-secondary-container",
+        tertiary: "bg-tertiary-container text-on-tertiary-container",
+        error: "bg-error-container text-on-error-container",
+      },
+      highlightedShape: {
+        full: "rounded-full px-2.5 py-0.5",
+        minimal: "rounded-md px-1.5 py-0.5",
+        sharp: "rounded-none px-1.5 py-0.5",
+      },
+    },
+    defaultVariants: {
+      highlightedVariant: "secondary",
+      highlightedShape: "minimal",
+    },
+  },
+);
 
 type TypographyOwnProps = {
   variant?: keyof typeof variants;
   className?: string;
-};
+  highlighted?: boolean;
+} & VariantProps<typeof highlightVariants>;
 
 type PolymorphicComponentProps<
   C extends React.ElementType,
@@ -100,13 +104,25 @@ export const Typography = React.forwardRef(
       variant = "body-medium",
       className,
       children,
+      highlighted,
+      highlightedVariant,
+      highlightedShape,
       ...restProps
     }: TypographyProps<C>,
     ref?: PolymorphicRef<C>,
   ) => {
+    // If not specified, default to the tag mapped to the variant, or 'p'
     const Component = as || variantToTagMap[variant] || "p";
+
+    // Base typography styles
     const variantClass = variants[variant] || variants["body-medium"];
-    const combinedClassName = clsx(variantClass, className);
+
+    // Highlight styles
+    const highlightClass = highlighted
+      ? highlightVariants({ highlightedVariant, highlightedShape })
+      : "";
+
+    const combinedClassName = clsx(variantClass, highlightClass, className);
 
     return (
       <Component ref={ref} className={combinedClassName} {...restProps}>

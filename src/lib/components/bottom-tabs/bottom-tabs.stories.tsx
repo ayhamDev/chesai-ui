@@ -19,6 +19,16 @@ const meta: Meta<typeof BottomTabs.Navigator> = {
     },
   },
   argTypes: {
+    variant: {
+      control: "select",
+      options: ["primary", "secondary", "tertiary", "surface", "ghost"],
+      description: "Background color variant of the tab bar.",
+    },
+    itemVariant: {
+      control: "select",
+      options: ["primary", "secondary", "tertiary", "ghost"],
+      description: "Visual style of the active tab indicator.",
+    },
     mode: {
       control: "select",
       options: ["attached", "detached"],
@@ -112,8 +122,60 @@ export const StackedDefault: Story = {
   ),
 };
 
+export const VariantCombinations: Story = {
+  name: "2. Color Variants",
+  render: (args) => (
+    <div className="flex flex-col gap-8 w-96">
+      <div>
+        <Typography variant="small" className="font-bold mb-2">
+          Surface BG + Primary Items
+        </Typography>
+        <ShallowRouter paramName="tab1">
+          <RenderWithRouter
+            {...args}
+            variant="surface"
+            itemVariant="primary"
+            bordered
+            shape="minimal"
+          />
+        </ShallowRouter>
+      </div>
+
+      <div>
+        <Typography variant="small" className="font-bold mb-2">
+          Primary BG + Tertiary Items
+        </Typography>
+        <ShallowRouter paramName="tab2">
+          <RenderWithRouter
+            {...args}
+            variant="primary"
+            itemVariant="tertiary"
+            bordered={false}
+            shape="full"
+          />
+        </ShallowRouter>
+      </div>
+
+      <div>
+        <Typography variant="small" className="font-bold mb-2">
+          Secondary BG + Ghost Items
+        </Typography>
+        <ShallowRouter paramName="tab3">
+          <RenderWithRouter
+            {...args}
+            variant="secondary"
+            itemVariant="ghost"
+            bordered={false}
+            shape="minimal"
+          />
+        </ShallowRouter>
+      </div>
+    </div>
+  ),
+};
+
 export const InlineShift: Story = {
-  name: "2. Inline (Label only when active)",
+  name: "3. Inline (Label only when active)",
   args: {
     mode: "attached",
     itemLayout: "inline",
@@ -136,7 +198,7 @@ export const InlineShift: Story = {
 };
 
 export const AttachedWithShapes: Story = {
-  name: "3. Attached (Shape Variants)",
+  name: "4. Attached (Shape Variants)",
   render: (args) => (
     <div className="flex flex-col gap-12">
       <div>
@@ -160,12 +222,14 @@ export const AttachedWithShapes: Story = {
 };
 
 export const Detached: Story = {
-  name: "4. Detached (Floating)",
+  name: "5. Detached (Floating)",
   args: {
     mode: "detached",
     shape: "full",
     itemLayout: "inline",
     shadow: "lg",
+    variant: "surface",
+    itemVariant: "primary",
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
@@ -175,7 +239,7 @@ export const Detached: Story = {
 };
 
 export const NoLabels: Story = {
-  name: "5. No Labels",
+  name: "6. No Labels",
   args: {
     mode: "detached",
     showLabels: false,

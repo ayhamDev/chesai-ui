@@ -25,7 +25,7 @@
     "dev": "bunx storybook dev -p 8000",
     "build": "storybook build",
     "build:lib": "tsc && vite build",
-        "build:docs": "bun run ./scripts/generate-llm.ts",
+    "build:docs": "bun run ./scripts/generate-llm.ts",
     "lint": "npx @biomejs/biome lint --write ./src",
     "format": "npx @biomejs/biome check --write --organize-imports-enabled=true ./src",
     "test": "vitest",
@@ -33,7 +33,6 @@
     "gen:context": "bun run ./scripts/context.ts",
     "git:diff-merge": "git diff --unified=2000 $(git merge-base main HEAD)...HEAD",
     "git:diff": "git diff --unified=2000 > git-changes.txt"
-
   },
   "dependencies": {
     "@capacitor/app": "^8.0.0",
@@ -80,6 +79,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-map-gl": "^8.1.0",
+    "react-medium-image-zoom": "^5.4.0",
     "recharts": "^3.7.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",

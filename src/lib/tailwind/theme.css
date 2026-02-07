@@ -10,6 +10,10 @@
 
   /* Default Light (Standard Contrast) */
   :root {
+    --font-brand: 'Manrope', system-ui, -apple-system, sans-serif;
+    --font-plain: 'Manrope', system-ui, -apple-system, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
     --md-sys-color-primary: rgb(143 76 56);
     --md-sys-color-surface-tint: rgb(143 76 56);
     --md-sys-color-on-primary: rgb(255 255 255);
@@ -371,12 +375,14 @@
   }
 
   body {
-    @apply font-manrope bg-background text-on-background transition-colors duration-200;
+    @apply font-plain bg-background text-on-background transition-colors duration-200;
   }
 }
 
 @theme {
-  --font-manrope: manrope, sans-serif;
+  --font-brand: var(--font-brand);
+  --font-plain: var(--font-plain);
+  --font-mono: var(--font-mono);
 
   /* 
     -----------------------------------------

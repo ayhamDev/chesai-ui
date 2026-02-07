@@ -64,16 +64,22 @@ const simulateRefresh = () => {
 
 export const Basic: Story = {
   name: "Basic Dialog",
-  args: { variant: "basic", shape: "minimal", animation: "default" },
+  args: {
+    variant: "basic",
+    shape: "minimal",
+    animation: "default",
+  },
   parameters: { layout: "centered" },
   render: (args) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [islocked, setislocked] = useState(false);
     return (
       <Dialog
         open={isOpen}
         onOpenChange={setIsOpen}
         variant={args.variant}
         animation={args.animation}
+        isLocked={islocked}
       >
         <DialogTrigger asChild>
           <Button>Open Basic Dialog</Button>
@@ -94,7 +100,13 @@ export const Basic: Story = {
             <DialogClose asChild>
               <Button variant="secondary">Cancel</Button>
             </DialogClose>
-            <Button>Confirm</Button>
+            <Button
+              onClick={() => {
+                setislocked(true);
+              }}
+            >
+              Confirm
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

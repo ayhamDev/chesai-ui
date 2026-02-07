@@ -3,11 +3,10 @@
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import React, { createContext, useContext } from "react";
+import React, { createContext, forwardRef, useContext, useEffect } from "react";
 import { Drawer as VaulDrawer } from "vaul";
 
 // --- Types ---
-// Matches Card variants exactly
 type SheetVariant =
   | "primary"
   | "secondary"
@@ -23,6 +22,7 @@ interface SheetContextProps {
   hasSnapPoints: boolean;
   direction: "top" | "bottom" | "left" | "right";
   variant: SheetVariant;
+  isLocked: boolean; // Added to context
 }
 
 const SheetContext = createContext<SheetContextProps>({
@@ -31,6 +31,7 @@ const SheetContext = createContext<SheetContextProps>({
   hasSnapPoints: false,
   direction: "bottom",
   variant: "primary",
+  isLocked: false,
 });
 
 const useSheetContext = () => useContext(SheetContext);
@@ -43,6 +44,7 @@ type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
   variant?: SheetVariant;
   forceBottomSheet?: boolean;
   forceSideSheet?: boolean;
+  isLocked?: boolean; // Added prop
 };
 
 const SheetRoot: React.FC<SheetProps> = ({
@@ -52,9 +54,11 @@ const SheetRoot: React.FC<SheetProps> = ({
   variant = "primary",
   forceBottomSheet = false,
   forceSideSheet = false,
+  isLocked = false, // Default to unlocked
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
+  open,
   ...props
 }) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -62,21 +66,39 @@ const SheetRoot: React.FC<SheetProps> = ({
   const renderAsSideSheet = forceSideSheet || (isDesktop && !forceBottomSheet);
   const direction = renderAsSideSheet ? side : "bottom";
 
+  // --- ESCAPE KEY LOCK ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isLocked) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+    };
+    if (open && isLocked) {
+      window.addEventListener("keydown", handleKeyDown, true); // Capture phase
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [open, isLocked]);
+
   return (
     <SheetContext.Provider
       value={{
         mode,
         shape,
         variant,
+        isLocked,
         hasSnapPoints: renderAsSideSheet
           ? false
           : !!snapPoints && snapPoints.length > 0,
         direction,
       }}
     >
-      {/* @ts-expect-error */}
       <VaulDrawer.Root
         direction={direction}
+        open={open}
+        // MODIFICATION: Disable all dismissal logic when locked
+        dismissible={isLocked ? false : (props.dismissible ?? true)}
         {...props}
         snapPoints={renderAsSideSheet ? undefined : snapPoints}
         activeSnapPoint={renderAsSideSheet ? undefined : activeSnapPoint}
@@ -100,17 +122,11 @@ const contentVariants = cva(
   {
     variants: {
       variant: {
-        // Matches Card.Primary (Surface Container Low)
         primary: "bg-surface-container-low text-on-surface",
-        // Matches Card.Secondary (Surface Container Highest)
         secondary: "bg-surface-container-highest text-on-surface",
-        // Matches Card.Tertiary (Tertiary Container)
         tertiary: "bg-tertiary-container text-on-tertiary-container",
-        // Matches Card.HighContrast (Inverse Surface)
         "high-contrast": "bg-inverse-surface text-inverse-on-surface",
-        // Matches Card.Ghost (Transparent) - No blur
         ghost: "bg-transparent text-on-surface shadow-none",
-        // Matches Card.Surface (Surface)
         surface: "bg-surface text-on-surface",
       },
       side: {
@@ -134,7 +150,6 @@ const contentVariants = cva(
       },
     },
     compoundVariants: [
-      // --- Layout & Shape Logic ---
       { side: "bottom", mode: "normal", className: "mx-auto max-w-xl" },
       {
         side: "bottom",
@@ -261,7 +276,7 @@ const contentVariants = cva(
 type SheetContentProps = React.ComponentProps<typeof VaulDrawer.Content> &
   VariantProps<typeof contentVariants>;
 
-const SheetContent = React.forwardRef<
+const SheetContent = forwardRef<
   React.ElementRef<typeof VaulDrawer.Content>,
   SheetContentProps
 >(({ className, shape: shapeProp, variant: variantProp, ...props }, ref) => {
@@ -271,6 +286,7 @@ const SheetContent = React.forwardRef<
     variant: variantContext,
     hasSnapPoints,
     direction,
+    isLocked,
   } = useSheetContext();
 
   const shape = shapeProp || shapeContext;
@@ -283,8 +299,11 @@ const SheetContent = React.forwardRef<
 
   return (
     <SheetPortal>
-      {/* Removed backdrop-blur-sm */}
-      <VaulDrawer.Overlay className="fixed inset-0 z-50 bg-black/50" />
+      <VaulDrawer.Overlay
+        className="fixed inset-0 z-50 bg-black/50"
+        // MODIFICATION: Block clicks on overlay if locked
+        onClick={(e) => isLocked && e.stopPropagation()}
+      />
       <VaulDrawer.Content
         ref={ref}
         style={{ ...props.style, ...style }}
@@ -334,16 +353,15 @@ const SheetGrabber = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => {
-  const { direction, variant } = useSheetContext();
-  if (direction !== "bottom") {
-    return null;
+  const { direction, variant, isLocked } = useSheetContext();
+  if (direction !== "bottom" || isLocked) {
+    return null; // Hide grabber when locked as it indicates "draggable"
   }
   return (
     <div className="flex-shrink-0 p-4">
       <div
         className={clsx(
           "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full opacity-40",
-          // Adapt grabber color based on background variant
           variant === "high-contrast"
             ? "bg-inverse-on-surface"
             : variant === "tertiary"
@@ -369,7 +387,6 @@ export const Sheet = Object.assign(SheetRoot, {
   Grabber: SheetGrabber,
 });
 
-// Added Named Exports
 export {
   SheetTrigger,
   SheetContent,

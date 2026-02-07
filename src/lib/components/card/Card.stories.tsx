@@ -27,9 +27,6 @@ const meta: Meta<typeof Card> = {
       control: "select",
       options: ["none", 1, 2, 3, 4, 5],
     },
-    isSelected: {
-      control: "boolean",
-    },
     hoverEffect: {
       control: "boolean",
       description: "Enables the bloom effect (works best on ghost variant).",

@@ -10,7 +10,7 @@ import React from "react";
 import useRipple from "use-ripple-hook";
 
 const fabVariants = cva(
-  "font-semibold focus:outline-none flex transition-shadow duration-200 items-center justify-start relative overflow-hidden group shadow-lg hover:shadow-xl focus:ring-2 focus:ring-offset-2 focus:ring-primary",
+  "font-semibold active:scale-95 focus-visible:outline-none flex transition-all duration-200 items-center justify-start relative overflow-hidden group shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary",
   {
     variants: {
       variant: {
@@ -84,8 +84,8 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
     // Outline and Secondary use the dark ripple for better contrast on lighter backgrounds.
     const rippleColor =
       variant === "secondary" || variant === "outline"
-        ? "var(--color-ripple-dark)"
-        : "var(--color-ripple-light)";
+        ? "var(--color-ripple-light)"
+        : "var(--color-ripple-dark)";
 
     const [, event] = useRipple({
       ref: rippleRef,

@@ -5,7 +5,7 @@ import clsx from "clsx";
 import React, { useImperativeHandle, useRef } from "react";
 import useRipple from "use-ripple-hook";
 
-const cardVariants = cva(
+export const cardVariants = cva(
   "transition-all duration-300 ease-out relative z-0 overflow-hidden",
   {
     variants: {
@@ -18,6 +18,12 @@ const cardVariants = cva(
         ghost: "bg-transparent text-on-surface",
         surface: "bg-surface text-on-surface",
       },
+      // --- ADD THIS SECTION ---
+      hoverEffect: {
+        true: "after:absolute  after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-80 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out hover:after:opacity-100 hover:after:scale-100",
+        false: "",
+      },
+
       shape: {
         full: "rounded-3xl",
         minimal: "rounded-xl",
@@ -69,6 +75,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       bordered,
       elevation,
       enableRipple,
+      hoverEffect, // Destructure this
       onPointerDown,
       ...props
     },
@@ -96,7 +103,14 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={localRef}
         className={clsx(
-          cardVariants({ shape, variant, padding, bordered, elevation }),
+          cardVariants({
+            shape,
+            variant,
+            padding,
+            bordered,
+            elevation,
+            hoverEffect,
+          }),
           className,
         )}
         onPointerDown={(e) => {

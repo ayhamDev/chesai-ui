@@ -9,7 +9,6 @@ const meta: Meta<typeof Typography> = {
     variant: {
       control: "select",
       options: [
-        // MD3 Variants
         "display-large",
         "display-medium",
         "display-small",
@@ -25,20 +24,23 @@ const meta: Meta<typeof Typography> = {
         "label-large",
         "label-medium",
         "label-small",
-        // Legacy Variants
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "p",
-        "lead",
-        "large",
-        "small",
-        "muted",
         "blockquote",
-        "code",
       ],
       description: "The visual style of the text.",
+    },
+    highlighted: {
+      control: "boolean",
+      description: "Applies code-like highlighting to the text.",
+    },
+    highlightedVariant: {
+      control: "select",
+      options: ["primary", "secondary", "tertiary", "error"],
+      if: { arg: "highlighted" },
+    },
+    highlightedShape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+      if: { arg: "highlighted" },
     },
     as: {
       control: "text",
@@ -57,7 +59,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     variant: "display-medium",
-    children: "Material Design 3 Typography. This is body-medium text.",
+    children: "Material Design 3 Typography.",
   },
 };
 
@@ -129,43 +131,55 @@ export const MaterialScale: Story = {
   ),
 };
 
-export const LegacyMapping: Story = {
-  name: "Legacy Aliases",
+export const Blockquote: Story = {
+  name: "Quote Style",
+  args: {
+    variant: "blockquote",
+    children:
+      "Design is not just what it looks like and feels like. Design is how it works.",
+  },
+};
+
+export const Highlighted: Story = {
+  name: "Highlighted (Code)",
   render: () => (
     <div className="space-y-4">
-      <Typography variant="h1">H1 (Mapped to Headline Large)</Typography>
-      <Typography variant="h2">H2 (Mapped to Headline Medium)</Typography>
-      <Typography variant="h3">H3 (Mapped to Headline Small)</Typography>
-      <Typography variant="h4">H4 (Mapped to Title Large)</Typography>
-      <Typography variant="p">
-        Paragraph (Mapped to Body Large). The quick brown fox jumps over the
-        lazy dog.
-      </Typography>
-      <Typography variant="lead">
-        Lead (Mapped to Body Large + Muted color).
-      </Typography>
-      <Typography variant="muted">
-        Muted (Mapped to Body Medium + Muted color).
-      </Typography>
-      <Typography variant="blockquote">
-        Blockquote: "Design is not just what it looks like and feels like.
-        Design is how it works."
-      </Typography>
-      <Typography variant="body-medium">
-        Use{" "}
-        <Typography variant="code" as="span">
-          npm install
-        </Typography>{" "}
+      <Typography variant="body-large">
+        Run
+        <Typography
+          as="span"
+          highlighted
+          highlightedVariant="secondary"
+          highlightedShape="minimal"
+        >
+          npm install chesai-ui
+        </Typography>
         to get started.
+      </Typography>
+
+      <Typography variant="body-large">
+        Error:
+        <Typography
+          as="span"
+          highlighted
+          highlightedVariant="error"
+          highlightedShape="full"
+        >
+          Connection Timeout
+        </Typography>
+      </Typography>
+
+      <Typography variant="body-large">
+        Primary Tag:
+        <Typography
+          as="span"
+          highlighted
+          highlightedVariant="primary"
+          highlightedShape="sharp"
+        >
+          v2.0.1
+        </Typography>
       </Typography>
     </div>
   ),
-};
-
-export const Polymorphic: Story = {
-  args: {
-    variant: "headline-large",
-    as: "h1",
-    children: "This looks like a Headline Large, but renders as an H1 tag.",
-  },
 };

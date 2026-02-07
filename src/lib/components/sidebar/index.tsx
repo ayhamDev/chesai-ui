@@ -143,7 +143,6 @@ const sidebarVariants = cva(
       },
     },
     compoundVariants: [
-      // LOGICAL PROPERTY MAPPING:
       {
         layout: "sidebar",
         side: "left",
@@ -190,23 +189,21 @@ const sidebarVariants = cva(
         shape: "sharp",
         className: "rounded-none",
       },
-      // Floating margins using logical properties
-      { layout: "floating", side: "left", className: "ms-3" }, // margin-start
-      { layout: "floating", side: "right", className: "me-3" }, // margin-end
+      { layout: "floating", side: "left", className: "ms-3" },
+      { layout: "floating", side: "right", className: "me-3" },
       { layout: "floating", shape: "minimal", className: "rounded-2xl" },
       { layout: "floating", shape: "full", className: "rounded-3xl" },
       { layout: "floating", shape: "sharp", className: "rounded-none" },
       {
         overlay: true,
         side: "left",
-        className: "start-0 border-e border-outline-variant", // start-0
+        className: "start-0 border-e border-outline-variant",
       },
       {
         overlay: true,
         side: "right",
-        className: "end-0 border-s border-outline-variant", // end-0
+        className: "end-0 border-s border-outline-variant",
       },
-      // Tertiary Variant border override (usually tertiary containers don't need borders)
       {
         variant: "tertiary",
         className: "border-transparent!",
@@ -272,7 +269,6 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
     } = useSidebar();
     const isCollapsed = state === "collapsed";
 
-    // --- Mobile Push Effect ---
     useEffect(() => {
       if (isMobile && mobileLayout === "push") {
         const body = document.body;
@@ -412,7 +408,6 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       }
     }
 
-    // --- Desktop ---
     const handleMouseEnter = () => {
       if (expandOnHover && isCollapsed) setSidebarState("expanded");
     };
@@ -550,34 +545,97 @@ const SidebarFooter = React.forwardRef<
 ));
 SidebarFooter.displayName = "Sidebar.Footer";
 
-// --- Sidebar FAB ---
-export interface SidebarFABProps extends Omit<FABProps, "isExtended"> {
-  label: React.ReactNode;
+// --- Sidebar FAB (REFACTORED: CSS-driven Layout) ---
+export interface SidebarFABProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  icon: React.ReactNode;
+  label?: React.ReactNode;
+  variant?: "primary" | "secondary" | "tertiary" | "ghost";
 }
 
 const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
-  ({ className, icon, label, ...props }, ref) => {
-    const { state, isMobile } = useSidebar();
+  ({ icon, label, className, variant: propVariant, ...props }, ref) => {
+    const { state, isMobile, itemVariant } = useSidebar();
     const isCollapsed = !isMobile && state === "collapsed";
-    const isExtended = !isCollapsed;
+
+    const variant =
+      propVariant || (itemVariant === "ghost" ? "secondary" : "primary");
+
+    const localRef = useRef<HTMLButtonElement>(null);
+    // @ts-ignore
+    React.useImperativeHandle(ref, () => localRef.current!);
+
+    const [, event] = useRipple({
+      // @ts-ignore
+      ref: localRef,
+      color:
+        variant === "primary"
+          ? "var(--color-ripple-dark)"
+          : "var(--color-ripple-light)",
+      duration: 400,
+    });
+
+    const variantClasses = {
+      primary:
+        "bg-primary-container text-on-primary-container hover:bg-primary-container/90 shadow-md hover:shadow-lg",
+      secondary:
+        "bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80 shadow-sm hover:shadow-md",
+      tertiary:
+        "bg-tertiary-container text-on-tertiary-container hover:bg-tertiary-container/80 shadow-sm hover:shadow-md",
+      ghost:
+        "bg-transparent text-on-surface hover:bg-surface-container-highest/50 shadow-none",
+    };
 
     return (
-      <div
-        className={clsx(
-          "mb-2 flex",
-          isCollapsed ? "justify-center px-0" : "px-3",
-          className,
-        )}
-      >
-        <FAB ref={ref} icon={icon} isExtended={isExtended} {...props}>
-          {label}
-        </FAB>
+      <div className={clsx("w-full mb-6 mt-2 flex", className)}>
+        <motion.button
+          // @ts-ignore
+          ref={localRef}
+          type="button"
+          onPointerDown={event}
+          // REMOVED 'layout' prop to prevent layout thrashing
+          // REMOVED explicit width animation; let CSS w-full handle it
+          animate={{
+            borderRadius: "1rem",
+          }}
+          className={clsx(
+            // Added 'w-full' so it stays attached to the parent container edges
+            // Added 'px-3' to align content exactly like Sidebar.Item
+            "h-14 relative flex items-center w-full overflow-hidden transition-colors px-3",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            variantClasses[variant],
+          )}
+          // @ts-ignore
+          {...props}
+        >
+          {/* Icon Container - centered and fixed size */}
+          <div className="flex items-center justify-center shrink-0 w-6 h-6 z-10">
+            {icon}
+          </div>
+
+          {/* Label Container - Smoothly collapses width/margin */}
+          <AnimatePresence mode="wait">
+            {!isCollapsed && label && (
+              <motion.span
+                initial={{ opacity: 0, width: 0, marginInlineStart: 0 }}
+                animate={{
+                  opacity: 1,
+                  width: "auto",
+                  marginInlineStart: "0.75rem",
+                }}
+                exit={{ opacity: 0, width: 0, marginInlineStart: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="whitespace-nowrap font-semibold text-base overflow-hidden"
+              >
+                {label}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
       </div>
     );
   },
 );
 SidebarFAB.displayName = "Sidebar.FAB";
-
 // --- Item Variants ---
 const sidebarItemVariants = cva(
   "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 overflow-hidden z-0",
@@ -696,15 +754,12 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
 
     const effectiveVariant = itemVariant || contextItemVariant;
 
-    // Determine ripple color based on variant and active state
-    // Tertiary usually needs dark ripple in light mode, light ripple in dark mode (on-tertiary-container)
-    // Here we simplify by checking if it's a solid colored active state (Primary/Tertiary usually)
     const isSolidActive =
       isActive &&
       (effectiveVariant === "primary" || effectiveVariant === "tertiary");
     const rippleColor = isSolidActive
-      ? "var(--color-ripple-light)" // Light ripple for dark backgrounds
-      : "var(--color-ripple-dark)"; // Dark ripple for light/transparent backgrounds
+      ? "var(--color-ripple-light)"
+      : "var(--color-ripple-dark)";
 
     const [, event] = useRipple({
       // @ts-ignore
@@ -716,8 +771,6 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
     const [isPressed, setIsPressed] = useState(false);
     const iconSize = props.size === "lg" ? 24 : props.size === "sm" ? 16 : 20;
 
-    // Dot styling for collapsed state
-    // We try to match the contrast of the active variant
     let dotClass = "bg-primary";
     if (effectiveVariant === "primary" && isActive) dotClass = "bg-on-primary";
     if (effectiveVariant === "secondary" && isActive)
@@ -775,7 +828,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
               animate={{
                 opacity: 1,
                 width: "auto",
-                marginInlineStart: "0.75rem", // Logical Margin
+                marginInlineStart: "0.75rem",
               }}
               exit={{ opacity: 0, width: 0, marginInlineStart: 0 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
@@ -786,7 +839,6 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
           )}
         </AnimatePresence>
 
-        {/* Badge: Shows full badge when expanded, small dot when collapsed */}
         <AnimatePresence mode="wait">
           {!isCollapsed && badge ? (
             <motion.div
@@ -795,7 +847,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
-              className="ms-auto shrink-0 relative z-10" // Logical margin-start
+              className="ms-auto shrink-0 relative z-10"
             >
               {badge}
             </motion.div>
@@ -889,14 +941,19 @@ const SidebarLabel = ({
   const isCollapsed = !isMobile && state === "collapsed";
 
   return (
-    // @ts-ignore
     <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: isCollapsed ? 0 : 1, y: 0 }}
-      transition={{ duration: 0.12 }}
-      exit={{ opacity: 0 }}
+      initial={false}
+      animate={{
+        opacity: isCollapsed ? 0 : 1,
+        height: isCollapsed ? 0 : "auto",
+        marginTop: isCollapsed ? 0 : 4,
+        marginBottom: isCollapsed ? 0 : 4,
+        paddingTop: isCollapsed ? 0 : 4,
+        paddingBottom: isCollapsed ? 0 : 4,
+      }}
+      transition={{ duration: 0.2, ease: "easeInOut" }}
       className={clsx(
-        "px-3 py-1 text-xs font-semibold uppercase tracking-wider text-on-surface-variant whitespace-nowrap overflow-hidden",
+        "px-3 text-xs font-semibold uppercase tracking-wider text-on-surface-variant whitespace-nowrap overflow-hidden block",
         className,
       )}
       {...props}
@@ -915,4 +972,5 @@ export const Sidebar = Object.assign(SidebarRoot, {
   Trigger: SidebarTrigger,
   Group: SidebarGroup,
   Label: SidebarLabel,
+  FAB: SidebarFAB,
 });

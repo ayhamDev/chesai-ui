@@ -16,6 +16,17 @@ import { Typography } from "../typography";
 // --- TYPE DEFINITIONS & CONTEXT ---
 
 export type BottomTabsSize = "sm" | "md" | "lg";
+export type BottomTabsVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "surface"
+  | "ghost";
+export type BottomTabsItemVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "ghost";
 
 export interface BottomTabsScreenProps {
   name: string;
@@ -33,6 +44,8 @@ interface BottomTabsContextProps {
   indicatorId: string;
   showLabels: boolean;
   size: BottomTabsSize;
+  variant: BottomTabsVariant;
+  itemVariant: BottomTabsItemVariant;
 }
 
 const BottomTabsContext = createContext<BottomTabsContextProps | null>(null);
@@ -48,38 +61,49 @@ const useBottomTabs = () => {
 
 // --- CVA VARIANTS ---
 
-const navigatorVariants = cva(
-  "w-full bg-surface-container transition-all duration-300",
-  {
-    variants: {
-      mode: {
-        attached: "",
-        detached: "p-2",
-      },
-      shape: {
-        full: "",
-        minimal: "",
-        sharp: "rounded-none",
-      },
-      bordered: {
-        true: "border-t border-outline-variant",
-        false: "",
-      },
-      shadow: {
-        none: "shadow-none",
-        sm: "shadow-sm",
-        md: "shadow-md",
-        lg: "shadow-lg",
-      },
+const navigatorVariants = cva("w-full transition-all duration-300", {
+  variants: {
+    variant: {
+      primary: "bg-surface-container-low text-on-surface",
+      secondary: "bg-surface-container text-on-surface",
+      tertiary: "bg-tertiary-container text-on-tertiary-container",
+      surface: "bg-surface text-on-surface",
+      ghost: "bg-transparent text-on-surface",
     },
-    compoundVariants: [
-      { mode: "detached", shape: "full", className: "rounded-full" },
-      { mode: "detached", shape: "minimal", className: "rounded-xl" },
-      { mode: "attached", shape: "full", className: "rounded-t-3xl" },
-      { mode: "attached", shape: "minimal", className: "rounded-t-xl" },
-    ],
+    mode: {
+      attached: "",
+      detached: "p-2",
+    },
+    shape: {
+      full: "",
+      minimal: "",
+      sharp: "rounded-none",
+    },
+    bordered: {
+      true: "border-t border-outline-variant",
+      false: "",
+    },
+    shadow: {
+      none: "shadow-none",
+      sm: "shadow-sm",
+      md: "shadow-md",
+      lg: "shadow-lg",
+    },
   },
-);
+  compoundVariants: [
+    { mode: "detached", shape: "full", className: "rounded-full" },
+    { mode: "detached", shape: "minimal", className: "rounded-xl" },
+    { mode: "attached", shape: "full", className: "rounded-t-3xl" },
+    { mode: "attached", shape: "minimal", className: "rounded-t-xl" },
+    // Tertiary usually looks better without borders
+    { variant: "tertiary", bordered: true, className: "!border-transparent" },
+  ],
+  defaultVariants: {
+    variant: "secondary",
+    mode: "attached",
+    shape: "full",
+  },
+});
 
 const BottomTabsScreen: React.FC<BottomTabsScreenProps> = () => {
   return null;
@@ -102,21 +126,51 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     navigatorShape,
     showLabels,
     size,
+    itemVariant,
   } = useBottomTabs();
 
   const isActive = activeTab === name;
   const finalShape = itemShape || navigatorShape;
 
   const localRef = useRef<HTMLButtonElement>(null);
+
+  // Determine colors based on itemVariant
+  let activeIndicatorClass = "bg-secondary-container";
+  let activeTextClass = "text-on-secondary-container";
+  let rippleColor = "var(--color-ripple-dark)";
+
+  switch (itemVariant) {
+    case "primary":
+      activeIndicatorClass = "bg-primary";
+      activeTextClass = "text-on-primary";
+      rippleColor = "var(--color-ripple-light)"; // Light ripple for dark bg
+      break;
+    case "tertiary":
+      activeIndicatorClass = "bg-tertiary-container";
+      activeTextClass = "text-on-tertiary-container";
+      rippleColor = "var(--color-ripple-dark)";
+      break;
+    case "ghost":
+      activeIndicatorClass = "bg-transparent"; // Or subtle alpha
+      activeTextClass = "text-primary";
+      rippleColor = "var(--color-ripple-dark)";
+      break;
+    case "secondary":
+    default:
+      activeIndicatorClass = "bg-secondary-container";
+      activeTextClass = "text-on-secondary-container";
+      rippleColor = "var(--color-ripple-dark)";
+      break;
+  }
+
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
-    color: "var(--color-ripple-dark)",
+    color: rippleColor,
     duration: 400,
   });
 
   const isShiftLayout = itemLayout === "inline";
 
-  // Configuration mapping for sizes
   const sizeConfigs = {
     sm: {
       height: "h-12",
@@ -161,10 +215,11 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
         className={clsx(
           "relative z-10 flex w-full flex-col items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           config.height,
-          isActive ? "text-on-secondary-container" : "text-on-surface-variant",
+          isActive ? activeTextClass : "text-on-surface-variant",
           shapeToClassName[finalShape],
+          // Add hover effect if not active
           !isActive && [
-            "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out",
+            "after:absolute after:inset-0 after:z-[-1] after:bg-on-surface/10 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out",
             "hover:after:opacity-100 hover:after:scale-100",
           ],
         )}
@@ -172,7 +227,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
         {isActive && (
           <motion.div
             layoutId={indicatorId}
-            className="absolute inset-0 z-0 bg-secondary-container"
+            className={clsx("absolute inset-0 z-0", activeIndicatorClass)}
             style={{ borderRadius: shapeToBorderRadius[finalShape] }}
             transition={{
               type: "spring",
@@ -230,6 +285,8 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   mode?: "attached" | "detached";
   shape?: "full" | "minimal" | "sharp";
   size?: BottomTabsSize;
+  variant?: BottomTabsVariant;
+  itemVariant?: BottomTabsItemVariant;
   bordered?: boolean;
   shadow?: "none" | "sm" | "md" | "lg";
   children:
@@ -249,6 +306,8 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   itemLayout = "stacked",
   shape = "full",
   size = "md",
+  variant = "secondary",
+  itemVariant = "secondary",
   bordered = true,
   shadow = "lg",
   showLabels = true,
@@ -278,6 +337,8 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
       indicatorId,
       showLabels,
       size,
+      variant,
+      itemVariant,
     }),
     [
       activeTab,
@@ -288,6 +349,8 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
       indicatorId,
       showLabels,
       size,
+      variant,
+      itemVariant,
     ],
   );
 
@@ -298,6 +361,7 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
           navigatorVariants({
             mode,
             shape,
+            variant,
             bordered: mode === "attached" ? bordered : false,
             shadow: mode === "detached" ? shadow : undefined,
             className,

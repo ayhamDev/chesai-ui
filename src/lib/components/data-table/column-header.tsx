@@ -28,80 +28,84 @@ interface DataTableColumnHeaderProps<
 > extends React.HTMLAttributes<HTMLDivElement> {
   column: Column<TData, TValue>;
   title: string;
-  enableColumnFilter?: boolean;
 }
 
 export function DataTableColumnHeader<TData, TValue>({
   column,
   title,
   className,
-  enableColumnFilter,
 }: DataTableColumnHeaderProps<TData, TValue>) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const isFiltered = !!column.getFilterValue();
 
-  if (!column.getCanSort() && !enableColumnFilter) {
+  if (!column.getCanSort() && !column.getCanFilter()) {
     return <div className={clsx(className)}>{title}</div>;
   }
 
   return (
     <div className={clsx("flex items-center space-x-2", className)}>
-      <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+      <Dialog
+        open={isFilterOpen}
+        onOpenChange={setIsFilterOpen}
+        animation="material3"
+      >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className="-ml-3 h-8 data-[state=open]:bg-secondary-container"
+              className={clsx(
+                "-ml-3 h-8 data-[state=open]:bg-secondary-container",
+                isFiltered && "text-primary font-bold",
+              )}
             >
               <span>{title}</span>
               {column.getIsSorted() === "desc" ? (
-                <ArrowDown className="ml-2 h-4 w-4 text-primary" />
+                <ArrowDown className="ml-2 h-4 w-4" />
               ) : column.getIsSorted() === "asc" ? (
-                <ArrowUp className="ml-2 h-4 w-4 text-primary" />
+                <ArrowUp className="ml-2 h-4 w-4" />
               ) : (
                 <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
               )}
-              {/* FIX: Check if filter value is truthy before rendering */}
-              {!!column.getFilterValue() && (
-                <Filter className="ml-2 h-3 w-3 text-primary" />
-              )}
+              {isFiltered && <Filter className="ml-1 h-3 w-3 fill-current" />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-              <ArrowUp className="mr-2 h-3.5 w-3.5 text-on-surface-variant" />
-              Asc
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-              <ArrowDown className="mr-2 h-3.5 w-3.5 text-on-surface-variant" />
-              Desc
-            </DropdownMenuItem>
-
-            <DropdownMenuItem onClick={() => column.clearSorting()}>
-              <X className="mr-2 h-3.5 w-3.5 text-on-surface-variant" />
-              Clear Sort
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-              <EyeOff className="mr-2 h-3.5 w-3.5 text-on-surface-variant" />
-              Hide
-            </DropdownMenuItem>
-
-            {enableColumnFilter && (
+            {column.getCanSort() && (
               <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setIsFilterOpen(true)}>
-                  <Filter className="mr-2 h-3.5 w-3.5 text-on-surface-variant" />
-                  Filter
+                <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+                  <ArrowUp className="mr-2 h-3.5 w-3.5 opacity-50" />
+                  Ascending
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+                  <ArrowDown className="mr-2 h-3.5 w-3.5 opacity-50" />
+                  Descending
+                </DropdownMenuItem>
+                {column.getIsSorted() && (
+                  <DropdownMenuItem onClick={() => column.clearSorting()}>
+                    <X className="mr-2 h-3.5 w-3.5 opacity-50" />
+                    Clear Sort
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
               </>
             )}
+
+            {column.getCanFilter() && (
+              <DropdownMenuItem onSelect={() => setIsFilterOpen(true)}>
+                <Filter className="mr-2 h-3.5 w-3.5 opacity-50" />
+                {isFiltered ? "Edit Filter" : "Filter..."}
+              </DropdownMenuItem>
+            )}
+
+            <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+              <EyeOff className="mr-2 h-3.5 w-3.5 opacity-50" />
+              Hide Column
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DialogContent variant="surface" className="p-0 w-auto min-w-[300px]">
+        <DialogContent variant="surface" className="p-0 w-auto">
           <ColumnFilterDialog
             column={column}
             onClose={() => setIsFilterOpen(false)}

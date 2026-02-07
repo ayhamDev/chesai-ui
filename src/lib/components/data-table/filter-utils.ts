@@ -1,5 +1,14 @@
 import type { FilterFn } from '@tanstack/react-table'
 
+/**
+ * Enhanced Filter Types to support UI logic
+ */
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData, TValue> {
+    filterType?: 'text' | 'number' | 'date' | 'select'
+  }
+}
+
 export type FilterOperator =
   | 'contains'
   | 'notContains'
@@ -17,18 +26,24 @@ export interface AdvancedFilterValue {
   value: string | number
 }
 
+/**
+ * A robust filter function that handles strings, numbers, and null values safely.
+ */
 export const advancedFilterFn: FilterFn<any> = (row, columnId, filterValue: AdvancedFilterValue) => {
   const rowValue = row.getValue(columnId)
   const { operator, value } = filterValue
 
-  // Handle empty/null
+  // 1. Handle Empty/Null search values - show everything
   if (value === '' || value === null || value === undefined) return true
+
+  // 2. Handle Null row data - hide if filtering for a specific value
+  if (rowValue === null || rowValue === undefined) return false
 
   const rowString = String(rowValue).toLowerCase()
   const valueString = String(value).toLowerCase()
   const rowNum = Number(rowValue)
   const valueNum = Number(value)
-  const isNumeric = !isNaN(rowNum) && !isNaN(valueNum) && value !== ''
+  const isNumeric = !isNaN(rowNum) && !isNaN(valueNum) && String(value).trim() !== ''
 
   switch (operator) {
     case 'contains':

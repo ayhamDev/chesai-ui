@@ -2,7 +2,7 @@
 
 import { Slot } from "@radix-ui/react-slot";
 import { useLongPress } from "@uidotdev/usehooks";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import * as React from "react";
 import useRipple from "use-ripple-hook";
@@ -277,8 +277,9 @@ const ItemTitle = React.forwardRef<
     <div
       ref={ref}
       data-slot="item-title"
+      // MD3 standard for list titles is title-medium
       className={clsx(
-        "flex w-fit items-center gap-2 text-base font-semibold leading-snug text-on-surface",
+        "flex w-fit items-center gap-2 text-title-medium font-semibold leading-snug text-on-surface",
         direction === "vertical" && "justify-center",
         className,
       )}

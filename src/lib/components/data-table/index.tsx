@@ -83,7 +83,7 @@ export function DataTable<TData>({
   const [internalColumnVisibility, setInternalColumnVisibility] =
     React.useState<VisibilityState>({});
   const [internalSorting, setInternalSorting] = React.useState<SortingState>(
-    []
+    [],
   );
   const [internalColumnFilters, setInternalColumnFilters] =
     React.useState<ColumnFiltersState>([]);

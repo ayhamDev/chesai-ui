@@ -40,7 +40,7 @@ const smShapeStyles = {
   sharp: "sm:rounded-none",
 };
 
-// --- CONTEXT and PORTAL ---
+// --- CONTEXT ---
 type DialogVariant = "basic" | "fullscreen";
 type DialogAnimationType = "default" | "material3";
 
@@ -52,6 +52,7 @@ interface DialogContextProps {
   descriptionId: string;
   variant: DialogVariant;
   animation: DialogAnimationType;
+  isLocked: boolean;
 }
 
 const DialogContext = createContext<DialogContextProps | null>(null);
@@ -77,6 +78,7 @@ export interface DialogProps {
   children: ReactNode;
   variant?: DialogVariant;
   animation?: DialogAnimationType;
+  isLocked?: boolean;
 }
 
 const Dialog: FC<DialogProps> = ({
@@ -85,6 +87,7 @@ const Dialog: FC<DialogProps> = ({
   children,
   variant = "basic",
   animation = "default",
+  isLocked = false,
 }) => {
   const [, setTriggerRef] = useState<HTMLElement | null>(null);
   const titleId = useId();
@@ -99,6 +102,7 @@ const Dialog: FC<DialogProps> = ({
         descriptionId,
         variant,
         animation,
+        isLocked,
       }}
     >
       {children}
@@ -112,7 +116,7 @@ interface DialogTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 const DialogTrigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(
   ({ children, asChild = false, onClick, ...props }, ref) => {
-    const { onOpenChange, setTriggerRef } = useDialogContext();
+    const { onOpenChange, setTriggerRef, isLocked } = useDialogContext();
     const handleRef = (node: HTMLButtonElement | null) => {
       setTriggerRef(node);
       if (typeof ref === "function") ref(node);
@@ -122,6 +126,7 @@ const DialogTrigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(
       ...props,
       ref: handleRef,
       onClick: (e: MouseEvent<HTMLButtonElement>) => {
+        if (isLocked) return;
         onOpenChange(true);
         onClick?.(e);
       },
@@ -135,7 +140,6 @@ const DialogTrigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(
 DialogTrigger.displayName = "DialogTrigger";
 
 // --- ANIMATION VARIANTS ---
-
 const basicDialogVariants: Variants = {
   hidden: { opacity: 0, scale: 0.9 },
   visible: {
@@ -177,26 +181,19 @@ const fullscreenDialogVariants: Variants = {
 };
 
 const material3DialogVariants: Variants = {
-  hidden: {
-    opacity: 0,
-    y: -50,
-    scale: 0.9,
-  },
+  hidden: { opacity: 0, y: -50, scale: 0.9 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: {
-      duration: DURATION.long2,
-      ease: EASING.emphasizedDecelerate,
-    },
+    transition: { duration: DURATION.long2, ease: EASING.emphasizedDecelerate },
   },
   exit: {
     opacity: 0,
     y: -50,
     scale: 0.9,
     transition: {
-      duration: DURATION.short3,
+      duration: DURATION.short2,
       ease: EASING.emphasizedAccelerate,
     },
   },
@@ -272,16 +269,30 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       descriptionId,
       variant: dialogVariant,
       animation,
+      isLocked,
     } = useDialogContext();
-
     const dragControls = useDragControls();
+
+    // --- ESCAPE KEY LOCK ---
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape" && isLocked) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+        }
+      };
+      if (open && isLocked) {
+        window.addEventListener("keydown", handleKeyDown, true); // Capture phase
+      }
+      return () => window.removeEventListener("keydown", handleKeyDown, true);
+    }, [open, isLocked]);
 
     useEffect(() => {
       if (open) {
         document.body.style.overflow = "hidden";
-        if (dialogVariant === "fullscreen") {
+        if (dialogVariant === "fullscreen")
           document.body.style.overscrollBehavior = "none";
-        }
       }
       return () => {
         document.body.style.overflow = "";
@@ -292,21 +303,9 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
     const isFullscreen = dialogVariant === "fullscreen";
     const isMD3 = animation === "material3";
 
-    let backdropVariants = defaultBackdropVariants;
-    if (isMD3) backdropVariants = material3ScrimVariants;
-
-    let dialogVariants = basicDialogVariants;
-    if (isFullscreen) dialogVariants = fullscreenDialogVariants;
-    else if (isMD3) dialogVariants = material3DialogVariants;
-
-    let backdropClass = "bg-black/50";
-    if (isMD3 && !isFullscreen) backdropClass = "bg-black/30";
-
     const handleDragEnd = (event: any, info: PanInfo) => {
-      // Logic to determine if drag was sufficient to close
-      if (info.offset.y > 150 || info.velocity.y > 400) {
-        onOpenChange(false);
-      }
+      if (isLocked) return;
+      if (info.offset.y > 150 || info.velocity.y > 400) onOpenChange(false);
     };
 
     return (
@@ -316,9 +315,9 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
             <FocusTrap
               active={open}
               focusTrapOptions={{
-                onDeactivate: () => onOpenChange(false),
-                escapeDeactivates: true,
-                allowOutsideClick: true,
+                onDeactivate: () => !isLocked && onOpenChange(false),
+                escapeDeactivates: !isLocked,
+                allowOutsideClick: () => !isLocked,
               }}
             >
               <div
@@ -335,9 +334,14 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  variants={backdropVariants}
-                  className={clsx("absolute inset-0", backdropClass)}
-                  onClick={() => onOpenChange(false)}
+                  variants={
+                    isMD3 ? material3ScrimVariants : defaultBackdropVariants
+                  }
+                  className={clsx(
+                    "absolute inset-0",
+                    isMD3 && !isFullscreen ? "bg-black/30" : "bg-black/50",
+                  )}
+                  onClick={() => !isLocked && onOpenChange(false)}
                   style={{ willChange: "opacity" }}
                 />
                 <motion.div
@@ -346,14 +350,19 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   aria-modal="true"
                   aria-labelledby={titleId}
                   aria-describedby={descriptionId}
-                  variants={dialogVariants}
+                  variants={
+                    isFullscreen
+                      ? fullscreenDialogVariants
+                      : isMD3
+                        ? material3DialogVariants
+                        : basicDialogVariants
+                  }
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  // Bind drag properties
-                  drag={isFullscreen ? "y" : false}
+                  drag={isFullscreen && !isLocked ? "y" : false}
                   dragControls={dragControls}
-                  dragListener={false} // We manually start drag via onPointerDown
+                  dragListener={false}
                   dragConstraints={{ top: 0, bottom: 0 }}
                   dragElastic={{ top: 0, bottom: 1 }}
                   onDragEnd={handleDragEnd}
@@ -362,7 +371,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                     isFullscreen
                       ? [
                           "w-full bg-surface-container-high shadow-2xl",
-                          "h-full sm:max-h-[90vh] sm:w-full sm:max-w-2xl",
+                          "h-full sm:max-h-[90vh] sm:max-w-2xl",
                           "rounded-none",
                           smShapeStyles[shape],
                           "overflow-hidden",
@@ -373,9 +382,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   style={{
                     willChange: "transform, opacity, height, width",
                     backfaceVisibility: "hidden",
-                    // FIX: Prevents browser scrolling behavior on the Dialog container itself.
-                    // This allows the 'drag' gesture to be captured by Framer Motion on touch devices.
-                    touchAction: isFullscreen ? "none" : "auto",
+                    touchAction: isFullscreen && !isLocked ? "none" : "auto",
                   }}
                 >
                   {isFullscreen && (
@@ -395,33 +402,19 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                         transform: "translate3d(0, 0, 0)",
                       }}
                       onPointerDown={(e) => {
-                        // 1. Check if we are clicking an interactive element
+                        if (isLocked) return;
                         const target = e.target as HTMLElement;
                         if (
                           target.closest(
-                            "button, a, input, select, textarea, [role='button'], [role='menuitem']",
+                            "button, a, input, select, textarea, [role='button']",
                           )
-                        ) {
+                        )
                           return;
-                        }
-
-                        // 2. Only allow drag start from the top header area (approx 72px)
-                        // This calculation is crucial for "Sheet" behavior.
                         const rect = e.currentTarget.getBoundingClientRect();
-                        const y = e.clientY - rect.top;
-
-                        if (y > 72) return;
-
-                        // 3. Start Drag
+                        if (e.clientY - rect.top > 72) return;
                         dragControls.start(e);
                       }}
                     >
-                      {/* 
-                         We wrap children in a flex container that restores touch-action to "pan-y".
-                         This ensures that if the content inside is scrollable (like DialogBody),
-                         it works naturally, while the parent container prevents scrolling 
-                         to allow the Header Drag to work.
-                      */}
                       <div
                         className="flex h-full w-full flex-col"
                         style={{ touchAction: "pan-y" }}
@@ -450,24 +443,25 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
 );
 DialogContent.displayName = "DialogContent";
 
-// --- HELPER COMPONENTS ---
+// --- HELPERS ---
 interface DialogCloseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
 }
 const DialogClose = forwardRef<HTMLButtonElement, DialogCloseProps>(
   ({ children, asChild = false, onClick, ...props }, ref) => {
-    const { onOpenChange } = useDialogContext();
+    const { onOpenChange, isLocked } = useDialogContext();
     const closeProps = {
       ...props,
       ref,
+      disabled: props.disabled || isLocked,
       onClick: (e: MouseEvent<HTMLButtonElement>) => {
+        if (isLocked) return;
         onOpenChange(false);
         onClick?.(e);
       },
     };
-    if (asChild && isValidElement(children)) {
+    if (asChild && isValidElement(children))
       return cloneElement(children, closeProps);
-    }
     return <button {...closeProps}>{children}</button>;
   },
 );
@@ -482,25 +476,15 @@ const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row items-center justify-between",
           "px-6 py-4 sm:px-8 sm:py-6",
-          "relative",
-          "bg-surface-container-high",
-          "border-b border-outline-variant",
-          // Header should not trigger scroll, aiding the drag
+          "bg-surface-container-high border-b border-outline-variant",
           "touch-none select-none",
         ],
         props.className,
       )}
-      style={{
-        ...(variant === "fullscreen" && {
-          willChange: "transform",
-          transform: "translate3d(0, 0, 0)",
-        }),
-      }}
       {...props}
     />
   );
 };
-DialogHeader.displayName = "DialogHeader";
 
 const DialogFooter = (props: HTMLAttributes<HTMLDivElement>) => {
   const { variant } = useDialogContext();
@@ -511,46 +495,47 @@ const DialogFooter = (props: HTMLAttributes<HTMLDivElement>) => {
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row gap-3",
           "px-6 py-4 sm:px-8 sm:py-6",
-          "bg-surface-container-high",
-          "border-t border-outline-variant",
+          "bg-surface-container-high border-t border-outline-variant",
         ],
         props.className,
       )}
-      style={{
-        ...(variant === "fullscreen" && {
-          willChange: "transform",
-          transform: "translate3d(0, 0, 0)",
-        }),
-      }}
       {...props}
     />
   );
 };
-DialogFooter.displayName = "DialogFooter";
 
 const DialogTitle = forwardRef<
   HTMLHeadingElement,
   HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
   const { titleId } = useDialogContext();
-  return <Typography ref={ref} id={titleId} variant="h3" {...props} />;
+  // Changed variant="h3" to "headline-small"
+  return (
+    <Typography ref={ref} id={titleId} variant="headline-small" {...props} />
+  );
 });
-DialogTitle.displayName = "DialogTitle";
 
 const DialogDescription = forwardRef<
   HTMLParagraphElement,
   HTMLAttributes<HTMLParagraphElement>
 >((props, ref) => {
   const { descriptionId } = useDialogContext();
-  return <Typography variant="muted" ref={ref} id={descriptionId} {...props} />;
+  // Changed variant="muted" to "body-medium" with variant class
+  return (
+    <Typography
+      variant="body-medium"
+      className="text-on-surface-variant"
+      ref={ref}
+      id={descriptionId}
+      {...props}
+    />
+  );
 });
-DialogDescription.displayName = "DialogDescription";
 
 export interface DialogBodyProps
   extends
     Omit<HTMLAttributes<HTMLDivElement>, "dir">,
     Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {}
-
 const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
   (
     {
@@ -564,7 +549,6 @@ const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
     ref,
   ) => {
     const { variant } = useDialogContext();
-
     if (variant === "fullscreen") {
       return (
         <ElasticScrollArea
@@ -572,8 +556,6 @@ const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
           className={clsx(
             "flex-1 pt-0!",
             "px-6 py-4 transition-all sm:px-8 sm:py-6",
-            // Explicitly allow pan-y here to ensure scrolling works
-            // even though parent has touch-action: none
             "touch-pan-y",
             className,
           )}
@@ -586,7 +568,6 @@ const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
         </ElasticScrollArea>
       );
     }
-
     return (
       <div ref={ref} className={clsx("flex-1", className)} {...props}>
         {children}
@@ -594,7 +575,6 @@ const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
     );
   },
 );
-DialogBody.displayName = "DialogBody";
 
 export {
   Dialog,

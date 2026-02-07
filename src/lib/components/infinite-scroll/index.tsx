@@ -1,11 +1,9 @@
 "use client";
 
 import { clsx } from "clsx";
-import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import React, { useEffect, useRef } from "react";
-import { Typography } from "../typography";
 import { LoadingIndicator } from "../loadingIndicator";
+import { Typography } from "../typography";
 
 export interface InfiniteScrollProps {
   /** The content to be rendered (list items, grid items, etc.). */
@@ -91,7 +89,13 @@ export const InfiniteScroll = ({
       {!hasMore && endMessage && (
         <div className="flex w-full justify-center p-4 text-center">
           {typeof endMessage === "string" ? (
-            <Typography variant="muted">{endMessage}</Typography>
+            // Changed variant="muted" to "body-small"
+            <Typography
+              variant="body-small"
+              className="text-on-surface-variant"
+            >
+              {endMessage}
+            </Typography>
           ) : (
             endMessage
           )}

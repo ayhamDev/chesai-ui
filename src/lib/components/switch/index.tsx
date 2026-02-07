@@ -9,11 +9,11 @@ import React, { useState } from "react";
 // --- VARIANTS ---
 
 const switchTrackVariants = cva(
-  "relative border-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 overflow-hidden outline-none rounded-full transition-colors duration-300",
+  // REMOVED: overflow-hidden to allow the bloom/halo to expand beyond track boundaries
+  "relative border-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 outline-none rounded-full transition-colors duration-300",
   {
     variants: {
       size: {
-        // MD3 Standard: 52dp x 32dp
         sm: "w-10 h-6",
         md: "w-[52px] h-8",
         lg: "w-16 h-10",
@@ -29,9 +29,6 @@ const switchTrackVariants = cva(
   },
 );
 
-// --- ANIMATION CONFIG ---
-
-// The "Expressive" spring config
 const springTransition = {
   type: "spring",
   stiffness: 700,
@@ -81,38 +78,34 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
     const [internalChecked, setInternalChecked] = useState(
       defaultChecked ?? false,
     );
-
-    const isControlled = controlledChecked !== undefined;
-    const isChecked = isControlled ? controlledChecked : internalChecked;
+    const isChecked =
+      controlledChecked !== undefined ? controlledChecked : internalChecked;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (disabled) return;
       const newValue = e.target.checked;
-      if (!isControlled) setInternalChecked(newValue);
+      if (controlledChecked === undefined) setInternalChecked(newValue);
       onCheckedChange?.(newValue);
       props.onChange?.(e);
     };
 
-    // Keyboard support: Enter/Space toggles state
     const handleKeyDown = (e: React.KeyboardEvent) => {
       if (disabled) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         const newValue = !isChecked;
-        if (!isControlled) setInternalChecked(newValue);
+        if (controlledChecked === undefined) setInternalChecked(newValue);
         onCheckedChange?.(newValue);
       }
     };
 
-    // --- DYNAMIC SIZING LOGIC ---
-    // Calculates the spring target positions based on size prop
     const getThumbAnimation = () => {
       switch (size) {
         case "sm":
           return {
-            width: isChecked ? 16 : 12, // 16px checked, 12px unchecked
+            width: isChecked ? 16 : 12,
             height: isChecked ? 16 : 12,
-            x: isChecked ? 20 : 5, // Target X coordinates
+            x: isChecked ? 20 : 5,
           };
         case "lg":
           return {
@@ -123,10 +116,8 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
         case "md":
         default:
           return {
-            // Unchecked: 16px. Checked: 24px.
             width: isChecked ? 24 : 16,
             height: isChecked ? 24 : 16,
-            // Unchecked: Left 7px. Checked: Left 24px.
             x: isChecked ? 24 : 7,
           };
       }
@@ -137,13 +128,11 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 
     return (
       <div className={clsx("inline-flex items-center gap-3", className)}>
-        {/* Label acts as the interactive container */}
         <label
           htmlFor={switchId}
           className={clsx(
             "relative inline-flex items-center group outline-none rounded-full select-none",
             !disabled && "cursor-pointer",
-            // Focus ring
             "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           )}
           onKeyDown={handleKeyDown}
@@ -157,24 +146,21 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
             checked={isChecked}
             onChange={handleChange}
             disabled={disabled}
-            tabIndex={-1} // Handled by label wrapper
+            tabIndex={-1}
             {...props}
           />
 
-          {/* TRACK */}
           <div
             className={clsx(
               switchTrackVariants({ size, checked: isChecked }),
-              // MD3 Disabled Styles
               disabled && isChecked && "bg-on-surface/12 border-transparent",
               disabled &&
                 !isChecked &&
                 "bg-surface-container-highest/38 border-on-surface/12",
             )}
           >
-            {/* THUMB (Animated) */}
             <motion.div
-              layout // Enables layout morphing
+              layout
               transition={springTransition}
               initial={false}
               animate={{
@@ -182,12 +168,11 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
                 width: animState.width,
                 height: animState.height,
                 backgroundColor: isChecked
-                  ? "var(--md-sys-color-on-primary)" // Checked: White/Dark Brown
-                  : "var(--md-sys-color-outline-variant)", // Unchecked: Grey
+                  ? "var(--md-sys-color-on-primary)"
+                  : "var(--md-sys-color-outline-variant)",
               }}
               className={clsx(
                 "absolute top-1/2 -translate-y-1/2 rounded-full shadow-sm flex items-center justify-center z-10",
-                // Disabled override for thumb color
                 disabled && "!bg-on-surface/38",
               )}
             >
@@ -196,18 +181,17 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
                 <div
                   className={clsx(
                     "absolute rounded-full transition-all duration-200 ease-out opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 pointer-events-none",
-                    isChecked ? "bg-primary/15" : "bg-on-surface/15",
+                    // FIX: Use white/on-primary overlay when checked so it's visible against the primary track
+                    isChecked ? "bg-white/20" : "bg-on-surface/15",
                   )}
                   style={{
-                    // The halo size is relative to the thumb size to keep proportions
-                    inset: isChecked ? "-8px" : "-10px",
+                    // Halo size logic
+                    inset: isChecked ? "-10px" : "-12px",
                   }}
                 />
               )}
 
-              {/* ICON WRAPPER */}
               <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-                {/* Check Icon */}
                 {withIcons && (
                   <motion.div
                     initial={false}
@@ -221,13 +205,11 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
                     <Check
                       size={iconSizePixel}
                       strokeWidth={4}
-                      // High contrast token
                       className="text-on-primary-container"
                     />
                   </motion.div>
                 )}
 
-                {/* X Icon (Optional) */}
                 {showUncheckedIcon && (
                   <motion.div
                     initial={false}
@@ -251,7 +233,6 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
           </div>
         </label>
 
-        {/* LABEL TEXT */}
         {(label || description) && (
           <div
             className={clsx("flex flex-col", !disabled && "cursor-pointer")}

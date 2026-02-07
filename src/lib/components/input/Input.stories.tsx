@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Mail, Eye, EyeOff, Search } from "lucide-react";
-import { useState } from "react";
+import { Mail, Search } from "lucide-react";
 import { Input } from "./index";
 
 const meta: Meta<typeof Input> = {
@@ -10,7 +9,7 @@ const meta: Meta<typeof Input> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["flat", "bordered", "underlined", "faded"],
+      options: ["flat", "bordered", "underlined", "faded", "ghost"],
     },
     color: {
       control: "select",
@@ -53,6 +52,11 @@ export const Variants: Story = {
         label="Flat (Default)"
         variant="flat"
         placeholder="Filled no ring"
+      />
+      <Input
+        label="Ghost"
+        variant="ghost"
+        placeholder="Transparent, background on hover"
       />
       <Input
         label="Faded"
@@ -120,10 +124,11 @@ export const WithIcons: Story = {
         label="Email"
         shape="full"
         placeholder="you@example.com"
+        labelPlacement="outside"
         startContent={
           <Mail
             className="text-on-surface-variant pointer-events-none flex-shrink-0"
-            size={18}
+            size={20}
           />
         }
       />

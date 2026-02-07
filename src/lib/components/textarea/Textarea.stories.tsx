@@ -8,7 +8,7 @@ const meta: Meta<typeof Textarea> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["flat", "bordered", "underlined", "faded"],
+      options: ["flat", "bordered", "underlined", "faded", "ghost"],
     },
     color: {
       control: "select",
@@ -40,10 +40,10 @@ type Story = StoryObj<typeof Textarea>;
 export const Default: Story = {
   args: {
     label: "Description",
-    placeholder: "",
+    placeholder: "Type something...",
     minRows: 3,
     variant: "flat",
-    labelPlacement: "inside"
+    labelPlacement: "inside",
   },
 };
 
@@ -55,6 +55,11 @@ export const Variants: Story = {
         label="Flat (Default)"
         variant="flat"
         placeholder="Filled no ring"
+      />
+      <Textarea
+        label="Ghost"
+        variant="ghost"
+        placeholder="Transparent, background on hover"
       />
       <Textarea
         label="Faded"
@@ -109,7 +114,7 @@ export const AutoResize: Story = {
     minRows: 2,
     maxRows: 6,
     variant: "flat",
-    labelPlacement: "inside"
+    labelPlacement: "inside",
   },
 };
 

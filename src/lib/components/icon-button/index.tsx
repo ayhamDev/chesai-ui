@@ -5,26 +5,26 @@ import React, { useState } from "react";
 import useRipple from "use-ripple-hook";
 
 export const iconButtonVariants = cva(
-  "font-semibold focus:outline-none min-w-max transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden p-0 z-0",
+  "font-semibold focus-visible:outline-none min-w-max transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden p-0 z-0",
   {
     variants: {
       variant: {
         primary:
-          "bg-primary disabled:bg-primary/70 text-on-primary hover:opacity-90 focus:ring-1 focus:ring-offset-2 focus:ring-primary",
+          "bg-primary disabled:bg-primary/70 text-on-primary hover:opacity-90 focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-primary",
         secondary:
-          "bg-secondary-container disabled:bg-secondary-container/70 text-on-secondary-container hover:bg-secondary-container/80 focus:ring-1 focus:ring-offset-2 focus:ring-primary",
+          "bg-secondary-container disabled:bg-secondary-container/70 text-on-secondary-container hover:bg-secondary-container/80 focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-primary",
         tertiary:
-          "bg-tertiary-container disabled:bg-tertiary-container/70 text-on-tertiary-container hover:bg-tertiary-container/80 focus:ring-1 focus:ring-offset-2 focus:ring-tertiary",
+          "bg-tertiary-container disabled:bg-tertiary-container/70 text-on-tertiary-container hover:bg-tertiary-container/80 focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-tertiary",
         outline:
-          "bg-transparent border border-outline text-primary disabled:opacity-50 disabled:border-outline/50 hover:bg-primary/10 focus:ring-1 focus:ring-offset-2 focus:ring-primary",
+          "bg-transparent border border-outline text-primary disabled:opacity-50 disabled:border-outline/50 hover:bg-primary/10 focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-primary",
         destructive:
-          "bg-error text-on-error disabled:bg-error/70 hover:bg-error/90 focus:ring-1 focus:ring-offset-2 focus:ring-error",
+          "bg-error text-on-error disabled:bg-error/70 hover:bg-error/90 focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-error",
         ghost:
-          "bg-transparent text-on-surface-variant disabled:opacity-70 focus:bg-primary/10 " +
+          "bg-transparent text-on-surface-variant disabled:opacity-70 focus-visible:bg-primary/10 " +
           "after:absolute after:inset-0 after:z-[-1] after:bg-primary/5 after:opacity-0 after:scale-50 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
           "hover:after:opacity-100 hover:after:scale-100 " +
           "disabled:after:opacity-0",
-        link: "bg-transparent text-primary disabled:opacity-70 hover:text-primary hover:underline !p-1 focus:ring-1 focus:ring-offset-2 focus:ring-primary",
+        link: "bg-transparent text-primary disabled:opacity-70 hover:text-primary hover:underline !p-1 focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-primary",
       },
       size: {
         xs: "h-8 w-8",
