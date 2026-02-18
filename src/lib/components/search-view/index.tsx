@@ -4,7 +4,7 @@ import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Mic, X } from "lucide-react";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
@@ -230,7 +230,7 @@ export const SearchView = ({
             </div>
           </motion.div>
 
-          {/* This is the "Ghost" content that fades out while expanding */}
+          {/* Ghost Content: Matches input size (text-lg) and handles color state */}
           <motion.div
             className="absolute inset-0 flex items-center px-4 z-0 pointer-events-none"
             initial={{ opacity: 1 }}
@@ -241,7 +241,12 @@ export const SearchView = ({
             <div className="flex h-12 w-12 items-center justify-center text-on-surface shrink-0 -ml-2">
               {dockedLeadingIcon}
             </div>
-            <div className="flex-1 text-base text-on-surface-variant/60 px-2 truncate">
+            <div
+              className={clsx(
+                "flex-1 text-lg px-2 truncate",
+                value ? "text-on-surface" : "text-on-surface-variant/60",
+              )}
+            >
               {value || placeholder}
             </div>
             <div className="flex items-center pl-2 shrink-0">
@@ -283,7 +288,13 @@ export const SearchView = ({
         <div className="flex h-12 w-12 items-center justify-center text-on-surface shrink-0 -ml-2">
           {dockedLeadingIcon}
         </div>
-        <div className="flex flex-1 items-center px-2 text-base text-on-surface-variant/60 truncate select-none">
+        {/* Trigger Text: Matches input size (text-lg) and handles color state */}
+        <div
+          className={clsx(
+            "flex flex-1 items-center px-2 text-lg truncate select-none",
+            value ? "text-on-surface" : "text-on-surface-variant/60",
+          )}
+        >
           {value || placeholder}
         </div>
         <div className="flex items-center pl-2 shrink-0">

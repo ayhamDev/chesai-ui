@@ -142,20 +142,20 @@ DialogTrigger.displayName = "DialogTrigger";
 
 // --- ANIMATION VARIANTS ---
 const basicDialogVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.9 },
+  hidden: { opacity: 0, scale: 0.85 },
   visible: {
     opacity: 1,
     scale: 1,
     transition: {
-      duration: DURATION.medium4,
+      duration: DURATION.long1,
       ease: EASING.emphasizedDecelerate,
     },
   },
   exit: {
+    scale: 0.85,
     opacity: 0,
-    scale: 0.95,
     transition: {
-      duration: DURATION.short4,
+      duration: DURATION.short3,
       ease: EASING.emphasizedAccelerate,
     },
   },
@@ -167,7 +167,7 @@ const fullscreenDialogVariants: Variants = {
     y: "0%",
     opacity: 1,
     transition: {
-      duration: DURATION.medium4,
+      duration: DURATION.long1,
       ease: EASING.emphasizedDecelerate,
     },
   },
@@ -187,11 +187,11 @@ const material3DialogVariants: Variants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: DURATION.long2, ease: EASING.emphasizedDecelerate },
+    transition: { duration: DURATION.long3, ease: EASING.emphasizedDecelerate },
   },
   exit: {
     opacity: 0,
-    y: -50,
+    y: -30,
     scale: 0.9,
     transition: {
       duration: DURATION.short2,

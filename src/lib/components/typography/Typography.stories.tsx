@@ -42,6 +42,16 @@ const meta: Meta<typeof Typography> = {
       options: ["full", "minimal", "sharp"],
       if: { arg: "highlighted" },
     },
+    muted: {
+      control: "boolean",
+      description: "Applies muted styling to the text.",
+      defaultValue: null,
+    },
+    bold: {
+      control: "boolean",
+      description: "Applies bold styling to the text.",
+      defaultValue: null,
+    },
     as: {
       control: "text",
       description:

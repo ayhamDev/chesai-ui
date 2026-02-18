@@ -79,6 +79,7 @@ type TypographyOwnProps = {
   className?: string;
   highlighted?: boolean;
   muted?: boolean;
+  bold?: boolean; // New Prop
 } & VariantProps<typeof highlightVariants>;
 
 type PolymorphicComponentProps<
@@ -106,6 +107,7 @@ const TypographyInner = (
     children,
     highlighted = false,
     muted = false,
+    bold = false, // Destructure bold
     highlightedVariant,
     highlightedShape,
     ...restProps
@@ -122,10 +124,14 @@ const TypographyInner = (
 
   const mutedClass = muted ? "opacity-60" : "";
 
+  // Bold override class
+  const boldClass = bold ? "font-bold!" : "";
+
   const combinedClassName = clsx(
     variantClass,
     highlightClass,
     mutedClass,
+    boldClass, // Added here; will override weights defined in variantClass
     className,
   );
 
@@ -140,5 +146,4 @@ export const Typography = React.forwardRef(
   TypographyInner,
 ) as unknown as TypographyComponent;
 
-// Use standard property assignment instead of @ts-ignore for linter happiness
 (Typography as any).displayName = "Typography";

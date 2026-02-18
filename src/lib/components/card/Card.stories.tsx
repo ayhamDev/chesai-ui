@@ -49,7 +49,7 @@ export const Default: Story = {
   },
   render: (args) => (
     <Card {...args} className="max-w-md">
-      <Typography variant="title-medium">This is a Card</Typography>
+      <Typography variant="title-large">This is a Card</Typography>
       <Typography variant="body-medium">
         A card is a flexible container for content. You can place any other
         components inside it.
@@ -63,19 +63,19 @@ export const ColorVariants: Story = {
   render: () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <Card variant="primary" className="p-6">
-        <Typography variant="title-small">Primary</Typography>
+        <Typography variant="title-large">Primary</Typography>
         <Typography variant="body-small" muted={true}>
           bg-surface-container-low
         </Typography>
       </Card>
       <Card variant="secondary" className="p-6">
-        <Typography variant="title-small">Secondary</Typography>
+        <Typography variant="title-large">Secondary</Typography>
         <Typography variant="body-small" muted={true}>
           bg-surface-container-highest
         </Typography>
       </Card>
       <Card variant="tertiary" className="p-6">
-        <Typography variant="title-small">Tertiary</Typography>
+        <Typography variant="title-large">Tertiary</Typography>
         <Typography variant="body-small" muted={true}>
           bg-tertiary-container
         </Typography>
@@ -104,7 +104,7 @@ export const GhostInteractive: Story = {
   render: (args) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card {...args} className="max-w-md">
-        <Typography variant="title-small">Click Me</Typography>
+        <Typography variant="title-large">Click Me</Typography>
         <Typography variant="body-small" muted={true}>
           Hover for bloom, click for ripple.
         </Typography>
@@ -115,7 +115,7 @@ export const GhostInteractive: Story = {
         shape="full"
         className="max-w-md flex flex-col justify-center items-center h-32"
       >
-        <Typography variant="title-small">Full Shape</Typography>
+        <Typography variant="title-large">Full Shape</Typography>
       </Card>
     </div>
   ),
@@ -127,31 +127,31 @@ export const ElevationLevels: Story = {
   render: () => (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-8 p-4">
       <Card elevation={1} variant="primary" shape="minimal">
-        <Typography variant="title-small">Level 1</Typography>
+        <Typography variant="title-large">Level 1</Typography>
         <Typography variant="body-small" muted={true}>
           Subtle shadow
         </Typography>
       </Card>
       <Card elevation={2} variant="primary" shape="minimal">
-        <Typography variant="title-small">Level 2</Typography>
+        <Typography variant="title-large">Level 2</Typography>
         <Typography variant="body-small" muted={true}>
           Default floating
         </Typography>
       </Card>
       <Card elevation={3} variant="primary" shape="minimal">
-        <Typography variant="title-small">Level 3</Typography>
+        <Typography variant="title-large">Level 3</Typography>
         <Typography variant="body-small" muted={true}>
           Lifted state
         </Typography>
       </Card>
       <Card elevation={4} variant="primary" shape="minimal">
-        <Typography variant="title-small">Level 4</Typography>
+        <Typography variant="title-large">Level 4</Typography>
         <Typography variant="body-small" muted={true}>
           Dialog / Modal
         </Typography>
       </Card>
       <Card elevation={5} variant="primary" shape="minimal">
-        <Typography variant="title-small">Level 5</Typography>
+        <Typography variant="title-large">Level 5</Typography>
         <Typography variant="body-small" muted={true}>
           Maximum lift
         </Typography>
@@ -204,7 +204,7 @@ export const Outlined: Story = {
   },
   render: (args) => (
     <Card {...args} className="max-w-md">
-      <Typography variant="title-small">Outlined Style</Typography>
+      <Typography variant="title-large">Outlined Style</Typography>
       <Typography variant="body-medium">
         Best for low-priority content or clean, flat interfaces.
       </Typography>
@@ -218,7 +218,7 @@ export const BorderedVsElevated: Story = {
     <div className="flex flex-wrap gap-6">
       {/* Bordered */}
       <Card bordered variant="primary" className="w-64">
-        <Typography variant="title-small">Bordered</Typography>
+        <Typography variant="title-large">Bordered</Typography>
         <Typography variant="body-small" muted={true}>
           Flat, 1px stroke
         </Typography>
@@ -226,7 +226,7 @@ export const BorderedVsElevated: Story = {
 
       {/* Elevated */}
       <Card elevation={2} variant="primary" className="w-64">
-        <Typography variant="title-small">Elevated</Typography>
+        <Typography variant="title-large">Elevated</Typography>
         <Typography variant="body-small" muted={true}>
           Shadow, no stroke
         </Typography>
@@ -234,7 +234,7 @@ export const BorderedVsElevated: Story = {
 
       {/* Both */}
       <Card bordered elevation={1} variant="primary" className="w-64">
-        <Typography variant="title-small">Both</Typography>
+        <Typography variant="title-large">Both</Typography>
         <Typography variant="body-small" muted={true}>
           Subtle stroke + Shadow
         </Typography>
@@ -254,7 +254,7 @@ export const HighContrast: Story = {
   render: (args) => (
     <div className="flex flex-col gap-6">
       <Card {...args} className="max-w-md">
-        <Typography variant="title-small" className="text-inherit!">
+        <Typography variant="title-large" className="text-inherit!">
           High Contrast Card
         </Typography>
         <Typography body-medium className="text-inherit! opacity-80">

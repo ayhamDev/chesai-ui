@@ -1,5 +1,5 @@
 import { Slot } from "@radix-ui/react-slot";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
@@ -7,7 +7,7 @@ import React from "react";
 import useRipple from "use-ripple-hook";
 
 export const buttonVariants = cva(
-  "font-semibold cursor-pointer min-w-max focus-visible:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden z-0",
+  "font-semibold cursor-pointer active:scale-95 min-w-max focus-visible:outline-none transition-all duration-300 ease-emphasized flex items-center justify-center relative overflow-hidden z-0",
   {
     variants: {
       variant: {
