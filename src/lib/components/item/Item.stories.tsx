@@ -360,7 +360,7 @@ export const TeamMembersList: Story = {
 
     return (
       <div className="max-w-4xl w-full">
-        <Typography variant="h4" className="mb-4">
+        <Typography variant="title-small" className="mb-4">
           Team Members
         </Typography>
         <ItemGroup>
@@ -391,7 +391,11 @@ export const TeamMembersList: Story = {
                   <ItemDescription>{member.role}</ItemDescription>
                   {member.active && (
                     <ItemFooter>
-                      <Typography variant="muted" className="!text-xs">
+                      <Typography
+                        variant="body-small"
+                        muted={true}
+                        className="!text-xs"
+                      >
                         {member.active}
                       </Typography>
                     </ItemFooter>
@@ -429,7 +433,7 @@ export const SettingsList: Story = {
     const [darkMode, setDarkMode] = useState(false);
     return (
       <div className="w-96">
-        <Typography variant="h4" className="mb-4">
+        <Typography variant="title-small" className="mb-4">
           Settings
         </Typography>
         <ItemGroup>
@@ -524,7 +528,11 @@ export const NotificationList: Story = {
               document.
             </ItemDescription>
             <ItemFooter>
-              <Typography variant="muted" className="!text-xs">
+              <Typography
+                variant="body-small"
+                muted={true}
+                className="!text-xs"
+              >
                 2 minutes ago
               </Typography>
             </ItemFooter>
@@ -542,7 +550,11 @@ export const NotificationList: Story = {
               <b>Clark Kent</b> completed the task "Deploy to production".
             </ItemDescription>
             <ItemFooter>
-              <Typography variant="muted" className="!text-xs">
+              <Typography
+                variant="body-small"
+                muted={true}
+                className="!text-xs"
+              >
                 1 hour ago
               </Typography>
             </ItemFooter>

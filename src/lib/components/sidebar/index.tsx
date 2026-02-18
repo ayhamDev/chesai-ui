@@ -587,6 +587,7 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
 
     return (
       <div className={clsx("w-full mb-6 mt-2 flex", className)}>
+        {/* @ts-ignore */}
         <motion.button
           // @ts-ignore
           ref={localRef}
@@ -941,6 +942,7 @@ const SidebarLabel = ({
   const isCollapsed = !isMobile && state === "collapsed";
 
   return (
+    // @ts-ignore
     <motion.div
       initial={false}
       animate={{

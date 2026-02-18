@@ -76,7 +76,7 @@ const DialogApiDemo = () => {
 
   return (
     <Card className="flex flex-col gap-6 p-8 min-w-[320px]">
-      <Typography variant="h4" className="text-center mb-2">
+      <Typography variant="title-small" className="text-center mb-2">
         Imperative Dialogs
       </Typography>
 

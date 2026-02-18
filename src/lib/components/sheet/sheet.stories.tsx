@@ -72,10 +72,10 @@ type Story = StoryObj<typeof Sheet>;
 // Helper for rich, scrollable content
 const DummyContent = () => (
   <div className="flex-1 overflow-y-auto p-6">
-    <Typography variant="h4" className="mb-2">
+    <Typography variant="title-small" className="mb-2">
       Sheet Content
     </Typography>
-    <Typography variant="p">
+    <Typography variant="body-medium">
       This is the main content area. It adapts to the variant colors
       automatically.
     </Typography>
@@ -110,10 +110,10 @@ export const ResponsiveBehavior: Story = {
           <Sheet.Grabber />
           <Sheet.Header>
             <Sheet.Title>
-              <Typography variant="h3">Responsive Sheet</Typography>
+              <Typography variant="title-medium">Responsive Sheet</Typography>
             </Sheet.Title>
             <Sheet.Description>
-              <Typography variant="muted">
+              <Typography variant="body-small" muted={true}>
                 Adapts to your screen size.
               </Typography>
             </Sheet.Description>
@@ -149,7 +149,7 @@ export const ColorVariants: Story = {
           </Sheet.Trigger>
           <Sheet.Content>
             <Sheet.Header>
-              <Typography variant="h3">Primary</Typography>
+              <Typography variant="title-medium">Primary</Typography>
             </Sheet.Header>
             <DummyContent />
           </Sheet.Content>
@@ -162,7 +162,7 @@ export const ColorVariants: Story = {
           </Sheet.Trigger>
           <Sheet.Content>
             <Sheet.Header>
-              <Typography variant="h3">Secondary</Typography>
+              <Typography variant="title-medium">Secondary</Typography>
             </Sheet.Header>
             <DummyContent />
           </Sheet.Content>
@@ -175,7 +175,7 @@ export const ColorVariants: Story = {
           </Sheet.Trigger>
           <Sheet.Content>
             <Sheet.Header>
-              <Typography variant="h3">Tertiary</Typography>
+              <Typography variant="title-medium">Tertiary</Typography>
             </Sheet.Header>
             <DummyContent />
           </Sheet.Content>
@@ -190,7 +190,7 @@ export const ColorVariants: Story = {
           </Sheet.Trigger>
           <Sheet.Content>
             <Sheet.Header>
-              <Typography variant="h3" className="text-inherit">
+              <Typography variant="title-medium" className="text-inherit">
                 High Contrast
               </Typography>
             </Sheet.Header>
@@ -205,7 +205,7 @@ export const ColorVariants: Story = {
           </Sheet.Trigger>
           <Sheet.Content>
             <Sheet.Header>
-              <Typography variant="h3">Surface</Typography>
+              <Typography variant="title-medium">Surface</Typography>
             </Sheet.Header>
             <DummyContent />
           </Sheet.Content>
@@ -239,10 +239,10 @@ export const HighContrastSheet: Story = {
         <Sheet.Content>
           <Sheet.Grabber />
           <Sheet.Header>
-            <Typography variant="h3" className="text-inherit">
+            <Typography variant="title-medium" className="text-inherit">
               Inverse Sheet
             </Typography>
-            <Typography variant="p" className="text-inherit opacity-80">
+            <Typography body-medium className="text-inherit opacity-80">
               This uses the `inverse-surface` token.
             </Typography>
           </Sheet.Header>

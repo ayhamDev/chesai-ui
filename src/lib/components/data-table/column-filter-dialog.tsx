@@ -69,7 +69,7 @@ export function ColumnFilterDialog<TData, TValue>({
         >
           Filter Column
         </Typography>
-        <Typography variant="h4" className="truncate">
+        <Typography variant="title-small" className="truncate">
           {typeof column.columnDef.header === "string"
             ? column.columnDef.header
             : column.id}

@@ -48,10 +48,10 @@ export const GridStress: StoryObj = {
 
     return (
       <div className="space-y-4">
-        <Typography variant="h4">
+        <Typography variant="title-small">
           Rendering {items.length} items without virtualization
         </Typography>
-        <Typography variant="muted">
+        <Typography variant="body-small" muted={true}>
           Notice the lag on initial render and when resizing the window.
         </Typography>
 
@@ -90,7 +90,7 @@ export const FlexStress: StoryObj = {
 
     return (
       <div className="space-y-4">
-        <Typography variant="h4">Flex Wrap Stress Test</Typography>
+        <Typography variant="title-small">Flex Wrap Stress Test</Typography>
 
         <Flex gap="xs" wrap="wrap">
           {items.map((item) => (
@@ -118,8 +118,8 @@ export const MasonryStress: StoryObj = {
 
     return (
       <div className="space-y-4">
-        <Typography variant="h4">Masonry Stress Test</Typography>
-        <Typography variant="muted">
+        <Typography variant="title-small">Masonry Stress Test</Typography>
+        <Typography variant="body-small" muted={true}>
           Calculating column distribution for 2,000 items takes time on the JS
           thread.
         </Typography>

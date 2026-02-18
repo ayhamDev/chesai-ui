@@ -76,7 +76,7 @@ export const Default: Story = {
     <ContextMenu {...args}>
       <ContextMenu.Trigger asChild>
         <Card className="flex h-48 w-80 cursor-default items-center justify-center border-2 border-dashed">
-          <Typography variant="muted">
+          <Typography variant="body-small" muted={true}>
             Right-click or long-press here
           </Typography>
         </Card>
@@ -95,7 +95,7 @@ export const AllSizes: Story = {
       <ContextMenu size="sm">
         <ContextMenu.Trigger asChild>
           <Card className="flex h-32 w-48 cursor-default items-center justify-center border-2 border-dashed">
-            <Typography variant="small">Small Menu</Typography>
+            <Typography variant="body-small">Small Menu</Typography>
           </Card>
         </ContextMenu.Trigger>
         <ContextMenu.Content>
@@ -105,7 +105,7 @@ export const AllSizes: Story = {
       <ContextMenu size="md">
         <ContextMenu.Trigger asChild>
           <Card className="flex h-32 w-48 cursor-default items-center justify-center border-2 border-dashed">
-            <Typography variant="small">Medium Menu</Typography>
+            <Typography variant="body-small">Medium Menu</Typography>
           </Card>
         </ContextMenu.Trigger>
         <ContextMenu.Content>
@@ -115,7 +115,7 @@ export const AllSizes: Story = {
       <ContextMenu size="lg">
         <ContextMenu.Trigger asChild>
           <Card className="flex h-32 w-48 cursor-default items-center justify-center border-2 border-dashed">
-            <Typography variant="small">Large Menu</Typography>
+            <Typography variant="body-small">Large Menu</Typography>
           </Card>
         </ContextMenu.Trigger>
         <ContextMenu.Content>
@@ -139,7 +139,7 @@ export const KitchenSink: Story = {
       <ContextMenu {...args}>
         <ContextMenu.Trigger asChild>
           <Card className="flex h-48 w-80 cursor-default items-center justify-center border-2 border-dashed">
-            <Typography variant="muted">
+            <Typography variant="body-small" muted={true}>
               Right-click or long-press here
             </Typography>
           </Card>

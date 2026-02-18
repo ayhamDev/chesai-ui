@@ -93,7 +93,7 @@ const RenderWithLayout = (args: any) => {
       </NavigationRail.Navigator>
       <main className="flex-1 p-6 flex flex-col bg-graphite-background transition-all duration-300">
         <header className="h-16 border-b border-graphite-border flex items-center px-4 gap-4 bg-graphite-card rounded-xl mb-4">
-          <Typography variant="h4" className="capitalize">
+          <Typography variant="title-small" className="capitalize">
             {activeTab === "/" ? initialTab : activeTab.substring(1)}
           </Typography>
         </header>

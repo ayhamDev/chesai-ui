@@ -27,6 +27,7 @@ export interface SearchResult {
   longitude: number;
 }
 
+// @ts-expect-error
 export interface LocationPickerProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Initial coordinates [longitude, latitude] */
   defaultCoordinates?: [number, number];

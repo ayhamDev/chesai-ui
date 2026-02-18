@@ -160,7 +160,7 @@ const ToolbarItemTooltip = ({
         <span>{content}</span>
         {shortcut && (
           <Typography
-            variant="small"
+            variant="body-small"
             className="!text-xs opacity-70 bg-white/20 px-1.5 py-0.5 rounded"
           >
             {shortcut}

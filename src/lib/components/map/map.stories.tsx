@@ -91,10 +91,10 @@ export const MarkersAndPopups: Story = {
         color="primary"
         popup={
           <div className="flex flex-col gap-2 min-w-[200px]">
-            <Typography variant="small" className="font-bold">
+            <Typography variant="body-small" className="font-bold">
               Central London
             </Typography>
-            <Typography variant="muted" className="text-xs">
+            <Typography variant="body-small" muted={true} className="text-xs">
               The heart of the city.
             </Typography>
             <Button size="sm" className="w-full mt-1">
@@ -315,10 +315,10 @@ export const Geofencing: Story = {
             )}
           />
           <div>
-            <Typography variant="small" className="font-bold">
+            <Typography variant="body-small" className="font-bold">
               Status: {isInside ? "Authorized" : "Restricted"}
             </Typography>
-            <Typography variant="muted" className="text-xs">
+            <Typography variant="body-small" muted={true} className="text-xs">
               Drag the marker to test
             </Typography>
           </div>

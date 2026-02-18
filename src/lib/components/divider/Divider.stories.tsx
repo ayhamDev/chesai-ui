@@ -33,9 +33,9 @@ export const Default: Story = {
   },
   render: (args) => (
     <div className="w-96">
-      <Typography variant="p">Content above</Typography>
+      <Typography variant="body-medium">Content above</Typography>
       <Divider {...args} />
-      <Typography variant="p">Content below</Typography>
+      <Typography variant="body-medium">Content below</Typography>
     </div>
   ),
 };
@@ -47,9 +47,9 @@ export const WithText: Story = {
   },
   render: (args) => (
     <div className="w-96">
-      <Typography variant="p">Login with email</Typography>
+      <Typography variant="body-medium">Login with email</Typography>
       <Divider {...args} />
-      <Typography variant="p">Login with Google</Typography>
+      <Typography variant="body-medium">Login with Google</Typography>
     </div>
   ),
 };
@@ -59,19 +59,19 @@ export const Alignments: Story = {
   render: () => (
     <div className="w-96 flex flex-col gap-8">
       <div>
-        <Typography variant="small" className="mb-2">
+        <Typography variant="body-small" className="mb-2">
           Start
         </Typography>
         <Divider textAlign="start">Chapter 1</Divider>
       </div>
       <div>
-        <Typography variant="small" className="mb-2">
+        <Typography variant="body-small" className="mb-2">
           Center
         </Typography>
         <Divider textAlign="center">Chapter 1</Divider>
       </div>
       <div>
-        <Typography variant="small" className="mb-2">
+        <Typography variant="body-small" className="mb-2">
           End
         </Typography>
         <Divider textAlign="end">Chapter 1</Divider>
@@ -95,11 +95,11 @@ export const Vertical: Story = {
   name: "Vertical Orientation",
   render: () => (
     <div className="h-40 flex items-center border border-graphite-border rounded-xl p-4 bg-graphite-card">
-      <Typography variant="p">Left</Typography>
+      <Typography variant="body-medium">Left</Typography>
       <Divider orientation="vertical" />
-      <Typography variant="p">Right</Typography>
+      <Typography variant="body-medium">Right</Typography>
       <Divider orientation="vertical">VS</Divider>
-      <Typography variant="p">Far Right</Typography>
+      <Typography variant="body-medium">Far Right</Typography>
     </div>
   ),
 };

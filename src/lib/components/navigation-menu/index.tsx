@@ -183,7 +183,7 @@ const NavigationMenuContentItem = React.forwardRef<
             <div className="flex-1">
               <div className="flex justify-between items-center">
                 <Typography
-                  variant="small"
+                  variant="body-small"
                   className="font-semibold !leading-none"
                 >
                   {title}
@@ -192,7 +192,8 @@ const NavigationMenuContentItem = React.forwardRef<
               </div>
               {children && (
                 <Typography
-                  variant="muted"
+                  variant="body-small"
+                  muted={true}
                   className="!text-sm !leading-snug line-clamp-2"
                 >
                   {children}
@@ -215,7 +216,7 @@ const NavigationMenuViewport = React.forwardRef<
   <div className={clsx("absolute left-0 top-full flex justify-center")}>
     <RadixNavigationMenu.Viewport
       className={clsx(
-        "origin-top-center relative mt-2 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-lg data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out md:w-[var(--radix-navigation-menu-viewport-width)]",
+        "origin-top-center relative mt-2 h-(--radix-navigation-menu-viewport-height) w-full overflow-hidden rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-lg data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out md:w-(--radix-navigation-menu-viewport-width)",
         className,
       )}
       ref={ref}

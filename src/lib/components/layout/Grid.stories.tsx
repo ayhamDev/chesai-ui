@@ -31,7 +31,7 @@ export const Responsive: Story = {
   name: "Responsive Columns",
   render: () => (
     <div className="space-y-4">
-      <Typography variant="muted">
+      <Typography variant="body-small" muted={true}>
         Resize the window to see columns change (1 &rarr; 2 &rarr; 3 &rarr; 4).
       </Typography>
       <Grid columns={{ default: 1, sm: 2, md: 3, lg: 4 }} gap="md">
@@ -54,7 +54,7 @@ export const DashboardLayout: Story = {
   name: "Bento Grid (Spans)",
   render: () => (
     <div className="max-w-4xl mx-auto">
-      <Typography variant="h4" className="mb-4">
+      <Typography variant="title-small" className="mb-4">
         Analytics Dashboard
       </Typography>
       <Grid
@@ -65,7 +65,7 @@ export const DashboardLayout: Story = {
         {/* Large Widget */}
         <GridItem colSpan={{ default: 1, md: 2 }} rowSpan={2}>
           <Card className="h-full bg-blue-50 border-blue-100 flex flex-col justify-between p-6">
-            <Typography variant="h3" className="text-blue-900">
+            <Typography variant="title-medium" className="text-blue-900">
               Total Revenue
             </Typography>
             <div className="text-5xl font-bold text-blue-600">$420k</div>
@@ -75,13 +75,17 @@ export const DashboardLayout: Story = {
         {/* Small Widgets */}
         <GridItem>
           <Card className="h-full flex items-center justify-center flex-col gap-2">
-            <Typography variant="muted">Active Users</Typography>
+            <Typography variant="body-small" muted={true}>
+              Active Users
+            </Typography>
             <span className="text-2xl font-bold">1,234</span>
           </Card>
         </GridItem>
         <GridItem>
           <Card className="h-full flex items-center justify-center flex-col gap-2">
-            <Typography variant="muted">Bounce Rate</Typography>
+            <Typography variant="body-small" muted={true}>
+              Bounce Rate
+            </Typography>
             <span className="text-2xl font-bold text-red-500">42%</span>
           </Card>
         </GridItem>
@@ -91,10 +95,13 @@ export const DashboardLayout: Story = {
           <Card className="h-full bg-purple-50 border-purple-100 p-6 flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-purple-200" />
             <div>
-              <Typography variant="small" className="font-bold text-purple-900">
+              <Typography
+                variant="body-small"
+                className="font-bold text-purple-900"
+              >
                 New Feature Unlocked
               </Typography>
-              <Typography variant="muted" className="text-xs">
+              <Typography variant="body-small" muted={true} className="text-xs">
                 Check out the new analytics view
               </Typography>
             </div>
@@ -104,7 +111,10 @@ export const DashboardLayout: Story = {
         {/* Tall Widget on Right */}
         <GridItem rowSpan={2} className="hidden md:block">
           <Card className="h-full bg-graphite-background p-4 border-dashed">
-            <Typography variant="small" className="text-center w-full block">
+            <Typography
+              variant="body-small"
+              className="text-center w-full block"
+            >
               Sidebar Ad
             </Typography>
           </Card>
@@ -146,7 +156,7 @@ export const Interactive: Story = {
     return (
       <div className="max-w-3xl">
         <div className="flex justify-between items-center mb-6">
-          <Typography variant="h4">Tech Stack</Typography>
+          <Typography variant="title-small">Tech Stack</Typography>
           <Button
             size="sm"
             variant="secondary"
@@ -182,7 +192,7 @@ export const Interactive: Story = {
           ))}
         </Grid>
 
-        <Typography variant="muted" className="mt-6 text-sm">
+        <Typography variant="body-small" muted={true} className="mt-6 text-sm">
           Click the "X" on hover to remove an item. Notice how the grid smoothly
           re-arranges itself.
         </Typography>

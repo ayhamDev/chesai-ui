@@ -92,7 +92,7 @@ export const Basic: Story = {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Typography variant="p">
+            <Typography variant="body-medium">
               It floats in the center and has a scale/fade animation.
             </Typography>
           </div>
@@ -139,7 +139,7 @@ export const MaterialAnimation: Story = {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Typography variant="p">
+            <Typography variant="body-medium">
               This animation mimics the official Material Web implementation
               using Emphasized easing curves. It translates from Y -50px and
               scales up from 90%.
@@ -199,7 +199,10 @@ export const FullScreen: Story = {
               ]}
               scrollContainerRef={scrollRef}
             >
-              <Typography variant="h4" className="truncate font-semibold">
+              <Typography
+                variant="title-small"
+                className="truncate font-semibold"
+              >
                 Create New Event
               </Typography>
             </AppBar>
@@ -213,13 +216,13 @@ export const FullScreen: Story = {
               <div className="grid gap-6 pt-[70px]">
                 <Input label="Event name" placeholder="Team Sync" />
                 <Input label="Location" placeholder="Conference Room 4" />
-                <Typography variant="p">
+                <Typography variant="body-medium">
                   Scroll down to see the AppBar animate. You can also pull down
                   from the top to refresh.
                 </Typography>
                 <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
                 <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                <Typography variant="p" className="text-center">
+                <Typography body-medium className="text-center">
                   End of content.
                 </Typography>
               </div>

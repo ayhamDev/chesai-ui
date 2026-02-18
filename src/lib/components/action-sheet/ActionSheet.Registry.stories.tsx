@@ -55,8 +55,10 @@ const ProfileSheet = ({
             src="https://i.pravatar.cc/300"
           />
           <div>
-            <Typography variant="h3">{name}</Typography>
-            <Typography variant="muted">{email}</Typography>
+            <Typography variant="title-medium">{name}</Typography>
+            <Typography variant="body-small" muted={true}>
+              {email}
+            </Typography>
           </div>
         </div>
 
@@ -153,8 +155,8 @@ const RegistryDemo = () => {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <Typography variant="h3">Registry & Stacking</Typography>
-      <Typography variant="p" className="text-center max-w-md text-gray-500">
+      <Typography variant="title-medium">Registry & Stacking</Typography>
+      <Typography body-medium className="text-center max-w-md text-gray-500">
         Click below to open a registered "Profile" sheet. Inside it, you can
         open "Settings" or "Share", demonstrating stacking.
         <br />

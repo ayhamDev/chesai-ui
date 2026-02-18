@@ -50,7 +50,7 @@ export function DataTablePagination<TData>() {
           {/* Rows Per Page */}
           <div className="flex items-center space-x-2">
             <Typography
-              variant="small"
+              variant="body-small"
               className="whitespace-nowrap text-graphite-foreground"
             >
               Rows per page

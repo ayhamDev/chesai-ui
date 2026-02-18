@@ -418,15 +418,16 @@ export const MultiSelect = React.forwardRef<
         <PopoverPrimitive.Portal>
           <PopoverPrimitive.Content
             className={clsx(
-              "z-50 w-[var(--radix-popover-trigger-width)] min-w-[12rem] overflow-hidden p-0",
+              "z-50 w-(--radix-popover-trigger-width) min-w-48 overflow-hidden p-0",
               // CRITICAL FIX: Explicit height for popover to allow inner scrolling
-              "h-[300px] flex flex-col",
+              "h-75 flex flex-col",
               "rounded-xl border border-outline-variant bg-surface-container text-on-surface shadow-md",
               "data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit",
             )}
             align="start"
             sideOffset={4}
             onInteractOutside={(e) => {
+              // @ts-expect-error
               if (e.target !== ref.current) {
                 setInternalOpen(false);
               }

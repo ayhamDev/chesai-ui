@@ -52,7 +52,7 @@ const AccordionItems = () => (
     <Accordion.Item value="item-1">
       <Accordion.Trigger>What is chesai-ui?</Accordion.Trigger>
       <Accordion.Content>
-        <Typography variant="p">
+        <Typography variant="body-medium">
           chesai-ui is a React component library designed for building modern,
           accessible, and beautiful user interfaces with ease.
         </Typography>
@@ -61,7 +61,7 @@ const AccordionItems = () => (
     <Accordion.Item value="item-2">
       <Accordion.Trigger>Is it accessible?</Accordion.Trigger>
       <Accordion.Content>
-        <Typography variant="p">
+        <Typography variant="body-medium">
           Yes. It is built on top of Radix UI primitives, which are fully
           accessible and follow WAI-ARIA design patterns.
         </Typography>
@@ -70,7 +70,7 @@ const AccordionItems = () => (
     <Accordion.Item value="item-3">
       <Accordion.Trigger>Can I customize the styling?</Accordion.Trigger>
       <Accordion.Content>
-        <Typography variant="p">
+        <Typography variant="body-medium">
           Absolutely. The library is built with Tailwind CSS and CSS variables,
           making it highly customizable to fit your brand's design system.
         </Typography>
@@ -134,7 +134,7 @@ export const VariantCombinations: Story = {
   render: (args) => (
     <div className="flex items-start gap-8">
       <div className="w-80">
-        <Typography variant="h4" className="mb-4 text-center">
+        <Typography variant="title-small" className="mb-4 text-center">
           Layout: Separated
           <br />
           Variant: Primary
@@ -144,7 +144,7 @@ export const VariantCombinations: Story = {
         </Accordion>
       </div>
       <div className="w-80">
-        <Typography variant="h4" className="mb-4 text-center">
+        <Typography variant="title-small" className="mb-4 text-center">
           Layout: Separated
           <br />
           Variant: Secondary
@@ -202,7 +202,7 @@ export const RippleControl: Story = {
         <Accordion.Item value="item-1">
           <Accordion.Trigger>Ripple Enabled (Default)</Accordion.Trigger>
           <Accordion.Content>
-            <Typography variant="p">
+            <Typography variant="body-medium">
               Click the trigger to see the ripple effect.
             </Typography>
           </Accordion.Content>
@@ -212,7 +212,7 @@ export const RippleControl: Story = {
             Ripple Disabled
           </Accordion.Trigger>
           <Accordion.Content>
-            <Typography variant="p">
+            <Typography variant="body-medium">
               This trigger will not have a ripple effect.
             </Typography>
           </Accordion.Content>

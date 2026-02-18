@@ -15,7 +15,10 @@ export const ChartTooltip = ({ active, payload, label, hideLabel }: any) => {
         className="min-w-[120px] !bg-surface-container-high/95 backdrop-blur-sm border border-outline-variant"
       >
         {!hideLabel && (
-          <Typography variant="small" className="mb-2 font-bold opacity-70">
+          <Typography
+            variant="body-small"
+            className="mb-2 font-bold opacity-70"
+          >
             {label}
           </Typography>
         )}

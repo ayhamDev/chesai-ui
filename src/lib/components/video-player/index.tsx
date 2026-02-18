@@ -71,7 +71,7 @@ const playerContainerVariants = cva(
       shape: "minimal",
       isFullscreen: false,
     },
-  }
+  },
 );
 
 // --- SUB-COMPONENT: Video Scrubber ---
@@ -123,7 +123,7 @@ const VideoScrubber = ({
         className={clsx(
           "block h-3.5 w-3.5 rounded-full shadow-lg ring-0 transition-transform duration-200 focus-visible:outline-none",
           thumbColor,
-          isHovered ? "scale-125" : "scale-100"
+          isHovered ? "scale-125" : "scale-100",
         )}
       />
     </SliderPrimitive.Root>
@@ -207,7 +207,7 @@ const VideoSettingsMenu = React.memo(
           "relative flex w-full cursor-pointer select-none items-center justify-between rounded-md px-3 py-2 text-sm outline-none transition-colors",
           isActive
             ? "bg-graphite-secondary text-graphite-foreground font-medium"
-            : "text-graphite-foreground/80 hover:bg-graphite-secondary/50 hover:text-graphite-foreground"
+            : "text-graphite-foreground/80 hover:bg-graphite-secondary/50 hover:text-graphite-foreground",
         )}
       >
         <div className="flex items-center gap-3">
@@ -361,7 +361,7 @@ const VideoSettingsMenu = React.memo(
         )}
       </motion.div>
     );
-  }
+  },
 );
 VideoSettingsMenu.displayName = "VideoSettingsMenu";
 
@@ -392,7 +392,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
       title,
       objectFit = "contain",
     },
-    ref
+    ref,
   ) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const localContainerRef = useRef<HTMLDivElement>(null);
@@ -452,7 +452,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
       return () =>
         document.removeEventListener(
           "fullscreenchange",
-          handleFullscreenChange
+          handleFullscreenChange,
         );
     }, []);
 
@@ -495,7 +495,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
             data.audioTracks.map((t, i) => ({
               id: i,
               label: t.name || t.lang || `Track ${i + 1}`,
-            }))
+            })),
           );
           setCurrentAudioTrack(hls.audioTrack);
         });
@@ -505,7 +505,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
             data.subtitleTracks.map((t, i) => ({
               id: i,
               label: t.name || t.lang || `Sub ${i + 1}`,
-            }))
+            })),
           );
           setCurrentSubtitle(hls.subtitleTrack);
         });
@@ -658,7 +658,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
           clearTimeout(controlsTimeoutRef.current);
         controlsTimeoutRef.current = setTimeout(
           () => setShowControls(false),
-          3000
+          3000,
         );
       } else if (!isPlaying) {
         setShowControls(true);
@@ -717,20 +717,20 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
           const newAmount = prev.amount + step;
           if (videoRef.current)
             handleSeek(
-              videoRef.current.currentTime + (side === "left" ? -step : step)
+              videoRef.current.currentTime + (side === "left" ? -step : step),
             );
           return { side, amount: newAmount };
         }
         if (videoRef.current)
           handleSeek(
-            videoRef.current.currentTime + (side === "left" ? -step : step)
+            videoRef.current.currentTime + (side === "left" ? -step : step),
           );
         return { side, amount: step };
       });
 
       doubleTapTimeoutRef.current = setTimeout(
         () => setDoubleTapState(null),
-        650
+        650,
       );
     };
 
@@ -741,7 +741,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
         ref={localContainerRef}
         className={clsx(
           playerContainerVariants({ shape, isFullscreen }),
-          className
+          className,
         )}
         onMouseMove={() => {
           if (!isMobile) {
@@ -751,7 +751,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
             if (isPlaying && !isSettingsOpen)
               controlsTimeoutRef.current = setTimeout(
                 () => setShowControls(false),
-                3000
+                3000,
               );
           }
         }}
@@ -769,7 +769,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
             "max-h-full max-w-full bg-black",
             objectFit === "cover"
               ? "h-full w-full object-cover"
-              : "h-full w-full object-contain"
+              : "h-full w-full object-contain",
           )}
         />
 
@@ -805,7 +805,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
                 "absolute inset-y-0 z-30 flex w-1/2 items-center justify-center bg-white/10 backdrop-blur-[2px] pointer-events-none",
                 doubleTapState.side === "left"
                   ? "left-0 rounded-r-[50%]"
-                  : "right-0 rounded-l-[50%]"
+                  : "right-0 rounded-l-[50%]",
               )}
             >
               <div className="flex flex-col items-center text-white font-bold">
@@ -871,9 +871,12 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="absolute top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent p-4 pt-6 pointer-events-none"
+              className="absolute top-0 left-0 right-0 z-50  from-black/80 to-transparent p-4 pt-6 pointer-events-none"
             >
-              <Typography variant="h4" className="text-white text-shadow-sm">
+              <Typography
+                variant="title-small"
+                className="text-white text-shadow-sm"
+              >
                 {title}
               </Typography>
             </motion.div>
@@ -972,7 +975,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
                       }}
                       className={clsx(
                         "bg-white/10 text-white hover:bg-white/20 border-none transition-transform",
-                        isSettingsOpen && "rotate-90 bg-white/30"
+                        isSettingsOpen && "rotate-90 bg-white/30",
                       )}
                     >
                       <Settings className="h-5 w-5" />
@@ -1032,7 +1035,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
         </AnimatePresence>
       </div>
     );
-  }
+  },
 );
 
 VideoPlayer.displayName = "VideoPlayer";

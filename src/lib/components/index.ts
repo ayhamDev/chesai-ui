@@ -10,7 +10,6 @@ export * from './button-group'
 export * from './card'
 export * from './checkbox'
 export * from './chip'
-export * from './command'
 export * from './context-menu'
 export * from './data-table'
 // FIX: Corrected path

@@ -73,8 +73,12 @@ export const Images: StoryObj = {
             className="transition-all duration-300"
           />
           <div className="text-center">
-            <Typography variant="h4">Auto Cycle</Typography>
-            <Typography variant="muted" className="capitalize">
+            <Typography variant="title-small">Auto Cycle</Typography>
+            <Typography
+              variant="body-small"
+              muted={true}
+              className="capitalize"
+            >
               Current: {currentShape}
             </Typography>
           </div>
@@ -89,7 +93,7 @@ export const Images: StoryObj = {
               size={100}
               alt="Cat"
             />
-            <Typography variant="small">Heart</Typography>
+            <Typography variant="body-small">Heart</Typography>
           </div>
 
           <div className="flex flex-col items-center gap-2">
@@ -99,7 +103,7 @@ export const Images: StoryObj = {
               size={100}
               alt="Portrait"
             />
-            <Typography variant="small">Scallop</Typography>
+            <Typography variant="body-small">Scallop</Typography>
           </div>
 
           <div className="flex flex-col items-center gap-2">
@@ -109,7 +113,7 @@ export const Images: StoryObj = {
               size={100}
               alt="Portrait"
             />
-            <Typography variant="small">Pill</Typography>
+            <Typography variant="body-small">Pill</Typography>
           </div>
         </div>
       </div>
@@ -164,7 +168,7 @@ export const IconButtons: StoryObj = {
             <Heart className="w-8 h-8 fill-white" />
           </ShapedIconButton>
         </div>
-        <Typography variant="muted">
+        <Typography variant="body-small" muted={true}>
           Click the top buttons to morph the heart button below.
         </Typography>
       </div>
@@ -204,7 +208,7 @@ export const FloatingActionButtons: StoryObj = {
         <ShapedButton shape="square" variant="secondary" size="md">
           <Plus />
         </ShapedButton>
-        <Typography variant="small">Square</Typography>
+        <Typography variant="body-small">Square</Typography>
       </div>
 
       <div className="flex flex-col items-center gap-2">
@@ -216,7 +220,7 @@ export const FloatingActionButtons: StoryObj = {
         >
           <Send className="w-6 h-6 ml-1" />
         </ShapedButton>
-        <Typography variant="small">Cookie</Typography>
+        <Typography variant="body-small">Cookie</Typography>
       </div>
 
       <div className="flex flex-col items-center gap-2">
@@ -228,7 +232,7 @@ export const FloatingActionButtons: StoryObj = {
         >
           <Phone />
         </ShapedButton>
-        <Typography variant="small">Pentagon</Typography>
+        <Typography variant="body-small">Pentagon</Typography>
       </div>
     </div>
   ),

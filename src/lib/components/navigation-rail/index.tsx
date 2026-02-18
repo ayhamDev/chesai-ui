@@ -319,7 +319,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
               exit={{ width: 0, opacity: 0, transition: { duration: 0.1 } }}
               className="relative z-10 overflow-hidden whitespace-nowrap"
             >
-              <Typography variant="p" className="font-semibold text-inherit!">
+              <Typography body-medium className="font-semibold text-inherit!">
                 {label}
               </Typography>
             </motion.div>

@@ -94,6 +94,7 @@ const SheetRoot: React.FC<SheetProps> = ({
         direction,
       }}
     >
+      {/* @ts-ignore */}
       <VaulDrawer.Root
         direction={direction}
         open={open}

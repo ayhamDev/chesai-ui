@@ -45,7 +45,7 @@ export const Gallery: Story = {
   name: "Image Gallery",
   render: () => (
     <div className="max-w-4xl mx-auto">
-      <Typography variant="h4" className="mb-4">
+      <Typography variant="title-small" className="mb-4">
         Photography Portfolio
       </Typography>
       <Masonry columns={{ default: 1, sm: 2, md: 3 }} gap="md">
@@ -95,7 +95,7 @@ export const Interactive: Story = {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6 sticky top-0 bg-white/80 backdrop-blur-sm p-4 z-10 rounded-xl border border-graphite-border">
-          <Typography variant="h4">Dynamic Masonry</Typography>
+          <Typography variant="title-small">Dynamic Masonry</Typography>
           <div className="flex gap-2">
             <Button size="sm" variant="secondary" onClick={shuffleItems}>
               <Shuffle size={16} className="mr-2" /> Shuffle
@@ -123,7 +123,7 @@ export const Interactive: Story = {
                   <Trash2 size={14} className="text-red-600" />
                 </button>
               </div>
-              <Typography variant="small" className="font-bold opacity-70">
+              <Typography variant="body-small" className="font-bold opacity-70">
                 Height: {item.height}px
               </Typography>
             </Card>
@@ -170,12 +170,12 @@ export const Testimonials: Story = {
       <Masonry columns={{ default: 1, md: 2, lg: 3 }} gap="lg">
         {reviews.map((review, i) => (
           <Card key={i} className="bg-graphite-secondary border-none p-6">
-            <Typography variant="p" className="italic mb-4 text-lg">
+            <Typography body-medium className="italic mb-4 text-lg">
               "{review.text}"
             </Typography>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-graphite-foreground/10" />
-              <Typography variant="small" className="font-bold">
+              <Typography variant="body-small" className="font-bold">
                 {review.author}
               </Typography>
             </div>

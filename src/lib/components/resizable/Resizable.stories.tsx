@@ -181,8 +181,8 @@ const EmptyState = () => (
     <div className="mb-4 rounded-full bg-graphite-secondary p-8">
       <Inbox size={48} />
     </div>
-    <Typography variant="h4">Select an item to read</Typography>
-    <Typography variant="p">Nothing is selected yet.</Typography>
+    <Typography variant="title-small">Select an item to read</Typography>
+    <Typography variant="body-medium">Nothing is selected yet.</Typography>
   </div>
 );
 
@@ -319,7 +319,7 @@ const DetailView = ({
       <div className="p-6 md:p-8">
         <div className="mb-6 flex flex-col md:flex-row md:items-start md:justify-between gap-2">
           <Typography
-            variant="h3"
+            variant="title-medium"
             className="text-2xl md:text-3xl font-normal leading-tight"
           >
             {mail.subject}
@@ -336,11 +336,11 @@ const DetailView = ({
               <Typography variant="large" className="font-bold">
                 {mail.author}
               </Typography>
-              <Typography variant="small" className="opacity-50">
+              <Typography variant="body-small" className="opacity-50">
                 {mail.time}
               </Typography>
             </div>
-            <Typography variant="small" className="opacity-60">
+            <Typography variant="body-small" className="opacity-60">
               to me
             </Typography>
           </div>
@@ -348,7 +348,7 @@ const DetailView = ({
 
         <div className="prose dark:prose-invert">
           <Typography
-            variant="p"
+            body-medium
             className="leading-relaxed text-graphite-foreground/80"
           >
             {mail.preview}
@@ -463,7 +463,10 @@ const MobileInboxContent = ({
             {!isSearching && (
               <>
                 <div className="px-4 py-3">
-                  <Typography variant="small" className="font-bold opacity-70">
+                  <Typography
+                    variant="body-small"
+                    className="font-bold opacity-70"
+                  >
                     Recent
                   </Typography>
                 </div>
@@ -489,7 +492,10 @@ const MobileInboxContent = ({
             {isSearching && (
               <>
                 <div className="px-4 py-3">
-                  <Typography variant="small" className="font-bold opacity-70">
+                  <Typography
+                    variant="body-small"
+                    className="font-bold opacity-70"
+                  >
                     Contacts
                   </Typography>
                 </div>
@@ -506,7 +512,11 @@ const MobileInboxContent = ({
                       <ItemTitle className="font-normal text-base">
                         {item.text}
                       </ItemTitle>
-                      <Typography variant="muted" className="text-sm">
+                      <Typography
+                        variant="body-small"
+                        muted={true}
+                        className="text-sm"
+                      >
                         {item.sub}
                       </Typography>
                     </ItemContent>
@@ -527,7 +537,7 @@ const MobileInboxContent = ({
       >
         <div className="flex flex-col gap-1 px-2 pb-20">
           <Typography
-            variant="small"
+            variant="body-small"
             className="px-4 py-2 font-bold opacity-50 uppercase tracking-wider text-xs"
           >
             Inbox
@@ -550,13 +560,16 @@ const MobileInboxContent = ({
                     {mail.author}
                   </ItemTitle>
                   <Typography
-                    variant="small"
+                    variant="body-small"
                     className="text-xs font-medium opacity-60"
                   >
                     {mail.time}
                   </Typography>
                 </div>
-                <Typography variant="small" className="font-semibold mt-0.5">
+                <Typography
+                  variant="body-small"
+                  className="font-semibold mt-0.5"
+                >
                   {mail.subject}
                 </Typography>
                 <ItemDescription className="line-clamp-2 mt-1 text-sm">
@@ -625,8 +638,8 @@ const MobileHomeScreen = ({
           <div className="flex h-full items-center justify-center p-8 text-center opacity-50">
             <div>
               <MessageSquare className="w-12 h-12 mx-auto mb-4" />
-              <Typography variant="h4">Chats</Typography>
-              <Typography variant="small">No messages yet.</Typography>
+              <Typography variant="title-small">Chats</Typography>
+              <Typography variant="body-small">No messages yet.</Typography>
             </div>
           </div>
         )}
@@ -634,8 +647,10 @@ const MobileHomeScreen = ({
           <div className="flex h-full items-center justify-center p-8 text-center opacity-50">
             <div>
               <Video className="w-12 h-12 mx-auto mb-4" />
-              <Typography variant="h4">Meet</Typography>
-              <Typography variant="small">No upcoming meetings.</Typography>
+              <Typography variant="title-small">Meet</Typography>
+              <Typography variant="body-small">
+                No upcoming meetings.
+              </Typography>
             </div>
           </div>
         )}
@@ -854,7 +869,7 @@ export const GmailReplica: StoryObj = {
                     <>
                       <div className="px-4 py-3">
                         <Typography
-                          variant="small"
+                          variant="body-small"
                           className="font-bold opacity-70"
                         >
                           Recent
@@ -888,7 +903,7 @@ export const GmailReplica: StoryObj = {
                     <>
                       <div className="px-4 py-3">
                         <Typography
-                          variant="small"
+                          variant="body-small"
                           className="font-bold opacity-70"
                         >
                           Contacts
@@ -907,7 +922,11 @@ export const GmailReplica: StoryObj = {
                             <ItemTitle className="font-normal text-base">
                               {item.text}
                             </ItemTitle>
-                            <Typography variant="muted" className="text-sm">
+                            <Typography
+                              variant="body-small"
+                              muted={true}
+                              className="text-sm"
+                            >
                               {item.sub}
                             </Typography>
                           </ItemContent>
@@ -922,7 +941,7 @@ export const GmailReplica: StoryObj = {
             <ElasticScrollArea className="flex-1 px-2">
               <div className="flex flex-col gap-1 py-2">
                 <Typography
-                  variant="small"
+                  variant="body-small"
                   className="px-4 py-2 font-bold opacity-50 uppercase tracking-wider text-xs"
                 >
                   Today
@@ -949,14 +968,14 @@ export const GmailReplica: StoryObj = {
                           {mail.author}
                         </ItemTitle>
                         <Typography
-                          variant="small"
+                          variant="body-small"
                           className="text-[10px] opacity-50"
                         >
                           {mail.time}
                         </Typography>
                       </div>
                       <Typography
-                        variant="small"
+                        variant="body-small"
                         className="font-semibold line-clamp-1"
                       >
                         {mail.subject}

@@ -90,20 +90,20 @@ export const Primary: Story = {
         </Tabs.List>
         <Tabs.Content>
           <Tabs.Panel value="flights">
-            <Typography variant="h4">Find Your Next Flight</Typography>
-            <Typography variant="p">
+            <Typography variant="title-small">Find Your Next Flight</Typography>
+            <Typography variant="body-medium">
               Search for one-way, round-trip, or multi-city flights.
             </Typography>
           </Tabs.Panel>
           <Tabs.Panel value="trips">
-            <Typography variant="h4">Manage Your Trips</Typography>
-            <Typography variant="p">
+            <Typography variant="title-small">Manage Your Trips</Typography>
+            <Typography variant="body-medium">
               View upcoming and past trip details here.
             </Typography>
           </Tabs.Panel>
           <Tabs.Panel value="explore">
-            <Typography variant="h4">Explore Destinations</Typography>
-            <Typography variant="p">
+            <Typography variant="title-small">Explore Destinations</Typography>
+            <Typography variant="body-medium">
               Get inspired for your next adventure.
             </Typography>
           </Tabs.Panel>
@@ -129,14 +129,16 @@ export const Secondary: Story = {
         </Tabs.List>
         <Tabs.Content>
           <Tabs.Panel value="overview">
-            <Typography variant="h4">Product Overview</Typography>
-            <Typography variant="p">
+            <Typography variant="title-small">Product Overview</Typography>
+            <Typography variant="body-medium">
               This is the general description of the product.
             </Typography>
           </Tabs.Panel>
           <Tabs.Panel value="specs">
-            <Typography variant="h4">Technical Specifications</Typography>
-            <Typography variant="p">
+            <Typography variant="title-small">
+              Technical Specifications
+            </Typography>
+            <Typography variant="body-medium">
               Detailed technical specifications are listed here.
             </Typography>
           </Tabs.Panel>
@@ -220,22 +222,22 @@ export const Scrollable: Story = {
         </Tabs.List>
         <Tabs.Content>
           <Tabs.Panel value="flights">
-            <Typography variant="h4">Find Your Next Flight</Typography>
+            <Typography variant="title-small">Find Your Next Flight</Typography>
           </Tabs.Panel>
           <Tabs.Panel value="trips">
-            <Typography variant="h4">Manage Your Trips</Typography>
+            <Typography variant="title-small">Manage Your Trips</Typography>
           </Tabs.Panel>
           <Tabs.Panel value="explore">
-            <Typography variant="h4">Explore Destinations</Typography>
+            <Typography variant="title-small">Explore Destinations</Typography>
           </Tabs.Panel>
           <Tabs.Panel value="hotels">
-            <Typography variant="h4">Book a Hotel</Typography>
+            <Typography variant="title-small">Book a Hotel</Typography>
           </Tabs.Panel>
           <Tabs.Panel value="cars">
-            <Typography variant="h4">Rent a Car</Typography>
+            <Typography variant="title-small">Rent a Car</Typography>
           </Tabs.Panel>
           <Tabs.Panel value="packages">
-            <Typography variant="h4">Vacation Packages</Typography>
+            <Typography variant="title-small">Vacation Packages</Typography>
           </Tabs.Panel>
         </Tabs.Content>
       </Tabs>
@@ -283,22 +285,22 @@ export const ScrollableWithSwipe: Story = {
         </Tabs.List>
         <Tabs.Content>
           <Tabs.Panel value="flights">
-            <Typography variant="h4">Find Your Next Flight</Typography>
+            <Typography variant="title-small">Find Your Next Flight</Typography>
           </Tabs.Panel>
           <Tabs.Panel value="trips">
-            <Typography variant="h4">Manage Your Trips</Typography>
+            <Typography variant="title-small">Manage Your Trips</Typography>
           </Tabs.Panel>
           <Tabs.Panel value="explore">
-            <Typography variant="h4">Explore Destinations</Typography>
+            <Typography variant="title-small">Explore Destinations</Typography>
           </Tabs.Panel>
           <Tabs.Panel value="hotels">
-            <Typography variant="h4">Book a Hotel</Typography>
+            <Typography variant="title-small">Book a Hotel</Typography>
           </Tabs.Panel>
           <Tabs.Panel value="cars">
-            <Typography variant="h4">Rent a Car</Typography>
+            <Typography variant="title-small">Rent a Car</Typography>
           </Tabs.Panel>
           <Tabs.Panel value="packages">
-            <Typography variant="h4">Vacation Packages</Typography>
+            <Typography variant="title-small">Vacation Packages</Typography>
           </Tabs.Panel>
         </Tabs.Content>
       </Tabs>
@@ -327,7 +329,7 @@ export const WithAppBar: Story = {
 
     const DummyScrollContent = ({ title }: { title: string }) => (
       <main className="p-6">
-        <Typography variant="h3">{title}</Typography>
+        <Typography variant="title-medium">{title}</Typography>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 30 }).map((_, i) => (
             <div key={i} className="h-48 rounded-2xl bg-black/5" />
@@ -361,7 +363,7 @@ export const WithAppBar: Story = {
               </IconButton>,
             ]}
             children={
-              <Typography variant="h4" className="truncate font-bold">
+              <Typography variant="title-small" className="truncate font-bold">
                 My App
               </Typography>
             }

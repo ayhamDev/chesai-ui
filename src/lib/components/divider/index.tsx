@@ -103,7 +103,7 @@ export const Divider = React.forwardRef<HTMLDivElement, DividerProps>(
           <span className="shrink-0">
             {typeof children === "string" ? (
               <Typography
-                variant="small"
+                variant="body-small"
                 className="text-on-surface-variant font-medium"
               >
                 {children}

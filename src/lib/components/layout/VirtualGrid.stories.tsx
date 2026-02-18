@@ -71,10 +71,10 @@ export const Default: Story = {
           >
             {item.name.slice(0, 1)}
           </div>
-          <Typography variant="h4" className="text-base font-bold">
+          <Typography variant="title-small" className="text-base font-bold">
             {item.name}
           </Typography>
-          <Typography variant="muted" className="text-xs">
+          <Typography variant="body-small" muted={true} className="text-xs">
             {item.role} • {item.status}
           </Typography>
         </Card>
@@ -104,10 +104,14 @@ export const ContactCards: Story = {
         >
           <Avatar fallback={item.name.slice(0, 2)} />
           <div className="flex-1 min-w-0 text-left">
-            <Typography variant="small" className="font-bold truncate">
+            <Typography variant="body-small" className="font-bold truncate">
               {item.name}
             </Typography>
-            <Typography variant="muted" className="text-xs truncate">
+            <Typography
+              variant="body-small"
+              muted={true}
+              className="text-xs truncate"
+            >
               {item.role.toLowerCase()}@company.com
             </Typography>
           </div>

@@ -97,10 +97,12 @@ type Story = StoryObj<typeof Carousel>;
 const CarouselTemplate = (args: any) => (
   <div className="w-full">
     <div className="px-8 mb-6">
-      <Typography variant="h3" className="font-bold">
+      <Typography variant="title-medium" className="font-bold">
         Explore Locations
       </Typography>
-      <Typography variant="muted">Swipe to see more destinations.</Typography>
+      <Typography variant="body-small" muted={true}>
+        Swipe to see more destinations.
+      </Typography>
     </div>
     <Carousel {...args}>
       {ITEMS.map((item, index) => (

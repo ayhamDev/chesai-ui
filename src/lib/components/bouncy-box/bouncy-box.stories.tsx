@@ -34,8 +34,8 @@ export const Default: Story = {
   render: (args) => (
     <BouncyBox {...args}>
       <Card shape="minimal" className="w-64 cursor-pointer">
-        <Typography variant="h4">Click Me!</Typography>
-        <Typography variant="p">
+        <Typography variant="title-small">Click Me!</Typography>
+        <Typography variant="body-medium">
           This entire card will bounce when you press down on it.
         </Typography>
       </Card>
@@ -72,7 +72,7 @@ export const MoreBouncy: Story = {
   render: (args) => (
     <BouncyBox {...args}>
       <Card shape="full" className="w-48 h-48 flex items-center justify-center">
-        <Typography variant="h3">Boing!</Typography>
+        <Typography variant="title-medium">Boing!</Typography>
       </Card>
     </BouncyBox>
   ),

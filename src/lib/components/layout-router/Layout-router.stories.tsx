@@ -164,7 +164,7 @@ const MailListItem = ({ email }: { email: (typeof sampleEmails)[0] }) => (
 const InboxScreen = () => (
   <div className="w-full h-full relative bg-graphite-background flex flex-col">
     <AppBar appBarColor="card">
-      <Typography variant="h4">Inbox</Typography>
+      <Typography variant="title-small">Inbox</Typography>
     </AppBar>
     <div className="p-2 flex flex-col gap-2">
       {sampleEmails.map((email) => (
@@ -214,9 +214,11 @@ const ModalDetailScreen = ({ item }: { item: (typeof galleryData)[0] }) => {
       </LayoutRouter.SharedElement>
       <div className="mt-4">
         <LayoutRouter.SharedElement tag="title">
-          <Typography variant="h4">{item.title}</Typography>
+          <Typography variant="title-small">{item.title}</Typography>
         </LayoutRouter.SharedElement>
-        <Typography variant="muted">By {item.author}</Typography>
+        <Typography variant="body-small" muted={true}>
+          By {item.author}
+        </Typography>
         <Button onClick={goBack} className="mt-4" size="sm">
           Close
         </Button>
@@ -237,7 +239,7 @@ export const ModalPresentation: Story = {
       <LayoutRouter.List>
         <div className="h-full flex flex-col bg-graphite-background">
           <AppBar appBarColor="card">
-            <Typography variant="h4">Modal Gallery</Typography>
+            <Typography variant="title-small">Modal Gallery</Typography>
           </AppBar>
           <div className="p-2 grid grid-cols-2 gap-2">
             {galleryData.map((item) => (
@@ -267,7 +269,7 @@ export const DismissibleModalPresentation: Story = {
       <LayoutRouter.List>
         <div className="h-full flex flex-col bg-graphite-background">
           <AppBar appBarColor="card">
-            <Typography variant="h4">Dismissible Gallery</Typography>
+            <Typography variant="title-small">Dismissible Gallery</Typography>
           </AppBar>
           <div className="p-2 grid grid-cols-2 gap-2">
             {galleryData.map((item) => (
@@ -316,7 +318,7 @@ const DismissibleScrollScreen = ({
       <DismissibleScrollArea>
         <div className="p-6 pt-2">
           <LayoutRouter.SharedElement tag="subject">
-            <Typography variant="h3" className="mb-6">
+            <Typography variant="title-medium" className="mb-6">
               {email.subject}
             </Typography>
           </LayoutRouter.SharedElement>
@@ -334,8 +336,8 @@ const DismissibleScrollScreen = ({
               </LayoutRouter.SharedElement>
             </div>
           </div>
-          <Typography variant="p">{email.body}</Typography>
-          <Typography variant="p">{email.body}</Typography>
+          <Typography variant="body-medium">{email.body}</Typography>
+          <Typography variant="body-medium">{email.body}</Typography>
         </div>
       </DismissibleScrollArea>
     </div>
@@ -384,7 +386,7 @@ const MainScreen = () => {
   return (
     <div className="h-full flex flex-col">
       <AppBar appBarColor="card">
-        <Typography variant="h4">Main Screen</Typography>
+        <Typography variant="title-small">Main Screen</Typography>
       </AppBar>
       <div className="flex-1 overflow-hidden">
         <LayoutRouter duration={0.4}>
@@ -437,7 +439,7 @@ export const IntegratingWithStackRouter: Story = {
         name="Settings"
         component={({ navigation }) => (
           <div className="p-4" ref={navigation.scrollContainerRef}>
-            <Typography variant="h4">Settings Page</Typography>
+            <Typography variant="title-small">Settings Page</Typography>
           </div>
         )}
       />

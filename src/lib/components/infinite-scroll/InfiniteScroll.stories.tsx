@@ -79,7 +79,7 @@ export const WindowScroll: Story = {
     return (
       <div className="max-w-md mx-auto border border-graphite-border rounded-xl bg-graphite-background">
         <div className="p-4 border-b border-graphite-border bg-graphite-card rounded-t-xl sticky top-0 z-10">
-          <Typography variant="h4">User Directory</Typography>
+          <Typography variant="title-small">User Directory</Typography>
         </div>
         <InfiniteScroll
           hasMore={hasMore}
@@ -98,10 +98,12 @@ export const WindowScroll: Story = {
               <div className="flex items-center gap-3">
                 <Avatar fallback={item.name.slice(0, 2)} />
                 <div>
-                  <Typography variant="small" className="font-bold">
+                  <Typography variant="body-small" className="font-bold">
                     {item.name}
                   </Typography>
-                  <Typography variant="muted">{item.email}</Typography>
+                  <Typography variant="body-small" muted={true}>
+                    {item.email}
+                  </Typography>
                 </div>
               </div>
             </Card>
@@ -205,7 +207,7 @@ export const WithElasticScrollArea: Story = {
           viewportClassName="!block" // Important: override default display if needed
         >
           <div className="p-4">
-            <Typography variant="h3" className="mb-4">
+            <Typography variant="title-medium" className="mb-4">
               Infinite Feed
             </Typography>
             <InfiniteScroll
@@ -222,8 +224,8 @@ export const WithElasticScrollArea: Story = {
                   <div className="h-32 bg-graphite-secondary rounded-lg mb-2 flex items-center justify-center text-graphite-foreground/20 font-bold text-4xl">
                     {item.id}
                   </div>
-                  <Typography variant="h4">{item.name}</Typography>
-                  <Typography variant="p">
+                  <Typography variant="title-small">{item.name}</Typography>
+                  <Typography variant="body-medium">
                     This is some sample content for the feed item to make it
                     take up space.
                   </Typography>

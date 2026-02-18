@@ -102,7 +102,7 @@ const SidebarContentExample = ({
             <Box className="h-5 w-5" />
           </div>
           {!isCollapsed && (
-            <Typography variant="h4" className="truncate text-base!">
+            <Typography variant="title-small" className="truncate text-base!">
               Acme Corp
             </Typography>
           )}
@@ -227,7 +227,7 @@ export const Default: Story = {
         <header className="h-16 border-b border-graphite-border flex items-center px-4 gap-4 bg-graphite-card rounded-xl mb-4">
           <Sidebar.Trigger />
           <Separator orientation="vertical" className="h-6" />
-          <Typography variant="h4">Playground</Typography>
+          <Typography variant="title-small">Playground</Typography>
         </header>
         <div className="flex-1 flex flex-col items-center justify-center text-graphite-foreground/50 text-center">
           <Typography variant="large">Adjust Sidebar Controls</Typography>

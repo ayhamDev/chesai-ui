@@ -122,7 +122,7 @@ export const ShapesAndSizes: Story = {
   render: () => (
     <div className="flex flex-col gap-8 items-center">
       <div className="flex flex-col gap-2 items-center">
-        <Typography variant="small">Small + Full Shape (Faded)</Typography>
+        <Typography variant="body-small">Small + Full Shape (Faded)</Typography>
         <InputOTP maxLength={4} size="sm" shape="full" variant="faded">
           <InputOTPGroup>
             <InputOTPSlot index={0} />
@@ -134,7 +134,9 @@ export const ShapesAndSizes: Story = {
       </div>
 
       <div className="flex flex-col gap-2 items-center">
-        <Typography variant="small">Large + Sharp Shape (Bordered)</Typography>
+        <Typography variant="body-small">
+          Large + Sharp Shape (Bordered)
+        </Typography>
         <InputOTP maxLength={4} size="lg" shape="sharp" variant="bordered">
           <InputOTPGroup>
             <InputOTPSlot index={0} />
@@ -168,7 +170,7 @@ export const ErrorState: Story = {
           <InputOTPSlot index={5} />
         </InputOTPGroup>
       </InputOTP>
-      <Typography variant="small" className="text-error">
+      <Typography variant="body-small" className="text-error">
         Incorrect verification code.
       </Typography>
     </div>

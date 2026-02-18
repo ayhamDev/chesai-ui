@@ -89,7 +89,7 @@ export const InfiniteScroll = ({
       {!hasMore && endMessage && (
         <div className="flex w-full justify-center p-4 text-center">
           {typeof endMessage === "string" ? (
-            // Changed variant="muted" to "body-small"
+            // Changed variant="body-small" muted={true} to "body-small"
             <Typography
               variant="body-small"
               className="text-on-surface-variant"

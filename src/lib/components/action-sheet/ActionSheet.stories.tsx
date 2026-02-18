@@ -147,8 +147,10 @@ const ActionSheetDemo = () => {
             />
           </div>
           <div className="text-center">
-            <Typography variant="h4">Oli's Picks</Typography>
-            <Typography variant="muted">Various Artists</Typography>
+            <Typography variant="title-small">Oli's Picks</Typography>
+            <Typography variant="body-small" muted={true}>
+              Various Artists
+            </Typography>
           </div>
         </div>
       ),
@@ -199,10 +201,13 @@ const ActionSheetDemo = () => {
             />
           </div>
           <div className="flex-1 min-w-0 text-left">
-            <Typography variant="h1" className="leading-tight truncate">
+            <Typography
+              variant="display-large"
+              className="leading-tight truncate"
+            >
               Nature.jpg
             </Typography>
-            <Typography variant="small" className="opacity-60">
+            <Typography variant="body-small" className="opacity-60">
               2.4 MB • JPG
             </Typography>
           </div>
@@ -289,7 +294,7 @@ const ActionSheetDemo = () => {
 
   return (
     <Card className="flex flex-col gap-6 p-8 min-w-[320px]">
-      <Typography variant="h4" className="text-center mb-2">
+      <Typography variant="title-small" className="text-center mb-2">
         Action Sheet Styles
       </Typography>
 

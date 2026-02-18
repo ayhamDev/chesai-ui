@@ -32,6 +32,7 @@ import {
 } from "../elastic-scroll-area";
 import { DURATION, EASING } from "../stack-router/transitions";
 import { Typography } from "../typography";
+import { Shape } from "flubber";
 
 // --- HELPERS ---
 const smShapeStyles = {
@@ -373,7 +374,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                           "w-full bg-surface-container-high shadow-2xl",
                           "h-full sm:max-h-[90vh] sm:max-w-2xl",
                           "rounded-none",
-                          smShapeStyles[shape],
+                          smShapeStyles[shape as keyof typeof smShapeStyles],
                           "overflow-hidden",
                         ]
                       : "w-full max-w-lg",
@@ -509,7 +510,7 @@ const DialogTitle = forwardRef<
   HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
   const { titleId } = useDialogContext();
-  // Changed variant="h3" to "headline-small"
+  // Changed variant="title-medium" to "headline-small"
   return (
     <Typography ref={ref} id={titleId} variant="headline-small" {...props} />
   );
@@ -520,7 +521,7 @@ const DialogDescription = forwardRef<
   HTMLAttributes<HTMLParagraphElement>
 >((props, ref) => {
   const { descriptionId } = useDialogContext();
-  // Changed variant="muted" to "body-medium" with variant class
+  // Changed variant="body-small" muted={true} to "body-medium" with variant class
   return (
     <Typography
       variant="body-medium"

@@ -32,7 +32,7 @@ export const HorizontalStack: Story = {
   name: "Horizontal Stack",
   render: () => (
     <Card className="p-6">
-      <Typography variant="h4" className="mb-4">
+      <Typography variant="title-small" className="mb-4">
         Team Members
       </Typography>
       <Flex align="center" gap="md">
@@ -54,7 +54,7 @@ export const VerticalStack: Story = {
   render: () => (
     <Card className="max-w-md p-0 overflow-hidden">
       <div className="bg-graphite-secondary p-4 border-b border-graphite-border">
-        <Typography variant="h4">Notifications</Typography>
+        <Typography variant="title-small">Notifications</Typography>
       </div>
       <Flex direction="column" gap="none" className="divide-y divide-gray-100">
         {[
@@ -67,10 +67,10 @@ export const VerticalStack: Story = {
             className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
           >
             <Flex justify="between" align="center">
-              <Typography variant="small" className="font-medium">
+              <Typography variant="body-small" className="font-medium">
                 {item.title}
               </Typography>
-              <Typography variant="muted" className="text-xs">
+              <Typography variant="body-small" muted={true} className="text-xs">
                 {item.time}
               </Typography>
             </Flex>
@@ -101,7 +101,7 @@ export const TagsLayout: Story = {
 
     return (
       <div className="max-w-md">
-        <Typography variant="h4" className="mb-4">
+        <Typography variant="title-small" className="mb-4">
           Skills
         </Typography>
         <Flex wrap="wrap" gap="sm">
@@ -145,7 +145,7 @@ export const Interactive: Story = {
     return (
       <div className="max-w-lg">
         <Flex justify="between" align="center" className="mb-6">
-          <Typography variant="h3">Task Board</Typography>
+          <Typography variant="title-medium">Task Board</Typography>
           <Button onClick={addTask} size="sm">
             <Plus size={16} className="mr-2" /> Add Task
           </Button>
@@ -161,8 +161,8 @@ export const Interactive: Story = {
                       task.priority === "High"
                         ? "bg-red-500"
                         : task.priority === "Medium"
-                        ? "bg-orange-500"
-                        : "bg-green-500"
+                          ? "bg-orange-500"
+                          : "bg-green-500"
                     }`}
                   />
                   <Typography>{task.text}</Typography>
@@ -181,7 +181,9 @@ export const Interactive: Story = {
           {tasks.length === 0 && (
             <FlexItem key="empty">
               <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
-                <Typography variant="muted">No tasks remaining</Typography>
+                <Typography variant="body-small" muted={true}>
+                  No tasks remaining
+                </Typography>
                 <Button variant="link" onClick={addTask}>
                   Create one?
                 </Button>

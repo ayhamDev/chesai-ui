@@ -49,7 +49,7 @@ export const CommonShortcuts: Story = {
   render: () => (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <Typography variant="small" className="w-32">
+        <Typography variant="body-small" className="w-32">
           Spotlight:
         </Typography>
         <span className="flex gap-1">
@@ -60,7 +60,7 @@ export const CommonShortcuts: Story = {
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <Typography variant="small" className="w-32">
+        <Typography variant="body-small" className="w-32">
           Close Tab:
         </Typography>
         <span className="flex gap-1">
@@ -69,7 +69,7 @@ export const CommonShortcuts: Story = {
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <Typography variant="small" className="w-32">
+        <Typography variant="body-small" className="w-32">
           Screenshot:
         </Typography>
         <span className="flex gap-1">
@@ -92,25 +92,25 @@ export const Variants: Story = {
     <div className="flex items-center gap-4">
       <div className="flex flex-col items-center gap-2">
         <Kbd variant="default">Default</Kbd>
-        <Typography variant="muted" className="text-xs">
+        <Typography variant="body-small" muted={true} className="text-xs">
           3D / Card
         </Typography>
       </div>
       <div className="flex flex-col items-center gap-2">
         <Kbd variant="flat">Flat</Kbd>
-        <Typography variant="muted" className="text-xs">
+        <Typography variant="body-small" muted={true} className="text-xs">
           Secondary
         </Typography>
       </div>
       <div className="flex flex-col items-center gap-2">
         <Kbd variant="outline">Outline</Kbd>
-        <Typography variant="muted" className="text-xs">
+        <Typography variant="body-small" muted={true} className="text-xs">
           Border Only
         </Typography>
       </div>
       <div className="flex flex-col items-center gap-2">
         <Kbd variant="ghost">Ghost</Kbd>
-        <Typography variant="muted" className="text-xs">
+        <Typography variant="body-small" muted={true} className="text-xs">
           Minimal
         </Typography>
       </div>
@@ -124,19 +124,19 @@ export const Sizes: Story = {
     <div className="flex items-end gap-4">
       <div className="flex flex-col items-center gap-2">
         <Kbd size="sm">Esc</Kbd>
-        <Typography variant="muted" className="text-xs">
+        <Typography variant="body-small" muted={true} className="text-xs">
           Small
         </Typography>
       </div>
       <div className="flex flex-col items-center gap-2">
         <Kbd size="md">Enter</Kbd>
-        <Typography variant="muted" className="text-xs">
+        <Typography variant="body-small" muted={true} className="text-xs">
           Medium
         </Typography>
       </div>
       <div className="flex flex-col items-center gap-2">
         <Kbd size="lg">Space</Kbd>
-        <Typography variant="muted" className="text-xs">
+        <Typography variant="body-small" muted={true} className="text-xs">
           Large
         </Typography>
       </div>

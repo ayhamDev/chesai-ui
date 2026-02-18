@@ -78,6 +78,7 @@ type TypographyOwnProps = {
   variant?: keyof typeof variants;
   className?: string;
   highlighted?: boolean;
+  muted?: boolean;
 } & VariantProps<typeof highlightVariants>;
 
 type PolymorphicComponentProps<
@@ -90,46 +91,54 @@ type TypographyProps<C extends React.ElementType> = PolymorphicComponentProps<
   TypographyOwnProps & { as?: C }
 >;
 
-type PolymorphicRef<C extends React.ElementType> =
-  React.ComponentPropsWithRef<C>["ref"];
+/**
+ * Type definition for the polymorphic Typography component
+ */
+type TypographyComponent = <C extends React.ElementType = "p">(
+  props: TypographyProps<C> & { ref?: React.ComponentPropsWithRef<C>["ref"] },
+) => React.ReactElement | null;
 
-type TypographyComponent = (<C extends React.ElementType = "p">(
-  props: TypographyProps<C> & { ref?: PolymorphicRef<C> },
-) => React.ReactElement | null) & { displayName?: string };
+const TypographyInner = (
+  {
+    as,
+    variant = "body-medium",
+    className,
+    children,
+    highlighted = false,
+    muted = false,
+    highlightedVariant,
+    highlightedShape,
+    ...restProps
+  }: TypographyProps<React.ElementType>,
+  ref: React.ForwardedRef<HTMLElement>,
+) => {
+  const Component = as || variantToTagMap[variant] || "p";
+
+  const variantClass = variants[variant] || variants["body-medium"];
+
+  const highlightClass = highlighted
+    ? highlightVariants({ highlightedVariant, highlightedShape })
+    : "";
+
+  const mutedClass = muted ? "opacity-60" : "";
+
+  const combinedClassName = clsx(
+    variantClass,
+    highlightClass,
+    mutedClass,
+    className,
+  );
+
+  return (
+    <Component ref={ref} className={combinedClassName} {...restProps}>
+      {children}
+    </Component>
+  );
+};
 
 export const Typography = React.forwardRef(
-  <C extends React.ElementType = "p">(
-    {
-      as,
-      variant = "body-medium",
-      className,
-      children,
-      highlighted,
-      highlightedVariant,
-      highlightedShape,
-      ...restProps
-    }: TypographyProps<C>,
-    ref?: PolymorphicRef<C>,
-  ) => {
-    // If not specified, default to the tag mapped to the variant, or 'p'
-    const Component = as || variantToTagMap[variant] || "p";
+  TypographyInner,
+) as unknown as TypographyComponent;
 
-    // Base typography styles
-    const variantClass = variants[variant] || variants["body-medium"];
-
-    // Highlight styles
-    const highlightClass = highlighted
-      ? highlightVariants({ highlightedVariant, highlightedShape })
-      : "";
-
-    const combinedClassName = clsx(variantClass, highlightClass, className);
-
-    return (
-      <Component ref={ref} className={combinedClassName} {...restProps}>
-        {children}
-      </Component>
-    );
-  },
-) as TypographyComponent;
-
-Typography.displayName = "Typography";
+// Use standard property assignment instead of @ts-ignore for linter happiness
+(Typography as any).displayName = "Typography";

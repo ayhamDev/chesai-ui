@@ -55,7 +55,7 @@ const NavBar = () => {
 
   return (
     <div className="mb-4 p-4 bg-gray-100 rounded-xl">
-      <Typography variant="small" className="font-bold mb-2">
+      <Typography variant="body-small" className="font-bold mb-2">
         Navigation (mode: {mode})
       </Typography>
       <ButtonGroup shape="minimal">
@@ -99,7 +99,7 @@ const Header = ({ title }: { title: string }) => {
           <ArrowLeft />
         </IconButton>
       )}
-      <Typography variant="h4">{title}</Typography>
+      <Typography variant="title-small">{title}</Typography>
     </div>
   );
 };
@@ -118,19 +118,19 @@ export const BasicRouting: Story = {
         <div className="mt-4">
           <ShallowRoute path="/">
             <Typography variant="large">Welcome Home!</Typography>
-            <Typography variant="p">
+            <Typography variant="body-medium">
               This content is rendered when the path is exactly `/`.
             </Typography>
           </ShallowRoute>
           <ShallowRoute path="/profile">
             <Typography variant="large">User Profile</Typography>
-            <Typography variant="p">
+            <Typography variant="body-medium">
               This is the user's profile page content.
             </Typography>
           </ShallowRoute>
           <ShallowRoute path="/settings">
             <Typography variant="large">Application Settings</Typography>
-            <Typography variant="p">
+            <Typography variant="body-medium">
               Adjust your application settings here.
             </Typography>
           </ShallowRoute>
@@ -162,21 +162,21 @@ export const PageSwitching: Story = {
           <ShallowSwitch>
             <ShallowPage path="/">
               <Header title="Home" />
-              <Typography variant="p">
+              <Typography variant="body-medium">
                 This is the main landing page. Navigate to other sections using
                 the buttons above.
               </Typography>
             </ShallowPage>
             <ShallowPage path="/profile">
               <Header title="Profile" />
-              <Typography variant="p">
+              <Typography variant="body-medium">
                 Here you can view and edit your profile details. All changes are
                 saved automatically.
               </Typography>
             </ShallowPage>
             <ShallowPage path="/settings">
               <Header title="Settings" />
-              <Typography variant="p">
+              <Typography variant="body-medium">
                 Customize your experience. Toggle notifications, change your
                 theme, and set your language.
               </Typography>

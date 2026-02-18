@@ -70,7 +70,7 @@ const SearchContent = ({ query, setQuery }: any) => {
       {!isSearching && (
         <>
           <div className="px-4 py-3">
-            <Typography variant="small" className="font-bold opacity-70">
+            <Typography variant="body-small" className="font-bold opacity-70">
               Recent
             </Typography>
           </div>
@@ -97,7 +97,7 @@ const SearchContent = ({ query, setQuery }: any) => {
             </Item>
           ))}
           <div className="px-4 py-3 mt-2">
-            <Typography variant="small" className="font-bold opacity-70">
+            <Typography variant="body-small" className="font-bold opacity-70">
               Suggestions
             </Typography>
           </div>
@@ -124,7 +124,7 @@ const SearchContent = ({ query, setQuery }: any) => {
       {isSearching && (
         <>
           <div className="px-4 py-3">
-            <Typography variant="small" className="font-bold opacity-70">
+            <Typography variant="body-small" className="font-bold opacity-70">
               Contacts
             </Typography>
           </div>
@@ -142,7 +142,11 @@ const SearchContent = ({ query, setQuery }: any) => {
                   <ItemTitle className="font-normal text-base">
                     {item.text}
                   </ItemTitle>
-                  <Typography variant="muted" className="text-sm">
+                  <Typography
+                    variant="body-small"
+                    muted={true}
+                    className="text-sm"
+                  >
                     {item.sub}
                   </Typography>
                 </ItemContent>

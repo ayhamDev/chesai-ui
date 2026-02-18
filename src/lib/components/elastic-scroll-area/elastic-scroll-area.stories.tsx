@@ -72,8 +72,8 @@ type Story = StoryObj<typeof ElasticScrollArea>;
 // Helper component to generate vertical scrollable content
 const DummyContent = ({ itemCount = 30 }: { itemCount?: number }) => (
   <main className="p-6">
-    <Typography variant="h3">Scroll Me</Typography>
-    <Typography variant="muted">
+    <Typography variant="title-medium">Scroll Me</Typography>
+    <Typography variant="body-small" muted={true}>
       Use your mouse wheel, trackpad, or touch to scroll. Try scrolling past the
       top or bottom edges.
     </Typography>
@@ -83,7 +83,10 @@ const DummyContent = ({ itemCount = 30 }: { itemCount?: number }) => (
           key={i}
           className="h-24 rounded-2xl bg-graphite-secondary flex items-center justify-center"
         >
-          <Typography variant="small" className="text-graphite-foreground/50">
+          <Typography
+            variant="body-small"
+            className="text-graphite-foreground/50"
+          >
             Item {i + 1}
           </Typography>
         </div>
@@ -95,8 +98,8 @@ const DummyContent = ({ itemCount = 30 }: { itemCount?: number }) => (
 // Helper component to generate horizontal scrollable content
 const DummyHorizontalContent = ({ itemCount = 20 }: { itemCount?: number }) => (
   <div className="p-6 h-full">
-    <Typography variant="h3">Scroll Me Horizontally</Typography>
-    <Typography variant="muted">
+    <Typography variant="title-medium">Scroll Me Horizontally</Typography>
+    <Typography variant="body-small" muted={true}>
       Use Shift + Mouse Wheel, or swipe horizontally.
     </Typography>
     <div className="mt-4 flex gap-4 h-full">
@@ -105,7 +108,10 @@ const DummyHorizontalContent = ({ itemCount = 20 }: { itemCount?: number }) => (
           key={i}
           className="h-32 w-32 flex-shrink-0 rounded-2xl bg-graphite-secondary flex items-center justify-center"
         >
-          <Typography variant="small" className="text-graphite-foreground/50">
+          <Typography
+            variant="body-small"
+            className="text-graphite-foreground/50"
+          >
             Item {i + 1}
           </Typography>
         </div>
@@ -229,7 +235,7 @@ export const ScrollbarVisibility: Story = {
   render: () => (
     <div className="flex w-full max-w-7xl gap-4 items-start justify-center">
       <div className="flex flex-col items-center gap-2">
-        <Typography variant="small" className="font-bold">
+        <Typography variant="body-small" className="font-bold">
           'auto' (default)
         </Typography>
         <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
@@ -239,7 +245,7 @@ export const ScrollbarVisibility: Story = {
         </div>
       </div>
       <div className="flex flex-col items-center gap-2">
-        <Typography variant="small" className="font-bold">
+        <Typography variant="body-small" className="font-bold">
           'visible' / 'always'
         </Typography>
         <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
@@ -249,7 +255,7 @@ export const ScrollbarVisibility: Story = {
         </div>
       </div>
       <div className="flex flex-col items-center gap-2">
-        <Typography variant="small" className="font-bold">
+        <Typography variant="body-small" className="font-bold">
           'scroll'
         </Typography>
         <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
@@ -259,7 +265,7 @@ export const ScrollbarVisibility: Story = {
         </div>
       </div>
       <div className="flex flex-col items-center gap-2">
-        <Typography variant="small" className="font-bold">
+        <Typography variant="body-small" className="font-bold">
           'hidden'
         </Typography>
         <div className="w-48 h-96 rounded-2xl border-2 border-graphite-border shadow-lg overflow-hidden">
@@ -316,7 +322,7 @@ const RenderWithAppBarAndBottomTabs = ({
       </IconButton>
     ),
     children: (
-      <Typography variant="h4" className="font-semibold truncate">
+      <Typography variant="title-small" className="font-semibold truncate">
         Explore
       </Typography>
     ),

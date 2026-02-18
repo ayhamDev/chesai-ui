@@ -359,7 +359,9 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                     })
                   ) : (
                     <div className="py-8 text-center text-on-surface-variant">
-                      <Typography variant="small">No items found.</Typography>
+                      <Typography variant="body-small">
+                        No items found.
+                      </Typography>
                     </div>
                   )}
                 </div>

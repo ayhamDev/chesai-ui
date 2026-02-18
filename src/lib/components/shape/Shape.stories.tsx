@@ -50,7 +50,7 @@ export const AutoMorph: Story = {
           shape={shapes[index]}
           className="w-64 h-64 text-graphite-primary transition-colors duration-500"
         />
-        <Typography variant="h4" className="capitalize">
+        <Typography variant="title-small" className="capitalize">
           {shapes[index]}
         </Typography>
       </div>
@@ -72,7 +72,7 @@ export const InteractiveGrid: Story = {
             shape={selectedShape}
             className="w-64 h-64 text-graphite-primary drop-shadow-xl"
           />
-          <Typography variant="h2" className="mt-8 capitalize">
+          <Typography variant="display-small" className="mt-8 capitalize">
             {selectedShape}
           </Typography>
         </div>
@@ -110,8 +110,8 @@ export const UsageInCards: Story = {
             <Shape shape="flower" className="w-full h-full text-pink-500" />
           </div>
           <div>
-            <Typography variant="h4">Expressive Icons</Typography>
-            <Typography variant="muted">
+            <Typography variant="title-small">Expressive Icons</Typography>
+            <Typography variant="body-small" muted={true}>
               Using complex shapes as backgrounds for icons or avatars.
             </Typography>
           </div>
@@ -125,8 +125,8 @@ export const UsageInCards: Story = {
             </span>
           </div>
           <div>
-            <Typography variant="h4">Badges</Typography>
-            <Typography variant="muted">
+            <Typography variant="title-small">Badges</Typography>
+            <Typography variant="body-small" muted={true}>
               Unique geometry for awards or notifications.
             </Typography>
           </div>

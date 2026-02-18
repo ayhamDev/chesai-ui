@@ -180,7 +180,7 @@ export function DataTableAdvancedFilter<TData>({
       </DialogTrigger>
       <DialogContent variant="surface" className="max-w-[600px]!">
         <div className="flex items-center justify-between mb-4">
-          <Typography variant="small" className="font-semibold">
+          <Typography variant="body-small" className="font-semibold">
             Filters
           </Typography>
           <Button

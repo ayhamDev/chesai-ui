@@ -187,6 +187,22 @@ function generate() {
   const fullContent = [
     `# Full Source Code`,
     `\n---`,
+    ` 
+**Library Name:** chesai-ui
+**Core Stack:** React, TypeScript, Tailwind CSS (modern @theme syntax), Framer Motion, Radix UI Primitives.
+**Design System:** Material Design 3 (MD3) / Material You.
+
+## Overview
+chesai-ui is an expressive, high-performance UI library designed for modern web and mobile-web applications. It focuses on the "Material You" philosophy, featuring fluid morphing animations, physics-based interactions, and a deep integration with browser history for navigation.
+
+## Key Features
+- **Theming:** Multi-level contrast support (Standard, Medium, High) across Light/Dark modes using MD3 tokens.
+- **Navigation:** Includes a native-like 'StackRouter' (React Navigation style), 'ShallowRouter' for URL-synced UI state, and responsive 'NavigationRail'/'BottomTabs'.
+- **Expressive Motion:** Powered by Framer Motion. Includes 'ElasticScrollArea' (iOS-style rubber-banding), 'MaterialMorph' loading indicators, and shared-layout transitions.
+- **Virtualized Layouts:** Optimized components for large datasets including 'VirtualGrid', 'VirtualFlex', and 'VirtualMasonry' (via TanStack Virtual).
+- **Data & Maps:** Built-in support for 'MapLibre' (Map) and 'Recharts' (Charts), fully integrated with the system's color tokens.
+- **Global Context:** Managed via 'ChesaiProvider', which coordinates theming, accessibility, and imperative APIs for 'Dialogs' and 'ActionSheets'.
+  \n\n`,
     ...validFiles.map(f => `\n## File: ${f.originalPath}\n\`\`\`${f.ext}\n${f.content}\n\`\`\``),
   ].join('\n')
   fs.writeFileSync(path.join(OUTPUT_DIR, 'llm-full.txt'), fullContent)
@@ -196,7 +212,22 @@ function generate() {
 
   let indexContent = `# chesai-ui Component Registry\n\n`
   indexContent += `> Legend: **[Source]** = Implementation file, **[Stories]** = Storybook file.\n\n`
+  indexContent += `\n 
+**Library Name:** chesai-ui
+**Core Stack:** React, TypeScript, Tailwind CSS (modern @theme syntax), Framer Motion, Radix UI Primitives.
+**Design System:** Material Design 3 (MD3) / Material You.
 
+## Overview
+chesai-ui is an expressive, high-performance UI library designed for modern web and mobile-web applications. It focuses on the "Material You" philosophy, featuring fluid morphing animations, physics-based interactions, and a deep integration with browser history for navigation.
+
+## Key Features
+- **Theming:** Multi-level contrast support (Standard, Medium, High) across Light/Dark modes using MD3 tokens.
+- **Navigation:** Includes a native-like 'StackRouter' (React Navigation style), 'ShallowRouter' for URL-synced UI state, and responsive 'NavigationRail'/'BottomTabs'.
+- **Expressive Motion:** Powered by Framer Motion. Includes 'ElasticScrollArea' (iOS-style rubber-banding), 'MaterialMorph' loading indicators, and shared-layout transitions.
+- **Virtualized Layouts:** Optimized components for large datasets including 'VirtualGrid', 'VirtualFlex', and 'VirtualMasonry' (via TanStack Virtual).
+- **Data & Maps:** Built-in support for 'MapLibre' (Map) and 'Recharts' (Charts), fully integrated with the system's color tokens.
+- **Global Context:** Managed via 'ChesaiProvider', which coordinates theming, accessibility, and imperative APIs for 'Dialogs' and 'ActionSheets'.
+  \n\n`
   // Scan component directories
   const componentFolders = fs
     .readdirSync(COMPONENTS_DIR)

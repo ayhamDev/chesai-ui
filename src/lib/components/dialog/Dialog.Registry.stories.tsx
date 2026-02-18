@@ -97,7 +97,7 @@ const SettingsDialog = ({ onClose }: { onClose: () => void }) => {
         <DialogTitle>Advanced Settings</DialogTitle>
       </DialogHeader>
       <div className="py-4">
-        <Typography variant="p">
+        <Typography variant="body-medium">
           This is a second dialog stacked on top of the first one. History
           management handles the back button correctly for both.
         </Typography>

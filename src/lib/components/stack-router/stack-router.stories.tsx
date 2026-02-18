@@ -45,8 +45,8 @@ const HomeScreen = () => {
   const navigation = useNavigation<BasicStackParamList>();
   return (
     <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
-      <Typography variant="h4">Home Screen</Typography>
-      <Typography variant="p">
+      <Typography variant="title-small">Home Screen</Typography>
+      <Typography variant="body-medium">
         This is the initial screen of the stack.
       </Typography>
       <Button
@@ -68,9 +68,11 @@ const ProfileScreen = () => {
 
   return (
     <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
-      <Typography variant="h4">Profile Screen</Typography>
-      <Typography variant="p">User: {name}</Typography>
-      <Typography variant="muted">ID: {userId}</Typography>
+      <Typography variant="title-small">Profile Screen</Typography>
+      <Typography variant="body-medium">User: {name}</Typography>
+      <Typography variant="body-small" muted={true}>
+        ID: {userId}
+      </Typography>
       <Button
         className="mt-4"
         variant="secondary"
@@ -106,7 +108,7 @@ const FeedScreen = () => {
 
   return (
     <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
-      <Typography variant="h4">Feed</Typography>
+      <Typography variant="title-small">Feed</Typography>
       <div className="flex flex-col gap-4 mt-4">
         <Button onClick={() => navigation.push("Article", { articleId: "a1" })}>
           Go to Article (Custom Header)
@@ -132,8 +134,8 @@ const SettingsScreen = () => {
   const navigation = useNavigation<HeaderStackParamList>();
   return (
     <div className="p-6 pt-6" ref={navigation.scrollContainerRef}>
-      <Typography variant="h4">Settings</Typography>
-      <Typography variant="p">This screen has no header.</Typography>
+      <Typography variant="title-small">Settings</Typography>
+      <Typography variant="body-medium">This screen has no header.</Typography>
     </div>
   );
 };
@@ -192,7 +194,7 @@ const MainScreen = () => {
       ref={navigation.scrollContainerRef}
     >
       <div className="box-border p-4 flex flex-col gap-4 mt-4">
-        <Typography variant="h4">Animation Presets</Typography>
+        <Typography variant="title-small">Animation Presets</Typography>
         <Button className="w-fit" onClick={() => navigation.push("None")}>
           Push with 'None'
         </Button>
@@ -242,8 +244,8 @@ const GenericScreen = ({ route }: { route: RouteProp<any, any> }) => {
 
   return (
     <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
-      <Typography variant="h4">{route.name} Screen</Typography>
-      <Typography variant="p">
+      <Typography variant="title-small">{route.name} Screen</Typography>
+      <Typography variant="body-medium">
         This screen transitioned using its specified animation preset.
       </Typography>
       <Button
@@ -376,7 +378,9 @@ const InboxScreen = () => {
           >
             <ItemContent>
               <ItemTitle>{email.from}</ItemTitle>
-              <Typography variant="muted">{email.subject}</Typography>
+              <Typography variant="body-small" muted={true}>
+                {email.subject}
+              </Typography>
             </ItemContent>
           </Item>
         ))}
@@ -390,11 +394,11 @@ const EmailScreen = () => {
   const email = emails.find((e) => e.id === route.params.emailId);
   return (
     <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
-      <Typography variant="h4">{email?.subject}</Typography>
-      <Typography variant="muted" className="!mt-2">
+      <Typography variant="title-small">{email?.subject}</Typography>
+      <Typography variant="body-small" muted={true} className="!mt-2">
         From: {email?.from}
       </Typography>
-      <Typography variant="p">
+      <Typography variant="body-medium">
         This is the body of the email. Lorem ipsum dolor sit amet, consectetur
         adipiscing elit...
       </Typography>

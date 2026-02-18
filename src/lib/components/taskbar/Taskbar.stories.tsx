@@ -54,7 +54,7 @@ const FakeWindow = ({
   title?: string;
 }) => (
   <div>
-    <Typography variant="small" className="text-center mb-2 font-semibold">
+    <Typography variant="body-small" className="text-center mb-2 font-semibold">
       {title}
     </Typography>
     <div className="w-[720px] h-[480px] flex flex-col shadow-2xl overflow-hidden bg-graphite-background ring-1 ring-black/5 rounded-xl">
@@ -118,14 +118,14 @@ export const Default: Story = {
           startAdornment={
             <div className="flex items-center gap-2 pl-2">
               <Mountain size={16} />
-              <Typography variant="small" className="font-semibold">
+              <Typography variant="body-small" className="font-semibold">
                 App Title
               </Typography>
             </div>
           }
         />
         <div className="flex-1 p-6">
-          <Typography variant="p">
+          <Typography variant="body-medium">
             This is the default taskbar with a transparent background and no
             border.
           </Typography>
@@ -158,7 +158,7 @@ export const AllSizes: Story = {
             startAdornment={
               <div className="flex items-center gap-2 pl-2">
                 <Mountain size={14} />
-                <Typography variant="small" className="font-semibold">
+                <Typography variant="body-small" className="font-semibold">
                   App
                 </Typography>
               </div>
@@ -175,7 +175,7 @@ export const AllSizes: Story = {
             startAdornment={
               <div className="flex items-center gap-2 pl-2">
                 <Mountain size={16} />
-                <Typography variant="small" className="font-semibold">
+                <Typography variant="body-small" className="font-semibold">
                   App
                 </Typography>
               </div>
@@ -192,7 +192,7 @@ export const AllSizes: Story = {
             startAdornment={
               <div className="flex items-center gap-2 pl-2">
                 <Mountain size={18} />
-                <Typography variant="small" className="font-semibold">
+                <Typography variant="body-small" className="font-semibold">
                   App
                 </Typography>
               </div>

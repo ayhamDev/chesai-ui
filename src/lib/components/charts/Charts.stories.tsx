@@ -36,20 +36,22 @@ const deviceData = [
 export const ChartShowcase: StoryObj = {
   render: () => (
     <div className="flex flex-col gap-8 w-full max-w-7xl mx-auto">
-      <Typography variant="h2">Charts & Data Visualization</Typography>
-      <Typography variant="p">
+      <Typography variant="display-small">
+        Charts & Data Visualization
+      </Typography>
+      <Typography variant="body-medium">
         Charts automatically adapt to the theme tokens (`primary`, `secondary`,
         `tertiary`, `error`). Switch themes to see colors update instantly.
       </Typography>
 
       {/* --- ROW 1: PRIMARY CHARTS --- */}
-      <Typography variant="h4" className="mt-8">
+      <Typography variant="title-small" className="mt-8">
         Primary Variants (Detailed)
       </Typography>
       <Grid columns={{ default: 1, lg: 2 }} gap="lg">
         <GridItem>
           <Card className="p-6">
-            <Typography variant="h4" className="mb-4">
+            <Typography variant="title-small" className="mb-4">
               Revenue Trend (Area)
             </Typography>
             <AreaChart
@@ -62,7 +64,7 @@ export const ChartShowcase: StoryObj = {
         </GridItem>
         <GridItem>
           <Card className="p-6">
-            <Typography variant="h4" className="mb-4">
+            <Typography variant="title-small" className="mb-4">
               Monthly Comparisons (Bar)
             </Typography>
             <BarChart
@@ -76,13 +78,16 @@ export const ChartShowcase: StoryObj = {
       </Grid>
 
       {/* --- ROW 2: SECONDARY VARIANTS --- */}
-      <Typography variant="h4" className="mt-8">
+      <Typography variant="title-small" className="mt-8">
         Secondary Variants (Simplified)
       </Typography>
       <Grid columns={{ default: 1, md: 3 }} gap="md">
         <GridItem>
           <Card className="p-4" variant="secondary">
-            <Typography variant="small" className="font-bold opacity-70 mb-2">
+            <Typography
+              variant="body-small"
+              className="font-bold opacity-70 mb-2"
+            >
               Sales Velocity
             </Typography>
             <LineChart
@@ -96,7 +101,10 @@ export const ChartShowcase: StoryObj = {
         </GridItem>
         <GridItem>
           <Card className="p-4" variant="secondary">
-            <Typography variant="small" className="font-bold opacity-70 mb-2">
+            <Typography
+              variant="body-small"
+              className="font-bold opacity-70 mb-2"
+            >
               Profit Margins
             </Typography>
             <BarChart
@@ -110,7 +118,10 @@ export const ChartShowcase: StoryObj = {
         </GridItem>
         <GridItem>
           <Card className="p-4" variant="secondary">
-            <Typography variant="small" className="font-bold opacity-70 mb-2">
+            <Typography
+              variant="body-small"
+              className="font-bold opacity-70 mb-2"
+            >
               Device Share
             </Typography>
             <PieChart
@@ -126,7 +137,7 @@ export const ChartShowcase: StoryObj = {
       </Grid>
 
       {/* --- ROW 3: GHOST VARIANTS (STATUS CARDS) --- */}
-      <Typography variant="h4" className="mt-8">
+      <Typography variant="title-small" className="mt-8">
         Ghost Variants (Backgrounds / Sparklines)
       </Typography>
       <Grid columns={{ default: 2, md: 4 }} gap="md">
@@ -136,8 +147,11 @@ export const ChartShowcase: StoryObj = {
             padding="md"
           >
             <div className="relative z-10">
-              <Typography variant="h3">$12,403</Typography>
-              <Typography variant="small" className="text-green-600 font-bold">
+              <Typography variant="title-medium">$12,403</Typography>
+              <Typography
+                variant="body-small"
+                className="text-green-600 font-bold"
+              >
                 +12%
               </Typography>
             </div>
@@ -159,8 +173,11 @@ export const ChartShowcase: StoryObj = {
             padding="md"
           >
             <div className="relative z-10">
-              <Typography variant="h3">84.3%</Typography>
-              <Typography variant="small" className="text-primary font-bold">
+              <Typography variant="title-medium">84.3%</Typography>
+              <Typography
+                variant="body-small"
+                className="text-primary font-bold"
+              >
                 Uptime
               </Typography>
             </div>
@@ -182,10 +199,10 @@ export const ChartShowcase: StoryObj = {
             padding="md"
           >
             <div className="relative z-10">
-              <Typography variant="h3" className="text-inherit">
+              <Typography variant="title-medium" className="text-inherit">
                 3 Errors
               </Typography>
-              <Typography variant="small" className="opacity-80">
+              <Typography variant="body-small" className="opacity-80">
                 Last 24h
               </Typography>
             </div>
@@ -218,7 +235,7 @@ export const ChartShowcase: StoryObj = {
               <Typography variant="large" className="font-bold">
                 Traffic
               </Typography>
-              <Typography variant="muted" className="text-xs">
+              <Typography variant="body-small" muted={true} className="text-xs">
                 Source breakdown
               </Typography>
             </div>

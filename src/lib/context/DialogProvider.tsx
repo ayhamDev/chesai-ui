@@ -123,7 +123,7 @@ const StandardDialogRenderer = ({
       {body && (
         <div className="py-4">
           {typeof body === "string" ? (
-            <Typography variant="p">{body}</Typography>
+            <Typography variant="body-medium">{body}</Typography>
           ) : (
             body
           )}

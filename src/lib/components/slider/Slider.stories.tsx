@@ -135,7 +135,7 @@ export const VolumeControl: Story = {
   name: "Use Case: Volume (Bar)",
   render: () => (
     <Card className="w-96 p-8 flex flex-col gap-6" variant="primary">
-      <Typography variant="h4">System Volume</Typography>
+      <Typography variant="title-small">System Volume</Typography>
 
       {/* Bar Slider with Icon Inside */}
       <Slider

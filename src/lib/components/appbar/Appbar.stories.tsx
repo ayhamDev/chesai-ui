@@ -11,9 +11,9 @@ import React, { useRef } from "react";
 import { useAppBar } from "../../hooks/useAppBar";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
+import { Input } from "../input"; // Import Input
 import { Typography } from "../typography";
 import { AppBar, type AppBarProps } from "./index";
-import { Input } from "../input"; // Import Input
 
 const meta: Meta<typeof AppBar> = {
   title: "Components/AppBar",
@@ -69,7 +69,9 @@ type Story = StoryObj<typeof AppBar>;
 // Helper component to generate scrollable content
 const DummyContent = () => (
   <main className="p-6 pt-4">
-    <Typography variant="h3">Scroll Down to See The Effect</Typography>
+    <Typography variant="title-medium">
+      Scroll Down to See The Effect
+    </Typography>
     <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 30 }).map((_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: strict
@@ -111,7 +113,7 @@ export const Default: Story = {
     size: "md",
     scrollBehavior: "sticky",
     appBarColor: "card",
-    children: <Typography variant="h4">Sticky Header</Typography>,
+    children: <Typography variant="title-medium">Sticky Header</Typography>,
     startAdornment: (
       <IconButton variant="ghost" aria-label="Menu">
         <Menu />
@@ -131,7 +133,7 @@ export const ConditionallySticky: Story = {
   args: {
     ...Default.args,
     scrollBehavior: "conditionally-sticky",
-    children: <Typography variant="h4">Hiding Header</Typography>,
+    children: <Typography variant="title-medium">Hiding Header</Typography>,
   },
   render: renderWithScrollContainer,
 };
@@ -143,7 +145,7 @@ export const AnimatedColor: Story = {
     animatedBehavior: ["appbar-color"],
     appBarColor: "background",
     animatedColor: "card",
-    children: <Typography variant="h4">Animated Header</Typography>,
+    children: <Typography variant="title-medium">Animated Header</Typography>,
   },
   render: renderWithScrollContainer,
 };
@@ -153,7 +155,7 @@ export const FoldingOnScroll: Story = {
   args: {
     ...Default.args,
     animatedBehavior: ["fold"],
-    children: <Typography variant="h4">Folding Header</Typography>,
+    children: <Typography variant="title-medium">Folding Header</Typography>,
   },
   render: renderWithScrollContainer,
 };
@@ -164,7 +166,7 @@ export const ShadowOnScroll: Story = {
     ...Default.args,
     animatedBehavior: ["shadow"],
     appBarColor: "background",
-    children: <Typography variant="h4">Shadow Header</Typography>,
+    children: <Typography variant="title-medium">Shadow Header</Typography>,
   },
   render: renderWithScrollContainer,
 };
@@ -189,12 +191,12 @@ export const LargeCollapsing: Story = {
       </IconButton>,
     ],
     children: (
-      <Typography variant="h2" className="truncate font-bold">
+      <Typography variant="title-large" className="truncate font-bold">
         Large Collapsing Title
       </Typography>
     ),
     smallHeaderContent: (
-      <Typography variant="h4" className="font-semibold">
+      <Typography variant="title-medium" className="font-semibold">
         Collapsed Title
       </Typography>
     ),
@@ -217,7 +219,7 @@ export const LargeStatic: Story = {
     ...LargeCollapsing.args,
     smallHeaderContent: undefined,
     children: (
-      <Typography variant="h2" className="truncate font-bold">
+      <Typography variant="display-small" className="truncate font-bold">
         Large Static Title
       </Typography>
     ),

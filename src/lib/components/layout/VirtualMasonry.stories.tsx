@@ -53,10 +53,14 @@ export const Default: Story = {
           }}
         >
           <div className="bg-white/60 backdrop-blur-md p-2 rounded-lg">
-            <Typography variant="small" className="font-bold text-black">
+            <Typography variant="body-small" className="font-bold text-black">
               {item.title}
             </Typography>
-            <Typography variant="muted" className="text-xs text-black/70">
+            <Typography
+              variant="body-small"
+              muted={true}
+              className="text-xs text-black/70"
+            >
               Height: {item.height}px
             </Typography>
           </div>

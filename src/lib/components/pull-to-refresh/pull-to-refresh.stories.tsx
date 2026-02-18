@@ -33,8 +33,8 @@ type Story = StoryObj<typeof PullToRefresh>;
 // Helper component to generate scrollable content
 const DummyContent = () => (
   <main className="p-6 pt-4">
-    <Typography variant="h3">Pull Down to Refresh</Typography>
-    <Typography variant="muted">
+    <Typography variant="title-medium">Pull Down to Refresh</Typography>
+    <Typography variant="body-small" muted={true}>
       This container is scrollable. The pull gesture only works when you are at
       the very top.
     </Typography>

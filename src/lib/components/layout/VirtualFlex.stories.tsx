@@ -54,10 +54,10 @@ export const VerticalList: Story = {
           >
             <Avatar fallback={item.name.slice(0, 2)} />
             <div>
-              <Typography variant="small" className="font-bold">
+              <Typography variant="body-small" className="font-bold">
                 {item.name}
               </Typography>
-              <Typography variant="muted" className="text-xs">
+              <Typography variant="body-small" muted={true} className="text-xs">
                 {item.role}
               </Typography>
             </div>
@@ -85,7 +85,7 @@ export const HorizontalList: Story = {
             className="w-[160px] h-full flex flex-col items-center justify-center gap-2"
           >
             <Avatar size="lg" fallback={item.name.slice(0, 1)} />
-            <Typography variant="small">{item.name}</Typography>
+            <Typography variant="body-small">{item.name}</Typography>
           </Card>
         )}
       />

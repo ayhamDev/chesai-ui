@@ -127,7 +127,7 @@ export const VariantCombinations: Story = {
   render: (args) => (
     <div className="flex flex-col gap-8 w-96">
       <div>
-        <Typography variant="small" className="font-bold mb-2">
+        <Typography variant="body-small" className="font-bold mb-2">
           Surface BG + Primary Items
         </Typography>
         <ShallowRouter paramName="tab1">
@@ -142,7 +142,7 @@ export const VariantCombinations: Story = {
       </div>
 
       <div>
-        <Typography variant="small" className="font-bold mb-2">
+        <Typography variant="body-small" className="font-bold mb-2">
           Primary BG + Tertiary Items
         </Typography>
         <ShallowRouter paramName="tab2">
@@ -157,7 +157,7 @@ export const VariantCombinations: Story = {
       </div>
 
       <div>
-        <Typography variant="small" className="font-bold mb-2">
+        <Typography variant="body-small" className="font-bold mb-2">
           Secondary BG + Ghost Items
         </Typography>
         <ShallowRouter paramName="tab3">
@@ -202,7 +202,7 @@ export const AttachedWithShapes: Story = {
   render: (args) => (
     <div className="flex flex-col gap-12">
       <div>
-        <Typography variant="small" className="font-bold mb-2 text-center">
+        <Typography variant="body-small" className="font-bold mb-2 text-center">
           Full Shape
         </Typography>
         <ShallowRouter paramName="tab1">
@@ -210,7 +210,7 @@ export const AttachedWithShapes: Story = {
         </ShallowRouter>
       </div>
       <div>
-        <Typography variant="small" className="font-bold mb-2 text-center">
+        <Typography variant="body-small" className="font-bold mb-2 text-center">
           Minimal Shape
         </Typography>
         <ShallowRouter paramName="tab2">

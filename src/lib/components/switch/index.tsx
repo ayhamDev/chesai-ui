@@ -2,7 +2,7 @@
 
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
-import { motion } from "framer-motion";
+import { motion, Transition } from "framer-motion";
 import { Check, X } from "lucide-react";
 import React, { useState } from "react";
 
@@ -15,7 +15,7 @@ const switchTrackVariants = cva(
     variants: {
       size: {
         sm: "w-10 h-6",
-        md: "w-[52px] h-8",
+        md: "w-13 h-8",
         lg: "w-16 h-10",
       },
       checked: {
@@ -29,21 +29,24 @@ const switchTrackVariants = cva(
   },
 );
 
-const springTransition = {
+// FIX: Typed as Transition
+const springTransition: Transition = {
   type: "spring",
   stiffness: 700,
   damping: 30,
 };
 
-const iconTransition = {
+// FIX: Typed as Transition
+const iconTransition: Transition = {
   type: "spring",
   stiffness: 500,
   damping: 25,
 };
 
+// FIX: Removed 'onChange' from Omit to allow standard HTML attributes
 export interface SwitchProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
-  "size" | "onChange"
+  "size"
 > {
   size?: "sm" | "md" | "lg";
   label?: string;
@@ -105,7 +108,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
           return {
             width: isChecked ? 16 : 12,
             height: isChecked ? 16 : 12,
-            x: isChecked ? 20 : 5,
+            x: isChecked ? 15 : 5,
           };
         case "lg":
           return {
@@ -118,7 +121,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
           return {
             width: isChecked ? 24 : 16,
             height: isChecked ? 24 : 16,
-            x: isChecked ? 24 : 7,
+            x: isChecked ? 22 : 7,
           };
       }
     };

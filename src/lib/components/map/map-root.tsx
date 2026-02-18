@@ -43,6 +43,7 @@ const mapContainerVariants = cva(
   },
 );
 
+// @ts-expect-error
 export interface MapProps
   extends
     React.HTMLAttributes<HTMLDivElement>,
@@ -53,6 +54,7 @@ export interface MapProps
   latitude?: number;
   zoom?: number;
   onMove?: (evt: ViewStateChangeEvent) => void;
+  onMoveEnd?: (evt: ViewStateChangeEvent) => void;
 
   mapStyle?: string | StyleSpecification;
   scrollZoom?: boolean;

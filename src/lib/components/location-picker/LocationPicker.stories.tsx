@@ -115,7 +115,11 @@ export const WithDetachedSheetFooter: Story = {
                       <Typography variant="label-large">
                         Confirm Location
                       </Typography>
-                      <Typography variant="muted" className="text-xs font-mono">
+                      <Typography
+                        variant="body-small"
+                        muted={true}
+                        className="text-xs font-mono"
+                      >
                         {latitude.toFixed(4)}, {longitude.toFixed(4)}
                       </Typography>
                     </div>

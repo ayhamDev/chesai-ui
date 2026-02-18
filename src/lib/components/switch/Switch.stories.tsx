@@ -28,14 +28,19 @@ export default meta;
 type Story = StoryObj<typeof Switch>;
 
 export const MaterialSpecs: Story = {
+  args: {
+    size: "md"
+  },
+
   name: "Material You Spec Sheet",
+
   render: () => {
     // We recreate the visual spec sheet from the user request
     return (
       <div className="flex flex-col gap-8 p-8 bg-surface-container-low rounded-3xl">
         {/* Header */}
         <div className="flex justify-between items-center border-b border-outline-variant pb-4">
-          <Typography variant="h4">Switch Variations</Typography>
+          <Typography variant="title-small">Switch Variations</Typography>
         </div>
 
         <div className="grid grid-cols-2 gap-12 items-start">
@@ -120,7 +125,7 @@ export const MaterialSpecs: Story = {
         </div>
       </div>
     );
-  },
+  }
 };
 
 export const Interactive: Story = {
@@ -133,7 +138,7 @@ export const Interactive: Story = {
     return (
       <Card className="w-80 p-0 overflow-hidden">
         <div className="p-4 bg-surface-container-highest/30 border-b border-outline-variant">
-          <Typography variant="h4">Connectivity</Typography>
+          <Typography variant="title-small">Connectivity</Typography>
         </div>
         <div className="p-4 flex flex-col gap-6">
           <Switch
@@ -167,15 +172,15 @@ export const Sizes: Story = {
     <div className="flex items-center gap-8">
       <div className="flex flex-col items-center gap-2">
         <Switch size="sm" defaultChecked />
-        <Typography variant="small">Small</Typography>
+        <Typography variant="body-small">Small</Typography>
       </div>
       <div className="flex flex-col items-center gap-2">
         <Switch size="md" defaultChecked />
-        <Typography variant="small">Medium (Default)</Typography>
+        <Typography variant="body-small">Medium (Default)</Typography>
       </div>
       <div className="flex flex-col items-center gap-2">
         <Switch size="lg" defaultChecked />
-        <Typography variant="small">Large</Typography>
+        <Typography variant="body-small">Large</Typography>
       </div>
     </div>
   ),

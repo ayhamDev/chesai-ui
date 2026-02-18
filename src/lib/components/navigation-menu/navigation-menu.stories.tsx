@@ -80,7 +80,7 @@ export const Default: Story = {
               href="#"
               className={navigationMenuTriggerStyle()}
             >
-              <Typography variant="small" className="font-semibold">
+              <Typography variant="body-small" className="font-semibold">
                 Changelog
               </Typography>
             </NavigationMenu.Link>
