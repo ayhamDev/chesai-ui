@@ -1,7 +1,6 @@
 "use client";
 
-import type React from "react";
-import {
+import React, {
   createContext,
   useCallback,
   useContext,
@@ -9,18 +8,36 @@ import {
   useRef,
   useState,
 } from "react";
+import { loadGoogleFont, PRESET_FONTS } from "../utils/font-loader";
 
 type Theme = "dark" | "light" | "system";
 type Contrast = "standard" | "medium" | "high";
+
+export interface FontSettings {
+  brand: string;
+  plain: string;
+  /**
+   * If true, buttons use the Brand font.
+   * If false, buttons use the Plain font.
+   */
+  expressiveButtons: boolean;
+}
 
 interface ThemeProviderState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   contrast: Contrast;
   setContrast: (contrast: Contrast) => void;
-  /** The resolved theme (light or dark), regardless of 'system' preference */
   resolvedTheme: "light" | "dark";
+  fonts: FontSettings;
+  setFonts: (fonts: Partial<FontSettings>) => void;
 }
+
+const defaultFontSettings: FontSettings = {
+  brand: "Manrope",
+  plain: "Manrope",
+  expressiveButtons: false,
+};
 
 const initialState: ThemeProviderState = {
   theme: "system",
@@ -28,6 +45,8 @@ const initialState: ThemeProviderState = {
   contrast: "standard",
   setContrast: () => null,
   resolvedTheme: "light",
+  fonts: defaultFontSettings,
+  setFonts: () => null,
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
@@ -36,45 +55,66 @@ interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
   defaultContrast?: Contrast;
+  defaultFonts?: FontSettings;
   storageKey?: string;
   contrastStorageKey?: string;
+  fontStorageKey?: string;
 }
 
 export function ThemeProvider({
   children,
   defaultTheme = "system",
   defaultContrast = "standard",
+  defaultFonts = defaultFontSettings,
   storageKey = "chesai-ui-theme",
   contrastStorageKey = "chesai-ui-contrast",
+  fontStorageKey = "chesai-ui-fonts",
   ...props
 }: ThemeProviderProps) {
-  // 1. Initialize state from storage or default
-  const [theme, setThemeState] = useState<Theme>(
-    () =>
-      (typeof window !== "undefined"
-        ? (localStorage.getItem(storageKey) as Theme)
-        : defaultTheme) || defaultTheme,
-  );
+  // --- 1. STATE INITIALIZATION ---
 
-  const [contrast, setContrastState] = useState<Contrast>(
-    () =>
-      (typeof window !== "undefined"
-        ? (localStorage.getItem(contrastStorageKey) as Contrast)
-        : defaultContrast) || defaultContrast,
-  );
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
+    }
+    return defaultTheme;
+  });
+
+  const [contrast, setContrastState] = useState<Contrast>(() => {
+    if (typeof window !== "undefined") {
+      return (
+        (localStorage.getItem(contrastStorageKey) as Contrast) ||
+        defaultContrast
+      );
+    }
+    return defaultContrast;
+  });
+
+  const [fonts, setFontsState] = useState<FontSettings>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(fontStorageKey);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          return { ...defaultFonts, ...parsed }; // Merge to ensure new keys exist
+        } catch (e) {
+          // ignore error
+        }
+      }
+    }
+    return defaultFonts;
+  });
 
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
-
-  // Ref to prevent infinite loops when we apply the class ourselves
   const isInternalUpdate = useRef(false);
 
-  // Helper to apply classes to DOM
+  // --- 2. THEME CLASS LOGIC ---
+
   const applyClasses = useCallback(
     (targetTheme: Theme, targetContrast: Contrast) => {
       const root = window.document.documentElement;
-      isInternalUpdate.current = true; // Flag start
+      isInternalUpdate.current = true;
 
-      // Determine actual theme (light vs dark)
       let appliedTheme: "light" | "dark" = "light";
       if (targetTheme === "system") {
         appliedTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -84,7 +124,6 @@ export function ThemeProvider({
         appliedTheme = targetTheme;
       }
 
-      // Clean up old classes
       root.classList.remove(
         "theme-light",
         "theme-dark",
@@ -94,11 +133,9 @@ export function ThemeProvider({
         "high-contrast",
       );
 
-      // Add new theme classes
       root.classList.add(`theme-${appliedTheme}`);
       root.classList.add(appliedTheme);
 
-      // Add contrast classes
       if (targetContrast === "medium") {
         root.classList.add("medium-contrast");
       } else if (targetContrast === "high") {
@@ -107,7 +144,6 @@ export function ThemeProvider({
 
       setResolvedTheme(appliedTheme);
 
-      // Short timeout to allow MutationObserver to fire and be ignored
       setTimeout(() => {
         isInternalUpdate.current = false;
       }, 10);
@@ -115,12 +151,39 @@ export function ThemeProvider({
     [],
   );
 
-  // 2. Effect: Apply changes when state changes
+  // --- 3. EFFECTS ---
+
+  // A. Apply Fonts & CSS Variables
+  useEffect(() => {
+    const root = window.document.documentElement;
+
+    const getFontValue = (key: string) =>
+      PRESET_FONTS[key]?.value || (key.includes(" ") ? `'${key}'` : key);
+
+    // 1. Load Fonts
+    loadGoogleFont(fonts.brand);
+    loadGoogleFont(fonts.plain);
+
+    // 2. Set Base Variables
+    root.style.setProperty("--font-brand", getFontValue(fonts.brand));
+    root.style.setProperty("--font-plain", getFontValue(fonts.plain));
+
+    // 3. Set Button Variable based on "Expressive" toggle
+    const buttonFontSource = fonts.expressiveButtons
+      ? fonts.brand
+      : fonts.plain;
+    root.style.setProperty("--font-button", getFontValue(buttonFontSource));
+
+    // 4. Persist
+    localStorage.setItem(fontStorageKey, JSON.stringify(fonts));
+  }, [fonts, fontStorageKey]);
+
+  // B. Apply Theme/Contrast changes
   useEffect(() => {
     applyClasses(theme, contrast);
   }, [theme, contrast, applyClasses]);
 
-  // 3. Effect: Watch for system preference changes
+  // C. System Preference Listener
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = () => {
@@ -128,15 +191,13 @@ export function ThemeProvider({
         applyClasses("system", contrast);
       }
     };
-
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, [theme, contrast, applyClasses]);
 
-  // 4. Effect: MutationObserver for external class changes (Storybook, etc.)
+  // D. Mutation Observer (External Class Changes)
   useEffect(() => {
     const root = window.document.documentElement;
-
     const observer = new MutationObserver((mutations) => {
       if (isInternalUpdate.current) return;
 
@@ -146,26 +207,15 @@ export function ThemeProvider({
           mutation.attributeName === "class"
         ) {
           const classList = root.classList;
-
-          // Determine current visual state based on class presence
           const isDark =
             classList.contains("dark") || classList.contains("theme-dark");
           const newResolved: "light" | "dark" = isDark ? "dark" : "light";
 
-          // 1. Update resolvedTheme immediately so the Map component can react
-          setResolvedTheme((prev) => {
-            if (prev !== newResolved) return newResolved;
-            return prev;
-          });
+          setResolvedTheme((prev) =>
+            prev !== newResolved ? newResolved : prev,
+          );
+          setThemeState((prev) => (prev !== newResolved ? newResolved : prev));
 
-          // 2. Sync the abstract 'theme' state if it differs from visual reality
-          // This ensures controls (like switches) reflect the external change
-          setThemeState((prev) => {
-            if (prev !== newResolved) return newResolved;
-            return prev;
-          });
-
-          // Handle Contrast (Optional check if plugins mess with this too)
           const hasHigh = classList.contains("high-contrast");
           const hasMedium = classList.contains("medium-contrast");
           let newContrast: Contrast = "standard";
@@ -180,16 +230,13 @@ export function ThemeProvider({
     });
 
     observer.observe(root, { attributes: true, attributeFilter: ["class"] });
-
     return () => observer.disconnect();
-  }, [contrast]); // Dependencies reduced to prevent loop, 'theme' handled internally
+  }, [contrast]);
 
-  // 5. Initial Mount Check
+  // E. Initial Mount Check
   useEffect(() => {
     const root = window.document.documentElement;
     const classList = root.classList;
-
-    // Check for existing theme classes injected by server or previous scripts
     if (classList.contains("dark") || classList.contains("theme-dark")) {
       setThemeState("dark");
       setResolvedTheme("dark");
@@ -200,7 +247,6 @@ export function ThemeProvider({
       setThemeState("light");
       setResolvedTheme("light");
     } else {
-      // If no classes exist yet, apply the default/storage state
       applyClasses(theme, contrast);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -218,6 +264,10 @@ export function ThemeProvider({
       setContrastState(newContrast);
     },
     resolvedTheme,
+    fonts,
+    setFonts: (newFonts: Partial<FontSettings>) => {
+      setFontsState((prev) => ({ ...prev, ...newFonts }));
+    },
   };
 
   return (

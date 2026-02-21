@@ -13,6 +13,7 @@
     --font-brand: 'Manrope', system-ui, -apple-system, sans-serif;
     --font-plain: 'Manrope', system-ui, -apple-system, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-button: var(--font-plain);
 
     --md-sys-color-primary: rgb(143 76 56);
     --md-sys-color-surface-tint: rgb(143 76 56);
@@ -383,6 +384,7 @@
   --font-brand: var(--font-brand);
   --font-plain: var(--font-plain);
   --font-mono: var(--font-mono);
+  --font-button: var(--font-button);
 
   /* 
     -----------------------------------------

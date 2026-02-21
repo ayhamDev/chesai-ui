@@ -108,7 +108,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
           return {
             width: isChecked ? 16 : 12,
             height: isChecked ? 16 : 12,
-            x: isChecked ? 15 : 5,
+            x: isChecked ? 18 : 5,
           };
         case "lg":
           return {
