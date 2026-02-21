@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0 (2026-02-21)
+
+
+### Features
+
+* major UI refinements, MD3 expressive updates, and RTL support ([2144b5d](https://github.com/ayhamDev/chesai-ui/commit/2144b5d91bf0f15bd5ca3026e31263c14691383a))
+* **ui:** Enhance components with variants, filtering, and image zoom ([0e58ed3](https://github.com/ayhamDev/chesai-ui/commit/0e58ed35f194616154c69dd6ec9520c26da4d204))
+
 ## [3.0.1](https://github.com/IgnacioNMiranda/vite-component-library-template/compare/v3.0.0...v3.0.1) (2025-06-22)
 
 
