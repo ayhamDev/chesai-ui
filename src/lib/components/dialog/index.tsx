@@ -317,7 +317,8 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
               active={open}
               focusTrapOptions={{
                 onDeactivate: () => !isLocked && onOpenChange(false),
-                escapeDeactivates: !isLocked,
+                clickOutsideDeactivates: !isLocked, // FIX: Prevent outside clicks from leaving trap when locked
+                escapeDeactivates: !isLocked, // FIX: Prevent Escape key
                 allowOutsideClick: () => !isLocked,
               }}
             >

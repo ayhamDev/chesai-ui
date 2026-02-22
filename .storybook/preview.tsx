@@ -1,9 +1,9 @@
 import type { Preview } from "@storybook/react-vite";
 import { themes } from "@storybook/theming";
-import "../src/lib/tailwind/theme.css";
-import "../src/lib/tailwind/typography.css";
 import "react-medium-image-zoom/dist/styles.css";
 import { LayoutProvider } from "../src/lib/context/layout-context";
+import "../src/lib/tailwind/theme.css";
+import "../src/lib/tailwind/typography.css";
 const preview: Preview = {
   parameters: {
     darkMode: {

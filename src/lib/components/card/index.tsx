@@ -18,12 +18,10 @@ export const cardVariants = cva(
         ghost: "bg-transparent text-on-surface",
         surface: "bg-surface text-on-surface",
       },
-      // --- ADD THIS SECTION ---
       hoverEffect: {
-        true: "after:absolute  after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-80 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out hover:after:opacity-100 hover:after:scale-100",
+        true: "after:absolute after:inset-0 after:z-[-1] after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out after:opacity-0",
         false: "",
       },
-
       shape: {
         full: "rounded-3xl",
         minimal: "rounded-xl",
@@ -48,6 +46,43 @@ export const cardVariants = cva(
         5: "shadow-2xl",
       },
     },
+    compoundVariants: [
+      // Ghost Bloom Effect
+      {
+        variant: "ghost",
+        hoverEffect: true,
+        className:
+          "after:bg-secondary-container/50 after:scale-80 after:origin-center hover:after:opacity-100 hover:after:scale-100",
+      },
+      // Standard Overlay Effect (Primary, Secondary, Surface)
+      {
+        variant: "primary",
+        hoverEffect: true,
+        className: "after:bg-on-surface/8 hover:after:opacity-100",
+      },
+      {
+        variant: "secondary",
+        hoverEffect: true,
+        className: "after:bg-on-surface/8 hover:after:opacity-100",
+      },
+      {
+        variant: "surface",
+        hoverEffect: true,
+        className: "after:bg-on-surface/8 hover:after:opacity-100",
+      },
+      // Tertiary Overlay (using on-tertiary-container for correct color matching)
+      {
+        variant: "tertiary",
+        hoverEffect: true,
+        className: "after:bg-on-tertiary-container/8 hover:after:opacity-100",
+      },
+      // High Contrast Overlay (using inverse-on-surface)
+      {
+        variant: "high-contrast",
+        hoverEffect: true,
+        className: "after:bg-inverse-on-surface/10 hover:after:opacity-100",
+      },
+    ],
     defaultVariants: {
       variant: "primary",
       shape: "minimal",
@@ -75,7 +110,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       bordered,
       elevation,
       enableRipple,
-      hoverEffect, // Destructure this
+      hoverEffect,
       onPointerDown,
       ...props
     },

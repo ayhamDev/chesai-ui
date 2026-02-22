@@ -7,6 +7,46 @@
     Material Design 3 Token Definitions 
     -----------------------------------------
   */
+   /* 
+    --- GLOBAL SCROLLBAR STYLING ---
+    Matches the look of ElasticScrollArea 
+  */
+
+  /* 1. Standard (Firefox) */
+  * {
+    scrollbar-width: thin;
+    /* [Thumb Color] [Track Color] */
+    scrollbar-color: rgb(from var(--md-sys-color-primary) r g b / 0.3) transparent;
+  }
+
+  /* 2. Webkit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;  /* Width of vertical scrollbar */
+    height: 8px; /* Height of horizontal scrollbar */
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent; /* Makes the track invisible until hover/scroll */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    /* Using color-mix or relative colors to match the 30% opacity of your custom components */
+    background-color: rgb(from var(--md-sys-color-primary) r g b / 0.3);
+    border-radius: 9999px;
+    /* Adding a transparent border creates a "padding" effect around the thumb */
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    /* Slightly more opaque on hover for interaction feedback */
+    background-color: rgb(from var(--md-sys-color-primary) r g b / 0.5);
+  }
+
+  /* Prevent scrollbar from shifting layout in modern browsers */
+  html {
+    scrollbar-gutter: stable both-edges;
+  }
 
   /* Default Light (Standard Contrast) */
   :root {
