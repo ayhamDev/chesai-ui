@@ -29,6 +29,10 @@ const meta: Meta<typeof BarLineSlider> = {
     activeColor: { control: "text" },
     inactiveColor: { control: "text" },
     disabled: { control: "boolean" },
+    shape: {
+      control: "select",
+      options: ["full", "sharp", "minimal"],
+    },
   },
 };
 

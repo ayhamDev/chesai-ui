@@ -62,7 +62,7 @@ const rootVariants = cva(
   },
 );
 
-const trackVariants = cva("relative overflow-hidden rounded-[28px]", {
+const trackVariants = cva("relative overflow-hidden", {
   variants: {
     visual: {
       line: "bg-surface-container-highest",
@@ -71,6 +71,11 @@ const trackVariants = cva("relative overflow-hidden rounded-[28px]", {
     orientation: {
       horizontal: "w-full",
       vertical: "h-full",
+    },
+    shape: {
+      full: "rounded-full",
+      minimal: "rounded-2xl",
+      sharp: "rounded-none",
     },
   },
   compoundVariants: [
@@ -82,23 +87,31 @@ const trackVariants = cva("relative overflow-hidden rounded-[28px]", {
   defaultVariants: {
     visual: "bar",
     orientation: "horizontal",
+    shape: "full",
   },
 });
 
 const rangeVariants = cva("absolute", {
   variants: {
     visual: {
-      line: "bg-primary",
-      bar: "bg-primary group-data-[disabled]/slider:bg-on-surface/12",
+      line: "",
+      bar: "group-data-[disabled]/slider:bg-on-surface/12",
     },
     orientation: {
       horizontal: "h-full top-0",
       vertical: "w-full left-0",
     },
+    color: {
+      primary: "bg-primary",
+      secondary: "bg-secondary",
+      tertiary: "bg-tertiary",
+      error: "bg-error",
+    },
   },
   defaultVariants: {
     visual: "bar",
     orientation: "horizontal",
+    color: "primary",
   },
 });
 
@@ -107,11 +120,19 @@ const thumbVariants = cva(
   {
     variants: {
       visual: {
-        line:
-          "h-5 w-5 rounded-full bg-primary hover:scale-110 " +
-          "after:absolute after:inset-0 after:z-[-1] after:bg-primary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
-          "hover:after:opacity-20 hover:after:scale-150",
-        bar: "focus:ring-2 focus:ring-primary rounded-full bg-primary",
+        line: "h-5 w-5 hover:scale-110 after:absolute after:inset-0 after:z-[-1] after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out hover:after:opacity-20 hover:after:scale-150",
+        bar: "focus:ring-2",
+      },
+      color: {
+        primary: "bg-primary focus:ring-primary after:bg-primary",
+        secondary: "bg-secondary focus:ring-secondary after:bg-secondary",
+        tertiary: "bg-tertiary focus:ring-tertiary after:bg-tertiary",
+        error: "bg-error focus:ring-error after:bg-error",
+      },
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-md",
+        sharp: "rounded-none",
       },
       orientation: {
         horizontal: "",
@@ -121,7 +142,6 @@ const thumbVariants = cva(
     },
     compoundVariants: [
       // --- Bar Thumbs (Horizontal) ---
-      // RESTORED: Uses 'top-9.5' to match original design offset
       {
         visual: "bar",
         orientation: "horizontal",
@@ -145,7 +165,6 @@ const thumbVariants = cva(
       },
 
       // --- Bar Thumbs (Vertical) ---
-      // NEW: Uses 'left-1/2' for standard centering in vertical mode
       {
         visual: "bar",
         orientation: "vertical",
@@ -172,9 +191,30 @@ const thumbVariants = cva(
       visual: "bar",
       size: "md",
       orientation: "horizontal",
+      color: "primary",
+      shape: "full",
     },
   },
 );
+
+const endDotVariants = cva("absolute w-[5px] h-[5px] rounded-full", {
+  variants: {
+    color: {
+      primary: "bg-primary",
+      secondary: "bg-secondary",
+      tertiary: "bg-tertiary",
+      error: "bg-error",
+    },
+    orientation: {
+      horizontal: "right-3 top-1/2 -translate-y-1/2",
+      vertical: "top-3 left-1/2 -translate-x-1/2",
+    },
+  },
+  defaultVariants: {
+    color: "primary",
+    orientation: "horizontal",
+  },
+});
 
 // --- HELPER COMPONENTS ---
 
@@ -290,6 +330,8 @@ export interface SliderProps extends Omit<
   variant?: "standard" | "centered" | "range";
   visual?: "line" | "bar";
   size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
+  color?: "primary" | "secondary" | "tertiary" | "error";
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
   withTicks?: boolean;
@@ -309,6 +351,8 @@ export const Slider = React.forwardRef<
       className,
       visual = "bar",
       size = "md",
+      shape = "full",
+      color = "primary",
       variant = "standard",
       orientation = "horizontal",
       min = 0,
@@ -418,6 +462,13 @@ export const Slider = React.forwardRef<
         ? { left: stats.start, width: stats.length }
         : { bottom: stats.start, height: stats.length };
 
+    // Determine content color based on the selected variant color
+    // This affects icons inside the bar
+    const contentColorClass =
+      color === "primary" || color === "error"
+        ? "text-on-primary"
+        : "text-on-secondary-container";
+
     return (
       <div
         className={clsx(
@@ -453,11 +504,11 @@ export const Slider = React.forwardRef<
           {...props}
         >
           <SliderPrimitive.Track
-            className={trackVariants({ visual, orientation })}
+            className={trackVariants({ visual, orientation, shape })}
           >
             {/* Active Range Fill */}
             <div
-              className={rangeVariants({ visual, orientation })}
+              className={rangeVariants({ visual, orientation, color })}
               style={rangeStyle}
             />
 
@@ -480,7 +531,7 @@ export const Slider = React.forwardRef<
                 className={clsx(
                   "absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none [&_svg]:w-5 [&_svg]:h-5",
                   variant === "standard"
-                    ? "text-on-primary"
+                    ? contentColorClass
                     : "text-on-surface-variant",
                 )}
               >
@@ -499,7 +550,7 @@ export const Slider = React.forwardRef<
                 className={clsx(
                   "absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none [&_svg]:w-5 [&_svg]:h-5",
                   variant === "standard"
-                    ? "text-on-primary"
+                    ? contentColorClass
                     : "text-on-surface-variant",
                 )}
               >
@@ -517,7 +568,13 @@ export const Slider = React.forwardRef<
           {internalValue.map((val, i) => (
             <SliderPrimitive.Thumb
               key={i}
-              className={thumbVariants({ visual, size, orientation })}
+              className={thumbVariants({
+                visual,
+                size,
+                orientation,
+                color,
+                shape,
+              })}
               style={thumbStyle}
             >
               <AnimatePresence>
@@ -533,14 +590,18 @@ export const Slider = React.forwardRef<
             variant === "standard" &&
             !withTicks &&
             orientation === "horizontal" && (
-              <div className="w-[5px] h-[5px] rounded-full bg-primary absolute right-3 top-1/2 -translate-y-1/2" />
+              <div
+                className={endDotVariants({ color, orientation: "horizontal" })}
+              />
             )}
           {/* Standard Bar End Dot (Vertical) */}
           {visual === "bar" &&
             variant === "standard" &&
             !withTicks &&
             orientation === "vertical" && (
-              <div className="w-[5px] h-[5px] rounded-full bg-primary absolute top-3 left-1/2 -translate-x-1/2" />
+              <div
+                className={endDotVariants({ color, orientation: "vertical" })}
+              />
             )}
         </SliderPrimitive.Root>
 

@@ -32,29 +32,22 @@ export interface BarLineSliderProps extends Omit<
    * @deprecated Use `lineSize` instead.
    */
   lineHeight?: string;
+  shape?: "full" | "minimal" | "sharp";
 
   activeColor?: string;
   inactiveColor?: string;
 }
 
 // Helper to ensure the active bar doesn't shrink smaller than the icon circle
-// Maps standard tailwind dimensions: h-12 -> min-w-12, w-12 -> min-h-12
 const getMinSizeClass = (dimClass: string, isVert: boolean) => {
-  // 1. Check for standard integer classes (e.g., h-12, w-14)
-  // We extract the number part and apply it to min-w/min-h
   const standardMatch = dimClass.match(/^(?:h|w)-(\d+)$/);
   if (standardMatch) {
     return isVert ? `min-h-${standardMatch[1]}` : `min-w-${standardMatch[1]}`;
   }
-
-  // 2. Check for arbitrary values (e.g., h-[50px], w-[3rem])
   const arbitraryMatch = dimClass.match(/^(?:h|w)-(\[.+\])$/);
   if (arbitraryMatch) {
     return isVert ? `min-h-${arbitraryMatch[1]}` : `min-w-${arbitraryMatch[1]}`;
   }
-
-  // 3. Fallback defaults if parsing fails or complex classes used
-  // "3rem" is the equivalent of "12" in standard Tailwind (48px)
   return isVert ? "min-h-12" : "min-w-12";
 };
 
@@ -76,6 +69,7 @@ export const BarLineSlider = React.forwardRef<
       barHeight = "h-12",
       lineSize,
       lineHeight = "h-1.5",
+      shape = "full",
       activeColor = "bg-[#bef264]", // Lime
       inactiveColor = "bg-zinc-800",
       disabled,
@@ -86,26 +80,27 @@ export const BarLineSlider = React.forwardRef<
   ) => {
     const isVert = orientation === "vertical";
 
-    // 1. Resolve Root Dimension (Thickness)
-    // Preference: thickness prop > barHeight prop (legacy) > default
     let rootDimensionClass = thickness;
     if (!rootDimensionClass) {
       if (isVert) rootDimensionClass = "w-12 h-full";
       else rootDimensionClass = barHeight;
     }
 
-    // 2. Resolve Track Line Size
     let trackLineClass = lineSize;
     if (!trackLineClass) {
       if (isVert) trackLineClass = "w-1.5 h-full";
       else trackLineClass = lineHeight;
     }
 
-    // 3. Calculate Minimum Size for the Active Bar
-    // This ensures the bar is never smaller than a perfect circle (holding the icon)
-    // We pass only the relevant dimension class (e.g., "h-12") to the helper
     const dimensionForCalc = thickness || (isVert ? "w-12" : barHeight);
     const minSizeClass = getMinSizeClass(dimensionForCalc, isVert);
+
+    const roundingClass =
+      shape === "full"
+        ? "rounded-full"
+        : shape === "minimal"
+          ? "rounded-2xl"
+          : "rounded-none";
 
     return (
       <SliderPrimitive.Root
@@ -142,7 +137,8 @@ export const BarLineSlider = React.forwardRef<
           {/* The Active Bar */}
           <SliderPrimitive.Range
             className={clsx(
-              "absolute rounded-full overflow-hidden",
+              "absolute overflow-hidden",
+              roundingClass,
               activeColor,
               // Apply orientation specific sizing
               isVert ? "w-full" : "h-full",

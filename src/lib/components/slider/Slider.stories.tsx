@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Volume1, Volume2, Sun, Minus, Plus } from "lucide-react";
+import { Volume1, Volume2, Sun, Minus, Plus, AlertCircle } from "lucide-react";
 import { Slider } from "./index";
 import { Card } from "../card";
 import { Typography } from "../typography";
@@ -13,7 +13,7 @@ const meta: Meta<typeof Slider> = {
     docs: {
       description: {
         component:
-          "MD3 Slider with Line (Thin) and Bar (Thick) visual styles, supporting Standard, Centered, and Range behaviors.",
+          "MD3 Slider with Line (Thin) and Bar (Thick) visual styles, supporting Standard, Centered, and Range behaviors. Now includes Shape and Color props.",
       },
     },
   },
@@ -32,6 +32,14 @@ const meta: Meta<typeof Slider> = {
       control: "select",
       options: ["sm", "md", "lg"],
       if: { arg: "visual", eq: "bar" },
+    },
+    color: {
+      control: "select",
+      options: ["primary", "secondary", "tertiary", "error"],
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
     },
     withTicks: { control: "boolean" },
     withLabel: { control: "boolean" },
@@ -129,7 +137,80 @@ export const LineWithIcons: Story = {
   ),
 };
 
-// --- 3. USE CASES ---
+// --- 3. COLORS & SHAPES ---
+
+export const Variations: Story = {
+  name: "Colors & Shapes",
+  render: () => (
+    <div className="grid grid-cols-2 gap-x-12 gap-y-8 w-[600px]">
+      {/* Primary Full */}
+      <div className="flex flex-col gap-2">
+        <Typography variant="label-small">Primary Full</Typography>
+        <Slider visual="bar" color="primary" shape="full" defaultValue={[60]} />
+      </div>
+
+      {/* Secondary Minimal */}
+      <div className="flex flex-col gap-2">
+        <Typography variant="label-small">Secondary Minimal</Typography>
+        <Slider
+          visual="bar"
+          color="secondary"
+          shape="minimal"
+          defaultValue={[40]}
+        />
+      </div>
+
+      {/* Tertiary Sharp */}
+      <div className="flex flex-col gap-2">
+        <Typography variant="label-small">Tertiary Sharp</Typography>
+        <Slider
+          visual="bar"
+          color="tertiary"
+          shape="sharp"
+          defaultValue={[75]}
+        />
+      </div>
+
+      {/* Error Minimal */}
+      <div className="flex flex-col gap-2">
+        <Typography variant="label-small">Error Minimal</Typography>
+        <Slider
+          visual="bar"
+          color="error"
+          shape="minimal"
+          defaultValue={[90]}
+          startIcon={
+            <AlertCircle className="w-4 h-4 text-on-error-container" />
+          }
+        />
+      </div>
+
+      {/* Line Primary Full */}
+      <div className="flex flex-col gap-2">
+        <Typography variant="label-small">Line Primary Full</Typography>
+        <Slider
+          visual="line"
+          color="primary"
+          shape="full"
+          defaultValue={[60]}
+        />
+      </div>
+
+      {/* Line Secondary Sharp */}
+      <div className="flex flex-col gap-2">
+        <Typography variant="label-small">Line Secondary Sharp</Typography>
+        <Slider
+          visual="line"
+          color="secondary"
+          shape="sharp"
+          defaultValue={[30]}
+        />
+      </div>
+    </div>
+  ),
+};
+
+// --- 4. USE CASES ---
 
 export const VolumeControl: Story = {
   name: "Use Case: Volume (Bar)",
@@ -147,35 +228,6 @@ export const VolumeControl: Story = {
         thumbRingColor="var(--md-sys-color-surface-container-low)"
       />
     </Card>
-  ),
-};
-
-export const BrightnessControl: Story = {
-  name: "Use Case: Brightness (Centered)",
-  render: () => (
-    <div className="w-96 p-6 bg-black rounded-3xl flex flex-col gap-4 text-white">
-      <div className="flex justify-between items-center">
-        <Typography variant="body-large">Display</Typography>
-        <Sun size={20} />
-      </div>
-
-      <Slider
-        visual="bar"
-        size="lg"
-        variant="centered"
-        min={-100}
-        max={100}
-        defaultValue={[0]}
-        // Using a start icon for the bar looks great
-        startIcon={<Sun size={24} />}
-        withLabel
-        thumbRingColor="black"
-      />
-      <div className="flex justify-between text-xs text-gray-400 px-2">
-        <span>Darker</span>
-        <span>Brighter</span>
-      </div>
-    </div>
   ),
 };
 
@@ -198,13 +250,11 @@ export const DiscreteSteps: Story = {
   ),
 };
 
-// Add this to your Slider.stories.tsx
-
 export const VerticalBar: Story = {
   name: "Vertical Bar",
   args: {
     visual: "bar",
-    orientation: "vertical", // New Prop
+    orientation: "vertical",
     size: "md",
     defaultValue: [50],
     withLabel: true,
@@ -213,26 +263,6 @@ export const VerticalBar: Story = {
   render: (args) => (
     <div className="h-80 p-10 bg-surface-container rounded-xl flex items-center justify-center">
       <Slider {...args} />
-    </div>
-  ),
-};
-
-export const VerticalCentered: Story = {
-  name: "Vertical Centered",
-  args: {
-    visual: "bar",
-    orientation: "vertical",
-    variant: "centered",
-    min: -50,
-    max: 50,
-    defaultValue: [0],
-    size: "lg",
-  },
-  render: (args) => (
-    <div className="h-80 p-4 bg-black text-white rounded-xl flex gap-8">
-      <Slider {...args} />
-      <Slider {...args} defaultValue={[25]} />
-      <Slider {...args} defaultValue={[-25]} />
     </div>
   ),
 };
