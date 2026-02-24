@@ -1,15 +1,14 @@
-// src/lib/components/editor/editor-canvas.tsx
 "use client";
 
 import { clsx } from "clsx";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { useEditor } from "./editor-context";
 import { ContextMenu } from "../context-menu";
+import { EditorMeasurements } from "./editor-measurements";
 
 export interface EditorCanvasProps extends React.HTMLAttributes<HTMLDivElement> {
   paperWidth?: number;
   paperHeight?: number;
-  /** Pass `<ContextMenu.Content>` items here */
   contextMenu?: React.ReactNode;
 }
 
@@ -44,7 +43,8 @@ export const EditorCanvas = forwardRef<HTMLDivElement, EditorCanvasProps>(
     useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.code === "Space" && !isSpacePressed) {
-          if (document.activeElement?.tagName.match(/INPUT|TEXTAREA/)) return;
+          if (document.activeElement?.tagName.match(/INPUT|TEXTAREA|SELECT/))
+            return;
           e.preventDefault();
           setIsSpacePressed(true);
         }
@@ -78,11 +78,11 @@ export const EditorCanvas = forwardRef<HTMLDivElement, EditorCanvasProps>(
           const cursorY = e.clientY - rect.top;
 
           const zoomRatio = newZ / camera.z;
-          setCamera({
+          setCamera((prev) => ({
             x: cursorX - (cursorX - camera.x) * zoomRatio,
             y: cursorY - (cursorY - camera.y) * zoomRatio,
             z: newZ,
-          });
+          }));
         } else {
           setCamera((prev) => ({
             ...prev,
@@ -148,12 +148,6 @@ export const EditorCanvas = forwardRef<HTMLDivElement, EditorCanvasProps>(
         }
       : {};
 
-    const cursorStyle = isPanning
-      ? "grabbing"
-      : isSpacePressed
-        ? "grab"
-        : "default";
-
     const canvasNode = (
       <div
         ref={(node) => {
@@ -166,7 +160,9 @@ export const EditorCanvas = forwardRef<HTMLDivElement, EditorCanvasProps>(
           "relative w-full h-full overflow-hidden bg-surface-container select-none",
           className,
         )}
-        style={{ cursor: cursorStyle }}
+        style={{
+          cursor: isPanning ? "grabbing" : isSpacePressed ? "grab" : "default",
+        }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -186,6 +182,9 @@ export const EditorCanvas = forwardRef<HTMLDivElement, EditorCanvasProps>(
             transformOrigin: "0 0",
           }}
         >
+          {/* Smart Measurement Overlay inserted here */}
+          <EditorMeasurements />
+
           {mode === "paper" ? (
             <div
               id="editor-paper"
@@ -201,10 +200,7 @@ export const EditorCanvas = forwardRef<HTMLDivElement, EditorCanvasProps>(
                 <div
                   className="absolute inset-0 pointer-events-none z-0"
                   style={{
-                    backgroundImage: `
-                      linear-gradient(to right, var(--md-sys-color-outline-variant) 1px, transparent 1px),
-                      linear-gradient(to bottom, var(--md-sys-color-outline-variant) 1px, transparent 1px)
-                    `,
+                    backgroundImage: `linear-gradient(to right, var(--md-sys-color-outline-variant) 1px, transparent 1px), linear-gradient(to bottom, var(--md-sys-color-outline-variant) 1px, transparent 1px)`,
                     backgroundSize: `${gridSize}px ${gridSize}px`,
                     opacity: 0.3,
                   }}

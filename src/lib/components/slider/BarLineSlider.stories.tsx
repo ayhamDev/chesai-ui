@@ -103,3 +103,25 @@ export const SlimVariant: Story = {
     icon: <Sun className="w-4 h-4 stroke-black" />,
   },
 };
+// Add this to BarLineSlider.stories.tsx
+
+export const VerticalMode: Story = {
+  name: "Vertical Orientation",
+  render: () => {
+    const [val, setVal] = useState([75]);
+    return (
+      <div className="h-96 w-32 flex justify-center bg-black rounded-3xl p-6">
+        <BarLineSlider
+          value={val}
+          onValueChange={setVal}
+          orientation="vertical"
+          // You can use the new thickness prop or let it default
+          thickness="w-14"
+          activeColor="bg-white"
+          inactiveColor="bg-white/20"
+          icon={<Volume2 className="w-6 h-6 text-black" />}
+        />
+      </div>
+    );
+  },
+};

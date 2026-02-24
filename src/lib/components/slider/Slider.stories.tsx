@@ -197,3 +197,42 @@ export const DiscreteSteps: Story = {
     </div>
   ),
 };
+
+// Add this to your Slider.stories.tsx
+
+export const VerticalBar: Story = {
+  name: "Vertical Bar",
+  args: {
+    visual: "bar",
+    orientation: "vertical", // New Prop
+    size: "md",
+    defaultValue: [50],
+    withLabel: true,
+    startIcon: <Volume2 className="text-on-primary" />,
+  },
+  render: (args) => (
+    <div className="h-80 p-10 bg-surface-container rounded-xl flex items-center justify-center">
+      <Slider {...args} />
+    </div>
+  ),
+};
+
+export const VerticalCentered: Story = {
+  name: "Vertical Centered",
+  args: {
+    visual: "bar",
+    orientation: "vertical",
+    variant: "centered",
+    min: -50,
+    max: 50,
+    defaultValue: [0],
+    size: "lg",
+  },
+  render: (args) => (
+    <div className="h-80 p-4 bg-black text-white rounded-xl flex gap-8">
+      <Slider {...args} />
+      <Slider {...args} defaultValue={[25]} />
+      <Slider {...args} defaultValue={[-25]} />
+    </div>
+  ),
+};

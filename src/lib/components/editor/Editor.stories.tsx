@@ -1,4 +1,3 @@
-// src/lib/components/editor/Editor.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   ArrowDown,
@@ -10,8 +9,6 @@ import {
   MousePointer2,
   Type,
   Unlock,
-  Minus,
-  Plus,
   Trash2,
   Settings2,
 } from "lucide-react";
@@ -19,7 +16,6 @@ import { useEffect, useState } from "react";
 import { Editor, useEditor } from "./index";
 import { Button } from "../button";
 import { Card } from "../card";
-import { IconButton } from "../icon-button";
 import { Toolbar } from "../toolbar";
 import { Typography } from "../typography";
 import { Image } from "../image";
@@ -29,6 +25,7 @@ import { ContextMenu } from "../context-menu";
 import { Tabs } from "../tabs";
 import { NumberInput } from "../number-input";
 import { Divider } from "../divider";
+import { IconButton } from "../icon-button";
 
 const meta: Meta<typeof Editor.Root> = {
   title: "Components/Data/Editor",
@@ -81,8 +78,10 @@ const EditorToolbar = ({ onAdd }: { onAdd: (type: ElementType) => void }) => {
         </Toolbar>
 
         <Typography variant="body-small" className="hidden lg:block opacity-60">
-          <strong className="text-primary">Space+Drag</strong> to Pan •{" "}
-          <strong className="text-primary">Ctrl+Scroll</strong> to Zoom
+          <strong className="text-primary">Space+Drag</strong> Pan •{" "}
+          <strong className="text-primary">Ctrl+Scroll</strong> Zoom •{" "}
+          <strong className="text-primary">Alt</strong> Measure •{" "}
+          <strong className="text-primary">Arrows</strong> Nudge
         </Typography>
       </div>
 
@@ -98,14 +97,13 @@ const EditorToolbar = ({ onAdd }: { onAdd: (type: ElementType) => void }) => {
           size="sm"
           onClick={() => setCamera({ x: 50, y: 50, z: 1 })}
         >
-          Reset View
+          Reset
         </Button>
       </div>
     </div>
   );
 };
 
-// --- OBJECT MODIFIER PANEL ---
 const PropertiesPanel = ({
   elements,
   updateElement,
@@ -216,28 +214,59 @@ const PropertiesPanel = ({
   );
 };
 
-// Keyboard Shortcuts Listener
-const EditorKeyboardShortcuts = ({ elements, deleteElements }: any) => {
+// Component to handle Delete and Arrow Key Nudges cleanly inside Context
+const EditorKeyboardShortcuts = ({
+  setElements,
+}: {
+  setElements: React.Dispatch<React.SetStateAction<Element[]>>;
+}) => {
   const { selectedIds, clearSelection, selectAll } = useEditor();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement?.tagName.match(/INPUT|TEXTAREA/)) return;
+      if (document.activeElement?.tagName.match(/INPUT|TEXTAREA|SELECT/))
+        return;
 
+      // Deletion
       if (e.key === "Backspace" || e.key === "Delete") {
-        deleteElements(selectedIds);
+        setElements((prev) => prev.filter((el) => !selectedIds.has(el.id)));
         clearSelection();
+        return;
       }
 
-      // FIXED: Safely check for "a" regardless of CapsLock
+      // Select All
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "a") {
         e.preventDefault();
-        selectAll(elements.map((el: any) => el.id));
+        setElements((prev) => {
+          selectAll(prev.map((el) => el.id));
+          return prev;
+        });
+        return;
+      }
+
+      // Nudge with Arrow Keys
+      if (selectedIds.size > 0 && e.key.startsWith("Arrow")) {
+        e.preventDefault();
+        const shift = e.shiftKey ? 10 : 1;
+        let dx = 0;
+        let dy = 0;
+
+        if (e.key === "ArrowLeft") dx = -shift;
+        if (e.key === "ArrowRight") dx = shift;
+        if (e.key === "ArrowUp") dy = -shift;
+        if (e.key === "ArrowDown") dy = shift;
+
+        setElements((prev) =>
+          prev.map((el) =>
+            selectedIds.has(el.id) ? { ...el, x: el.x + dx, y: el.y + dy } : el,
+          ),
+        );
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
+
+    window.addEventListener("keydown", handleKeyDown, { passive: false });
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIds, elements, deleteElements, clearSelection, selectAll]);
+  }, [selectedIds, setElements, clearSelection, selectAll]);
 
   return null;
 };
@@ -289,7 +318,8 @@ const BuilderDemo = ({ mode }: { mode: "infinite" | "paper" }) => {
 
   const addElement = (type: ElementType) => {
     const newId = `el-${Date.now()}`;
-    const maxZ = Math.max(0, ...elements.map((e) => e.z));
+    const maxZ =
+      elements.length > 0 ? Math.max(...elements.map((e) => e.z)) : 0;
     setElements((prev) => [
       ...prev,
       {
@@ -331,10 +361,8 @@ const BuilderDemo = ({ mode }: { mode: "infinite" | "paper" }) => {
 
   return (
     <Editor.Root mode={mode} initialCamera={{ x: 50, y: 50, z: 0.9 }}>
-      <EditorKeyboardShortcuts
-        elements={elements}
-        deleteElements={deleteElements}
-      />
+      {/* Keyboard listening placed here for Nudge/Delete */}
+      <EditorKeyboardShortcuts setElements={setElements} />
 
       <div className="flex h-[800px] w-full flex-col bg-surface-container overflow-hidden border border-outline-variant">
         <EditorToolbar onAdd={addElement} />
@@ -363,11 +391,8 @@ const BuilderDemo = ({ mode }: { mode: "infinite" | "paper" }) => {
                   locked={el.locked}
                   zIndex={el.z}
                   rotation={el.rotation}
-                  // FIXED: Changed from `default` to fully controlled `position` and `size`
-                  // to keep two-way binding sync with the Properties Panel perfectly smooth.
                   position={{ x: el.x, y: el.y }}
                   size={{ width: el.width, height: el.height }}
-                  // Firing on Drag and Resize directly (instead of Stop) for real-time Panel updates
                   onDrag={(e, d) => updateElement(el.id, { x: d.x, y: d.y })}
                   onResize={(e, direction, ref, delta, position) => {
                     updateElement(el.id, {
@@ -462,7 +487,7 @@ const BuilderDemo = ({ mode }: { mode: "infinite" | "paper" }) => {
             </Editor.Canvas>
           </div>
 
-          {/* RIGHT SIDEBAR (Properties & Layers) */}
+          {/* RIGHT SIDEBAR */}
           <div className="w-80 border-l border-outline-variant bg-surface-container-low flex flex-col z-20 shadow-[-10px_0_20px_rgba(0,0,0,0.05)] overflow-hidden">
             <Tabs
               defaultValue="design"

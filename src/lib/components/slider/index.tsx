@@ -1,20 +1,24 @@
 "use client";
 
 import * as SliderPrimitive from "@radix-ui/react-slider";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 
 // --- STYLES ---
 
 const rootVariants = cva(
-  "relative flex w-full touch-none select-none items-center group/slider data-[disabled]:opacity-50",
+  "relative flex touch-none select-none group/slider data-[disabled]:opacity-50",
   {
     variants: {
+      orientation: {
+        horizontal: "w-full items-center",
+        vertical: "h-full flex-col justify-center items-center",
+      },
       visual: {
-        line: "h-10", // Standard touch area height
-        bar: "", // Height depends on size prop
+        line: "",
+        bar: "",
       },
       size: {
         sm: "",
@@ -23,122 +27,217 @@ const rootVariants = cva(
       },
     },
     compoundVariants: [
-      // Bar Heights (MD3 Specs approx)
-      { visual: "bar", size: "sm", className: "h-6" }, // Standard Bar
-      { visual: "bar", size: "md", className: "h-12" }, // Default
-      { visual: "bar", size: "lg", className: "h-16" }, // Tall/Quick Settings style
+      // --- Horizontal Heights (Bar) ---
+      { orientation: "horizontal", visual: "line", className: "h-10" },
+      {
+        orientation: "horizontal",
+        visual: "bar",
+        size: "sm",
+        className: "h-6",
+      },
+      {
+        orientation: "horizontal",
+        visual: "bar",
+        size: "md",
+        className: "h-12",
+      },
+      {
+        orientation: "horizontal",
+        visual: "bar",
+        size: "lg",
+        className: "h-16",
+      },
+
+      // --- Vertical Widths (Bar) ---
+      { orientation: "vertical", visual: "line", className: "w-10" },
+      { orientation: "vertical", visual: "bar", size: "sm", className: "w-6" },
+      { orientation: "vertical", visual: "bar", size: "md", className: "w-12" },
+      { orientation: "vertical", visual: "bar", size: "lg", className: "w-16" },
     ],
     defaultVariants: {
       visual: "bar",
       size: "md",
+      orientation: "horizontal",
     },
   },
 );
 
-// The background track (Inactive part)
-const trackVariants = cva("relative w-full overflow-hidden", {
+const trackVariants = cva("relative overflow-hidden rounded-[28px]", {
   variants: {
     visual: {
-      line: "h-1 rounded-full bg-surface-container-highest",
-      bar: "h-full w-full rounded-[28px] bg-surface-container-highest",
+      line: "bg-surface-container-highest",
+      bar: "bg-surface-container-highest",
+    },
+    orientation: {
+      horizontal: "w-full",
+      vertical: "h-full",
     },
   },
+  compoundVariants: [
+    { visual: "line", orientation: "horizontal", className: "h-1" },
+    { visual: "bar", orientation: "horizontal", className: "h-full" },
+    { visual: "line", orientation: "vertical", className: "w-1" },
+    { visual: "bar", orientation: "vertical", className: "w-full" },
+  ],
   defaultVariants: {
     visual: "bar",
+    orientation: "horizontal",
   },
 });
 
-// The active fill (Progress)
-const rangeVariants = cva("absolute h-full", {
+const rangeVariants = cva("absolute", {
   variants: {
     visual: {
       line: "bg-primary",
-      // Bar active track is usually Primary or Primary Container
       bar: "bg-primary group-data-[disabled]/slider:bg-on-surface/12",
+    },
+    orientation: {
+      horizontal: "h-full top-0",
+      vertical: "w-full left-0",
     },
   },
   defaultVariants: {
     visual: "bar",
+    orientation: "horizontal",
   },
 });
 
-// The thumb (Handle)
 const thumbVariants = cva(
-  "block focus:outline-none z-20 relative transition-all duration-150",
+  "block focus:outline-none z-20 relative transition-all duration-150 shadow-sm",
   {
     variants: {
       visual: {
         line:
-          "h-5 w-5 rounded-full bg-primary shadow-sm hover:scale-110 " +
+          "h-5 w-5 rounded-full bg-primary hover:scale-110 " +
           "after:absolute after:inset-0 after:z-[-1] after:bg-primary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
           "hover:after:opacity-20 hover:after:scale-150",
-        // Bar Thumb: A vertical pill with a thick ring to create the "Gap"
-        bar: "focus:ring-2 group-active/slider:scale-y-110 group-active/slider:scale-x-90 focus:ring-primary rounded-full bg-primary group-active/slider:scale-y-110 group-active/slider:scale-x-90 shadow-sm",
+        bar: "focus:ring-2 focus:ring-primary rounded-full bg-primary",
       },
-      size: {
-        sm: "",
-        md: "",
-        lg: "",
+      orientation: {
+        horizontal: "",
+        vertical: "",
       },
+      size: { sm: "", md: "", lg: "" },
     },
     compoundVariants: [
-      // Adjust thumb dimensions based on bar size to maintain proportions
+      // --- Bar Thumbs (Horizontal) ---
+      // RESTORED: Uses 'top-9.5' to match original design offset
       {
         visual: "bar",
+        orientation: "horizontal",
         size: "sm",
-        className: "h-[75px] w-[3px] top-9.5 -translate-y-1/2",
+        className:
+          "h-[75px] w-[3px] top-9.5 -translate-y-1/2 group-active/slider:scale-y-110 group-active/slider:scale-x-90",
       },
       {
         visual: "bar",
+        orientation: "horizontal",
         size: "md",
-        className: "h-[75px] w-[3px] top-9.5 -translate-y-1/2",
+        className:
+          "h-[75px] w-[3px] top-9.5 -translate-y-1/2 group-active/slider:scale-y-110 group-active/slider:scale-x-90",
       },
       {
         visual: "bar",
+        orientation: "horizontal",
         size: "lg",
-        className: "h-[75px] w-[3px] top-9.5 -translate-y-1/2",
+        className:
+          "h-[75px] w-[3px] top-9.5 -translate-y-1/2 group-active/slider:scale-y-110 group-active/slider:scale-x-90",
+      },
+
+      // --- Bar Thumbs (Vertical) ---
+      // NEW: Uses 'left-1/2' for standard centering in vertical mode
+      {
+        visual: "bar",
+        orientation: "vertical",
+        size: "sm",
+        className:
+          "w-[75px] h-[3px] left-1/2 -translate-x-1/2 group-active/slider:scale-x-110 group-active/slider:scale-y-90",
+      },
+      {
+        visual: "bar",
+        orientation: "vertical",
+        size: "md",
+        className:
+          "w-[75px] h-[3px] left-1/2 -translate-x-1/2 group-active/slider:scale-x-110 group-active/slider:scale-y-90",
+      },
+      {
+        visual: "bar",
+        orientation: "vertical",
+        size: "lg",
+        className:
+          "w-[75px] h-[3px] left-1/2 -translate-x-1/2 group-active/slider:scale-x-110 group-active/slider:scale-y-90",
       },
     ],
     defaultVariants: {
       visual: "bar",
       size: "md",
+      orientation: "horizontal",
     },
   },
 );
 
 // --- HELPER COMPONENTS ---
 
-// Tooltip Label (The bubble above the thumb)
-const ValueLabel = ({ value }: { value: number }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 0, scale: 0.8 }}
-    animate={{ opacity: 1, y: -48, scale: 1 }}
-    exit={{ opacity: 0, y: 0, scale: 0.8 }}
-    transition={{ duration: 0.15, ease: "easeOut" }}
-    className="absolute left-1/2 -translate-x-1/2 top-0 pointer-events-none"
-  >
-    <div className="relative flex items-center justify-center min-w-[32px] h-[32px] px-3 rounded-full bg-inverse-surface text-inverse-on-surface shadow-md">
-      <span className="text-xs font-bold font-manrope whitespace-nowrap">
-        {value}
-      </span>
-      <div className="absolute -bottom-1 w-2 h-2 bg-inverse-surface rotate-45 rounded-[1px]" />
-    </div>
-  </motion.div>
-);
+const ValueLabel = ({
+  value,
+  orientation,
+}: {
+  value: number;
+  orientation: "horizontal" | "vertical";
+}) => {
+  const isVert = orientation === "vertical";
 
-// Tick Marks (Steps)
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8, x: 0, y: 0 }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        y: isVert ? 0 : -48,
+        x: isVert ? 48 : 0,
+      }}
+      exit={{ opacity: 0, scale: 0.8, x: 0, y: 0 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="absolute top-0 left-0 pointer-events-none"
+      // Center relative to thumb
+      style={{
+        left: "50%",
+        top: "50%",
+        marginLeft: isVert ? 0 : "-16px",
+        marginTop: isVert ? "-16px" : 0,
+      }}
+    >
+      <div className="relative flex items-center justify-center min-w-[32px] h-[32px] px-3 rounded-full bg-inverse-surface text-inverse-on-surface shadow-md">
+        <span className="text-xs font-bold font-manrope whitespace-nowrap">
+          {value}
+        </span>
+        <div
+          className={clsx(
+            "absolute w-2 h-2 bg-inverse-surface rotate-45 rounded-[1px]",
+            isVert
+              ? "-left-1 top-1/2 -translate-y-1/2"
+              : "-bottom-1 left-1/2 -translate-x-1/2",
+          )}
+        />
+      </div>
+    </motion.div>
+  );
+};
+
 const Ticks = ({
   count,
   min,
   max,
   activeRange,
   visual,
+  orientation,
 }: {
   count: number;
   min: number;
   max: number;
   activeRange: [number, number];
   visual: "line" | "bar";
+  orientation: "horizontal" | "vertical";
 }) => {
   if (count <= 0 || count > 50) return null;
 
@@ -152,17 +251,25 @@ const Ticks = ({
           const isActive =
             percentage >= activeRange[0] && percentage <= activeRange[1];
 
+          // Determine position style based on orientation
+          const posStyle =
+            orientation === "horizontal"
+              ? { left: `${percentage}%` }
+              : { bottom: `${percentage}%` };
+
           return (
             <div
               key={i}
               className={clsx(
-                "absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-colors",
+                "absolute rounded-full transition-colors",
+                // Center ticks
+                orientation === "horizontal"
+                  ? "top-1/2 -translate-x-1/2 -translate-y-1/2"
+                  : "left-1/2 -translate-x-1/2 translate-y-1/2",
                 visual === "bar" ? "w-1 h-1" : "w-1 h-1",
-                isActive
-                  ? "bg-on-primary/50" // Visible on dark active track
-                  : "bg-on-surface-variant/30", // Visible on light inactive track
+                isActive ? "bg-on-primary/50" : "bg-on-surface-variant/30",
               )}
-              style={{ left: `${percentage}%` }}
+              style={posStyle}
             />
           );
         })}
@@ -188,6 +295,7 @@ export interface SliderProps extends Omit<
   withTicks?: boolean;
   withLabel?: boolean;
   thumbRingColor?: string;
+  orientation?: "horizontal" | "vertical";
 }
 
 // --- COMPONENT ---
@@ -202,6 +310,7 @@ export const Slider = React.forwardRef<
       visual = "bar",
       size = "md",
       variant = "standard",
+      orientation = "horizontal",
       min = 0,
       max = 100,
       step = 1,
@@ -241,7 +350,8 @@ export const Slider = React.forwardRef<
     };
 
     // Calculate Active Range for styling
-    const getTrackStyle = () => {
+    // Returns { start, length, range } where start/length are percentages
+    const getTrackStats = () => {
       const val0 = internalValue[0] ?? min;
       const pct0 = Math.max(
         0,
@@ -256,27 +366,26 @@ export const Slider = React.forwardRef<
         );
         const start = Math.min(pct0, pct1);
         return {
-          left: `${start}%`,
-          width: `${Math.abs(pct0 - pct1)}%`,
+          start: `${start}%`,
+          length: `${Math.abs(pct0 - pct1)}%`,
           range: [start, Math.max(pct0, pct1)] as [number, number],
         };
       }
 
       if (variant === "centered") {
         const center = (max + min) / 2;
-        // Check if values are actually centered relative to min/max
         const centerPct = ((center - min) / (max - min)) * 100;
 
         if (val0 < center) {
           return {
-            left: `${pct0}%`,
-            width: `${centerPct - pct0}%`,
+            start: `${pct0}%`,
+            length: `${centerPct - pct0}%`,
             range: [pct0, centerPct] as [number, number],
           };
         } else {
           return {
-            left: `${centerPct}%`,
-            width: `${pct0 - centerPct}%`,
+            start: `${centerPct}%`,
+            length: `${pct0 - centerPct}%`,
             range: [centerPct, pct0] as [number, number],
           };
         }
@@ -284,13 +393,13 @@ export const Slider = React.forwardRef<
 
       // Standard
       return {
-        left: "0%",
-        width: `${pct0}%`,
+        start: "0%",
+        length: `${pct0}%`,
         range: [0, pct0] as [number, number],
       };
     };
 
-    const trackStyle = getTrackStyle();
+    const stats = getTrackStats();
     const tickCount = step ? Math.floor((max - min) / step) : 0;
 
     const ringWidth = 6;
@@ -303,14 +412,26 @@ export const Slider = React.forwardRef<
           }
         : {};
 
+    // Apply orientation-specific styles to range
+    const rangeStyle =
+      orientation === "horizontal"
+        ? { left: stats.start, width: stats.length }
+        : { bottom: stats.start, height: stats.length };
+
     return (
       <div
         className={clsx(
-          "flex items-center gap-4 w-full",
-          visual === "line" && startIcon && "pl-0",
+          "flex items-center gap-4",
+          orientation === "horizontal"
+            ? "w-full flex-row"
+            : "h-full flex-col-reverse",
+          visual === "line" &&
+            startIcon &&
+            (orientation === "horizontal" ? "pl-0" : "pb-0"),
+          className,
         )}
       >
-        {/* Line Variant External Icon */}
+        {/* Line Variant External Icon (Start) */}
         {visual === "line" && startIcon && (
           <div className="text-on-surface-variant">{startIcon}</div>
         )}
@@ -323,21 +444,21 @@ export const Slider = React.forwardRef<
           value={internalValue}
           onValueChange={handleValueChange}
           disabled={disabled}
+          orientation={orientation}
           onPointerDown={() => setIsDragging(true)}
           onPointerUp={() => setIsDragging(false)}
           onPointerEnter={() => setIsHovered(true)}
           onPointerLeave={() => setIsHovered(false)}
-          className={clsx(rootVariants({ visual, size }), className)}
+          className={rootVariants({ visual, size, orientation })}
           {...props}
         >
-          <SliderPrimitive.Track className={trackVariants({ visual })}>
+          <SliderPrimitive.Track
+            className={trackVariants({ visual, orientation })}
+          >
             {/* Active Range Fill */}
             <div
-              className={clsx(rangeVariants({ visual }))}
-              style={{
-                left: trackStyle.left,
-                width: trackStyle.width,
-              }}
+              className={rangeVariants({ visual, orientation })}
+              style={rangeStyle}
             />
 
             {/* Ticks */}
@@ -346,19 +467,18 @@ export const Slider = React.forwardRef<
                 count={tickCount}
                 min={min}
                 max={max}
-                activeRange={trackStyle.range}
+                activeRange={stats.range}
                 visual={visual}
+                orientation={orientation}
               />
             )}
 
             {/* Bar Variant Internal Icons */}
-            {visual === "bar" && startIcon && (
+            {/* Horizontal Icons */}
+            {visual === "bar" && orientation === "horizontal" && startIcon && (
               <div
                 className={clsx(
                   "absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none [&_svg]:w-5 [&_svg]:h-5",
-                  // If the track is filled at the start (standard/range), icon is on-primary.
-                  // If centered and value > center, start is empty -> on-surface-variant.
-                  // Simplified logic: Standard is always filled at start.
                   variant === "standard"
                     ? "text-on-primary"
                     : "text-on-surface-variant",
@@ -367,8 +487,27 @@ export const Slider = React.forwardRef<
                 {startIcon}
               </div>
             )}
-            {visual === "bar" && endIcon && (
+            {visual === "bar" && orientation === "horizontal" && endIcon && (
               <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-on-surface-variant pointer-events-none [&_svg]:w-5 [&_svg]:h-5">
+                {endIcon}
+              </div>
+            )}
+
+            {/* Vertical Icons */}
+            {visual === "bar" && orientation === "vertical" && startIcon && (
+              <div
+                className={clsx(
+                  "absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none [&_svg]:w-5 [&_svg]:h-5",
+                  variant === "standard"
+                    ? "text-on-primary"
+                    : "text-on-surface-variant",
+                )}
+              >
+                {startIcon}
+              </div>
+            )}
+            {visual === "bar" && orientation === "vertical" && endIcon && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 text-on-surface-variant pointer-events-none [&_svg]:w-5 [&_svg]:h-5">
                 {endIcon}
               </div>
             )}
@@ -378,22 +517,34 @@ export const Slider = React.forwardRef<
           {internalValue.map((val, i) => (
             <SliderPrimitive.Thumb
               key={i}
-              className={clsx(thumbVariants({ visual, size }))}
+              className={thumbVariants({ visual, size, orientation })}
               style={thumbStyle}
             >
               <AnimatePresence>
                 {withLabel && (isHovered || isDragging) && (
-                  <ValueLabel value={val} />
+                  <ValueLabel value={val} orientation={orientation} />
                 )}
               </AnimatePresence>
             </SliderPrimitive.Thumb>
           ))}
-          {visual === "bar" && variant === "standard" && !withTicks && (
-            <div className="w-[5px] h-[5px] rounded-full bg-primary absolute right-3 top-1/2 -translate-y-1/2" />
-          )}
+
+          {/* Standard Bar End Dot (Horizontal) */}
+          {visual === "bar" &&
+            variant === "standard" &&
+            !withTicks &&
+            orientation === "horizontal" && (
+              <div className="w-[5px] h-[5px] rounded-full bg-primary absolute right-3 top-1/2 -translate-y-1/2" />
+            )}
+          {/* Standard Bar End Dot (Vertical) */}
+          {visual === "bar" &&
+            variant === "standard" &&
+            !withTicks &&
+            orientation === "vertical" && (
+              <div className="w-[5px] h-[5px] rounded-full bg-primary absolute top-3 left-1/2 -translate-x-1/2" />
+            )}
         </SliderPrimitive.Root>
 
-        {/* Line Variant External Icon */}
+        {/* Line Variant External Icon (End) */}
         {visual === "line" && endIcon && (
           <div className="text-on-surface-variant">{endIcon}</div>
         )}

@@ -1,4 +1,3 @@
-// src/lib/components/editor/editor-item.tsx
 "use client";
 
 import { clsx } from "clsx";
@@ -59,6 +58,9 @@ export const EditorItem = forwardRef<Rnd, EditorItemProps>(
       gridSize,
       selectedIds,
       selectId,
+      registerItem,
+      unregisterItem,
+      setHoveredId,
     } = useEditor();
 
     const bounds =
@@ -74,6 +76,12 @@ export const EditorItem = forwardRef<Rnd, EditorItemProps>(
     const [localRotation, setLocalRotation] = useState(rotation);
     const [isRotating, setIsRotating] = useState(false);
 
+    // Register node for Measurement tracking
+    useEffect(() => {
+      if (innerRef.current) registerItem(id, innerRef.current);
+      return () => unregisterItem(id);
+    }, [id, registerItem, unregisterItem]);
+
     useEffect(() => {
       setLocalRotation(rotation);
     }, [rotation]);
@@ -81,26 +89,6 @@ export const EditorItem = forwardRef<Rnd, EditorItemProps>(
     const isRotated = localRotation % 360 !== 0;
     const isResizable =
       !readOnly && !locked && isSelected && !isRotated && !isSpacePressed;
-
-    const effectiveDragGrid = dragGrid || [gridSize, gridSize];
-    const effectiveResizeGrid = resizeGrid || [gridSize, gridSize];
-
-    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-      if (isSpacePressed) return;
-      if (
-        (e.target as HTMLElement).closest(
-          "input, textarea, button, select, [data-no-drag]",
-        )
-      ) {
-        return;
-      }
-      e.stopPropagation();
-      if (!readOnly) {
-        // @ts-ignore
-        selectId(id, e.shiftKey);
-        onSelect?.();
-      }
-    };
 
     const startRotation = (e: React.MouseEvent | React.TouchEvent) => {
       e.stopPropagation();
@@ -118,18 +106,19 @@ export const EditorItem = forwardRef<Rnd, EditorItemProps>(
         const clientX =
           "touches" in moveEvent
             ? moveEvent.touches[0].clientX
-            : moveEvent.clientX;
+            : (moveEvent as MouseEvent).clientX;
         const clientY =
           "touches" in moveEvent
             ? moveEvent.touches[0].clientY
-            : moveEvent.clientY;
+            : (moveEvent as MouseEvent).clientY;
 
         const dx = clientX - centerX;
         const dy = clientY - centerY;
         let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
 
-        if ("shiftKey" in moveEvent && moveEvent.shiftKey) {
-          angle = Math.round(angle / 45) * 45;
+        // Snapping logic: Hold SHIFT to snap to 15deg increments
+        if (moveEvent.shiftKey) {
+          angle = Math.round(angle / 15) * 15;
         }
 
         latestAngle = angle;
@@ -159,17 +148,19 @@ export const EditorItem = forwardRef<Rnd, EditorItemProps>(
           isSelected
             ? "ring-2 ring-primary ring-offset-0"
             : "hover:ring-1 hover:ring-primary/40",
-          // FIXED: Removed opacity-80 and grayscale so locked items look completely normal
           locked && "pointer-events-none",
         )}
         style={{
           transformOrigin: "center center",
           transform: `rotate(${localRotation}deg)`,
         }}
+        // Register hover directly here for flawless hit detection
+        onMouseEnter={() => setHoveredId(id)}
+        onMouseLeave={() => setHoveredId(null)}
       >
         {isSelected && !readOnly && !locked && (
           <div
-            className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-grab active:cursor-grabbing z-50"
+            className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-grab active:cursor-grabbing z-50 group/rotate"
             onMouseDown={startRotation}
             onTouchStart={startRotation}
             onDoubleClick={(e) => {
@@ -179,6 +170,12 @@ export const EditorItem = forwardRef<Rnd, EditorItemProps>(
             }}
             data-no-drag
           >
+            {/* Rotation Degree Badge */}
+            {isRotating && (
+              <div className="absolute -top-9 bg-primary text-on-primary px-2 py-1 rounded text-xs font-bold whitespace-nowrap shadow-md pointer-events-none">
+                {Math.round(localRotation)}°
+              </div>
+            )}
             <div className="w-6 h-6 bg-surface border border-primary rounded-full shadow-md flex items-center justify-center text-primary hover:bg-primary hover:text-on-primary transition-colors">
               <RotateCw size={12} />
             </div>
@@ -201,12 +198,12 @@ export const EditorItem = forwardRef<Rnd, EditorItemProps>(
         ref={ref}
         scale={camera.z}
         bounds={bounds}
-        dragGrid={effectiveDragGrid}
-        resizeGrid={effectiveResizeGrid}
+        dragGrid={dragGrid || [gridSize, gridSize]}
+        resizeGrid={resizeGrid || [gridSize, gridSize]}
         disableDragging={!isDraggable || isRotating}
         enableResizing={isResizable && !isRotating ? undefined : false}
         className={clsx("group/editor-item absolute", className)}
-        style={{ ...style, zIndex }}
+        style={{ ...style, zIndex: isSelected ? 999 : zIndex }}
         resizeHandleComponent={{
           topLeft: isResizable ? (
             <Handle className="-translate-x-1/2 -translate-y-1/2" />
@@ -233,8 +230,21 @@ export const EditorItem = forwardRef<Rnd, EditorItemProps>(
             <Handle className="translate-x-1/2 top-1/2 -translate-y-1/2" />
           ) : null,
         }}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleMouseDown}
+        onMouseDown={(e) => {
+          if (isSpacePressed) return;
+          if (
+            (e.target as HTMLElement).closest(
+              "input, textarea, button, select, [data-no-drag]",
+            )
+          )
+            return;
+          e.stopPropagation();
+          if (!readOnly) {
+            // @ts-ignore
+            selectId(id, e.shiftKey);
+            onSelect?.();
+          }
+        }}
         {...rndProps}
       >
         {contextMenu ? (
