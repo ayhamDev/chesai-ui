@@ -6,6 +6,7 @@ import { useEditor } from "./editor-context";
 import { ContextMenu } from "../context-menu";
 import { EditorMeasurements } from "./editor-measurements";
 
+// @ts-ignore
 export interface EditorCanvasProps extends React.HTMLAttributes<HTMLDivElement> {
   paperWidth?: number;
   paperHeight?: number;

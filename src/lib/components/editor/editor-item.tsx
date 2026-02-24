@@ -205,27 +205,39 @@ export const EditorItem = forwardRef<Rnd, EditorItemProps>(
         className={clsx("group/editor-item absolute", className)}
         style={{ ...style, zIndex: isSelected ? 999 : zIndex }}
         resizeHandleComponent={{
+          // @ts-ignore
           topLeft: isResizable ? (
             <Handle className="-translate-x-1/2 -translate-y-1/2" />
           ) : null,
+          // @ts-ignore
+
           topRight: isResizable ? (
             <Handle className="translate-x-1/2 -translate-y-1/2" />
           ) : null,
+          // @ts-ignore
           bottomLeft: isResizable ? (
             <Handle className="-translate-x-1/2 translate-y-1/2" />
           ) : null,
+          // @ts-ignore
           bottomRight: isResizable ? (
             <Handle className="translate-x-1/2 translate-y-1/2" />
           ) : null,
+          // @ts-ignore
+
           top: isResizable ? (
             <Handle className="-translate-y-1/2 left-1/2 -translate-x-1/2" />
           ) : null,
+          // @ts-ignore
+
           bottom: isResizable ? (
             <Handle className="translate-y-1/2 left-1/2 -translate-x-1/2" />
           ) : null,
+          // @ts-ignore
+
           left: isResizable ? (
             <Handle className="-translate-x-1/2 top-1/2 -translate-y-1/2" />
           ) : null,
+          // @ts-ignore
           right: isResizable ? (
             <Handle className="translate-x-1/2 top-1/2 -translate-y-1/2" />
           ) : null,

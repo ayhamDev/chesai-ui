@@ -44,7 +44,7 @@ export const useEditor = () => {
   return context;
 };
 
-interface EditorRootProps {
+export interface EditorRootProps {
   children: React.ReactNode;
   mode?: "infinite" | "paper";
   initialCamera?: Camera;

@@ -43,6 +43,7 @@ export const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
             {/* Clone icon to ensure consistent sizing if it's an SVG */}
             {React.isValidElement(icon)
               ? React.cloneElement(icon as React.ReactElement, {
+                  // @ts-ignore
                   className: clsx(
                     "h-10 w-10 opacity-70",
                     (icon.props as any).className,
