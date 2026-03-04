@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import clsx from "clsx";
 import { useState } from "react";
 import { Button } from "../button";
 import { Typography } from "../typography";
@@ -14,7 +13,7 @@ const meta: Meta<typeof Sheet> = {
     docs: {
       description: {
         component:
-          "A versatile and responsive sheet component. It renders as a bottom sheet on mobile viewports and intelligently transitions to a side sheet (drawer) on desktop. Now supports all standard Card variants (Primary, Secondary, Tertiary, High Contrast, Ghost).",
+          "A versatile and responsive sheet component. It renders as a bottom sheet on mobile viewports and intelligently transitions to a side sheet (drawer) on desktop. Supports full MD3 surface hierarchy.",
       },
     },
   },
@@ -28,6 +27,11 @@ const meta: Meta<typeof Sheet> = {
         "high-contrast",
         "ghost",
         "surface",
+        "surface-container-lowest",
+        "surface-container-low",
+        "surface-container",
+        "surface-container-high",
+        "surface-container-highest",
       ],
       description: "The visual style of the sheet.",
     },
@@ -56,9 +60,6 @@ const meta: Meta<typeof Sheet> = {
     },
     snapPoints: {
       control: "object",
-    },
-    fadeFromIndex: {
-      control: "number",
     },
     dismissible: {
       control: "boolean",
@@ -93,12 +94,12 @@ const DummyContent = () => (
 // --- STORIES ---
 
 export const ResponsiveBehavior: Story = {
-  name: "1. Responsive Behavior (Primary)",
+  name: "1. Responsive Behavior",
   args: {
     side: "right",
     mode: "normal",
     shape: "full",
-    variant: "primary",
+    variant: "surface-container-high",
   },
   render: (args) => (
     <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
@@ -133,36 +134,85 @@ export const ResponsiveBehavior: Story = {
   ),
 };
 
-export const ColorVariants: Story = {
-  name: "2. Color Variants",
+export const SurfaceVariants: Story = {
+  name: "2. Surface Variants",
   args: {
     side: "right",
-    forceSideSheet: true, // Force side sheet to better see colors on desktop
+    forceSideSheet: true,
   },
   render: (args) => (
-    <div className="flex h-[600px] w-full flex-col items-center justify-center gap-4 bg-graphite-background p-8">
+    <div className="flex h-[600px] w-full flex-col items-center justify-center gap-6 bg-graphite-background p-8">
+      <Typography variant="title-medium">Semantic Surfaces</Typography>
       <div className="flex gap-4 flex-wrap justify-center">
-        {/* Primary */}
-        <Sheet {...args} variant="primary">
+        {/* Surface Low */}
+        <Sheet {...args} variant="surface-container-low">
           <Sheet.Trigger asChild>
-            <Button>Primary</Button>
+            <Button variant="secondary">Surface Container Low</Button>
           </Sheet.Trigger>
           <Sheet.Content>
             <Sheet.Header>
-              <Typography variant="title-medium">Primary</Typography>
+              <Typography variant="title-medium">
+                Surface Container Low
+              </Typography>
             </Sheet.Header>
             <DummyContent />
           </Sheet.Content>
         </Sheet>
 
-        {/* Secondary */}
-        <Sheet {...args} variant="secondary">
+        {/* Surface Container */}
+        <Sheet {...args} variant="surface-container">
           <Sheet.Trigger asChild>
-            <Button variant="secondary">Secondary</Button>
+            <Button variant="secondary">Container</Button>
           </Sheet.Trigger>
           <Sheet.Content>
             <Sheet.Header>
-              <Typography variant="title-medium">Secondary</Typography>
+              <Typography variant="title-medium">Surface Container</Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+
+        {/* Surface High */}
+        <Sheet {...args} variant="surface-container-high">
+          <Sheet.Trigger asChild>
+            <Button variant="secondary">Surface Container High</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="title-medium">
+                Surface Container High
+              </Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+
+        {/* Surface Highest */}
+        <Sheet {...args} variant="surface-container-highest">
+          <Sheet.Trigger asChild>
+            <Button variant="secondary">Surface Container Highest</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="title-medium">
+                Surface Container Highest
+              </Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+      </div>
+
+      <Typography variant="title-medium">Semantic Roles</Typography>
+      <div className="flex gap-4 flex-wrap justify-center">
+        {/* Primary */}
+        <Sheet {...args} variant="primary">
+          <Sheet.Trigger asChild>
+            <Button variant="primary">Primary</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="title-medium">Primary</Typography>
             </Sheet.Header>
             <DummyContent />
           </Sheet.Content>
@@ -180,9 +230,7 @@ export const ColorVariants: Story = {
             <DummyContent />
           </Sheet.Content>
         </Sheet>
-      </div>
 
-      <div className="flex gap-4 flex-wrap justify-center">
         {/* High Contrast */}
         <Sheet {...args} variant="high-contrast">
           <Sheet.Trigger asChild>
@@ -197,19 +245,6 @@ export const ColorVariants: Story = {
             <DummyContent />
           </Sheet.Content>
         </Sheet>
-
-        {/* Surface */}
-        <Sheet {...args} variant="surface">
-          <Sheet.Trigger asChild>
-            <Button variant="ghost">Surface</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium">Surface</Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
       </div>
     </div>
   ),
@@ -220,7 +255,7 @@ export const HighContrastSheet: Story = {
   args: {
     variant: "high-contrast",
     side: "right",
-    forceBottomSheet: true, // Show grabber behavior
+    forceBottomSheet: true,
   },
   parameters: {
     docs: {
@@ -258,7 +293,7 @@ export const DetachedMode: Story = {
   args: {
     ...ResponsiveBehavior.args,
     mode: "detached",
-    variant: "secondary",
+    variant: "surface-container",
   },
   render: (args) => <ResponsiveBehavior.render {...args} />,
 };
@@ -268,7 +303,7 @@ export const WithSnappingPoints: Story = {
   args: {
     snapPoints: [0.3, 0.6, 1],
     forceBottomSheet: true,
-    variant: "surface",
+    variant: "surface-container-high",
   },
   render: (args) => (
     <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">

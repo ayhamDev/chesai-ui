@@ -1,59 +1,82 @@
-import { cva } from "class-variance-authority";
-import { clsx } from "clsx";
-import { motion, type HTMLMotionProps } from "framer-motion";
-import React from "react";
-import { useAppBar } from "../../hooks/useAppBar";
+// src/lib/components/appbar/index.tsx
+"use client";
 
-// --- MD3 AppBar Variants ---
-const appBarVariants = cva(
-  "absolute top-0 z-40 w-full transition-[background-color,box-shadow,color] duration-300 ease-in-out font-manrope",
-  {
-    variants: {
-      appBarColor: {
-        // MD3: Default state (Surface)
-        background: "bg-surface text-on-surface",
-        // MD3: Scrolled state (Surface Container) - Distinct from background
-        "surface-container": "bg-surface-container text-on-surface",
-        // Legacy / Alternative options
-        card: "bg-surface-container-low text-on-surface",
-        primary: "bg-primary text-on-primary",
-        secondary: "bg-secondary-container text-on-secondary-container",
-        transparent: "bg-transparent text-on-surface",
-      },
-      shadow: {
-        none: "shadow-none",
-        sm: "shadow-sm",
-        md: "shadow-md",
-      },
-    },
-    defaultVariants: {
-      appBarColor: "surface-container", // Default to the container color for better initial contrast
-      shadow: "none",
-    },
-  },
-);
+import { clsx } from "clsx";
+import {
+  motion,
+  type MotionValue,
+  useMotionValue,
+  useMotionValueEvent,
+  useScroll,
+  useTransform,
+} from "framer-motion";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { Typography } from "../typography";
+
+// --- CONTEXT FOR MANUAL MORPHING ---
+export interface AppBarContextValue {
+  /** The raw scroll offset of the container */
+  scrollY: MotionValue<number>;
+  /** Progress from 0 (fully expanded) to 1 (fully collapsed) */
+  collapseProgress: MotionValue<number>;
+  /** The total distance in pixels it takes to fully collapse the header */
+  collapseDistance: number;
+}
+
+const AppBarContext = createContext<AppBarContextValue | null>(null);
+
+export const useAppBarContext = () => {
+  const context = useContext(AppBarContext);
+  if (!context) {
+    throw new Error(
+      "useAppBarContext must be used within an <AppBar> component.",
+    );
+  }
+  return context;
+};
+
+// --- TYPES ---
+export type AppBarVariant = "small" | "center" | "medium" | "large";
+export type AppBarScrollBehavior = "pinned" | "floating" | "hide";
+export type AppBarColor =
+  | "surface"
+  | "surface-container-lowest"
+  | "surface-container-low"
+  | "surface-container"
+  | "surface-container-high"
+  | "surface-container-highest"
+  | "primary"
+  | "secondary"
+  | "transparent";
 
 export interface AppBarSharedProps {
-  appBarColor?:
-    | "background"
-    | "surface-container"
-    | "card"
-    | "primary"
-    | "secondary"
-    | "transparent";
   scrollBehavior?: "sticky" | "conditionally-sticky";
-  animatedBehavior?: Array<"none" | "appbar-color" | "fold" | "shadow">;
+  animatedBehavior?: ("appbar-color" | "shadow" | "fold")[];
   animatedColor?:
     | "background"
-    | "surface-container"
     | "card"
     | "primary"
     | "secondary"
+    | "surface-container"
     | "transparent";
-  size?: "md" | "lg";
+  appBarColor?:
+    | "background"
+    | "card"
+    | "primary"
+    | "secondary"
+    | "surface-container"
+    | "transparent";
+  size?: "sm" | "md" | "lg";
   largeHeaderContent?: React.ReactNode;
   smallHeaderContent?: React.ReactNode;
-  stickyHideTarget?: "main-row" | "full-appbar";
+  stickyHideTarget?: "full-appbar" | "main-row";
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
   normalHeaderRowHeight?: number;
   largeHeaderRowHeight?: number;
@@ -62,177 +85,394 @@ export interface AppBarSharedProps {
   routeKey?: string;
 }
 
-export interface AppBarProps
-  extends Omit<HTMLMotionProps<"header">, "color" | "size">, AppBarSharedProps {
-  shadow?: "none" | "sm" | "md";
-  startAdornment?: React.ReactNode;
-  centerAdornment?: React.ReactNode;
-  endAdornments?: React.ReactNode[];
-  /**
-   * If true, the title will be centered in the row.
-   * Standard for the "Center-aligned top app bar" in MD3.
-   */
-  centerTitle?: boolean;
+export interface AppBarProps extends Omit<
+  React.HTMLAttributes<HTMLElement>,
+  "title" | "color"
+> {
+  variant?: AppBarVariant;
+  scrollBehavior?: AppBarScrollBehavior;
+  title?: React.ReactNode;
+  leadingIcon?: React.ReactNode;
+  trailingIcons?: React.ReactNode;
+  bottomContent?: React.ReactNode;
+  color?: AppBarColor;
+  scrolledColor?: AppBarColor;
+  elevateOnScroll?: boolean;
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
+  routeKey?: string;
+  topRowContent?: React.ReactNode;
+  expandedContent?: React.ReactNode;
+  /** Controls if the expandedContent should use the default fade/slide exit animation, or "none" for manual morphing */
+  expandedAnimation?: "default" | "none";
+
+  // --- CUSTOMIZATION THRESHOLDS ---
+  /** Override the default collapsed height (default is 64px). */
+  collapsedHeight?: number;
+  /** Override the expanded area height (skips MD3 presets and automatic measurements). */
+  expandedHeight?: number;
+  /** Scroll distance in pixels required to trigger the scrolled color and shadow effects. (default 5px) */
+  effectScrollThreshold?: number;
+  /** Scroll distance in pixels required to fully collapse the App Bar. Defaults to the measured expanded area height. */
+  collapseScrollDistance?: number;
 }
 
-const AppBarRoot = React.forwardRef<HTMLElement, AppBarProps>(
+export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
   (
     {
-      className,
-      children,
-      startAdornment,
-      centerAdornment,
-      endAdornments = [],
-      appBarColor,
-      scrollBehavior,
-      animatedBehavior,
-      animatedColor,
-      size,
-      largeHeaderContent,
-      smallHeaderContent,
-      stickyHideTarget,
+      variant = "small",
+      scrollBehavior = "pinned",
+      title,
+      leadingIcon,
+      trailingIcons,
+      bottomContent,
+      color,
+      scrolledColor,
+      elevateOnScroll = false,
       scrollContainerRef,
       routeKey,
-      normalHeaderRowHeight = 64, // MD3 Default Height
-      largeHeaderRowHeight,
-      foldAnimationDistance,
-      foldBorderRadius,
-      centerTitle = false,
-      ...rest
+      topRowContent,
+      expandedContent,
+      expandedAnimation = "default",
+      collapsedHeight = 64,
+      expandedHeight,
+      effectScrollThreshold = 5,
+      collapseScrollDistance,
+      children,
+      className,
+      ...props
     },
     ref,
   ) => {
-    const hookProps = {
-      appBarColor,
-      scrollBehavior,
-      animatedBehavior,
-      animatedColor,
-      size,
-      largeHeaderContent,
-      smallHeaderContent,
-      stickyHideTarget,
-      scrollContainerRef,
-      routeKey,
-      normalHeaderRowHeight,
-      largeHeaderRowHeight,
-      foldAnimationDistance,
-      foldBorderRadius,
+    const { scrollY } = useScroll(
+      scrollContainerRef ? { container: scrollContainerRef } : undefined,
+    );
+
+    const [isScrolled, setIsScrolled] = useState(false);
+    const headerY = useMotionValue(0);
+
+    // --- DYNAMIC MEASUREMENTS ---
+    const topRowRef = useRef<HTMLDivElement>(null);
+    const expandedRowRef = useRef<HTMLDivElement>(null);
+    const bottomRef = useRef<HTMLDivElement>(null);
+
+    const isLarge = variant === "large";
+    const isMedium = variant === "medium";
+    const isSmallOrCenter = variant === "small" || variant === "center";
+    const isExpandingVariant = isMedium || isLarge || !!expandedContent;
+
+    const [measuredTop, setMeasuredTop] = useState(collapsedHeight);
+    const [measuredExpanded, setMeasuredExpanded] = useState(
+      expandedHeight !== undefined
+        ? expandedHeight
+        : isLarge
+          ? 88
+          : isMedium
+            ? 48
+            : 0,
+    );
+    const [measuredBottom, setMeasuredBottom] = useState(0);
+
+    useLayoutEffect(() => {
+      if (topRowRef.current) setMeasuredTop(topRowRef.current.offsetHeight);
+      if (bottomRef.current) setMeasuredBottom(bottomRef.current.offsetHeight);
+    }, [title, topRowContent, children, bottomContent, collapsedHeight]);
+
+    useEffect(() => {
+      // If expanded height is explicitly provided via props, strictly use it and skip observing
+      if (expandedHeight !== undefined) {
+        setMeasuredExpanded(expandedHeight);
+        return;
+      }
+
+      if (expandedContent && expandedRowRef.current) {
+        const observer = new ResizeObserver((entries) => {
+          if (entries[0]) {
+            setMeasuredExpanded(entries[0].contentRect.height);
+          }
+        });
+        observer.observe(expandedRowRef.current);
+        return () => observer.disconnect();
+      } else {
+        setMeasuredExpanded(isLarge ? 88 : isMedium ? 48 : 0);
+      }
+    }, [expandedContent, isLarge, isMedium, expandedHeight]);
+
+    useEffect(() => {
+      headerY.set(0);
+    }, [routeKey, headerY]);
+
+    // --- ANIMATION MATH ---
+    // If a custom collapse distance is provided, use it for the transition mapping.
+    // Otherwise, perfectly map it to the height of the expanded content.
+    const collapseDistance = Math.max(
+      collapseScrollDistance ?? measuredExpanded,
+      1,
+    );
+    const expandedTotalHeight = measuredTop + measuredExpanded;
+
+    const collapseProgress = useTransform(
+      scrollY,
+      [0, collapseDistance],
+      [0, 1],
+      { clamp: true },
+    );
+
+    const innerHeight = useTransform(
+      scrollY,
+      [0, collapseDistance],
+      [expandedTotalHeight, measuredTop],
+      { clamp: true },
+    );
+
+    const topOpacity = useTransform(
+      scrollY,
+      [Math.max(0, collapseDistance - 25), collapseDistance],
+      [isExpandingVariant ? 0 : 1, 1],
+      { clamp: true },
+    );
+
+    const defaultExpandedOpacity = useTransform(
+      scrollY,
+      [0, collapseDistance * 0.8],
+      [1, 0],
+      { clamp: true },
+    );
+    const defaultExpandedY = useTransform(
+      scrollY,
+      [0, collapseDistance],
+      [0, -20],
+      { clamp: true },
+    );
+
+    const expandedOpacity =
+      expandedAnimation === "none" ? 1 : defaultExpandedOpacity;
+    const expandedY = expandedAnimation === "none" ? 0 : defaultExpandedY;
+
+    const hasLeading = !!leadingIcon;
+    const scaleCollapsed = isLarge ? 22 / 28 : isMedium ? 22 / 24 : 1;
+    const titleScale = useTransform(
+      scrollY,
+      [0, collapseDistance],
+      [1, scaleCollapsed],
+      { clamp: true },
+    );
+
+    const xCollapsed = hasLeading ? 40 : 0;
+    const titleX = useTransform(
+      scrollY,
+      [0, collapseDistance],
+      [0, xCollapsed],
+      {
+        clamp: true,
+      },
+    );
+
+    const yCollapsed = isLarge ? 10 : 7;
+    const titleY = useTransform(
+      scrollY,
+      [0, collapseDistance],
+      [0, yCollapsed],
+      {
+        clamp: true,
+      },
+    );
+
+    // --- HIDE/FLOAT LOGIC ---
+    useMotionValueEvent(scrollY, "change", (latest) => {
+      const prev = scrollY.getPrevious() || 0;
+
+      // TRIGGER EFFECTS (Shadow / Scrolled Color) based on custom threshold
+      if (latest > effectScrollThreshold && !isScrolled) setIsScrolled(true);
+      else if (latest <= effectScrollThreshold && isScrolled)
+        setIsScrolled(false);
+
+      const heightToHide = measuredTop + measuredBottom;
+
+      if (scrollBehavior === "hide") {
+        // We use Math.max with collapseDistance to ensure it doesn't hide while it's still collapsing
+        const scrollPastCollapse = Math.max(0, latest - collapseDistance);
+        headerY.set(Math.max(-heightToHide, -scrollPastCollapse));
+      } else if (scrollBehavior === "floating") {
+        const scrollPastCollapse = latest - collapseDistance;
+
+        if (scrollPastCollapse <= 0) {
+          headerY.set(0);
+          return;
+        }
+
+        const previousScrollPastCollapse = Math.max(0, prev - collapseDistance);
+        const delta = scrollPastCollapse - previousScrollPastCollapse;
+
+        if (latest <= 0) {
+          headerY.set(0);
+          return;
+        }
+
+        const currentY = headerY.get();
+        const newY = currentY - delta;
+        headerY.set(Math.max(-heightToHide, Math.min(newY, 0)));
+      } else {
+        headerY.set(0);
+      }
+    });
+
+    const resolveColorClass = () => {
+      const targetColor = isScrolled
+        ? scrolledColor || (color ? color : "surface-container")
+        : color || "surface";
+
+      switch (targetColor) {
+        case "primary":
+          return "bg-primary text-on-primary";
+        case "secondary":
+          return "bg-secondary-container text-on-secondary-container";
+        case "surface-container-lowest":
+          return "bg-surface-container-lowest text-on-surface";
+        case "surface-container-low":
+          return "bg-surface-container-low text-on-surface";
+        case "surface-container":
+          return "bg-surface-container text-on-surface";
+        case "surface-container-high":
+          return "bg-surface-container-high text-on-surface";
+        case "surface-container-highest":
+          return "bg-surface-container-highest text-on-surface";
+        case "transparent":
+          return "bg-transparent text-on-surface";
+        case "surface":
+        default:
+          return "bg-surface text-on-surface";
+      }
     };
 
-    const {
-      headerProps,
-      mainRowProps,
-      largeContentProps,
-      childrenContainerProps,
-      smallHeaderProps,
-      finalColor,
-      finalShadow,
-      isCollapsible,
-      shouldRenderLargeContent,
-    } = useAppBar(hookProps);
-
-    // Apply the min-height to the main row to match MD3 specs
-    const rowHeightClass = `min-h-[${normalHeaderRowHeight}px]`;
-
     return (
-      <motion.header
-        ref={ref}
-        className={clsx(
-          appBarVariants({
-            appBarColor: finalColor as any,
-            shadow: finalShadow as any,
-            className,
-          }),
-          (isCollapsible || animatedBehavior?.includes("fold")) &&
-            "overflow-hidden",
-        )}
-        {...headerProps}
-        {...rest}
+      <AppBarContext.Provider
+        value={{ scrollY, collapseProgress, collapseDistance }}
       >
-        <motion.div
-          {...mainRowProps}
+        <motion.header
+          ref={ref}
+          role="banner"
+          style={{
+            y: headerY,
+            willChange: "transform, background-color, box-shadow",
+          }}
           className={clsx(
-            "relative flex w-full items-center px-4 md:px-5", // MD3 Padding
-            rowHeightClass,
+            "absolute inset-x-0 top-0 z-40 flex flex-col font-manrope transition-[background-color,color,box-shadow] duration-300",
+            "transform-gpu", // Force hardware acceleration
+            resolveColorClass(),
+            isScrolled && elevateOnScroll && "shadow-md",
+            className,
           )}
+          {...props}
         >
-          {/* Left Section: Nav Icon + Title (if not centered) */}
-          <div className="flex flex-1 items-center gap-4 min-w-0 z-10">
-            {startAdornment && (
-              <div className="flex shrink-0 items-center justify-center -ml-2 text-inherit">
-                {/* -ml-2 compensates for standard IconButton padding to align visually with grid */}
-                {startAdornment}
-              </div>
-            )}
-
-            {!centerTitle && (
-              <div className="flex-1 min-w-0 relative h-full flex items-center">
-                <motion.div
-                  {...childrenContainerProps}
-                  className="w-full truncate text-left text-[22px] font-normal leading-7"
-                >
-                  {children}
-                </motion.div>
-                {isCollapsible && (
-                  <motion.div
-                    {...smallHeaderProps}
-                    className="absolute inset-0 flex items-center text-[22px] font-normal leading-7 truncate"
-                  >
-                    {smallHeaderContent}
-                  </motion.div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Center Title (Absolute Positioned for perfect centering) */}
-          {centerTitle && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-16">
-              <div className="pointer-events-auto min-w-0 truncate">
-                <motion.div
-                  {...childrenContainerProps}
-                  className="text-[22px] font-normal leading-7 text-center truncate"
-                >
-                  {children}
-                </motion.div>
-                {isCollapsible && (
-                  <motion.div
-                    {...smallHeaderProps}
-                    className="absolute inset-0 flex items-center justify-center text-[22px] font-normal leading-7 truncate"
-                  >
-                    {smallHeaderContent}
-                  </motion.div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Center Adornment Slot (Custom use cases) */}
-          {centerAdornment && (
-            <div className="flex shrink-0 items-center justify-center px-2 z-10">
-              {centerAdornment}
-            </div>
-          )}
-
-          {/* Right Section: Actions */}
-          <div className="flex shrink-0 items-center justify-end gap-1 z-10 -mr-2">
-            {/* -mr-2 aligns last icon visually to grid */}
-            {endAdornments}
-          </div>
-        </motion.div>
-
-        {shouldRenderLargeContent && (
           <motion.div
-            {...largeContentProps}
-            className="px-4 pb-6 md:px-5" // MD3 Padding for large content
+            style={{
+              height: innerHeight,
+              willChange: "height",
+            }}
+            className="relative flex w-full flex-col justify-between overflow-hidden transform-gpu"
           >
-            {largeHeaderContent}
+            {/* TOP ROW */}
+            <div
+              ref={topRowRef}
+              className="relative flex w-full shrink-0 items-center px-4 z-20"
+              style={{ minHeight: collapsedHeight }}
+            >
+              {leadingIcon && (
+                <div className="z-10 flex shrink-0 items-center justify-center -ml-2 text-inherit">
+                  {leadingIcon}
+                </div>
+              )}
+
+              {children ? (
+                <div className="flex-1 min-w-0">{children}</div>
+              ) : (
+                <motion.div
+                  style={{
+                    opacity: topOpacity,
+                    willChange: "opacity",
+                  }}
+                  className={clsx(
+                    "z-0 min-w-0 flex-1 relative h-full flex items-center transform-gpu",
+                    variant === "center"
+                      ? "absolute inset-0 justify-center pointer-events-none px-16"
+                      : "pl-2",
+                    isExpandingVariant && !topRowContent && "invisible",
+                  )}
+                >
+                  {topRowContent || (
+                    <Typography
+                      variant="title-large"
+                      className={clsx(
+                        "truncate",
+                        variant === "center" &&
+                          "pointer-events-auto text-center",
+                      )}
+                    >
+                      {title}
+                    </Typography>
+                  )}
+                </motion.div>
+              )}
+
+              {trailingIcons && (
+                <div className="z-10 ml-auto flex shrink-0 items-center gap-1 -mr-2 text-inherit">
+                  {trailingIcons}
+                </div>
+              )}
+            </div>
+
+            {/* EXPANDED ROW */}
+            {isExpandingVariant &&
+              !children &&
+              (expandedContent ? (
+                <motion.div
+                  ref={expandedRowRef}
+                  style={{
+                    opacity: expandedOpacity,
+                    y: expandedY,
+                    willChange: "opacity, transform",
+                  }}
+                  className="px-4 pb-4 w-full flex-1 z-10 transform-gpu"
+                >
+                  {expandedContent}
+                </motion.div>
+              ) : (
+                <motion.div
+                  style={{
+                    position: "absolute",
+                    left: "16px",
+                    bottom: isLarge ? "28px" : "24px",
+                    scale: titleScale,
+                    x: titleX,
+                    y: titleY,
+                    transformOrigin: "bottom left",
+                    willChange: "transform",
+                    maxWidth: trailingIcons
+                      ? "calc(100% - 96px)"
+                      : "calc(100% - 32px)",
+                  }}
+                  className="pointer-events-auto z-10 transform-gpu"
+                >
+                  <Typography
+                    variant={isLarge ? "headline-medium" : "headline-small"}
+                    className="truncate font-normal"
+                  >
+                    {title}
+                  </Typography>
+                </motion.div>
+              ))}
           </motion.div>
-        )}
-      </motion.header>
+
+          {/* PERSISTENT BOTTOM CONTENT */}
+          {bottomContent && (
+            <div ref={bottomRef} className="w-full shrink-0 z-30">
+              {bottomContent}
+            </div>
+          )}
+        </motion.header>
+      </AppBarContext.Provider>
     );
   },
 );
-AppBarRoot.displayName = "AppBar";
 
-export const AppBar = AppBarRoot;
+AppBar.displayName = "AppBar";

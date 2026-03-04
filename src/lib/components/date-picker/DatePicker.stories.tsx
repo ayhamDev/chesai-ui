@@ -13,7 +13,7 @@ const meta: Meta<typeof DatePicker> = {
     docs: {
       description: {
         component:
-          "A comprehensive Date Picker supporting Docked, Modal, and Fullscreen modes. It strictly follows Material Design 3 specifications, including the ability to toggle between a Calendar grid and a Text Input for accessibility.",
+          "A comprehensive Date Picker supporting Docked, Modal, and Fullscreen modes. Includes visual input variants (filled, outlined, ghost) to match other form fields.",
       },
     },
   },
@@ -21,7 +21,25 @@ const meta: Meta<typeof DatePicker> = {
     variant: {
       control: "select",
       options: ["docked", "modal", "fullscreen"],
-      description: "The presentation style of the picker.",
+      description: "The presentation style of the picker (popover vs dialog).",
+    },
+    inputVariant: {
+      control: "select",
+      options: [
+        "filled",
+        "filled-inverted",
+        "outlined",
+        "outlined-inverted",
+        "underlined",
+        "underlined-inverted",
+        "ghost",
+        "ghost-inverted",
+      ],
+      description: "Visual style of the input trigger.",
+    },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
     },
     shape: {
       control: "select",
@@ -34,6 +52,7 @@ const meta: Meta<typeof DatePicker> = {
       description: "Shape of the internal calendar day buttons.",
     },
     disabled: { control: "boolean" },
+    isInvalid: { control: "boolean" },
   },
 };
 
@@ -46,6 +65,7 @@ export const Docked: Story = {
     variant: "docked",
     label: "Appointment Date",
     placeholder: "Select a date",
+    inputVariant: "filled",
   },
   render: (args) => {
     const [date, setDate] = useState<Date | undefined>(undefined);
@@ -57,20 +77,60 @@ export const Docked: Story = {
   },
 };
 
+export const VisualVariants: Story = {
+  name: "2. Input Variations",
+  render: (args) => {
+    const [date, setDate] = useState<Date | undefined>(undefined);
+    return (
+      <div className="flex flex-col gap-6 w-72">
+        <DatePicker
+          label="Filled (Default)"
+          inputVariant="filled"
+          value={date}
+          onChange={setDate}
+          placeholder="Filled style"
+        />
+        <DatePicker
+          label="Outlined"
+          inputVariant="outlined"
+          value={date}
+          onChange={setDate}
+          placeholder="Outlined style"
+        />
+        <DatePicker
+          label="Underlined"
+          inputVariant="underlined"
+          value={date}
+          onChange={setDate}
+          placeholder="Underlined style"
+        />
+        <DatePicker
+          label="Ghost"
+          inputVariant="ghost"
+          value={date}
+          onChange={setDate}
+          placeholder="Ghost style"
+        />
+        <DatePicker
+          label="Invalid State"
+          isInvalid
+          inputVariant="outlined"
+          value={date}
+          onChange={setDate}
+          placeholder="Error state"
+        />
+      </div>
+    );
+  },
+};
+
 export const Modal: Story = {
-  name: "2. Modal (Dialog)",
+  name: "3. Modal (Dialog)",
   args: {
     variant: "modal",
     label: "Birthday",
     itemShape: "full",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The standard MD3 Date Picker dialog. Features a header with the selected date and an edit button to switch to text input mode.",
-      },
-    },
+    inputVariant: "outlined",
   },
   render: (args) => {
     const [date, setDate] = useState<Date | undefined>(new Date());
@@ -82,64 +142,53 @@ export const Modal: Story = {
   },
 };
 
-// ... imports
-
 export const FullscreenInfinite: Story = {
-  name: "3. Fullscreen (Infinite Scroll)",
+  name: "4. Fullscreen (Infinite Scroll)",
   args: {
     variant: "fullscreen",
     label: "Depart - Return dates",
     placeholder: "Select dates",
+    inputVariant: "filled-inverted",
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
-    docs: {
-      description: {
-        story:
-          "The `fullscreen` variant now switches to an **Infinite Scroll Calendar** automatically, mimicking the native Android/Material You behavior.",
-      },
-    },
   },
   render: (args) => {
     const [date, setDate] = useState<Date | undefined>(new Date());
     return (
       <div className="w-72">
-        {/* Using a dark background wrapper to simulate mobile dark mode context */}
         <DatePicker {...args} value={date} onChange={setDate} />
       </div>
     );
   },
 };
 
-export const Shapes: Story = {
-  name: "4. Shapes Customization",
+export const Sizes: Story = {
+  name: "5. Sizes",
   render: () => {
     const [date, setDate] = useState<Date | undefined>(new Date());
     return (
-      <div className="flex flex-col gap-8 w-72">
+      <div className="flex flex-col gap-4 w-72">
         <DatePicker
-          label="Full (MD3 Default)"
-          variant="modal"
-          shape="full"
-          itemShape="full"
+          size="sm"
+          label="Small"
           value={date}
           onChange={setDate}
+          inputVariant="outlined"
         />
         <DatePicker
-          label="Minimal (Rounded Corners)"
-          variant="modal"
-          shape="minimal"
-          itemShape="minimal"
+          size="md"
+          label="Medium"
           value={date}
           onChange={setDate}
+          inputVariant="outlined"
         />
         <DatePicker
-          label="Sharp (Square)"
-          variant="modal"
-          shape="sharp"
-          itemShape="sharp"
+          size="lg"
+          label="Large"
           value={date}
           onChange={setDate}
+          inputVariant="outlined"
         />
       </div>
     );

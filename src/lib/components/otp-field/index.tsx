@@ -3,7 +3,7 @@
 import { OTPInput, OTPInputContext } from "input-otp";
 import { Dot } from "lucide-react";
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 
 // --- VARIANTS ---
@@ -13,13 +13,24 @@ const slotVariants = cva(
   {
     variants: {
       variant: {
-        flat: "bg-surface-container-low text-on-surface border-y border-r border-transparent first:border-l first:border-l-transparent",
-        bordered:
-          "bg-transparent border-y border-r border-outline-variant text-on-surface first:border-l first:border-l-outline-variant",
+        filled:
+          "bg-surface-container-highest/60 text-on-surface border-b-2 border-transparent",
+        "filled-inverted":
+          "bg-surface-container-low text-on-surface border-b-2 border-transparent",
+        outlined:
+          "bg-transparent border border-outline-variant text-on-surface first:border-l first:border-l-outline-variant",
+        "outlined-inverted":
+          "bg-transparent border border-primary/50 text-on-surface",
         faded:
           "bg-surface-container/30 border-y border-r border-surface-container-highest/50 text-on-surface first:border-l first:border-l-surface-container-highest/50",
         underlined:
           "bg-transparent border-b-2 border-outline-variant text-on-surface rounded-none! px-1",
+        "underlined-inverted":
+          "bg-surface-container-highest/30 border-b-2 border-primary/50 text-on-surface rounded-t-lg rounded-b-none",
+        ghost:
+          "bg-transparent border border-transparent text-on-surface hover:bg-surface-container-highest/30",
+        "ghost-inverted":
+          "bg-transparent border border-transparent text-primary hover:bg-primary/10",
       },
       size: {
         sm: "h-10 w-8 text-xs",
@@ -43,71 +54,92 @@ const slotVariants = cva(
     compoundVariants: [
       // Focus/Active States
       {
-        variant: "flat",
+        variant: "filled",
         isActive: true,
-        className:
-          "bg-surface-container-highest ring-2 ring-primary ring-inset",
+        className: "bg-surface-container-highest border-primary",
       },
       {
-        variant: "bordered",
+        variant: "filled-inverted",
+        isActive: true,
+        className: "bg-surface-container border-primary",
+      },
+      {
+        variant: "outlined",
         isActive: true,
         className: "border-primary ring-1 ring-primary z-10",
       },
       {
-        variant: "faded",
+        variant: "outlined-inverted",
         isActive: true,
-        className:
-          "bg-surface-container/50 border-transparent ring-2 ring-primary ring-inset",
+        className: "border-primary ring-2 ring-primary/20",
       },
-      { variant: "underlined", isActive: true, className: "border-primary" },
+      {
+        variant: ["underlined", "underlined-inverted"],
+        isActive: true,
+        className: "border-primary",
+      },
+      {
+        variant: "ghost",
+        isActive: true,
+        className: "bg-surface-container-highest/50",
+      },
+      { variant: "ghost-inverted", isActive: true, className: "bg-primary/10" },
 
-      // Error States
+      // --- ERROR STATES UPDATED ---
+      // For filled types, use a ring-inset to create a border inside the background
       {
-        variant: "flat",
+        variant: ["filled", "filled-inverted"],
         isInvalid: true,
-        className: "bg-error-container/20 text-error ring-error",
+        className:
+          "bg-error-container/20 text-error ring-inset ring-2 ring-error border-transparent",
       },
+      // For outlined types, explicitly color the border
       {
-        variant: "bordered",
+        variant: [
+          "outlined",
+          "outlined-inverted",
+          "underlined",
+          "underlined-inverted",
+          "ghost",
+          "ghost-inverted",
+          "faded",
+        ],
         isInvalid: true,
-        className: "border-error text-error",
-      },
-      {
-        variant: "underlined",
-        isInvalid: true,
-        className: "border-error text-error",
-      },
-      {
-        variant: "faded",
-        isInvalid: true,
-        className: "border-error text-error",
+        className: "border-error text-error z-10",
       },
     ],
     defaultVariants: {
-      variant: "flat",
+      variant: "filled",
       size: "md",
       shape: "minimal",
     },
   },
 );
 
-// --- CONTEXT ---
+// ... (Rest of the file remains unchanged)
 
 interface InputOTPContextValue {
-  variant?: "flat" | "bordered" | "faded" | "underlined";
+  variant?:
+    | "filled"
+    | "filled-inverted"
+    | "outlined"
+    | "outlined-inverted"
+    | "underlined"
+    | "underlined-inverted"
+    | "ghost"
+    | "ghost-inverted"
+    | "faded";
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
   isInvalid?: boolean;
 }
 
 const InputOTPStyleContext = React.createContext<InputOTPContextValue>({
-  variant: "flat",
+  variant: "filled",
   size: "md",
   shape: "minimal",
   isInvalid: false,
 });
-
-// --- COMPONENTS ---
 
 export type InputOTPProps = React.ComponentPropsWithoutRef<typeof OTPInput> &
   InputOTPContextValue & {
@@ -122,18 +154,11 @@ const InputOTP = React.forwardRef<
     {
       className,
       containerClassName,
-      variant = "flat",
+      variant = "filled",
       size = "md",
       shape = "minimal",
       isInvalid = false,
       ...props
-    }: {
-      className?: string;
-      containerClassName?: string;
-      variant?: "flat" | "bordered" | "faded" | "underlined";
-      size?: "sm" | "md" | "lg";
-      shape?: "full" | "minimal" | "sharp";
-      isInvalid?: boolean;
     },
     ref,
   ) => (
@@ -158,9 +183,8 @@ const InputOTPGroup = React.forwardRef<
   React.ComponentPropsWithoutRef<"div">
 >(({ className, ...props }, ref) => {
   const { variant } = React.useContext(InputOTPStyleContext);
-
-  // If underlined, we want a gap between slots, otherwise they are connected
-  const isSeparated = variant === "underlined";
+  const isSeparated =
+    variant?.includes("underlined") || variant?.includes("ghost");
 
   return (
     <div

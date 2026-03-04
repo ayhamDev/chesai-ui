@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { User } from "lucide-react";
-import { useState } from "react";
 import { Select } from "./index";
 
 const meta: Meta<typeof Select> = {
@@ -10,7 +9,16 @@ const meta: Meta<typeof Select> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["flat", "bordered", "underlined", "faded"],
+      options: [
+        "filled",
+        "filled-inverted",
+        "outlined",
+        "outlined-inverted",
+        "underlined",
+        "underlined-inverted",
+        "ghost",
+        "ghost-inverted",
+      ],
     },
     size: {
       control: "select",
@@ -42,13 +50,6 @@ const animals = [
   { value: "elephant", label: "Elephant" },
   { value: "lion", label: "Lion" },
   { value: "tiger", label: "Tiger" },
-  { value: "giraffe", label: "Giraffe" },
-  { value: "cat2", label: "Cat2" },
-  { value: "dog2", label: "Dog2" },
-  { value: "elephant2", label: "Elephant2" },
-  { value: "lion2", label: "Lion2" },
-  { value: "tiger2", label: "Tiger2" },
-  { value: "giraffe2", label: "Giraffe2" },
 ];
 
 export const Default: Story = {
@@ -57,7 +58,8 @@ export const Default: Story = {
     placeholder: "Select an animal",
     items: animals,
     labelPlacement: "inside",
-    mobileLayout: "dialog"
+    variant: "filled",
+    mobileLayout: "dialog",
   },
 };
 
@@ -66,20 +68,20 @@ export const Variants: Story = {
   render: () => (
     <div className="w-full flex flex-col gap-6 max-w-sm">
       <Select
-        label="Flat (Default)"
-        variant="flat"
+        label="Filled"
+        variant="filled"
         items={animals}
         placeholder="Select..."
       />
       <Select
-        label="Faded"
-        variant="faded"
+        label="Filled Inverted"
+        variant="filled-inverted"
         items={animals}
         placeholder="Select..."
       />
       <Select
-        label="Bordered"
-        variant="bordered"
+        label="Outlined"
+        variant="outlined"
         items={animals}
         placeholder="Select..."
       />
@@ -100,40 +102,24 @@ export const Shapes: Story = {
       <Select
         label="Minimal"
         shape="minimal"
-        variant="flat"
+        variant="filled"
         items={animals}
         placeholder="Select..."
       />
       <Select
         label="Full"
         shape="full"
-        variant="flat"
+        variant="filled"
         items={animals}
         placeholder="Select..."
       />
       <Select
         label="Sharp"
         shape="sharp"
-        variant="flat"
+        variant="filled"
         items={animals}
         placeholder="Select..."
       />
-    </div>
-  ),
-};
-
-export const Sizes: Story = {
-  name: "Sizes",
-  render: () => (
-    <div className="w-full flex flex-col gap-6 max-w-sm">
-      <Select label="Small" size="sm" items={animals} placeholder="Select..." />
-      <Select
-        label="Medium"
-        size="md"
-        items={animals}
-        placeholder="Select..."
-      />
-      <Select label="Large" size="lg" items={animals} placeholder="Select..." />
     </div>
   ),
 };
@@ -143,21 +129,11 @@ export const WithStartContent: Story = {
   args: {
     label: "User",
     placeholder: "Select user",
+    variant: "outlined",
     items: [
       { value: "1", label: "Jane Doe" },
       { value: "2", label: "John Smith" },
     ],
     startContent: <User className="w-4 h-4 text-gray-500" />,
-  },
-};
-
-export const InvalidState: Story = {
-  name: "Invalid State",
-  args: {
-    label: "Required Field",
-    placeholder: "Select...",
-    items: animals,
-    isInvalid: true,
-    errorMessage: "Please make a selection",
   },
 };

@@ -1,19 +1,21 @@
+// src/lib/components/stack-router/types.ts
 import type { Transition, Variants } from 'framer-motion'
 import type { ForwardedRef } from 'react'
-import type { AppBarProps } from '../appbar'
-import type { TransitionPresets } from './transitions'
+import type { AppBarColor, AppBarProps } from '../appbar'
 
 export interface StackScreenOptions {
   title?: string
-  headerTitle?: string | ((props: {}) => React.ReactNode)
+  headerTitle?: string | ((props: any) => React.ReactNode)
   headerShown?: boolean
   headerLeft?: (props: { canGoBack: boolean }) => React.ReactNode
   headerRight?: (props: { canGoBack: boolean }) => React.ReactNode
   headerStyle?: {
-    backgroundColor?: 'background' | 'card' | 'primary' | 'secondary'
+    backgroundColor?: AppBarColor | 'card' | 'background' // kept legacy names for safety
   }
   appBarProps?: Partial<AppBarProps>
-  animation?: TransitionPresets | StackAnimation
+  animation?: any
+  pageClassName?: string
+  headerAnimationEnabled?: boolean
 }
 
 export interface StackScreenProps<T extends Record<string, object | undefined>, R extends keyof T> {
@@ -59,7 +61,6 @@ export interface NavigationProp<T extends Record<string, object | undefined>> {
   scrollContainerRef: ForwardedRef<any | null>
 }
 
-// --- MODIFIED: The top-level `transition` is now optional ---
 export interface StackAnimation {
   transition?: Transition
   variants: Variants

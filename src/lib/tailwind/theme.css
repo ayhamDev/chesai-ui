@@ -692,6 +692,9 @@ input::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: none;
 }
+*::selection {
+  @apply bg-secondary/60 text-on-secondary;
+}
 @media only screen and (hover: none) and (pointer: coarse) {
   * {
     cursor: default !important;
@@ -699,7 +702,6 @@ input[type="number"] {
     -ms-user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
-    overscroll-behavior: contain;
   }
   ::-webkit-scrollbar {
     display: none;

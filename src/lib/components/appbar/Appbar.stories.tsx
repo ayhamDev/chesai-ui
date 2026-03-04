@@ -3,17 +3,18 @@ import {
   ArrowLeft,
   Menu,
   MoreVertical,
-  Paperclip,
   Search,
+  Settings,
   User,
 } from "lucide-react";
 import React, { useRef } from "react";
-import { useAppBar } from "../../hooks/useAppBar";
-import { ElasticScrollArea } from "../elastic-scroll-area";
+import { motion, useTransform } from "framer-motion";
+import { Avatar } from "../avatar";
+import { Badge } from "../badge";
 import { IconButton } from "../icon-button";
-import { Input } from "../input"; // Import Input
+import { Input } from "../input";
 import { Typography } from "../typography";
-import { AppBar, type AppBarProps } from "./index";
+import { AppBar, useAppBarContext } from "./index";
 
 const meta: Meta<typeof AppBar> = {
   title: "Components/AppBar",
@@ -24,42 +25,63 @@ const meta: Meta<typeof AppBar> = {
     docs: {
       description: {
         component:
-          "A versatile AppBar that is decoupled from its scroll container. It uses a headless hook (`useAppBar`) to manage animations and behavior, allowing it to work with any scrollable element.",
+          "The Material Design 3 Top App Bar. Supports four standardized variants: `small`, `center`, `medium`, and `large`. Features a native-feeling scroll morph animation where the title correctly scales from its MD3 Typography standard size and shifts into the top row. Now supports complex `expandedContent` injections with dynamic measuring, manual Context API morphing, and custom thresholds.",
       },
     },
   },
   argTypes: {
-    size: {
+    variant: {
       control: "select",
-      options: ["md", "lg"],
-    },
-    appBarColor: {
-      control: "select",
-      options: ["background", "card", "primary", "secondary"],
+      options: ["small", "center", "medium", "large"],
     },
     scrollBehavior: {
       control: "select",
-      options: ["sticky", "conditionally-sticky"],
+      options: ["pinned", "floating", "hide"],
     },
-    animatedBehavior: {
-      control: "check",
-      options: ["appbar-color", "fold", "shadow"],
-    },
-    animatedColor: {
+    color: {
       control: "select",
-      options: ["background", "card", "primary", "secondary"],
+      options: [
+        "surface",
+        "surface-container-lowest",
+        "surface-container-low",
+        "surface-container",
+        "surface-container-high",
+        "surface-container-highest",
+        "primary",
+        "secondary",
+        "transparent",
+      ],
     },
-    stickyHideTarget: {
+    scrolledColor: {
       control: "select",
-      options: [undefined, "main-row", "full-appbar"],
+      options: [
+        "surface",
+        "surface-container-lowest",
+        "surface-container-low",
+        "surface-container",
+        "surface-container-high",
+        "surface-container-highest",
+        "primary",
+        "secondary",
+        "transparent",
+      ],
     },
-    children: { control: false },
-    largeHeaderContent: { control: false },
-    smallHeaderContent: { control: false },
-    startAdornment: { control: false },
-    centerAdornment: { control: false },
-    endAdornments: { control: false },
+    expandedAnimation: {
+      control: "select",
+      options: ["default", "none"],
+    },
+    elevateOnScroll: { control: "boolean" },
+    title: { control: "text" },
+    leadingIcon: { control: false },
+    trailingIcons: { control: false },
+    bottomContent: { control: false },
+    topRowContent: { control: false },
+    expandedContent: { control: false },
     scrollContainerRef: { control: false },
+    collapsedHeight: { control: "number" },
+    expandedHeight: { control: "number" },
+    effectScrollThreshold: { control: "number" },
+    collapseScrollDistance: { control: "number" },
   },
 };
 
@@ -68,258 +90,386 @@ type Story = StoryObj<typeof AppBar>;
 
 // Helper component to generate scrollable content
 const DummyContent = () => (
-  <main className="p-6 pt-4">
+  <main className="p-6">
     <Typography variant="title-medium">
       Scroll Down to See The Effect
     </Typography>
-    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <Typography variant="body-small" muted className="mt-2 mb-8 max-w-lg">
+      The AppBar tracks the scroll position of its container and automatically
+      fires its layout morphs and color changes based on exact measurements.
+    </Typography>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 30 }).map((_, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: strict
-        <div key={i} className="h-48 rounded-2xl bg-black/5" />
+        <div key={i} className="h-48 rounded-2xl bg-black/5 dark:bg-white/5" />
       ))}
     </div>
   </main>
 );
 
-// A mock async function for the onRefresh prop
-const simulateRefresh = () => {
-  return new Promise((resolve) => setTimeout(resolve, 2000));
-};
-
-// A smart render function to wrap stories and demonstrate the headless pattern.
-const renderWithScrollContainer = (args: AppBarProps) => {
+const renderWithScrollContainer = (args: any) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  let paddingTop = "pt-[64px]";
-  if (args.size === "lg" && args.largeHeaderContent) {
-    paddingTop = "pt-[160px]";
-  }
+  const paddings = {
+    small: "pt-[64px]",
+    center: "pt-[64px]",
+    medium: "pt-[112px]",
+    large: "pt-[152px]",
+  };
+
+  const ptClass = args.customPaddingTop
+    ? args.customPaddingTop
+    : args.color === "transparent"
+      ? ""
+      : paddings[args.variant as keyof typeof paddings] || "pt-[64px]";
 
   return (
-    <div className="h-screen bg-graphite-background">
+    <div className="h-[600px] bg-graphite-background relative overflow-hidden border border-outline-variant rounded-xl shadow-sm">
       <AppBar {...args} scrollContainerRef={scrollRef} />
-      <div ref={scrollRef} className={`h-full overflow-y-auto ${paddingTop}`}>
-        <DummyContent />
+
+      {args.color === "transparent" && (
+        <div className="absolute top-0 inset-x-0 h-72">
+          <img
+            src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1200&auto=format&fit=crop"
+            alt="Mountains"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent" />
+        </div>
+      )}
+
+      <div
+        ref={scrollRef}
+        className={`h-full overflow-y-auto ${ptClass} relative z-10`}
+      >
+        {args.color === "transparent" && <div className="h-48" />}
+        <div
+          className={
+            args.color === "transparent"
+              ? "bg-graphite-background rounded-t-3xl min-h-full p-2"
+              : ""
+          }
+        >
+          <DummyContent />
+        </div>
       </div>
     </div>
   );
 };
 
-// --- STORIES ---
-
-export const Default: Story = {
-  name: "Default (Medium, Sticky)",
+export const Small: Story = {
+  name: "1. Small (MD3 Default)",
   args: {
-    size: "md",
-    scrollBehavior: "sticky",
-    appBarColor: "card",
-    children: <Typography variant="title-medium">Sticky Header</Typography>,
-    startAdornment: (
+    variant: "small",
+    title: "Small App Bar",
+    leadingIcon: (
       <IconButton variant="ghost" aria-label="Menu">
         <Menu />
       </IconButton>
     ),
-    endAdornments: [
-      <IconButton key="user-profile" variant="ghost" aria-label="User Profile">
+    trailingIcons: (
+      <>
+        <IconButton variant="ghost" aria-label="Search">
+          <Search />
+        </IconButton>
+        <IconButton variant="ghost" aria-label="User Profile">
+          <User />
+        </IconButton>
+      </>
+    ),
+  },
+  render: renderWithScrollContainer,
+};
+
+export const CenterAligned: Story = {
+  name: "2. Center Aligned",
+  args: {
+    variant: "center",
+    title: "Centered Title",
+    leadingIcon: (
+      <IconButton variant="ghost" aria-label="Menu">
+        <ArrowLeft />
+      </IconButton>
+    ),
+    trailingIcons: (
+      <IconButton variant="ghost" aria-label="User Profile">
         <User />
-      </IconButton>,
-    ],
+      </IconButton>
+    ),
   },
   render: renderWithScrollContainer,
 };
 
-export const ConditionallySticky: Story = {
-  name: "Medium, Hiding on Scroll",
+export const Medium: Story = {
+  name: "3. Medium (Morphing)",
   args: {
-    ...Default.args,
-    scrollBehavior: "conditionally-sticky",
-    children: <Typography variant="title-medium">Hiding Header</Typography>,
-  },
-  render: renderWithScrollContainer,
-};
-
-export const AnimatedColor: Story = {
-  name: "Medium, Animated Color",
-  args: {
-    ...Default.args,
-    animatedBehavior: ["appbar-color"],
-    appBarColor: "background",
-    animatedColor: "card",
-    children: <Typography variant="title-medium">Animated Header</Typography>,
-  },
-  render: renderWithScrollContainer,
-};
-
-export const FoldingOnScroll: Story = {
-  name: "Medium, Folding on Scroll",
-  args: {
-    ...Default.args,
-    animatedBehavior: ["fold"],
-    children: <Typography variant="title-medium">Folding Header</Typography>,
-  },
-  render: renderWithScrollContainer,
-};
-
-export const ShadowOnScroll: Story = {
-  name: "Medium, Shadow on Scroll",
-  args: {
-    ...Default.args,
-    animatedBehavior: ["shadow"],
-    appBarColor: "background",
-    children: <Typography variant="title-medium">Shadow Header</Typography>,
-  },
-  render: renderWithScrollContainer,
-};
-
-export const LargeCollapsing: Story = {
-  name: "Large, Fully Collapsible",
-  args: {
-    size: "lg",
-    scrollBehavior: "conditionally-sticky",
-    appBarColor: "card",
-    startAdornment: (
+    variant: "medium",
+    title: "Medium App Bar",
+    leadingIcon: (
       <IconButton variant="ghost" aria-label="Back">
         <ArrowLeft />
       </IconButton>
     ),
-    endAdornments: [
-      <IconButton key="attach" variant="ghost" aria-label="Attach">
-        <Paperclip />
-      </IconButton>,
-      <IconButton key="more" variant="ghost" aria-label="More">
+    trailingIcons: (
+      <IconButton variant="ghost" aria-label="More">
         <MoreVertical />
-      </IconButton>,
-    ],
-    children: (
-      <Typography variant="title-large" className="truncate font-bold">
-        Large Collapsing Title
-      </Typography>
-    ),
-    smallHeaderContent: (
-      <Typography variant="title-medium" className="font-semibold">
-        Collapsed Title
-      </Typography>
-    ),
-    largeHeaderContent: (
-      // Updated to use the Input component
-      <Input
-        variant="flat"
-        shape="full"
-        placeholder="Search..."
-        startContent={<Search className="h-5 w-5 text-gray-500" />}
-      />
+      </IconButton>
     ),
   },
   render: renderWithScrollContainer,
 };
 
-export const LargeStatic: Story = {
-  name: "Large, Static (No Collapse)",
+export const Large: Story = {
+  name: "4. Large (Morphing)",
   args: {
-    ...LargeCollapsing.args,
-    smallHeaderContent: undefined,
-    children: (
-      <Typography variant="display-small" className="truncate font-bold">
-        Large Static Title
-      </Typography>
+    variant: "large",
+    title: "Large App Bar",
+    leadingIcon: (
+      <IconButton variant="ghost" aria-label="Back">
+        <ArrowLeft />
+      </IconButton>
+    ),
+    trailingIcons: (
+      <>
+        <IconButton variant="ghost" aria-label="Search">
+          <Search />
+        </IconButton>
+        <IconButton variant="ghost" aria-label="More">
+          <MoreVertical />
+        </IconButton>
+      </>
     ),
   },
   render: renderWithScrollContainer,
 };
 
-export const LargeStaticWithOverride: Story = {
-  name: "Large, Static with Hide Override",
+export const Floating: Story = {
+  name: "5. Floating (Reveals Instantly)",
   args: {
-    ...LargeStatic.args,
-    stickyHideTarget: "main-row",
+    variant: "large",
+    scrollBehavior: "floating",
+    scrolledColor: "surface-container-high",
+    title: "Floating App Bar",
+    leadingIcon: (
+      <IconButton variant="ghost">
+        <Menu />
+      </IconButton>
+    ),
   },
   render: renderWithScrollContainer,
 };
 
-export const CombinedEffects: Story = {
-  name: "Kitchen Sink (All Effects)",
+export const Hide: Story = {
+  name: "6. Hide (Reveals at Top)",
   args: {
-    ...LargeCollapsing.args,
-    animatedBehavior: ["appbar-color", "shadow", "fold"],
-    animatedColor: "secondary",
+    variant: "large",
+    scrollBehavior: "hide",
+    title: "Hiding App Bar",
+    leadingIcon: (
+      <IconButton variant="ghost">
+        <Menu />
+      </IconButton>
+    ),
   },
   render: renderWithScrollContainer,
 };
 
-// This helper component calls the useAppBar hook safely *after* its parent has mounted and hydrated the ref.
-const ElasticScrollContent = ({
-  scrollRef,
-  args,
-}: {
-  scrollRef: React.RefObject<HTMLDivElement | null>;
-  args: AppBarProps;
-}) => {
-  // Explicitly pick only the props that the `useAppBar` hook needs.
-  const {
-    size,
-    scrollBehavior,
-    animatedBehavior,
-    animatedColor,
-    largeHeaderContent,
-    smallHeaderContent,
-    stickyHideTarget,
-    appBarColor,
-  } = args;
+export const CustomSolid: Story = {
+  name: "7. Custom Solid Color",
+  args: {
+    variant: "small",
+    color: "primary",
+    scrolledColor: "primary",
+    elevateOnScroll: true,
+    title: "Solid Primary",
+    leadingIcon: (
+      <IconButton variant="ghost" className="text-on-primary hover:bg-white/10">
+        <ArrowLeft />
+      </IconButton>
+    ),
+    trailingIcons: (
+      <IconButton variant="ghost" className="text-on-primary hover:bg-white/10">
+        <Search />
+      </IconButton>
+    ),
+  },
+  render: renderWithScrollContainer,
+};
 
-  // By the time this component renders, scrollRef.current is hydrated.
-  const { contentPaddingTop } = useAppBar({
-    size,
-    scrollBehavior,
-    animatedBehavior,
-    animatedColor,
-    largeHeaderContent,
-    smallHeaderContent,
-    stickyHideTarget,
-    appBarColor: appBarColor ?? undefined, // Coalesce null to undefined for type safety
-    scrollContainerRef: scrollRef,
-  });
+export const TransparentToSolid: Story = {
+  name: "8. Transparent to Solid",
+  args: {
+    variant: "center",
+    color: "transparent",
+    scrolledColor: "surface",
+    title: "Mountains",
+    leadingIcon: (
+      <IconButton variant="ghost" className="text-white hover:bg-white/20">
+        <ArrowLeft />
+      </IconButton>
+    ),
+    trailingIcons: (
+      <IconButton variant="ghost" className="text-white hover:bg-white/20">
+        <Search />
+      </IconButton>
+    ),
+  },
+  render: renderWithScrollContainer,
+};
+
+export const AdvancedExpandedContent: Story = {
+  name: "9. Advanced Search Content",
+  args: {
+    variant: "large",
+    color: "surface-container-low",
+    scrolledColor: "surface-container",
+    elevateOnScroll: true,
+    customPaddingTop: "pt-[180px]",
+    topRowContent: <Typography variant="title-large">Find Places</Typography>,
+    expandedContent: (
+      <div className="flex flex-col gap-3">
+        <Input
+          placeholder="Search for restaurants, hotels..."
+          variant="filled"
+          startContent={<Search className="text-on-surface-variant w-4 h-4" />}
+          className="shadow-sm"
+        />
+        <div className="flex gap-2">
+          <Badge variant="secondary">Restaurants</Badge>
+          <Badge variant="secondary">Hotels</Badge>
+          <Badge variant="secondary">Activities</Badge>
+        </div>
+      </div>
+    ),
+    leadingIcon: (
+      <IconButton variant="ghost">
+        <ArrowLeft />
+      </IconButton>
+    ),
+    trailingIcons: (
+      <IconButton variant="ghost">
+        <MoreVertical />
+      </IconButton>
+    ),
+  },
+  render: renderWithScrollContainer,
+};
+
+const CustomMorphingHeader = () => {
+  const { collapseProgress } = useAppBarContext();
+
+  const avatarY = useTransform(collapseProgress, [0, 1], [0, -51]);
+  const avatarX = useTransform(collapseProgress, [0, 1], [0, 48]);
+  const avatarScale = useTransform(collapseProgress, [0, 1], [1, 0.4]);
+
+  const textX = useTransform(collapseProgress, [0, 1], [0, -18]);
+  const textY = useTransform(collapseProgress, [0, 1], [0, -44]);
+  const textScale = useTransform(collapseProgress, [0, 1], [1, 0.75]);
+
+  const subtitleOpacity = useTransform(collapseProgress, [0, 0.6], [1, 0]);
 
   return (
-    <div style={{ paddingTop: contentPaddingTop }}>
-      <DummyContent />
+    <div className="relative h-[96px] w-full pointer-events-none">
+      <motion.div
+        style={{
+          scale: avatarScale,
+          x: avatarX,
+          y: avatarY,
+          willChange: "transform",
+        }}
+        className="absolute top-0 left-0 origin-top-left pointer-events-auto transform-gpu"
+      >
+        <Avatar
+          src="https://i.pravatar.cc/150?u=a"
+          size="xl"
+          className="shadow-sm border-2 border-surface"
+        />
+      </motion.div>
+
+      <motion.div
+        style={{
+          scale: textScale,
+          x: textX,
+          y: textY,
+          willChange: "transform",
+        }}
+        className="absolute top-2 left-[112px] origin-top-left pointer-events-auto flex flex-col transform-gpu"
+      >
+        <Typography
+          variant="headline-medium"
+          className="font-bold leading-tight"
+        >
+          Alex Morgan
+        </Typography>
+        <motion.div
+          style={{ opacity: subtitleOpacity, willChange: "opacity" }}
+          className="transform-gpu"
+        >
+          <Typography variant="body-medium" className="opacity-70 mt-1">
+            alex.morgan@example.com
+          </Typography>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };
 
-export const WithElasticScroll: Story = {
-  name: "With Elastic Scroll & Refresh",
+export const ManualMorphing: Story = {
+  name: "10. Manual Morphing (Context API)",
   args: {
-    ...LargeCollapsing.args,
-    animatedBehavior: ["shadow", "fold"],
-    scrollBehavior: "conditionally-sticky",
+    variant: "large",
+    color: "surface-container-lowest",
+    scrolledColor: "surface-container",
+    elevateOnScroll: true,
+    customPaddingTop: "pt-[180px]",
+    expandedAnimation: "none",
+    leadingIcon: (
+      <IconButton variant="ghost">
+        <ArrowLeft />
+      </IconButton>
+    ),
+    trailingIcons: (
+      <IconButton variant="ghost">
+        <Settings />
+      </IconButton>
+    ),
+    expandedContent: <CustomMorphingHeader />,
+  },
+  render: renderWithScrollContainer,
+};
+
+// --- NEW STORY FOR CUSTOM THRESHOLDS & SIZES ---
+
+export const CustomThresholds: Story = {
+  name: "11. Custom Sizes & Thresholds",
+  args: {
+    variant: "large", // Base behavior
+    color: "surface",
+    scrolledColor: "primary", // Obvious color change
+    elevateOnScroll: true,
+    collapsedHeight: 80, // Thicker top row
+    expandedHeight: 120, // Custom height for the expanded area
+    effectScrollThreshold: 150, // Don't trigger color/shadow until 150px down
+    collapseScrollDistance: 300, // Make the collapse animation super slow (stretches over 300px of scrolling)
+    title: "Slow Collapse",
+    leadingIcon: (
+      <IconButton variant="ghost">
+        <Menu />
+      </IconButton>
+    ),
+    trailingIcons: (
+      <IconButton variant="ghost">
+        <MoreVertical />
+      </IconButton>
+    ),
+    customPaddingTop: "pt-[200px]", // 80 + 120
   },
   parameters: {
     docs: {
       description: {
         story:
-          "This story demonstrates composing the `AppBar` with `ElasticScrollArea`. We use a child component to safely call the `useAppBar` hook only after the scroll container's `ref` has been attached, preventing hydration errors.",
+          "Override the default MD3 sizing and scroll thresholds. Here, the collapsed bar is 80px tall, the expanded area is 120px tall. The scroll color shift won't happen until you scroll 150px, and the collapse animation is stretched over 300px of scrolling.",
       },
     },
   },
-  render: (args) => {
-    // This ref will be passed down and attached by ElasticScrollArea
-    const scrollRef = useRef<HTMLDivElement>(null);
-
-    return (
-      <div className="h-screen bg-graphite-background">
-        {/* AppBar receives the ref but doesn't trigger the hook directly from here */}
-        <AppBar {...args} scrollContainerRef={scrollRef} />
-
-        <ElasticScrollArea
-          ref={scrollRef}
-          className="h-full"
-          pullToRefresh={true}
-          onRefresh={simulateRefresh}
-        >
-          {/* Render the child component that safely calls the hook */}
-          <ElasticScrollContent scrollRef={scrollRef} args={args} />
-        </ElasticScrollArea>
-      </div>
-    );
-  },
+  render: renderWithScrollContainer,
 };

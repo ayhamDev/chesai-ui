@@ -3,11 +3,14 @@ import { cva, type VariantProps } from 'class-variance-authority'
 export const inputStyles = cva('group flex flex-col data-[hidden=true]:hidden w-full', {
   variants: {
     variant: {
-      flat: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
-      faded: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
-      bordered: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      filled: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'filled-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      outlined: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'outlined-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
       underlined: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'underlined-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
       ghost: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'ghost-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
     },
     color: {
       primary: 'text-primary',
@@ -38,13 +41,80 @@ export const inputStyles = cva('group flex flex-col data-[hidden=true]:hidden w-
     },
   },
   defaultVariants: {
-    variant: 'flat',
+    variant: 'filled',
     color: 'primary',
     size: 'md',
     shape: 'minimal',
     labelPlacement: 'inside',
   },
 })
+
+export const inputWrapperVariants = cva(
+  'relative w-full inline-flex tap-highlight-transparent flex-row items-center gap-3 transition-colors duration-200 ease-out overflow-hidden outline-none text-left',
+  {
+    variants: {
+      variant: {
+        filled: 'bg-surface-container-highest/60 hover:bg-surface-container-highest border-b-2 border-transparent',
+        'filled-inverted': 'bg-surface-container-low hover:bg-surface-container border-b-2 border-transparent',
+        outlined: 'bg-transparent border-2 border-outline-variant hover:border-on-surface-variant',
+        'outlined-inverted': 'bg-transparent border-2 border-primary/50 hover:border-primary',
+        underlined: 'bg-transparent border-b-2 border-outline-variant px-0 shadow-none rounded-none!',
+        'underlined-inverted':
+          'bg-surface-container-highest/30 border-b-2 border-primary/50 hover:border-primary hover:bg-surface-container-highest/50 px-3 rounded-t-lg rounded-b-none',
+        ghost: 'bg-transparent border-2 border-transparent hover:bg-surface-container-highest/30',
+        'ghost-inverted': 'bg-transparent border-2 border-transparent hover:bg-primary/10 text-primary',
+      },
+      size: {
+        sm: 'h-12 py-1.5 px-3',
+        md: 'h-14 py-2 px-3',
+        lg: 'h-16 py-2.5 px-3',
+      },
+      shape: {
+        full: 'rounded-full px-5',
+        minimal: 'rounded-2xl px-3',
+        sharp: 'rounded-none px-3',
+      },
+      isErrored: { true: '', false: '' },
+      isFocused: { true: '', false: '' },
+      disabled: {
+        true: 'opacity-50 pointer-events-none cursor-not-allowed',
+        false: '',
+      },
+    },
+    compoundVariants: [
+      // Focus States
+      { variant: 'filled', isFocused: true, className: 'bg-surface-container-highest border-primary' },
+      { variant: 'filled-inverted', isFocused: true, className: 'bg-surface-container border-primary' },
+      { variant: 'outlined', isFocused: true, className: 'border-primary ring-1 ring-primary' },
+      { variant: 'outlined-inverted', isFocused: true, className: 'border-primary ring-2 ring-primary bg-primary/5' },
+      { variant: 'underlined', isFocused: true, className: 'border-primary' },
+      { variant: 'underlined-inverted', isFocused: true, className: 'border-primary bg-surface-container-highest/50' },
+      { variant: 'ghost', isFocused: true, className: 'bg-surface-container-highest/50' },
+      { variant: 'ghost-inverted', isFocused: true, className: 'bg-primary/10' },
+
+      // Error States - UPDATED to match MultiSelect Ring Style
+      {
+        variant: ['filled', 'filled-inverted'],
+        isErrored: true,
+        className: 'bg-error-container/20 !text-error ring-inset ring-2 ring-error', // <--- CHANGED
+      },
+      {
+        variant: ['outlined', 'outlined-inverted', 'ghost', 'ghost-inverted'],
+        isErrored: true,
+        className: '!border-error text-error',
+      },
+      { variant: ['underlined', 'underlined-inverted'], isErrored: true, className: '!border-error text-error' },
+
+      // Shape overrides for Underlined
+      { variant: 'underlined', shape: ['full', 'minimal', 'sharp'], className: 'rounded-none px-0' },
+    ],
+    defaultVariants: {
+      variant: 'filled',
+      size: 'md',
+      shape: 'minimal',
+    },
+  },
+)
 
 export const inputSlots = {
   base: 'group flex flex-col data-[hidden=true]:hidden w-full',
@@ -54,14 +124,13 @@ export const inputSlots = {
     'cursor-text group-data-[filled=true]:cursor-default',
   ],
   mainWrapper: 'h-full flex flex-col',
-  inputWrapper: [
-    'relative w-full inline-flex tap-highlight-transparent flex-row items-center gap-3 transition-colors duration-200 ease-out overflow-hidden',
-  ],
+  inputWrapper: [],
   innerWrapper: 'inline-flex h-full items-center w-full gap-1.5 box-border',
   input: [
     'w-full h-full font-normal !bg-transparent outline-none placeholder:text-on-surface-variant/50 text-on-surface bg-clip-text',
     'file:bg-transparent file:border-0 file:bg-transparent file:text-sm file:font-medium',
     '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
+    'border-none focus:ring-0 shadow-none',
   ],
   clearButton: [
     'p-2 -m-2 z-10 hidden group-data-[filled-within=true]:block select-none transition-opacity',
@@ -84,53 +153,16 @@ export const getInputSlotClassNames = (
   let rounding = 'rounded-2xl'
   if (shape === 'full') rounding = 'rounded-full'
   if (shape === 'sharp') rounding = 'rounded-none'
-  if (variant === 'underlined') rounding = 'rounded-none'
 
-  const wrapperClasses: string[] = [rounding]
+  if (variant?.includes('underlined') && variant !== 'underlined-inverted') rounding = 'rounded-none'
 
-  if (variant === 'flat') {
-    wrapperClasses.push(
-      'bg-surface-container-low hover:bg-surface-container-highest',
-      'group-data-[focus=true]:bg-surface-container-highest',
-    )
-  } else if (variant === 'ghost') {
-    wrapperClasses.push(
-      'bg-transparent border-2 border-transparent',
-      // 'hover:bg-surface-container-highest/50',
-      // 'group-data-[focus=true]:bg-surface-container-highest',
-    )
-  } else if (variant === 'faded') {
-    wrapperClasses.push(
-      'bg-surface-container/30',
-      'hover:bg-surface-container/50',
-      'group-data-[focus=true]:bg-surface-container/50',
-      'group-data-[focus=true]:border-transparent',
-      'transition-colors',
-    )
-  } else if (variant === 'bordered') {
-    wrapperClasses.push(
-      'bg-transparent border-2 border-outline-variant',
-      'group-data-[focus=true]:border-primary',
-      'hover:border-on-surface-variant',
-    )
-  } else if (variant === 'underlined') {
-    wrapperClasses.push(
-      'bg-transparent border-b-2 border-outline-variant px-0 shadow-none',
-      'group-data-[focus=true]:border-primary',
-      '!px-0',
-    )
-  }
+  const wrapperClasses = [inputWrapperVariants({ variant, size, shape, isErrored: isInvalid })]
+  if (!variant?.includes('underlined')) wrapperClasses.push(rounding)
 
-  const labelColor = isInvalid ? 'text-error' : 'group-data-[focus=true]:text-primary text-on-surface-variant/70'
+  const labelColor = isInvalid
+    ? 'text-error border-error border-2'
+    : 'group-focus-within:text-primary text-on-surface-variant/70 '
   const inputColor = isInvalid ? 'text-error placeholder:text-error/50' : 'text-on-surface'
-
-  if (isInvalid) {
-    if (variant === 'flat') {
-      wrapperClasses.push('bg-error-container/20 !text-error')
-    } else {
-      wrapperClasses.push('!border-error text-error')
-    }
-  }
 
   let height = 'h-14'
   let py = 'py-2'
@@ -197,60 +229,3 @@ export const getInputSlotClassNames = (
     input: [inputColor, inputPadding].join(' '),
   }
 }
-
-export const inputWrapperVariants = cva(
-  'relative w-full inline-flex tap-highlight-transparent flex-row items-center gap-3 transition-colors duration-200 ease-out overflow-hidden outline-none text-left',
-  {
-    variants: {
-      variant: {
-        flat: 'bg-surface-container-low hover:bg-surface-container-highest',
-        faded: 'bg-surface-container/30 border-2 border-surface-container-highest/50 hover:bg-surface-container/50',
-        bordered: 'bg-transparent border-2 border-outline-variant hover:border-on-surface-variant',
-        underlined: 'bg-transparent border-b-2 border-outline-variant px-0 shadow-none',
-        ghost: 'bg-transparent border-2 border-transparent hover:bg-surface-container-highest/50',
-      },
-      size: {
-        sm: 'h-12 py-1.5 px-3',
-        md: 'h-14 py-2 px-3',
-        lg: 'h-16 py-2.5 px-3',
-      },
-      shape: {
-        full: 'rounded-full px-5',
-        minimal: 'rounded-2xl px-3',
-        sharp: 'rounded-none px-3',
-      },
-      isErrored: {
-        true: '',
-        false: '',
-      },
-      isFocused: {
-        true: '',
-        false: '',
-      },
-      disabled: {
-        true: 'opacity-50 pointer-events-none cursor-not-allowed',
-        false: '',
-      },
-    },
-    compoundVariants: [
-      { variant: 'flat', isFocused: true, className: 'bg-surface-container-highest' },
-      { variant: 'ghost', isFocused: true, className: 'bg-surface-container-highest' },
-      { variant: 'faded', isFocused: true, className: 'bg-surface-container/50 border-transparent' },
-      { variant: 'bordered', isFocused: true, className: 'border-primary' },
-      { variant: 'underlined', isFocused: true, className: 'border-primary' },
-      { variant: 'flat', isErrored: true, className: 'bg-error-container/20 !text-error' },
-      { variant: 'bordered', isErrored: true, className: '!border-error text-error' },
-      { variant: 'underlined', isErrored: true, className: '!border-error text-error' },
-      { variant: 'faded', isErrored: true, className: '!border-error text-error' },
-      { variant: 'ghost', isErrored: true, className: '!border-error text-error' },
-      { variant: 'underlined', shape: 'full', className: 'rounded-none px-0' },
-      { variant: 'underlined', shape: 'minimal', className: 'rounded-none px-0' },
-      { variant: 'underlined', shape: 'sharp', className: 'rounded-none px-0' },
-    ],
-    defaultVariants: {
-      variant: 'flat',
-      size: 'md',
-      shape: 'minimal',
-    },
-  },
-)

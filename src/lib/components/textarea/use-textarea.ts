@@ -21,6 +21,8 @@ export function useTextarea(props: UseTextareaProps) {
     onChange,
     onValueChange,
     classNames,
+    className,
+    isInvalid: isInvalidProp, // <--- Destructure isInvalid from props
     ...otherProps
   } = props
 
@@ -28,7 +30,7 @@ export function useTextarea(props: UseTextareaProps) {
     label,
     description,
     errorMessage,
-    isInvalid,
+    // isInvalid, // <--- Remove this, use isInvalidProp instead
     isClearable,
     isOutsideLeft,
     isOutsideTop,
@@ -40,7 +42,7 @@ export function useTextarea(props: UseTextareaProps) {
     getDescriptionProps,
     getErrorMessageProps,
     getClearButtonProps,
-  } = useInput(props as any)
+  } = useInput(props as any) // Cast to any to bypass strict variant check compatibility if UseInputProps variants differ slightly during dev
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [isFocused, setIsFocused] = useState(false)
@@ -74,7 +76,7 @@ export function useTextarea(props: UseTextareaProps) {
     size: props.size,
     shape: props.shape,
     labelPlacement: props.labelPlacement,
-    isInvalid,
+    isInvalid: isInvalidProp, // <--- Use the destructured prop
     isFilled,
   })
 
@@ -101,10 +103,14 @@ export function useTextarea(props: UseTextareaProps) {
       'data-filled': isFilled,
       'data-filled-within': isFilled || isFocused,
       'data-focus': isFocused,
+      'data-invalid': isInvalidProp, // <--- Use the destructured prop
+      'data-disabled': props.isDisabled,
+      'data-readonly': props.isReadOnly,
+      'data-label-placement': props.labelPlacement,
       className: clsx(
         textareaSlots.base,
         textareaStyles({ labelPlacement: props.labelPlacement }),
-        props.className,
+        className, // Apply the passed className to the root
         classNames?.base,
       ),
     }
@@ -145,7 +151,7 @@ export function useTextarea(props: UseTextareaProps) {
       onChange?.(e)
       onValueChange?.(e.target.value)
     },
-    ...otherProps,
+    ...otherProps, // otherProps does not contain className anymore
   })
 
   const getInnerWrapperProps = () => ({
@@ -165,7 +171,7 @@ export function useTextarea(props: UseTextareaProps) {
     isOutsideTop,
     shouldLabelBeOutside,
     errorMessage,
-    isInvalid,
+    isInvalid: isInvalidProp, // <-- Use the prop directly for isInvalid state
     getBaseProps,
     getLabelProps,
     getInputProps,

@@ -20,14 +20,31 @@ import { InfiniteCalendar } from "./infinite-calendar";
 type DatePickerVariant = "docked" | "modal" | "fullscreen";
 type Shape = "full" | "minimal" | "sharp";
 
+// Matches Input variants
+export type DatePickerInputVariant =
+  | "filled"
+  | "filled-inverted"
+  | "outlined"
+  | "outlined-inverted"
+  | "underlined"
+  | "underlined-inverted"
+  | "ghost"
+  | "ghost-inverted";
+
 export interface DatePickerProps {
   value?: Date;
   onChange?: (date: Date | undefined) => void;
+  /** Controls the display mode of the picker (popover vs dialog) */
   variant?: DatePickerVariant;
+  /** Controls the visual style of the input trigger */
+  inputVariant?: DatePickerInputVariant;
   label?: string;
   placeholder?: string;
   disabled?: boolean;
+  isInvalid?: boolean;
   shape?: Shape;
+  size?: "sm" | "md" | "lg";
+  color?: "primary" | "secondary" | "error";
   itemShape?: Shape;
 }
 
@@ -197,9 +214,13 @@ export const DatePicker = ({
   value,
   onChange,
   variant = "docked",
+  inputVariant = "filled",
+  size = "md",
+  color = "primary",
   label,
   placeholder = "Pick a date",
   disabled,
+  isInvalid,
   shape = "minimal",
   itemShape = "full",
 }: DatePickerProps) => {
@@ -224,8 +245,8 @@ export const DatePicker = ({
     setOpen(false);
   };
 
-  const displayValue =
-    value && isValid(value) ? format(value, "PP") : placeholder;
+  const isValidValue = value && isValid(value);
+  const displayValue = isValidValue ? format(value, "PP") : placeholder;
 
   const TriggerButton = (
     <button
@@ -234,17 +255,22 @@ export const DatePicker = ({
       onClick={() => setOpen(true)}
       className={clsx(
         inputWrapperVariants({
-          variant: "flat",
-          size: "md",
+          variant: inputVariant,
+          size,
           shape,
           disabled,
           isFocused: open,
+          isErrored: isInvalid,
         }),
-        "w-full justify-start text-left font-normal bg-surface-container-low text-on-surface",
+        "w-full justify-start text-left font-normal text-on-surface",
+        // Only if it's filled/filled-inverted do we not need extra text color logic,
+        // but for ghost/outlined we might. Text-on-surface covers most cases.
+        // Placeholder handling:
+        !isValidValue && "text-on-surface-variant/50",
       )}
     >
-      <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
-      <span>{displayValue}</span>
+      <CalendarIcon className="mr-2 h-4 w-4 opacity-50 shrink-0" />
+      <span className="truncate">{displayValue}</span>
     </button>
   );
 
@@ -253,7 +279,12 @@ export const DatePicker = ({
     return (
       <div className="flex w-full flex-col gap-1.5">
         {label && (
-          <label className="ml-1 text-sm font-medium text-on-surface-variant">
+          <label
+            className={clsx(
+              "ml-1 text-sm font-medium",
+              isInvalid ? "text-error" : "text-on-surface-variant",
+            )}
+          >
             {label}
           </label>
         )}
@@ -265,7 +296,7 @@ export const DatePicker = ({
             align="start"
             sideOffset={4}
             className={clsx(
-              "z-50 w-auto bg-surface-container-high p-0 shadow-xl overflow-hidden",
+              "z-50 w-[330px] min-w-auto bg-surface-container-high p-0 shadow-xl overflow-hidden",
               shapeStyles[shape],
               "data-[state=open]:animate-menu-enter",
               "data-[state=closed]:animate-menu-exit",
@@ -294,7 +325,12 @@ export const DatePicker = ({
   return (
     <div className="flex w-full flex-col gap-1.5">
       {label && (
-        <label className="ml-1 text-sm font-medium text-on-surface-variant">
+        <label
+          className={clsx(
+            "ml-1 text-sm font-medium",
+            isInvalid ? "text-error" : "text-on-surface-variant",
+          )}
+        >
           {label}
         </label>
       )}
@@ -319,12 +355,7 @@ export const DatePicker = ({
                   "min-w-[320px] max-w-[420px]! shadow-2xl",
                   shapeStyles[shape], // Apply border-radius to the wrapper
                 ]
-              : [
-                  // CHANGE: Removed `shapeStyles[shape]` here.
-                  // We let the DialogContent component handle the responsive shape
-                  // (Sharp on mobile/full-width, Rounded on desktop).
-                  "max-w-[500px]!",
-                ],
+              : ["max-w-[500px]!"],
           )}
           padding="sm"
         >
@@ -352,7 +383,7 @@ export const DatePicker = ({
           </div>
 
           {/* Action Buttons Area */}
-          <DialogFooter className="flex justify-end gap-2 border-t border-transparent p-3 pr-4 shrink-0  z-30">
+          <DialogFooter className="flex justify-end gap-2 border-t border-transparent p-3 pr-4 shrink-0 z-30">
             <Button variant="ghost" onClick={handleCancel} shape={shape}>
               Cancel
             </Button>

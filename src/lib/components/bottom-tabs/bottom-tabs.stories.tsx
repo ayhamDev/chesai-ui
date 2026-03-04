@@ -245,6 +245,7 @@ export const NoLabels: Story = {
     showLabels: false,
     shape: "full",
     shadow: "sm",
+    size: "sm"
   },
   render: (args) => (
     <ShallowRouter paramName="tab_no_labels">

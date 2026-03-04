@@ -3,10 +3,14 @@ import { cva, type VariantProps } from 'class-variance-authority'
 export const dateInputStyles = cva('group flex flex-col data-[hidden=true]:hidden w-full', {
   variants: {
     variant: {
-      flat: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
-      faded: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
-      bordered: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      filled: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'filled-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      outlined: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'outlined-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
       underlined: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'underlined-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      ghost: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'ghost-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
     },
     color: {
       primary: 'text-primary',
@@ -37,7 +41,7 @@ export const dateInputStyles = cva('group flex flex-col data-[hidden=true]:hidde
     },
   },
   defaultVariants: {
-    variant: 'flat',
+    variant: 'filled',
     color: 'primary',
     size: 'md',
     shape: 'minimal',
@@ -77,51 +81,66 @@ export const getDateInputSlotClassNames = (
 ) => {
   const { variant, shape, isInvalid, labelPlacement, size, hasLabel, isFilled } = props
 
-  // --- SHAPE LOGIC ---
   let rounding = 'rounded-2xl'
   if (shape === 'full') rounding = 'rounded-full'
   if (shape === 'sharp') rounding = 'rounded-none'
-  if (variant === 'underlined') rounding = 'rounded-none'
 
-  // --- VARIANT STYLES ---
+  if (variant?.includes('underlined') && variant !== 'underlined-inverted') rounding = 'rounded-none'
+
   const wrapperClasses: string[] = [rounding]
 
-  if (variant === 'flat') {
-    wrapperClasses.push(
-      'bg-surface-container-low hover:bg-surface-container-highest',
-      'focus-within:bg-surface-container-highest',
-    )
-  } else if (variant === 'faded') {
-    wrapperClasses.push(
-      'bg-surface-container/30 border-2 border-surface-container-highest/50',
-      'hover:bg-surface-container/50',
-      'focus-within:bg-surface-container/50',
-      'focus-within:border-transparent',
-      'transition-colors',
-    )
-  } else if (variant === 'bordered') {
-    wrapperClasses.push(
-      'bg-transparent border-2 border-outline-variant',
-      'focus-within:border-primary',
-      'hover:border-on-surface-variant',
-    )
-  } else if (variant === 'underlined') {
-    wrapperClasses.push(
-      'bg-transparent border-b-2 border-outline-variant px-0 shadow-none',
-      'focus-within:border-primary',
-      '!px-0',
-    )
+  switch (variant) {
+    case 'filled':
+      wrapperClasses.push(
+        'bg-surface-container-highest/60 hover:bg-surface-container-highest focus-within:bg-surface-container-highest ',
+      )
+      break
+    case 'filled-inverted':
+      wrapperClasses.push('bg-surface-container-low hover:bg-surface-container focus-within:bg-surface-container ')
+      break
+    case 'outlined':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-outline-variant hover:border-on-surface-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary',
+      )
+      break
+    case 'outlined-inverted':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-primary/50 hover:border-primary focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20',
+      )
+      break
+    case 'underlined':
+      wrapperClasses.push(
+        'bg-transparent border-b-2 border-outline-variant px-0 shadow-none rounded-none! focus-within:border-primary',
+      )
+      break
+    case 'underlined-inverted':
+      wrapperClasses.push(
+        'bg-surface-container-highest/30 border-b-2 border-primary/50 hover:bg-surface-container-highest/50 rounded-t-lg rounded-b-none focus-within:border-primary px-3',
+      )
+      break
+    case 'ghost':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-transparent hover:bg-surface-container-highest/30 focus-within:bg-surface-container-highest/50',
+      )
+      break
+    case 'ghost-inverted':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-transparent hover:bg-primary/10 focus-within:bg-primary/10 text-primary',
+      )
+      break
   }
 
-  // --- INVALID STATE ---
+  // --- REVERTED ERROR HANDLING ---
   const labelColor = isInvalid ? 'text-error' : 'group-focus-within:text-primary text-on-surface-variant/70'
 
   if (isInvalid) {
-    if (variant === 'flat') wrapperClasses.push('bg-error-container/20 !text-error')
-    else wrapperClasses.push('!border-error text-error')
+    if (variant?.includes('filled')) {
+      wrapperClasses.push('border-b-error !text-error border-b-2')
+    } else {
+      wrapperClasses.push('!border-error text-error')
+    }
   }
 
-  // --- SIZING & PADDING ---
   let paddingX = 'px-3'
   let inputPadding = ''
 
@@ -131,7 +150,6 @@ export const getDateInputSlotClassNames = (
     paddingX = 'px-4'
   }
 
-  // --- LABEL PLACEMENT ---
   let labelClasses = 'absolute font-normal'
 
   if (labelPlacement === 'inside') {
@@ -141,7 +159,6 @@ export const getDateInputSlotClassNames = (
       labelClasses += ' left-3 top-1/2 -translate-y-1/2'
     }
 
-    // Floating Label Logic
     const filledLabelState = [
       'group-data-[filled=true]:-translate-y-[calc(50%_+_10px)]',
       'group-data-[filled=true]:scale-85',
@@ -150,17 +167,14 @@ export const getDateInputSlotClassNames = (
 
     labelClasses += ` ${filledLabelState}`
 
-    // Push segments down when label floats
-    if (hasLabel && isFilled) {
+    if (isFilled && hasLabel) {
       if (size === 'sm') inputPadding = 'pt-3'
       else inputPadding = 'pt-4'
     }
   } else {
-    // Outside label
     labelClasses = 'static mb-1.5 ml-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
   }
 
-  // Underlined specific adjustments
   if (variant === 'underlined') {
     paddingX = 'px-0'
     if (labelPlacement === 'inside') {

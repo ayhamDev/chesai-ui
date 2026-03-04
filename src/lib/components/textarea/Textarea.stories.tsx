@@ -8,7 +8,16 @@ const meta: Meta<typeof Textarea> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["flat", "bordered", "underlined", "faded", "ghost"],
+      options: [
+        "filled",
+        "filled-inverted",
+        "outlined",
+        "outlined-inverted",
+        "underlined",
+        "underlined-inverted",
+        "ghost",
+        "ghost-inverted",
+      ],
     },
     color: {
       control: "select",
@@ -42,7 +51,7 @@ export const Default: Story = {
     label: "Description",
     placeholder: "Type something...",
     minRows: 3,
-    variant: "flat",
+    variant: "filled",
     labelPlacement: "inside",
   },
 };
@@ -51,26 +60,14 @@ export const Variants: Story = {
   name: "Variants",
   render: () => (
     <div className="w-full flex flex-col gap-6 max-w-sm">
+      <Textarea label="Filled" variant="filled" placeholder="Standard" />
       <Textarea
-        label="Flat (Default)"
-        variant="flat"
-        placeholder="Filled no ring"
+        label="Filled Inverted"
+        variant="filled-inverted"
+        placeholder="Lighter background"
       />
-      <Textarea
-        label="Ghost"
-        variant="ghost"
-        placeholder="Transparent, background on hover"
-      />
-      <Textarea
-        label="Faded"
-        variant="faded"
-        placeholder="Background shift on focus"
-      />
-      <Textarea
-        label="Bordered"
-        variant="bordered"
-        placeholder="Outline style"
-      />
+      <Textarea label="Outlined" variant="outlined" placeholder="Bordered" />
+      <Textarea label="Ghost" variant="ghost" placeholder="Transparent" />
       <Textarea
         label="Underlined"
         variant="underlined"
@@ -87,19 +84,19 @@ export const Shapes: Story = {
       <Textarea
         label="Minimal (Default)"
         shape="minimal"
-        variant="flat"
+        variant="filled"
         placeholder="Rounded-2xl"
       />
       <Textarea
         label="Full"
         shape="full"
-        variant="flat"
+        variant="filled"
         placeholder="Rounded-3xl"
       />
       <Textarea
         label="Sharp"
         shape="sharp"
-        variant="flat"
+        variant="filled"
         placeholder="Rounded-none"
       />
     </div>
@@ -113,26 +110,7 @@ export const AutoResize: Story = {
     placeholder: "Type many lines to see me grow...",
     minRows: 2,
     maxRows: 6,
-    variant: "flat",
+    variant: "filled",
     labelPlacement: "inside",
   },
-};
-
-export const WithDescriptionAndError: Story = {
-  render: () => (
-    <div className="w-full flex flex-col gap-6 max-w-sm">
-      <Textarea
-        label="Feedback"
-        placeholder="Tell us what you think"
-        description="Your feedback helps us improve."
-      />
-      <Textarea
-        label="Bio"
-        placeholder="Tell us about yourself"
-        isInvalid
-        errorMessage="Bio cannot be empty."
-        defaultValue=""
-      />
-    </div>
-  ),
 };

@@ -5,12 +5,14 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Badge } from "../badge";
 import { Button } from "../button";
-import { Input } from "../input";
+import { Card } from "../card";
+import { SearchView } from "../search-view";
+import { Typography } from "../typography";
 import { DataTableAdvancedFilter } from "./advanced-filter";
 import { useDataTable } from "./context";
 import { DataTableViewOptions } from "./view-options";
-import { Card } from "../card";
 
 interface DataTableToolbarProps<TData> {
   children?: React.ReactNode;
@@ -22,6 +24,7 @@ export function DataTableToolbar<TData>({
   bulkActions,
 }: DataTableToolbarProps<TData>) {
   const { table } = useDataTable<TData>();
+
   const isFiltered =
     table.getState().columnFilters.length > 0 ||
     !!table.getState().globalFilter;
@@ -33,6 +36,7 @@ export function DataTableToolbar<TData>({
     table.getState().globalFilter ?? "",
   );
   const debouncedSearch = useDebounce(searchValue, 300);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     table.setGlobalFilter(debouncedSearch);
@@ -44,27 +48,46 @@ export function DataTableToolbar<TData>({
       variant="ghost"
       className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-2 px-2"
     >
-      <div className="flex flex-1 items-center gap-2 w-full overflow-x-auto no-scrollbar flex-wrap">
-        <div className="w-full max-w-sm min-w-[200px]">
-          <Input
-            placeholder="Search..."
-            size="lg"
+      <div className="flex flex-1 items-center gap-4 w-full overflow-x-auto no-scrollbar flex-wrap z-10">
+        {/* standard SearchView dropped in naturally */}
+        <div className="w-full max-w-sm min-w-[250px]">
+          <SearchView
+            variant="docked"
             value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            // Ensure height matches standard buttons (h-10) and override min-height logic
-            className="h-10"
-            classNames={{
-              inputWrapper: "!min-h-11 h-10", // Force height override
-              input: "text-sm",
-            }}
-            startContent={
-              <Search className="h-4 w-4 text-on-surface-variant" />
+            onChange={setSearchValue}
+            open={isSearchOpen}
+            onOpenChange={setIsSearchOpen}
+            placeholder="Search..."
+            dockedLeadingIcon={
+              <Search className="h-5 w-5 text-on-surface-variant" />
             }
-            variant="flat"
-            shape="minimal"
-            // Use outside label placement to avoid internal padding shifts for "floating label" logic
-            labelPlacement="outside"
-          />
+          >
+            <div className="p-4 flex flex-col gap-3">
+              <Typography
+                variant="label-small"
+                className="opacity-60 uppercase tracking-wider font-bold"
+              >
+                Searchable Columns
+              </Typography>
+              <div className="flex flex-wrap gap-2">
+                {table
+                  .getAllColumns()
+                  .filter((col) => col.getCanFilter())
+                  .map((col) => {
+                    const header =
+                      typeof col.columnDef.header === "string"
+                        ? col.columnDef.header
+                        : col.id.charAt(0).toUpperCase() + col.id.slice(1);
+
+                    return (
+                      <Badge key={col.id} variant="secondary" shape="minimal">
+                        {header}
+                      </Badge>
+                    );
+                  })}
+              </div>
+            </div>
+          </SearchView>
         </div>
 
         <DataTableAdvancedFilter table={table} />
@@ -105,7 +128,7 @@ export function DataTableToolbar<TData>({
         </AnimatePresence>
       </div>
 
-      <div className="flex items-center gap-2 self-end sm:self-auto">
+      <div className="flex items-center gap-2 self-end sm:self-auto z-0">
         <AnimatePresence>
           {hasSelection && bulkActions && (
             <motion.div

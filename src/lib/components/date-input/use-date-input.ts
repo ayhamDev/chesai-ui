@@ -7,21 +7,29 @@ import { useDateFieldState } from '@react-stately/datepicker'
 import type { AriaDateFieldProps } from '@react-types/datepicker'
 import type { VariantProps } from 'class-variance-authority'
 import { clsx } from 'clsx'
-import { useMemo, useRef, useState } from 'react' // FIX: Imported useState
+import { useMemo, useRef, useState } from 'react'
 import { dateInputSlots, dateInputStyles, getDateInputSlotClassNames } from './date-input-styles'
 
-
-// @ts-ignore
+// @ts-expect-error
 export interface UseDateInputProps<T extends DateValue>
-  extends Omit<AriaDateFieldProps<T>, 'className'>, // FIX: Omit className to avoid conflict
-    Omit<VariantProps<typeof dateInputStyles>, 'isDisabled'> { // FIX: Omit conflicting props
+  extends Omit<AriaDateFieldProps<T>, 'className'>,
+    Omit<VariantProps<typeof dateInputStyles>, 'isDisabled'> {
   startContent?: React.ReactNode
   endContent?: React.ReactNode
   classNames?: Partial<typeof dateInputSlots>
   labelPlacement?: 'inside' | 'outside' | 'outside-left'
   ref?: React.Ref<HTMLDivElement>
-  placeholder?: string; // FIX: Add placeholder prop
-  className?: string; // FIX: Add className prop
+  placeholder?: string
+  className?: string
+  variant?:
+    | 'filled'
+    | 'filled-inverted'
+    | 'outlined'
+    | 'outlined-inverted'
+    | 'underlined'
+    | 'underlined-inverted'
+    | 'ghost'
+    | 'ghost-inverted'
 }
 
 export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
@@ -32,9 +40,9 @@ export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
     errorMessage,
     startContent,
     endContent,
-    className, // FIX: Destructure className now that it's in the interface
+    className,
     classNames,
-    variant = 'flat',
+    variant = 'filled',
     color = 'primary',
     size = 'md',
     shape = 'minimal',
@@ -44,8 +52,8 @@ export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
   } = props
 
   const domRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null) // FIX: Create a ref for the input
-  const [isFocused, setIsFocused] = useState(false); // FIX: Add local focus state
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isFocused, setIsFocused] = useState(false)
   const { locale } = useLocale()
 
   const state = useDateFieldState({
@@ -62,7 +70,7 @@ export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
       {
         ...otherProps,
         label,
-        // FIX: Pass the correct input ref
+        // @ts-expect-error
         inputRef,
       },
       state,
@@ -93,7 +101,7 @@ export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
     className: clsx(dateInputSlots.base, dateInputStyles({ labelPlacement }), className, classNames?.base),
     'data-slot': 'base',
     'data-filled': isFilled,
-    'data-filled-within': isFilled || isFocused, // FIX: Use local isFocused state
+    'data-filled-within': isFilled || isFocused,
     'data-invalid': isInvalid,
     'data-disabled': props.isDisabled,
     'data-readonly': props.isReadOnly,
@@ -111,7 +119,7 @@ export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
     },
     wrapperProps: {
       className: clsx(dateInputSlots.inputWrapper, slots.inputWrapper, classNames?.inputWrapper),
-      'data-focus': isFocused, // FIX: Use local isFocused state
+      'data-focus': isFocused,
       onClick: fieldProps.onClick,
     },
     innerWrapperProps: {
@@ -132,14 +140,14 @@ export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
 
   const getFieldProps = () => ({
     ...fieldProps,
-    onFocus: () => setIsFocused(true), // FIX: Manage focus state
-    onBlur: () => setIsFocused(false),  // FIX: Manage focus state
+    onFocus: () => setIsFocused(true),
+    onBlur: () => setIsFocused(false),
     className: clsx('flex items-center h-full'),
   })
 
   const getInputProps = () => ({
     ...inputProps,
-    ref: inputRef, // FIX: Attach the ref here
+    ref: inputRef,
   })
 
   return {

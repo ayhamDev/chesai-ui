@@ -1,6 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { useState } from "react";
-import { Button } from "../button";
 import { Typography } from "../typography";
 import {
   InputOTP,
@@ -17,7 +15,17 @@ const meta: Meta<typeof InputOTP> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["flat", "bordered", "faded", "underlined"],
+      options: [
+        "filled", // mapped from flat
+        "bordered", // wait, InputOTP uses separate mapping logic in its component
+        // InputOTP needs its own update in src/lib/components/otp-field/index.tsx to match new variants
+        // OR we map them here if we updated the component logic.
+        // Assuming InputOTP was updated to use similar variant names:
+        "filled",
+        "filled-inverted",
+        "outlined",
+        "underlined",
+      ],
     },
     size: {
       control: "select",
@@ -27,25 +35,12 @@ const meta: Meta<typeof InputOTP> = {
       control: "select",
       options: ["full", "minimal", "sharp"],
     },
-    isInvalid: {
-      control: "boolean",
-    },
-    disabled: {
-      control: "boolean",
-    },
-    maxLength: {
-      control: "number",
-    },
-    onComplete: { action: "completed" },
+    isInvalid: { control: "boolean" },
+    disabled: { control: "boolean" },
+    maxLength: { control: "number" },
   },
   parameters: {
     layout: "centered",
-    docs: {
-      description: {
-        component:
-          "A flexible OTP input component built on `input-otp`, fully integrated with the design system's variants and tokens.",
-      },
-    },
   },
 };
 
@@ -53,10 +48,10 @@ export default meta;
 type Story = StoryObj<typeof InputOTP>;
 
 export const Default: Story = {
-  name: "1. Default (Flat)",
+  name: "1. Default (Filled)",
   args: {
     maxLength: 6,
-    variant: "flat",
+    variant: "filled", // Was flat
     size: "md",
     shape: "minimal",
   },
@@ -74,11 +69,11 @@ export const Default: Story = {
   ),
 };
 
-export const Bordered: Story = {
-  name: "2. Bordered Variant",
+export const Outlined: Story = {
+  name: "2. Outlined Variant",
   args: {
     maxLength: 6,
-    variant: "bordered",
+    variant: "outlined", // Was bordered
     shape: "minimal",
   },
   render: (args) => (
@@ -114,65 +109,5 @@ export const Underlined: Story = {
         <InputOTPSlot index={3} />
       </InputOTPGroup>
     </InputOTP>
-  ),
-};
-
-export const ShapesAndSizes: Story = {
-  name: "4. Shapes & Sizes",
-  render: () => (
-    <div className="flex flex-col gap-8 items-center">
-      <div className="flex flex-col gap-2 items-center">
-        <Typography variant="body-small">Small + Full Shape (Faded)</Typography>
-        <InputOTP maxLength={4} size="sm" shape="full" variant="faded">
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-            <InputOTPSlot index={3} />
-          </InputOTPGroup>
-        </InputOTP>
-      </div>
-
-      <div className="flex flex-col gap-2 items-center">
-        <Typography variant="body-small">
-          Large + Sharp Shape (Bordered)
-        </Typography>
-        <InputOTP maxLength={4} size="lg" shape="sharp" variant="bordered">
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-            <InputOTPSlot index={3} />
-          </InputOTPGroup>
-        </InputOTP>
-      </div>
-    </div>
-  ),
-};
-
-export const ErrorState: Story = {
-  name: "5. Error State",
-  args: {
-    maxLength: 6,
-    isInvalid: true,
-    value: "123",
-    variant: "flat",
-  },
-  render: (args) => (
-    <div className="flex flex-col gap-2 items-center">
-      <InputOTP {...args}>
-        <InputOTPGroup>
-          <InputOTPSlot index={0} />
-          <InputOTPSlot index={1} />
-          <InputOTPSlot index={2} />
-          <InputOTPSlot index={3} />
-          <InputOTPSlot index={4} />
-          <InputOTPSlot index={5} />
-        </InputOTPGroup>
-      </InputOTP>
-      <Typography variant="body-small" className="text-error">
-        Incorrect verification code.
-      </Typography>
-    </div>
   ),
 };

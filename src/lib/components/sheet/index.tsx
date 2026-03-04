@@ -13,7 +13,12 @@ type SheetVariant =
   | "tertiary"
   | "high-contrast"
   | "ghost"
-  | "surface";
+  | "surface"
+  | "surface-container-lowest"
+  | "surface-container-low"
+  | "surface-container"
+  | "surface-container-high"
+  | "surface-container-highest";
 
 // --- Context ---
 interface SheetContextProps {
@@ -22,7 +27,7 @@ interface SheetContextProps {
   hasSnapPoints: boolean;
   direction: "top" | "bottom" | "left" | "right";
   variant: SheetVariant;
-  isLocked: boolean; // Added to context
+  isLocked: boolean;
 }
 
 const SheetContext = createContext<SheetContextProps>({
@@ -44,7 +49,7 @@ type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
   variant?: SheetVariant;
   forceBottomSheet?: boolean;
   forceSideSheet?: boolean;
-  isLocked?: boolean; // Added prop
+  isLocked?: boolean;
 };
 
 const SheetRoot: React.FC<SheetProps> = ({
@@ -54,7 +59,7 @@ const SheetRoot: React.FC<SheetProps> = ({
   variant = "primary",
   forceBottomSheet = false,
   forceSideSheet = false,
-  isLocked = false, // Default to unlocked
+  isLocked = false,
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
@@ -66,7 +71,6 @@ const SheetRoot: React.FC<SheetProps> = ({
   const renderAsSideSheet = forceSideSheet || (isDesktop && !forceBottomSheet);
   const direction = renderAsSideSheet ? side : "bottom";
 
-  // --- ESCAPE KEY LOCK ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isLocked) {
@@ -76,7 +80,7 @@ const SheetRoot: React.FC<SheetProps> = ({
       }
     };
     if (open && isLocked) {
-      window.addEventListener("keydown", handleKeyDown, true); // Capture phase
+      window.addEventListener("keydown", handleKeyDown, true);
     }
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [open, isLocked]);
@@ -98,7 +102,6 @@ const SheetRoot: React.FC<SheetProps> = ({
       <VaulDrawer.Root
         direction={direction}
         open={open}
-        // MODIFICATION: Disable all dismissal logic when locked
         dismissible={isLocked ? false : (props.dismissible ?? true)}
         {...props}
         snapPoints={renderAsSideSheet ? undefined : snapPoints}
@@ -128,7 +131,16 @@ const contentVariants = cva(
         tertiary: "bg-tertiary-container text-on-tertiary-container",
         "high-contrast": "bg-inverse-surface text-inverse-on-surface",
         ghost: "bg-transparent text-on-surface shadow-none",
+
+        // --- MD3 Surface Container Variants ---
         surface: "bg-surface text-on-surface",
+        "surface-container-lowest":
+          "bg-surface-container-lowest text-on-surface",
+        "surface-container-low": "bg-surface-container-low text-on-surface",
+        "surface-container": "bg-surface-container text-on-surface",
+        "surface-container-high": "bg-surface-container-high text-on-surface",
+        "surface-container-highest":
+          "bg-surface-container-highest text-on-surface",
       },
       side: {
         top: "inset-x-0 top-0",
@@ -302,7 +314,6 @@ const SheetContent = forwardRef<
     <SheetPortal>
       <VaulDrawer.Overlay
         className="fixed inset-0 z-50 bg-black/50"
-        // MODIFICATION: Block clicks on overlay if locked
         onClick={(e) => isLocked && e.stopPropagation()}
       />
       <VaulDrawer.Content
@@ -356,7 +367,7 @@ const SheetGrabber = ({
 }: React.HTMLAttributes<HTMLDivElement>) => {
   const { direction, variant, isLocked } = useSheetContext();
   if (direction !== "bottom" || isLocked) {
-    return null; // Hide grabber when locked as it indicates "draggable"
+    return null;
   }
   return (
     <div className="flex-shrink-0 p-4">

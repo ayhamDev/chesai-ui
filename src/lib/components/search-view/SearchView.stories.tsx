@@ -274,3 +274,73 @@ export const FullscreenVariant: Story = {
     );
   },
 };
+// Add this to the existing stories file
+
+export const ColorVariations: Story = {
+  name: "Color Variations",
+  render: (args) => {
+    const [query1, setQuery1] = useState("");
+    const [isOpen1, setIsOpen1] = useState(false);
+
+    const [query2, setQuery2] = useState("");
+    const [isOpen2, setIsOpen2] = useState(false);
+
+    const [query3, setQuery3] = useState("");
+    const [isOpen3, setIsOpen3] = useState(false);
+
+    return (
+      <div className="flex flex-col gap-8 w-full max-w-md mx-auto py-12">
+        <div className="space-y-2">
+          <Typography variant="label-medium" className="opacity-60">
+            Surface (Default)
+          </Typography>
+          <SearchView
+            value={query1}
+            onChange={setQuery1}
+            open={isOpen1}
+            onOpenChange={setIsOpen1}
+            color="surface"
+            placeholder="Search Surface..."
+            dockedLeadingIcon={<Search className="h-5 w-5" />}
+          >
+            <SearchContent query={query1} setQuery={setQuery1} />
+          </SearchView>
+        </div>
+
+        <div className="space-y-2">
+          <Typography variant="label-medium" className="opacity-60">
+            Primary
+          </Typography>
+          <SearchView
+            value={query2}
+            onChange={setQuery2}
+            open={isOpen2}
+            onOpenChange={setIsOpen2}
+            color="primary"
+            placeholder="Search Primary..."
+            dockedLeadingIcon={<Search className="h-5 w-5" />}
+          >
+            <SearchContent query={query2} setQuery={setQuery2} />
+          </SearchView>
+        </div>
+
+        <div className="space-y-2">
+          <Typography variant="label-medium" className="opacity-60">
+            Secondary
+          </Typography>
+          <SearchView
+            value={query3}
+            onChange={setQuery3}
+            open={isOpen3}
+            onOpenChange={setIsOpen3}
+            color="secondary"
+            placeholder="Search Secondary..."
+            dockedLeadingIcon={<Search className="h-5 w-5" />}
+          >
+            <SearchContent query={query3} setQuery={setQuery3} />
+          </SearchView>
+        </div>
+      </div>
+    );
+  },
+};

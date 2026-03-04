@@ -10,7 +10,16 @@ const meta: Meta<typeof MultiSelect> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["flat", "bordered", "underlined", "faded"],
+      options: [
+        "filled",
+        "filled-inverted",
+        "outlined",
+        "outlined-inverted",
+        "underlined",
+        "underlined-inverted",
+        "ghost",
+        "ghost-inverted",
+      ],
     },
     size: {
       control: "select",
@@ -55,6 +64,7 @@ export const Default: Story = {
     placeholder: "Select frameworks",
     options: frameworks,
     labelPlacement: "inside",
+    variant: "filled",
   },
 };
 
@@ -64,59 +74,8 @@ export const WithIcons: Story = {
     label: "Pets",
     placeholder: "Select your pets",
     options: animals,
-    variant: "faded",
+    variant: "filled-inverted",
     shape: "full",
-  },
-};
-
-export const Controlled: Story = {
-  name: "Controlled State",
-  render: () => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [values, setValues] = useState(["react"]);
-    return (
-      <div className="w-80 space-y-4">
-        <MultiSelect
-          label="Tech Stack"
-          options={frameworks}
-          value={values}
-          onValueChange={setValues}
-        />
-        <div className="text-sm text-gray-500">
-          Selected: {values.join(", ")}
-        </div>
-      </div>
-    );
-  },
-};
-
-export const MaxCount: Story = {
-  name: "Max Count Truncation",
-  args: {
-    label: "Tags",
-    placeholder: "Select tags...",
-    options: frameworks,
-    maxCount: 2,
-    value: ["react", "vue", "angular", "svelte"],
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Use `maxCount` to limit the number of visible chips. The rest will be grouped into a '+N more' badge.",
-      },
-    },
-  },
-};
-
-export const Validation: Story = {
-  name: "Error State",
-  args: {
-    label: "Required Field",
-    options: frameworks,
-    isInvalid: true,
-    errorMessage: "Please select at least one item.",
-    variant: "bordered",
   },
 };
 
@@ -125,20 +84,20 @@ export const Variants: Story = {
   render: () => (
     <div className="w-full flex flex-col gap-6 max-w-sm">
       <MultiSelect
-        label="Flat"
-        variant="flat"
+        label="Filled"
+        variant="filled"
         options={frameworks}
         placeholder="Select..."
       />
       <MultiSelect
-        label="Faded"
-        variant="faded"
+        label="Filled Inverted"
+        variant="filled-inverted"
         options={frameworks}
         placeholder="Select..."
       />
       <MultiSelect
-        label="Bordered"
-        variant="bordered"
+        label="Outlined"
+        variant="outlined"
         options={frameworks}
         placeholder="Select..."
       />

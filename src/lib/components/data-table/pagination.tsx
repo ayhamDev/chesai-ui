@@ -6,10 +6,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { IconButton } from "../icon-button";
 import { Input } from "../input";
-import { Select } from "../select"; // FIX: Imported as Select
+import { Select } from "../select";
 import { Typography } from "../typography";
 import { useDataTable } from "./context";
 
@@ -17,6 +17,7 @@ export function DataTablePagination<TData>() {
   const { table } = useDataTable<TData>();
 
   const pageIndex = table.getState().pagination.pageIndex;
+  const pageSize = table.getState().pagination.pageSize;
   const pageCount = table.getPageCount();
 
   const [pageInput, setPageInput] = useState(String(pageIndex + 1));
@@ -34,6 +35,22 @@ export function DataTablePagination<TData>() {
     table.setPageIndex(page);
     setPageInput(String(page + 1));
   };
+
+  // --- FIX: Dynamically generate page size options ---
+  // Ensures the current page size is ALWAYS an option in the dropdown,
+  // preventing the "blank select" bug.
+  const pageSizeOptions = useMemo(() => {
+    const baseOptions = [10, 20, 30, 40, 50, 100];
+    // Add current size, remove duplicates, and sort ascending
+    const uniqueOptions = Array.from(new Set([...baseOptions, pageSize])).sort(
+      (a, b) => a - b,
+    );
+
+    return uniqueOptions.map((size) => ({
+      value: String(size),
+      label: String(size),
+    }));
+  }, [pageSize]);
 
   return (
     <div className="flex flex-col items-center justify-between gap-4 px-2 py-4 sm:flex-row flex-wrap">
@@ -59,18 +76,11 @@ export function DataTablePagination<TData>() {
               <Select
                 size="sm"
                 variant="flat"
-                value={`${table.getState().pagination.pageSize}`}
+                value={String(pageSize)}
                 onValueChange={(value) => {
                   table.setPageSize(Number(value));
                 }}
-                items={[
-                  { value: "10", label: "10" },
-                  { value: "20", label: "20" },
-                  { value: "30", label: "30" },
-                  { value: "40", label: "40" },
-                  { value: "50", label: "50" },
-                  { value: "100", label: "100" },
-                ]}
+                items={pageSizeOptions}
               />
             </div>
           </div>
@@ -88,7 +98,6 @@ export function DataTablePagination<TData>() {
                   e.currentTarget.blur();
                 }
               }}
-              // Dynamic width based on character length + padding
               style={{ width: `${Math.max(pageInput.length, 1) + 2}ch` }}
               classNames={{ input: " text-center px-1 min-w-[2.5rem]" }}
               variant="flat"

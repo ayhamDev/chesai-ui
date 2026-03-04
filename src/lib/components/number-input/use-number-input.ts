@@ -5,9 +5,16 @@ import { getNumberInputSlotClassNames, numberInputSlots, numberInputStyles } fro
 export interface UseNumberInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'color' | 'onChange'> {
   ref?: React.Ref<HTMLInputElement>
-  // Fix: Added 'as' prop
   as?: React.ElementType
-  variant?: 'flat' | 'bordered' | 'underlined' | 'faded'
+  variant?:
+    | 'filled'
+    | 'filled-inverted'
+    | 'outlined'
+    | 'outlined-inverted'
+    | 'underlined'
+    | 'underlined-inverted'
+    | 'ghost'
+    | 'ghost-inverted'
   color?: 'primary' | 'secondary' | 'error'
   size?: 'sm' | 'md' | 'lg'
   shape?: 'full' | 'minimal' | 'sharp'
@@ -41,7 +48,7 @@ export function useNumberInput(props: UseNumberInputProps) {
     errorMessage,
     className,
     classNames,
-    variant = 'flat',
+    variant = 'filled',
     color = 'primary',
     size = 'md',
     shape = 'minimal',
@@ -73,15 +80,11 @@ export function useNumberInput(props: UseNumberInputProps) {
   const value = isControlled ? propValue : internalValue
   const isFilled = (value !== '' && value !== undefined && value !== null) || !!placeholder || isFocused
 
-  // Sync ref
   React.useImperativeHandle(ref, () => domRef.current!)
-
-  // --- Logic ---
 
   const updateValue = (newValue: number | string) => {
     let finalVal = newValue
 
-    // Clamp only if it is a complete number
     if (typeof finalVal === 'number') {
       if (finalVal < min) finalVal = min
       if (finalVal > max) finalVal = max
@@ -91,7 +94,6 @@ export function useNumberInput(props: UseNumberInputProps) {
       setInternalValue(finalVal)
     }
 
-    // Update ref for uncontrolled consistency
     if (domRef.current) {
       domRef.current.value = String(finalVal)
     }
@@ -103,7 +105,6 @@ export function useNumberInput(props: UseNumberInputProps) {
     (e?: React.MouseEvent) => {
       e?.preventDefault()
       const current = Number(value || 0)
-      // Handle floating point precision errors
       const nextVal = current + step
       const precision = step.toString().split('.')[1]?.length || 0
       updateValue(parseFloat(nextVal.toFixed(precision)))
@@ -128,39 +129,25 @@ export function useNumberInput(props: UseNumberInputProps) {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value
 
-      // 1. Handle Empty
       if (val === '') {
         if (!isControlled) setInternalValue('')
         onValueChange?.('')
         return
       }
 
-      // 2. Strict Pattern Check
-      // - Minus sign optional at start
-      // - Digits
-      // - Optional dot followed by digits (if float allowed)
-      const regex = allowFloat
-        ? /^-?\d*\.?\d*$/ // Integer or Float
-        : /^-?\d*$/ // Integer only
+      const regex = allowFloat ? /^-?\d*\.?\d*$/ : /^-?\d*$/
 
-      if (!regex.test(val)) {
-        // If the new character makes the string invalid, reject the change entirely.
-        // This prevents "12a" because it doesn't match the regex.
-        return
-      }
+      if (!regex.test(val)) return
 
-      // 3. Handle Intermediate States ("-", "1.", "1.0")
-      // These are valid to type but shouldn't be parsed/clamped yet
       if (val === '-' || val.endsWith('.')) {
         if (!isControlled) setInternalValue(val)
         onValueChange?.(val)
         return
       }
 
-      // 4. Valid Number Parsing
       const num = parseFloat(val)
       if (!isNaN(num)) {
-        if (!isControlled) setInternalValue(val) // Keep input string as-is to allow typing "1.05" without snapping
+        if (!isControlled) setInternalValue(val)
         onValueChange?.(num)
       }
     },
@@ -169,7 +156,6 @@ export function useNumberInput(props: UseNumberInputProps) {
 
   const handleBlur = useCallback(() => {
     setIsFocused(false)
-    // Clamp on blur
     if (value !== '' && value !== '-' && value !== '.') {
       let num = parseFloat(String(value))
       if (!isNaN(num)) {
@@ -178,7 +164,6 @@ export function useNumberInput(props: UseNumberInputProps) {
         updateValue(num)
       }
     } else if (value === '-' || value === '.') {
-      // Reset invalid incomplete states on blur
       updateValue('')
     }
   }, [value, min, max])
@@ -187,8 +172,6 @@ export function useNumberInput(props: UseNumberInputProps) {
     updateValue('')
     onClear?.()
   }, [onClear, updateValue])
-
-  // --- Styling ---
 
   const dynamicStyles = getNumberInputSlotClassNames({
     variant,
@@ -199,6 +182,7 @@ export function useNumberInput(props: UseNumberInputProps) {
     isFilled,
     hasStartContent: !!startContent,
     hideStepper,
+    hasLabel: !!label,
   })
 
   const getBaseProps = () => ({
@@ -265,7 +249,7 @@ export function useNumberInput(props: UseNumberInputProps) {
     disabled: disabled || readOnly,
     className: clsx(numberInputSlots.stepperButton, classNames?.stepperButton),
     onClick: direction === 'up' ? handleIncrement : handleDecrement,
-    tabIndex: -1, // Prevent tab focus into steppers
+    tabIndex: -1,
   })
 
   const getHelperWrapperProps = () => ({

@@ -1,3 +1,4 @@
+// src/lib/components/stack-router/index.tsx
 "use client";
 
 import { clsx } from "clsx";
@@ -18,114 +19,19 @@ import React, {
   useState,
   type RefObject,
 } from "react";
-import { AppBar, type AppBarSharedProps } from "../appbar";
+import { AppBar, type AppBarProps } from "../appbar";
 import { IconButton } from "../icon-button";
 import { STACK_TRANSITIONS } from "./transitions";
-
-// --- TYPE DEFINITIONS ---
-
-export interface Route<
-  T extends Record<string, object | undefined>,
-  R extends keyof T,
-> {
-  key: string;
-  name: R;
-  params: T[R];
-}
-
-export type RouteProp<
-  T extends Record<string, object | undefined>,
-  R extends keyof T,
-> = Route<T, R>;
-
-export interface NavigationProp<T extends Record<string, object | undefined>> {
-  navigate: <R extends keyof T>(name: R, params?: T[R]) => void;
-  push: <R extends keyof T>(name: R, params?: T[R]) => void;
-  replace: <R extends keyof T>(name: R, params?: T[R]) => void;
-  goBack: () => void;
-  pop: (count?: number) => void;
-  popToTop: () => void;
-  canGoBack: () => boolean;
-  setOptions: (options: Partial<StackScreenOptions>) => void;
-  addListener: (
-    event: NavigationEvent,
-    callback: NavigationEventCallback,
-  ) => () => void;
-  removeListener: (
-    event: NavigationEvent,
-    callback: NavigationEventCallback,
-  ) => void;
-  scrollContainerRef: RefObject<any | null>;
-}
-
-export interface StackScreenProps<
-  T extends Record<string, object | undefined>,
-  R extends keyof T,
-> {
-  navigation: NavigationProp<T>;
-  route: RouteProp<T, R>;
-}
-
-export type NavigationEvent = "transitionStart" | "transitionEnd";
-export type NavigationEventCallback = (event: {
-  data: { closing: boolean };
-}) => void;
-
-export interface StackNavigationState<
-  T extends Record<string, object | undefined>,
-> {
-  index: number;
-  routes: Route<T, keyof T>[];
-}
-
-// Options for each screen
-export interface StackScreenOptions {
-  title?: string;
-  headerTitle?:
-    | React.ReactNode
-    | ((props: {
-        navigation: NavigationProp<any>;
-        route: RouteProp<any, any>;
-      }) => React.ReactNode);
-  headerShown?: boolean;
-  headerLeft?: (props: { canGoBack: boolean }) => React.ReactNode;
-  headerRight?: (props: { canGoBack: boolean }) => React.ReactNode;
-  headerStyle?: {
-    backgroundColor?: "background" | "card" | "primary" | "secondary";
-  };
-  appBarProps?: AppBarSharedProps;
-  animation?:
-    | "default"
-    | "none"
-    | "fade"
-    | "zoom-fade"
-    | "flip"
-    | "fade-from-right"
-    | "fade-from-left"
-    | "fade-from-top"
-    | "fade-from-bottom"
-    | "slide-from-left"
-    | "slide-from-right"
-    | "slide-from-top"
-    | "slide-from-bottom"
-    | { variants: any; transition: any };
-  pageClassName?: string;
-  headerAnimationEnabled?: boolean;
-}
-
-export interface StackScreenComponent<
-  T extends Record<string, object | undefined>,
-  R extends keyof T,
-> {
-  props: {
-    name: R;
-    component?: React.ComponentType<StackScreenProps<T, R>>;
-    children?: (props: StackScreenProps<T, R>) => React.ReactNode;
-    options?:
-      | StackScreenOptions
-      | ((props: { route: RouteProp<T, R> }) => StackScreenOptions);
-  };
-}
+import {
+  type NavigationEvent,
+  type NavigationEventCallback,
+  type NavigationProp,
+  type Route,
+  type RouteProp,
+  type StackNavigationState,
+  type StackScreenComponent,
+  type StackScreenOptions,
+} from "./types";
 
 // --- Contexts ---
 const NavigationContext = createContext<
@@ -221,17 +127,25 @@ const Header = <T extends Record<string, object | undefined>>({
     ? { duration: 0.12, ease: "easeInOut" }
     : { duration: 0 };
 
+  // Map legacy color values if passed
+  const rawBgColor =
+    options.headerStyle?.backgroundColor || options.appBarProps?.color;
+  const mappedColor =
+    rawBgColor === "card"
+      ? "surface-container-low"
+      : rawBgColor === "background"
+        ? "surface"
+        : rawBgColor;
+
   return (
     <AppBar
       {...options.appBarProps}
       routeKey={routeKey}
       scrollContainerRef={scrollContainerRef || null}
-      appBarColor={
-        options.headerStyle?.backgroundColor ||
-        options.appBarProps?.appBarColor ||
-        "card"
-      }
-      startAdornment={
+      variant={options.appBarProps?.variant || "small"}
+      // @ts-ignore
+      color={mappedColor || "surface-container"}
+      leadingIcon={
         <AnimatePresence mode="wait">
           <motion.div
             key={`${routeKey}-left`}
@@ -245,42 +159,40 @@ const Header = <T extends Record<string, object | undefined>>({
           </motion.div>
         </AnimatePresence>
       }
-      endAdornments={
-        // @ts-ignore
-        <HeaderRight options={options} navigation={navigation} /> ? (
-          [
-            <AnimatePresence mode="wait" key={`${routeKey}-right-presence`}>
-              <motion.div
-                key={`${routeKey}-right`}
-                variants={contentAnimation}
-                transition={contentTransition}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
-                <HeaderRight options={options} navigation={navigation} />
-              </motion.div>
-            </AnimatePresence>,
-          ]
+      trailingIcons={
+        options.headerRight ? (
+          <AnimatePresence mode="wait" key={`${routeKey}-right-presence`}>
+            <motion.div
+              key={`${routeKey}-right`}
+              variants={contentAnimation}
+              transition={contentTransition}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <HeaderRight options={options} navigation={navigation} />
+            </motion.div>
+          </AnimatePresence>
         ) : undefined
       }
-    >
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`${routeKey}-title`}
-          variants={contentAnimation}
-          transition={contentTransition}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          className="truncate"
-        >
-          {typeof title === "function"
-            ? title({ navigation, route })
-            : (title as React.ReactNode)}
-        </motion.div>
-      </AnimatePresence>
-    </AppBar>
+      title={
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${routeKey}-title`}
+            variants={contentAnimation}
+            transition={contentTransition}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="truncate"
+          >
+            {typeof title === "function"
+              ? title({ navigation, route })
+              : (title as React.ReactNode)}
+          </motion.div>
+        </AnimatePresence>
+      }
+    />
   );
 };
 
@@ -603,7 +515,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     <div className="relative h-full w-full overflow-hidden bg-graphite-background">
       <Header
         options={activeScreenOptions}
-        screenName={screen?.name}
+        screenName={screen?.name as any}
         navigation={navigation}
         route={currentRoute}
         scrollContainerRef={scrollContainerRef}

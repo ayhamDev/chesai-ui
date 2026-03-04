@@ -24,6 +24,8 @@ const Handle = ({ className }: { className?: string }) => (
   <div
     className={clsx(
       "w-2.5 h-2.5 bg-surface border border-primary rounded-sm shadow-sm transition-transform hover:scale-125 hover:bg-primary z-50",
+      // Add these classes so it actually respects centering inside the RND wrapper
+      "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
       className,
     )}
   />
@@ -206,41 +208,21 @@ export const EditorItem = forwardRef<Rnd, EditorItemProps>(
         style={{ ...style, zIndex: isSelected ? 999 : zIndex }}
         resizeHandleComponent={{
           // @ts-ignore
-          topLeft: isResizable ? (
-            <Handle className="-translate-x-1/2 -translate-y-1/2" />
-          ) : null,
+          topLeft: isResizable ? <Handle /> : null,
           // @ts-ignore
-
-          topRight: isResizable ? (
-            <Handle className="translate-x-1/2 -translate-y-1/2" />
-          ) : null,
+          topRight: isResizable ? <Handle /> : null,
           // @ts-ignore
-          bottomLeft: isResizable ? (
-            <Handle className="-translate-x-1/2 translate-y-1/2" />
-          ) : null,
+          bottomLeft: isResizable ? <Handle /> : null,
           // @ts-ignore
-          bottomRight: isResizable ? (
-            <Handle className="translate-x-1/2 translate-y-1/2" />
-          ) : null,
+          bottomRight: isResizable ? <Handle /> : null,
           // @ts-ignore
-
-          top: isResizable ? (
-            <Handle className="-translate-y-1/2 left-1/2 -translate-x-1/2" />
-          ) : null,
+          top: isResizable ? <Handle /> : null,
           // @ts-ignore
-
-          bottom: isResizable ? (
-            <Handle className="translate-y-1/2 left-1/2 -translate-x-1/2" />
-          ) : null,
+          bottom: isResizable ? <Handle /> : null,
           // @ts-ignore
-
-          left: isResizable ? (
-            <Handle className="-translate-x-1/2 top-1/2 -translate-y-1/2" />
-          ) : null,
+          left: isResizable ? <Handle /> : null,
           // @ts-ignore
-          right: isResizable ? (
-            <Handle className="translate-x-1/2 top-1/2 -translate-y-1/2" />
-          ) : null,
+          right: isResizable ? <Handle /> : null,
         }}
         onMouseDown={(e) => {
           if (isSpacePressed) return;

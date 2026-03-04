@@ -27,9 +27,8 @@ import {
   SelectLabel,
   SelectSeparator,
   SelectGroup,
-} from "./select-subcomponents"; // Extracted to keep file clean or reused below
+} from "./select-subcomponents";
 
-// --- Context ---
 interface SelectContextProps {
   size: "sm" | "md" | "lg";
   position: "item-aligned" | "popper";
@@ -43,11 +42,18 @@ const SelectContext = createContext<SelectContextProps>({
 
 export const useSelectContext = () => useContext(SelectContext);
 
-// --- Types ---
 export interface SelectProps extends React.ComponentPropsWithoutRef<
   typeof SelectPrimitive.Root
 > {
-  variant?: "flat" | "bordered" | "underlined" | "faded";
+  variant?:
+    | "filled"
+    | "filled-inverted"
+    | "outlined"
+    | "outlined-inverted"
+    | "underlined"
+    | "underlined-inverted"
+    | "ghost"
+    | "ghost-inverted";
   color?: "primary" | "secondary" | "error";
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
@@ -70,7 +76,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
   (
     {
       children,
-      variant = "flat",
+      variant = "filled",
       color = "primary",
       size = "md",
       shape = "minimal",
@@ -109,7 +115,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
     const setOpen = (newOpen: boolean) => {
       if (!isOpenControlled) setInternalOpen(newOpen);
       onOpenChange?.(newOpen);
-      if (!newOpen) setTimeout(() => setSearchQuery(""), 300); // Clear search after anim
+      if (!newOpen) setTimeout(() => setSearchQuery(""), 300);
     };
 
     const isMobile = useMediaQuery("(max-width: 768px)");
@@ -259,7 +265,6 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       classNames?.trigger,
     );
 
-    // --- MOBILE LAYOUT RENDERING ---
     if (shouldUseMobileLayout) {
       const MobileWrapper = mobileLayout === "bottom-sheet" ? Sheet : Dialog;
       const MobileTrigger =
@@ -298,9 +303,9 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
           <MobileContent
             padding="none"
             className={clsx(
-              "p-0 flex flex-col overflow-hidden", // CRITICAL: flex flex-col to enable inner flex-1
+              "p-0 flex flex-col overflow-hidden",
               mobileLayout === "dialog" && "max-w-[90vw] h-[60vh]",
-              mobileLayout === "bottom-sheet" && "max-h-[85vh] h-[500px]", // Fixed height for sheet to force scroll
+              mobileLayout === "bottom-sheet" && "max-h-[85vh] h-[500px]",
             )}
             // @ts-ignore
             shape={shape}
@@ -315,7 +320,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 
             <div className="p-2 border-b border-outline-variant/10 shrink-0">
               <Input
-                variant="flat"
+                variant="filled" // Ensure consistency with mobile layout design
                 size="sm"
                 placeholder="Search..."
                 startContent={
@@ -326,12 +331,10 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                 isClearable
                 onClear={() => setSearchQuery("")}
                 className="bg-transparent"
-                // Stop propagation to prevent sheet drag on input
                 onPointerDown={(e) => e.stopPropagation()}
               />
             </div>
 
-            {/* CRITICAL FIX: flex-1 min-h-0 container for ElasticScrollArea */}
             <div className="flex-1 min-h-0 relative">
               <ElasticScrollArea className="h-full w-full">
                 <div className="p-2 flex flex-col gap-1 pb-safe">
@@ -372,7 +375,6 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       );
     }
 
-    // --- DESKTOP (STANDARD RADIX) RENDERING ---
     return (
       <SelectContext.Provider value={{ size, position, shape }}>
         <SelectPrimitive.Root
@@ -444,5 +446,4 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 );
 Select.displayName = "Select";
 
-// --- RE-EXPORT SUBCOMPONENTS FOR MANUAL COMPOSITION ---
 export * from "./select-subcomponents";

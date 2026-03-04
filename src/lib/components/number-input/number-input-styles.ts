@@ -1,43 +1,31 @@
 import { cva, type VariantProps } from 'class-variance-authority'
 
 export const numberInputStyles = cva('group flex flex-col data-[hidden=true]:hidden w-full', {
+  // ... same variants config as input ...
   variants: {
     variant: {
-      flat: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
-      faded: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
-      bordered: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      filled: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'filled-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      outlined: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'outlined-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
       underlined: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'underlined-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      ghost: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'ghost-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
     },
-    color: {
-      primary: 'text-primary',
-      secondary: 'text-secondary',
-      error: 'text-error',
-    },
-    size: {
-      sm: 'text-sm',
-      md: 'text-base',
-      lg: 'text-lg',
-    },
-    shape: {
-      full: '',
-      minimal: '',
-      sharp: '',
-    },
+    color: { primary: 'text-primary', secondary: 'text-secondary', error: 'text-error' },
+    size: { sm: 'text-sm', md: 'text-base', lg: 'text-lg' },
+    shape: { full: '', minimal: '', sharp: '' },
     labelPlacement: {
       inside: '',
       outside: '',
       'outside-left': 'flex-row items-center flex-wrap md:flex-nowrap gap-x-4',
     },
-    isInvalid: {
-      true: '',
-      false: '',
-    },
-    isDisabled: {
-      true: 'opacity-disabled pointer-events-none',
-    },
+    isInvalid: { true: '', false: '' },
+    isDisabled: { true: 'opacity-disabled pointer-events-none' },
   },
   defaultVariants: {
-    variant: 'flat',
+    variant: 'filled',
     color: 'primary',
     size: 'md',
     shape: 'minimal',
@@ -46,6 +34,7 @@ export const numberInputStyles = cva('group flex flex-col data-[hidden=true]:hid
 })
 
 export const numberInputSlots = {
+  // ... same slots ...
   base: 'group flex flex-col data-[hidden=true]:hidden w-full',
   label: [
     'absolute z-10 block subpixel-antialiased text-on-surface-variant/70 pointer-events-none',
@@ -60,7 +49,6 @@ export const numberInputSlots = {
   input: [
     'w-full h-full font-normal !bg-transparent outline-none placeholder:text-on-surface-variant/50 text-on-surface bg-clip-text',
     'file:bg-transparent file:border-0 file:bg-transparent file:text-sm file:font-medium',
-    // Hide default spin buttons
     '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
   ],
   clearButton: [
@@ -70,7 +58,6 @@ export const numberInputSlots = {
   helperWrapper: 'p-1 relative flex flex-col gap-1.5',
   description: 'text-xs text-on-surface-variant',
   errorMessage: 'text-xs text-error',
-  // Removed border-l, added transition transform for button feedback
   stepperWrapper: 'flex flex-col h-full right-0 absolute divide-y divide-outline-variant/20 overflow-hidden',
   stepperButton:
     'w-8 flex-1 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest hover:text-primary active:scale-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden',
@@ -81,64 +68,81 @@ export const getNumberInputSlotClassNames = (
     isFilled?: boolean
     hasStartContent?: boolean
     hideStepper?: boolean
+    hasLabel?: boolean
   },
 ) => {
-  const { variant, size, labelPlacement, isInvalid, shape, hasStartContent, hideStepper } = props
+  const { variant, size, labelPlacement, isInvalid, shape, hasStartContent, hideStepper, hasLabel } = props
 
-  // --- 1. SHAPE LOGIC ---
   let rounding = 'rounded-2xl'
   if (shape === 'full') rounding = 'rounded-full'
   if (shape === 'sharp') rounding = 'rounded-none'
-  if (variant === 'underlined') rounding = 'rounded-none'
 
-  // --- 2. VARIANT STYLES ---
+  if (variant?.includes('underlined') && variant !== 'underlined-inverted') rounding = 'rounded-none'
+
   const wrapperClasses: string[] = [rounding]
 
-  if (variant === 'flat') {
-    wrapperClasses.push(
-      'bg-surface-container-low hover:bg-surface-container-highest',
-      'group-data-[focus=true]:bg-surface-container-highest',
-    )
-  } else if (variant === 'faded') {
-    wrapperClasses.push(
-      'bg-surface-container/30 border-2 border-surface-container-highest/50',
-      'hover:bg-surface-container/50',
-      'group-data-[focus=true]:bg-surface-container/50',
-      'group-data-[focus=true]:border-transparent',
-      'transition-colors',
-    )
-  } else if (variant === 'bordered') {
-    wrapperClasses.push(
-      'bg-transparent border-2 border-outline-variant',
-      'group-data-[focus=true]:border-primary',
-      'hover:border-on-surface-variant',
-    )
-  } else if (variant === 'underlined') {
-    wrapperClasses.push(
-      'bg-transparent border-b-2 border-outline-variant px-0 shadow-none',
-      'group-data-[focus=true]:border-primary',
-      '!px-0',
-    )
+  switch (variant) {
+    case 'filled':
+      wrapperClasses.push(
+        'bg-surface-container-highest/60 hover:bg-surface-container-highest',
+        'group-data-[focus=true]:bg-surface-container-highest',
+      )
+      break
+    case 'filled-inverted':
+      wrapperClasses.push(
+        'bg-surface-container-low hover:bg-surface-container',
+        'group-data-[focus=true]:bg-surface-container',
+      )
+      break
+    case 'outlined':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-outline-variant hover:border-on-surface-variant group-data-[focus=true]:border-primary group-data-[focus=true]:ring-1 group-data-[focus=true]:ring-primary',
+      )
+      break
+    case 'outlined-inverted':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-primary/50 hover:border-primary group-data-[focus=true]:border-primary group-data-[focus=true]:ring-2 group-data-[focus=true]:ring-primary/20',
+      )
+      break
+    case 'underlined':
+      wrapperClasses.push(
+        'bg-transparent border-b-2 border-outline-variant px-0 shadow-none rounded-none! group-data-[focus=true]:border-primary',
+      )
+      break
+    case 'underlined-inverted':
+      wrapperClasses.push(
+        'bg-surface-container-highest/30 border-b-2 border-primary/50 hover:bg-surface-container-highest/50 rounded-t-lg rounded-b-none group-data-[focus=true]:border-primary px-3',
+      )
+      break
+    case 'ghost':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-transparent hover:bg-surface-container-highest/30 group-data-[focus=true]:bg-surface-container-highest/50',
+      )
+      break
+    case 'ghost-inverted':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-transparent hover:bg-primary/10 group-data-[focus=true]:bg-primary/10 text-primary',
+      )
+      break
   }
 
-  // --- 3. INVALID STATE ---
-  const labelColor = isInvalid ? 'text-error' : 'group-data-[focus=true]:text-primary text-on-surface-variant/70'
+  // --- FIX: Updated Error Handling to match MultiSelect ring ---
+  if (isInvalid) {
+    if (variant?.includes('filled')) {
+      wrapperClasses.push('bg-error-container/20 !text-error ring-inset ring-2 ring-error')
+    } else {
+      wrapperClasses.push('!border-error text-error')
+    }
+  }
 
+  const labelColor = isInvalid ? 'text-error' : 'group-data-[focus=true]:text-primary text-on-surface-variant/70'
   const inputColor = isInvalid ? 'text-error placeholder:text-error/50' : 'text-on-surface'
 
-  if (isInvalid) {
-    if (variant === 'flat') wrapperClasses.push('bg-error-container/20 !text-error')
-    else wrapperClasses.push('!border-error text-error')
-  }
-
-  // --- 4. SIZING & PADDING ---
   let height = 'h-14'
   let py = 'py-2'
   let px = 'px-3'
   let labelClasses = 'left-3'
   let inputPadding = ''
-
-  // Padding for right side (stepper space)
   const paddingRight = hideStepper ? '' : 'pr-8'
 
   if (shape === 'full') {
@@ -160,19 +164,14 @@ export const getNumberInputSlotClassNames = (
     py = 'py-2.5'
   }
 
-  // --- 5. LABEL PLACEMENT & ICONS ---
   if (labelPlacement === 'inside') {
     if (hasStartContent) {
-      if (shape === 'full') {
-        labelClasses = size === 'sm' ? 'left-10' : size === 'lg' ? 'left-14' : 'left-12'
-      } else {
-        labelClasses = size === 'sm' ? 'left-9' : size === 'lg' ? 'left-12' : 'left-11'
-      }
+      if (shape === 'full') labelClasses = size === 'sm' ? 'left-10' : size === 'lg' ? 'left-14' : 'left-12'
+      else labelClasses = size === 'sm' ? 'left-9' : size === 'lg' ? 'left-12' : 'left-11'
     }
 
     labelClasses += ' absolute top-1/2 -translate-y-1/2 font-normal'
 
-    // Filled State
     const filledLabelState = [
       'group-data-[filled=true]:-translate-y-[calc(50%_+_10px)]',
       'group-data-[filled=true]:scale-85',
@@ -181,7 +180,7 @@ export const getNumberInputSlotClassNames = (
 
     labelClasses += ` ${filledLabelState}`
 
-    if (props.isFilled) {
+    if (props.isFilled && hasLabel) {
       if (size === 'sm') inputPadding = 'pt-3'
       else inputPadding = 'pt-4'
     }
@@ -195,15 +194,18 @@ export const getNumberInputSlotClassNames = (
     labelClasses = labelClasses.replace(/left-\d+/, 'left-0')
   }
 
+  let stepperRoundClass = ''
+  if (shape === 'full') stepperRoundClass = 'rounded-r-full'
+  else if (shape === 'minimal') stepperRoundClass = 'rounded-r-2xl'
+  else stepperRoundClass = 'rounded-r-none'
+
+  if (variant === 'underlined') stepperRoundClass = 'rounded-r-none'
+
   return {
     base: '',
     label: [labelColor, labelClasses].join(' '),
     inputWrapper: [wrapperClasses.join(' '), height, py, px].join(' '),
     input: [inputColor, inputPadding, paddingRight].join(' '),
-    stepperWrapper: [
-      'absolute right-0 top-0 bottom-0 z-20',
-      // Round the steppers to match container
-      shape === 'full' ? 'rounded-r-full' : shape === 'minimal' ? 'rounded-r-2xl' : 'rounded-r-none',
-    ].join(' '),
+    stepperWrapper: ['absolute right-0 top-0 bottom-0 z-20', stepperRoundClass].join(' '),
   }
 }

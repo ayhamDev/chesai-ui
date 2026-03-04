@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 "use client";
 
+import clsx from "clsx";
 import { interpolate } from "flubber";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import React, { useEffect } from "react";
@@ -125,12 +126,12 @@ export const MaterialMorph: React.FC<MaterialMorphProps> = ({
     // @ts-ignore
     <motion.svg
       viewBox="0 0 48 48"
-      className={className}
+      className={clsx("transform-gpu", className)}
       style={{ rotate: rotation, scale }}
       {...props}
     >
       <motion.path
-        className={"will-change-transform transform-3d"}
+        className={"will-change-transform transform-3d transform-gpu"}
         d={path}
         fill="currentColor"
       />

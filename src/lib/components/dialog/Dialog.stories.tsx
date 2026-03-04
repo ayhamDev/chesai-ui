@@ -31,7 +31,7 @@ const meta: Meta<StoryComponentProps> = {
     docs: {
       description: {
         component:
-          "A fully accessible, custom-built dialog component with support for basic and fullscreen variants. The fullscreen variant's body is an `ElasticScrollArea`, enabling pull-to-refresh and other advanced scrolling effects.",
+          "A fully accessible, custom-built dialog component with support for basic and fullscreen variants. Uses MD3 animation curves.",
       },
     },
   },
@@ -45,6 +45,9 @@ const meta: Meta<StoryComponentProps> = {
       options: ["default", "material3"],
       description: "Controls the open/close animation style.",
     },
+    // The variant passed here is for the dialog structure, but DialogContent
+    // wraps a Card. We typically rely on the Card's defaults, but if you want
+    // to control the card variant in the story, you'd pass it to DialogContent directly in render.
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
@@ -58,7 +61,6 @@ type Story = StoryObj<typeof meta>;
 
 // Mock refresh function for the story
 const simulateRefresh = () => {
-  console.log("Refresh triggered!");
   return new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
@@ -72,23 +74,22 @@ export const Basic: Story = {
   parameters: { layout: "centered" },
   render: (args) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [islocked, setislocked] = useState(false);
     return (
       <Dialog
         open={isOpen}
         onOpenChange={setIsOpen}
         variant={args.variant}
         animation={args.animation}
-        isLocked={islocked}
       >
         <DialogTrigger asChild>
           <Button>Open Basic Dialog</Button>
         </DialogTrigger>
-        <DialogContent shape={args.shape}>
+        <DialogContent shape={args.shape} variant="surface-container-high">
           <DialogHeader>
             <DialogTitle>Basic Dialog Title</DialogTitle>
             <DialogDescription>
-              This is a standard modal dialog.
+              This is a standard modal dialog using the{" "}
+              <code>surface-container-high</code> variant.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -100,13 +101,7 @@ export const Basic: Story = {
             <DialogClose asChild>
               <Button variant="secondary">Cancel</Button>
             </DialogClose>
-            <Button
-              onClick={() => {
-                setislocked(true);
-              }}
-            >
-              Confirm
-            </Button>
+            <Button onClick={() => setIsOpen(false)}>Confirm</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -114,7 +109,6 @@ export const Basic: Story = {
   },
 };
 
-// --- NEW STORY ---
 export const MaterialAnimation: Story = {
   name: "Material Design 3 Animation",
   args: { variant: "basic", shape: "full", animation: "material3" },
@@ -131,7 +125,7 @@ export const MaterialAnimation: Story = {
         <DialogTrigger asChild>
           <Button variant="secondary">Open Material Dialog</Button>
         </DialogTrigger>
-        <DialogContent shape={args.shape}>
+        <DialogContent shape={args.shape} variant="surface-container-highest">
           <DialogHeader>
             <DialogTitle>Material Design 3</DialogTitle>
             <DialogDescription>
@@ -141,8 +135,7 @@ export const MaterialAnimation: Story = {
           <div className="py-4">
             <Typography variant="body-medium">
               This animation mimics the official Material Web implementation
-              using Emphasized easing curves. It translates from Y -50px and
-              scales up from 90%.
+              using Emphasized easing curves.
             </Typography>
           </div>
           <DialogFooter>
@@ -158,16 +151,10 @@ export const MaterialAnimation: Story = {
 };
 
 export const FullScreen: Story = {
-  name: "Full-Screen Dialog with AppBar",
+  name: "Full-Screen Dialog",
   args: { variant: "fullscreen" },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
-    docs: {
-      description: {
-        story:
-          "The `DialogBody` in a fullscreen dialog is now an `ElasticScrollArea`. This allows for native-like scrolling and enables features like `pullToRefresh`. The `AppBar`'s `scrollContainerRef` points to the `DialogBody`'s ref to synchronize scroll animations.",
-      },
-    },
   },
   render: (args) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -181,47 +168,35 @@ export const FullScreen: Story = {
           </DialogTrigger>
           <DialogContent>
             <AppBar
-              size="md"
-              scrollBehavior="conditionally-sticky"
-              startAdornment={
+              variant="center"
+              color="surface-container"
+              leadingIcon={
                 <DialogClose asChild>
-                  <IconButton variant="ghost" size={"md"} shape="full">
+                  <IconButton variant="ghost" size="md">
                     <X className="h-5 w-5" />
                   </IconButton>
                 </DialogClose>
               }
-              animatedBehavior={["shadow"]}
-              appBarColor="card"
-              endAdornments={[
-                <Button key="save" size={"sm"} variant="secondary">
+              trailingIcons={
+                <Button key="save" size="sm" variant="secondary">
                   Save
-                </Button>,
-              ]}
+                </Button>
+              }
+              title="Create New Event"
               scrollContainerRef={scrollRef}
-            >
-              <Typography
-                variant="title-small"
-                className="truncate font-semibold"
-              >
-                Create New Event
-              </Typography>
-            </AppBar>
+            />
 
             <DialogBody
               ref={scrollRef}
-              className="px-4 pb-8"
+              className="px-4 pb-8 pt-[64px]"
               pullToRefresh={false}
               onRefresh={simulateRefresh}
             >
-              <div className="grid gap-6 pt-[70px]">
+              <div className="grid gap-6 pt-[20px]">
                 <Input label="Event name" placeholder="Team Sync" />
                 <Input label="Location" placeholder="Conference Room 4" />
-                <Typography variant="body-medium">
-                  Scroll down to see the AppBar animate. You can also pull down
-                  from the top to refresh.
-                </Typography>
-                <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
-                <div className="h-96 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50" />
+                <div className="h-96 rounded-lg border-2 border-dashed border-outline-variant bg-surface-container-low" />
+                <div className="h-96 rounded-lg border-2 border-dashed border-outline-variant bg-surface-container-low" />
                 <Typography body-medium className="text-center">
                   End of content.
                 </Typography>

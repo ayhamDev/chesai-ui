@@ -11,6 +11,11 @@ import {
   Unlock,
   Trash2,
   Settings2,
+  Sparkles,
+  Copy,
+  MoreVertical,
+  Move,
+  Crop,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Editor, useEditor } from "./index";
@@ -214,7 +219,6 @@ const PropertiesPanel = ({
   );
 };
 
-// Component to handle Delete and Arrow Key Nudges cleanly inside Context
 const EditorKeyboardShortcuts = ({
   setElements,
 }: {
@@ -227,14 +231,12 @@ const EditorKeyboardShortcuts = ({
       if (document.activeElement?.tagName.match(/INPUT|TEXTAREA|SELECT/))
         return;
 
-      // Deletion
       if (e.key === "Backspace" || e.key === "Delete") {
         setElements((prev) => prev.filter((el) => !selectedIds.has(el.id)));
         clearSelection();
         return;
       }
 
-      // Select All
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "a") {
         e.preventDefault();
         setElements((prev) => {
@@ -244,7 +246,6 @@ const EditorKeyboardShortcuts = ({
         return;
       }
 
-      // Nudge with Arrow Keys
       if (selectedIds.size > 0 && e.key.startsWith("Arrow")) {
         e.preventDefault();
         const shift = e.shiftKey ? 10 : 1;
@@ -271,7 +272,6 @@ const EditorKeyboardShortcuts = ({
   return null;
 };
 
-// --- MAIN BUILDER ---
 const BuilderDemo = ({ mode }: { mode: "infinite" | "paper" }) => {
   const [elements, setElements] = useState<Element[]>([
     {
@@ -361,7 +361,6 @@ const BuilderDemo = ({ mode }: { mode: "infinite" | "paper" }) => {
 
   return (
     <Editor.Root mode={mode} initialCamera={{ x: 50, y: 50, z: 0.9 }}>
-      {/* Keyboard listening placed here for Nudge/Delete */}
       <EditorKeyboardShortcuts setElements={setElements} />
 
       <div className="flex h-[800px] w-full flex-col bg-surface-container overflow-hidden border border-outline-variant">
@@ -403,6 +402,70 @@ const BuilderDemo = ({ mode }: { mode: "infinite" | "paper" }) => {
                   }}
                   onRotateStop={(deg) =>
                     updateElement(el.id, { rotation: deg })
+                  }
+                  toolbar={
+                    el.type === "text" ? (
+                      <Toolbar
+                        variant="primary"
+                        size="sm"
+                        shape="minimal"
+                        shadow="md"
+                      >
+                        <Toolbar.Button
+                          tooltip="Edit Text"
+                          className="text-primary"
+                        >
+                          <Type className="mr-2 h-4 w-4" /> Text
+                        </Toolbar.Button>
+                        <Toolbar.Separator />
+                        <Toolbar.Button tooltip="AI Sparkles">
+                          <Sparkles className="h-4 w-4" />
+                        </Toolbar.Button>
+                        <Toolbar.Button
+                          tooltip="Bring Forward"
+                          onClick={() => moveLayer(el.id, "up")}
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </Toolbar.Button>
+                        <Toolbar.Button tooltip="Move">
+                          <Move className="h-4 w-4" />
+                        </Toolbar.Button>
+                        <Toolbar.Button tooltip="Duplicate">
+                          <Copy className="h-4 w-4" />
+                        </Toolbar.Button>
+                        <Toolbar.Button
+                          tooltip="Delete"
+                          onClick={() => deleteElements(new Set([el.id]))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Toolbar.Button>
+                        <Toolbar.Separator />
+                        <Toolbar.Button tooltip="More options">
+                          <MoreVertical className="h-4 w-4" />
+                        </Toolbar.Button>
+                      </Toolbar>
+                    ) : el.type === "image" ? (
+                      <Toolbar
+                        variant="primary"
+                        size="sm"
+                        shape="minimal"
+                        shadow="md"
+                      >
+                        <Toolbar.Button tooltip="Replace Image">
+                          <ImageIcon className="mr-2 h-4 w-4" /> Image
+                        </Toolbar.Button>
+                        <Toolbar.Separator />
+                        <Toolbar.Button tooltip="Crop">
+                          <Crop className="h-4 w-4" />
+                        </Toolbar.Button>
+                        <Toolbar.Button
+                          tooltip="Delete"
+                          onClick={() => deleteElements(new Set([el.id]))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Toolbar.Button>
+                      </Toolbar>
+                    ) : null
                   }
                   contextMenu={
                     <ContextMenu.Content>

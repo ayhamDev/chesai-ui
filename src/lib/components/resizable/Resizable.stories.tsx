@@ -2,39 +2,55 @@
 
 import type { Meta, StoryObj } from "@storybook/react";
 import { useMediaQuery } from "@uidotdev/usehooks";
+import clsx from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Archive,
+  Archive, // Added import for Tag
+  Bold,
   ChevronLeft,
   Forward,
   History,
   Inbox,
+  LifeBuoy,
   MessageSquare,
   MoreVertical,
   Paperclip,
   Plus,
   Reply,
   Search,
+  Settings,
   Star,
+  Tag,
   Trash2,
   TrendingUp,
+  User,
+  UserPlus,
+  Users,
   Video,
   X,
-  Tag, // Added import for Tag
-  Bold,
-  Users,
-  Settings,
-  User,
-  LifeBuoy,
-  UserPlus, // Added import for Bold
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import clsx from "clsx";
 import { Button } from "../button";
 // Library Imports
 import { Avatar } from "../avatar";
 import { Badge } from "../badge";
 import { BottomTabs } from "../bottom-tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../dialog"; // Added DialogFooter, DialogHeader, DialogTitle
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../dropdown-menu";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { FAB } from "../fab";
 import { IconButton } from "../icon-button";
@@ -50,34 +66,10 @@ import {
 import { NavigationRail } from "../navigation-rail";
 import { SearchView } from "../search-view";
 import { createStackNavigator, useNavigation, useRoute } from "../stack-router";
-import { Typography } from "../typography";
-import { Resizable } from "./index";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../dialog"; // Added DialogFooter, DialogHeader, DialogTitle
 import { Textarea } from "../textarea";
 import { toast } from "../toast";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "../dropdown-menu";
+import { Typography } from "../typography";
+import { Resizable } from "./index";
 const meta: Meta = {
   title: "Showcase/Dynamic Split View (Gmail)",
   parameters: { layout: "fullscreen" },

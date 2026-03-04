@@ -309,20 +309,13 @@ export const ScrollableWithSwipe: Story = {
 };
 
 export const WithAppBar: Story = {
-  name: "7. With AppBar",
+  name: "2. With AppBar Integration",
   args: {
     defaultValue: "flights",
-    variant: "secondary", // Secondary variant looks better inside an AppBar
-    pageTransition: "fade",
+    variant: "secondary",
   },
   parameters: {
-    layout: "fullscreen", // Override layout for this story
-    docs: {
-      description: {
-        story:
-          "This example demonstrates how to integrate the `Tabs` component with the `AppBar`. The `Tabs.List` is placed inside the `largeHeaderContent` slot of a large `AppBar`. A `ref` is created for the main scrollable container and passed to the `AppBar` via `scrollContainerRef`, allowing the AppBar to collapse and hide correctly as the user scrolls through the tab panels.",
-      },
-    },
+    layout: "fullscreen",
   },
   render: (args) => {
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -339,52 +332,39 @@ export const WithAppBar: Story = {
     );
 
     return (
-      <div className="h-screen bg-graphite-background overflow-hidden">
+      <div className="h-screen bg-graphite-background overflow-hidden relative">
         <Tabs {...args}>
           <AppBar
-            size="lg"
-            scrollBehavior="conditionally-sticky"
-            stickyHideTarget="main-row"
-            appBarColor="card"
+            variant="large"
+            color="surface-container"
             scrollContainerRef={scrollRef}
-            startAdornment={
-              <IconButton variant="ghost" size={"sm"} aria-label="Menu">
+            leadingIcon={
+              <IconButton variant="ghost" aria-label="Menu" size="sm">
                 <Menu />
               </IconButton>
             }
-            endAdornments={[
-              <IconButton
-                key="search"
-                size={"sm"}
-                variant="ghost"
-                aria-label="Search"
-              >
+            trailingIcons={
+              <IconButton variant="ghost" aria-label="Search" size="sm">
                 <Search />
-              </IconButton>,
-            ]}
-            children={
-              <Typography variant="title-small" className="truncate font-bold">
-                My App
-              </Typography>
+              </IconButton>
             }
-            largeHeaderRowHeight={50}
-            largeHeaderContent={
-              // Negative margins stretch the list to the edges and counteract parent padding
-              <div className="-mx-4 -mb-4">
+            title="My App"
+            bottomContent={
+              <div className="border-b border-outline-variant">
                 <Tabs.List className="!border-b-0">
                   <Tabs.Trigger value="flights">Flights</Tabs.Trigger>
                   <Tabs.Trigger value="hotels">Hotels</Tabs.Trigger>
                   <Tabs.Trigger value="cars">Cars</Tabs.Trigger>
-                  <Tabs.Trigger value="packages">Packages</Tabs.Trigger>
                 </Tabs.List>
               </div>
             }
           />
           <ElasticScrollArea
             ref={scrollRef}
-            className="h-full overflow-y-auto pt-[100px] bg-graphite-background"
+            className="h-full overflow-y-auto bg-graphite-background"
           >
-            <Tabs.Content className="overflow-hidden">
+            {/* AppBar large (152) + Tabs height (~48) = 200px padding top */}
+            <Tabs.Content className="overflow-hidden pt-[200px]">
               <Tabs.Panel value="flights">
                 <DummyScrollContent title="Search for Flights" />
               </Tabs.Panel>
@@ -393,9 +373,6 @@ export const WithAppBar: Story = {
               </Tabs.Panel>
               <Tabs.Panel value="cars">
                 <DummyScrollContent title="Rent a Car" />
-              </Tabs.Panel>
-              <Tabs.Panel value="packages">
-                <DummyScrollContent title="Vacation Packages" />
               </Tabs.Panel>
             </Tabs.Content>
           </ElasticScrollArea>

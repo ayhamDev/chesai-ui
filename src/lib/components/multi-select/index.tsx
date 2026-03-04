@@ -6,7 +6,9 @@ import { clsx } from "clsx";
 import { Check, ChevronsUpDown, Search, X } from "lucide-react";
 import * as React from "react";
 import { Badge } from "../badge";
+import { Button } from "../button";
 import { Dialog, DialogContent, DialogTrigger } from "../dialog";
+import { ElasticScrollArea } from "../elastic-scroll-area";
 import { Input } from "../input";
 import {
   Sheet,
@@ -15,9 +17,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "../sheet";
-import { ElasticScrollArea } from "../elastic-scroll-area";
 import { Typography } from "../typography";
-import { Button } from "../button";
 import {
   getMultiSelectSlotClassNames,
   multiSelectSlots,
@@ -39,7 +39,15 @@ export interface MultiSelectProps {
   searchPlaceholder?: string;
   emptyMessage?: string;
   maxCount?: number;
-  variant?: "flat" | "bordered" | "underlined" | "faded";
+  variant?:
+    | "filled"
+    | "filled-inverted"
+    | "outlined"
+    | "outlined-inverted"
+    | "underlined"
+    | "underlined-inverted"
+    | "ghost"
+    | "ghost-inverted";
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
   labelPlacement?: "inside" | "outside" | "outside-left";
@@ -67,7 +75,7 @@ export const MultiSelect = React.forwardRef<
       searchPlaceholder = "Search...",
       emptyMessage = "No item found.",
       maxCount = 10,
-      variant = "flat",
+      variant = "filled",
       size = "md",
       shape = "minimal",
       labelPlacement = "inside",
@@ -91,6 +99,14 @@ export const MultiSelect = React.forwardRef<
 
     const isMobile = useMediaQuery("(max-width: 768px)");
     const shouldUseMobileLayout = isMobile && mobileLayout !== "default";
+
+    const handleOpenChange = (newOpen: boolean) => {
+      setInternalOpen(newOpen);
+      if (!newOpen) {
+        setTimeout(() => setSearchQuery(""), 200);
+      }
+    };
+
     const open = internalOpen;
 
     React.useEffect(() => {
@@ -174,13 +190,11 @@ export const MultiSelect = React.forwardRef<
       selectedValues.length === 0 &&
       (!label || labelPlacement !== "inside" || open);
 
-    // --- SHARED LIST RENDERER (DESKTOP & MOBILE) ---
     const renderListContent = () => (
       <div className="flex flex-col h-full w-full">
-        {/* Search Header */}
         <div className="p-2 border-b border-outline-variant/10 shrink-0">
           <Input
-            variant="flat"
+            variant="filled"
             size="sm"
             placeholder={searchPlaceholder}
             startContent={
@@ -190,12 +204,10 @@ export const MultiSelect = React.forwardRef<
             onChange={(e) => setSearchQuery(e.target.value)}
             className="bg-transparent"
             onClick={(e) => e.stopPropagation()}
-            // Important: Prevents drag from stealing focus on touch
             onPointerDown={(e) => e.stopPropagation()}
           />
         </div>
 
-        {/* CRITICAL FIX: flex-1 min-h-0 wrapper for ElasticScrollArea */}
         <div className="flex-1 min-h-0 relative">
           <ElasticScrollArea className="h-full w-full">
             <div className="p-1 flex flex-col gap-0.5 pb-safe">
@@ -240,7 +252,6 @@ export const MultiSelect = React.forwardRef<
           </ElasticScrollArea>
         </div>
 
-        {/* Footer Actions */}
         {selectedValues.length > 0 && (
           <div className="p-2 border-t border-outline-variant/10 shrink-0">
             <Button
@@ -266,10 +277,6 @@ export const MultiSelect = React.forwardRef<
           dynamicStyles.trigger,
           classNames?.trigger,
         )}
-        onClick={() => {
-          setInternalOpen(!internalOpen);
-          if (!internalOpen) setSearchQuery("");
-        }}
         {...props}
       >
         {!isOutside && labelContent}
@@ -371,7 +378,6 @@ export const MultiSelect = React.forwardRef<
       </div>
     );
 
-    // --- MOBILE RENDER ---
     if (shouldUseMobileLayout) {
       const MobileWrapper = mobileLayout === "bottom-sheet" ? Sheet : Dialog;
       const MobileTrigger =
@@ -380,7 +386,7 @@ export const MultiSelect = React.forwardRef<
         mobileLayout === "bottom-sheet" ? SheetContent : DialogContent;
 
       return (
-        <MobileWrapper open={internalOpen} onOpenChange={setInternalOpen}>
+        <MobileWrapper open={internalOpen} onOpenChange={handleOpenChange}>
           <BaseWrapper>
             <MobileTrigger asChild>{triggerElement}</MobileTrigger>
           </BaseWrapper>
@@ -389,7 +395,7 @@ export const MultiSelect = React.forwardRef<
             className={clsx(
               "p-0 flex flex-col overflow-hidden",
               mobileLayout === "dialog" && "max-w-[90vw] h-[60vh]",
-              mobileLayout === "bottom-sheet" && "max-h-[85vh] h-[500px]", // Fixed height on mobile sheet to ensure scrolling
+              mobileLayout === "bottom-sheet" && "max-h-[85vh] h-[500px]",
             )}
             // @ts-ignore
             shape={shape}
@@ -407,9 +413,11 @@ export const MultiSelect = React.forwardRef<
       );
     }
 
-    // --- DESKTOP RENDER ---
     return (
-      <PopoverPrimitive.Root open={internalOpen} onOpenChange={setInternalOpen}>
+      <PopoverPrimitive.Root
+        open={internalOpen}
+        onOpenChange={handleOpenChange}
+      >
         <BaseWrapper>
           <PopoverPrimitive.Trigger asChild>
             {triggerElement}
@@ -418,20 +426,13 @@ export const MultiSelect = React.forwardRef<
         <PopoverPrimitive.Portal>
           <PopoverPrimitive.Content
             className={clsx(
-              "z-50 w-(--radix-popover-trigger-width) min-w-48 overflow-hidden p-0",
-              // CRITICAL FIX: Explicit height for popover to allow inner scrolling
-              "h-75 flex flex-col",
+              "z-50 w-[var(--radix-popover-trigger-width)] min-w-48 overflow-hidden p-0",
+              "max-h-80 flex flex-col",
               "rounded-xl border border-outline-variant bg-surface-container text-on-surface shadow-md",
               "data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit",
             )}
             align="start"
             sideOffset={4}
-            onInteractOutside={(e) => {
-              // @ts-expect-error
-              if (e.target !== ref.current) {
-                setInternalOpen(false);
-              }
-            }}
           >
             {renderListContent()}
           </PopoverPrimitive.Content>

@@ -3,42 +3,28 @@ import { cva, type VariantProps } from 'class-variance-authority'
 export const textareaStyles = cva('group flex flex-col data-[hidden=true]:hidden w-full', {
   variants: {
     variant: {
-      flat: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
-      faded: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
-      bordered: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      filled: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'filled-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      outlined: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'outlined-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
       underlined: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'underlined-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
       ghost: 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
+      'ghost-inverted': 'data-[has-label=true]:mt-[calc(theme(fontSize.small)_+_10px)]',
     },
-    color: {
-      primary: 'text-primary',
-      secondary: 'text-secondary',
-      error: 'text-error',
-    },
-    size: {
-      sm: 'text-sm',
-      md: 'text-base',
-      lg: 'text-lg',
-    },
-    shape: {
-      full: '',
-      minimal: '',
-      sharp: '',
-    },
+    color: { primary: 'text-primary', secondary: 'text-secondary', error: 'text-error' },
+    size: { sm: 'text-sm', md: 'text-base', lg: 'text-lg' },
+    shape: { full: '', minimal: '', sharp: '' },
     labelPlacement: {
       inside: '',
       outside: '',
       'outside-left': 'flex-row items-start flex-wrap md:flex-nowrap gap-x-4',
     },
-    isInvalid: {
-      true: '',
-      false: '',
-    },
-    isDisabled: {
-      true: 'opacity-disabled pointer-events-none',
-    },
+    isInvalid: { true: '', false: '' },
+    isDisabled: { true: 'opacity-disabled pointer-events-none' },
   },
   defaultVariants: {
-    variant: 'flat',
+    variant: 'filled',
     color: 'primary',
     size: 'md',
     shape: 'minimal',
@@ -61,11 +47,12 @@ export const textareaSlots = {
   input: [
     'w-full h-full font-normal !bg-transparent outline-none placeholder:text-on-surface-variant/50 text-on-surface bg-clip-text resize-none',
     'file:bg-transparent file:border-0 file:bg-transparent file:text-sm file:font-medium',
+    'border-none focus:ring-0 shadow-none appearance-none',
   ],
   clearButton: [
     'p-2 -m-2 z-10 hidden group-data-[filled-within=true]:block select-none transition-opacity',
     'text-on-surface-variant hover:text-on-surface cursor-pointer active:opacity-70 rounded-full',
-    'absolute right-2 top-2', // Fixed position for textarea clear button
+    'absolute right-2 top-2',
   ],
   helperWrapper: 'p-1 relative flex flex-col gap-1.5',
   description: 'text-xs text-on-surface-variant',
@@ -75,60 +62,62 @@ export const textareaSlots = {
 export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaStyles> & { isFilled?: boolean }) => {
   const { variant, size, labelPlacement, isInvalid, shape } = props
 
-  // --- 1. SHAPE LOGIC ---
   let rounding = 'rounded-2xl'
   if (shape === 'full') rounding = 'rounded-3xl'
   if (shape === 'sharp') rounding = 'rounded-none'
-  if (variant === 'underlined') rounding = 'rounded-none'
 
-  // --- 2. VARIANT STYLES ---
   const wrapperClasses: string[] = [rounding]
 
-  if (variant === 'flat') {
-    wrapperClasses.push(
-      'bg-surface-container-low hover:bg-surface-container-highest',
-      'group-data-[focus=true]:bg-surface-container-highest',
-    )
-  } else if (variant === 'ghost') {
-    wrapperClasses.push(
-      'bg-transparent border-2 border-transparent',
-      // 'hover:bg-surface-container-highest/50',
-      // 'group-data-[focus=true]:bg-surface-container-highest',
-      // 'group-data-[focus=true]:border-transparent',
-    )
-  } else if (variant === 'faded') {
-    wrapperClasses.push(
-      'bg-surface-container/30',
-      'hover:bg-surface-container/50',
-      'group-data-[focus=true]:bg-surface-container/50',
-      'group-data-[focus=true]:border-transparent',
-      'transition-colors',
-    )
-  } else if (variant === 'bordered') {
-    wrapperClasses.push(
-      'bg-transparent border-2 border-outline-variant',
-      'group-data-[focus=true]:border-primary',
-      'hover:border-on-surface-variant',
-    )
-  } else if (variant === 'underlined') {
-    wrapperClasses.push(
-      'bg-transparent border-b-2 border-outline-variant px-0 shadow-none',
-      'group-data-[focus=true]:border-primary',
-      '!px-0',
-    )
+  switch (variant) {
+    case 'filled':
+      wrapperClasses.push('bg-surface-container-highest/60 hover:bg-surface-container-highest')
+      break
+    case 'filled-inverted':
+      wrapperClasses.push('bg-surface-container-low hover:bg-surface-container')
+      break
+    case 'outlined':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-outline-variant hover:border-on-surface-variant group-data-[focus=true]:border-primary',
+      )
+      break
+    case 'outlined-inverted':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-primary/50 hover:border-primary group-data-[focus=true]:ring-2 group-data-[focus=true]:ring-primary/20',
+      )
+      break
+    case 'underlined':
+      wrapperClasses.push(
+        'bg-transparent border-b-2 border-outline-variant rounded-none px-0 group-data-[focus=true]:border-primary',
+      )
+      break
+    case 'underlined-inverted':
+      wrapperClasses.push(
+        'bg-surface-container-highest/30 border-b-2 border-primary/50 hover:bg-surface-container-highest/50 group-data-[focus=true]:border-primary',
+      )
+      break
+    case 'ghost':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-transparent hover:bg-surface-container-highest/30 group-data-[focus=true]:bg-surface-container-highest/50',
+      )
+      break
+    case 'ghost-inverted':
+      wrapperClasses.push(
+        'bg-transparent border-2 border-transparent hover:bg-primary/10 group-data-[focus=true]:bg-primary/10 text-primary',
+      )
+      break
   }
 
-  // --- 3. INVALID STATE ---
-  const labelColor = isInvalid ? 'text-error' : 'group-data-[focus=true]:text-primary text-on-surface-variant/70'
-
-  const inputColor = isInvalid ? 'text-error placeholder:text-error/50' : 'text-on-surface'
-
+  // --- FIX: ERROR HANDLING WITH BORDER/RING ---
   if (isInvalid) {
-    if (variant === 'flat') wrapperClasses.push('bg-error-container/20 !text-error')
-    else wrapperClasses.push('!border-error text-error')
+    if (variant?.includes('filled')) {
+      // Add a red ring for filled variants
+      wrapperClasses.push('bg-error-container/20 !text-error ring-inset ring-2 ring-error')
+    } else {
+      // Add red border for outlined/others
+      wrapperClasses.push('!border-error text-error')
+    }
   }
 
-  // --- 4. SIZING & PADDING ---
   let py = 'py-2'
   let px = 'px-3'
   let minHeight = 'min-h-[60px]'
@@ -154,16 +143,13 @@ export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaSty
     py = 'py-4'
   }
 
-  // --- 5. LABEL PLACEMENT & TRANSITIONS ---
   if (labelPlacement === 'inside') {
     labelClasses += ' absolute top-3 font-normal'
-
     const filledLabelState = [
       'group-data-[filled=true]:-translate-y-[calc(50%_-_4px)]',
       'group-data-[filled=true]:scale-85',
       'group-data-[filled=true]:opacity-70',
     ].join(' ')
-
     labelClasses += ` ${filledLabelState}`
 
     if (props.isFilled) {
@@ -181,8 +167,11 @@ export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaSty
 
   return {
     base: '',
-    label: [labelColor, labelClasses].join(' '),
+    label: [
+      isInvalid ? 'text-error' : 'group-data-[focus=true]:text-primary text-on-surface-variant/70',
+      labelClasses,
+    ].join(' '),
     inputWrapper: [wrapperClasses.join(' '), minHeight, py, px].join(' '),
-    input: [inputColor, inputPadding].join(' '),
+    input: [isInvalid ? 'text-error placeholder:text-error/50' : 'text-on-surface', inputPadding].join(' '),
   }
 }

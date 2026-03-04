@@ -13,10 +13,18 @@ export const cardVariants = cva(
         primary: "bg-surface-container-low text-on-surface",
         secondary: "bg-surface-container-highest text-on-surface",
         tertiary: "bg-tertiary-container text-on-tertiary-container",
-        // MD3 Semantic Inverse Tokens
         "high-contrast": "bg-inverse-surface text-inverse-on-surface",
         ghost: "bg-transparent text-on-surface",
+
+        // --- MD3 Surface Container Variants ---
         surface: "bg-surface text-on-surface",
+        "surface-container-lowest":
+          "bg-surface-container-lowest text-on-surface",
+        "surface-container-low": "bg-surface-container-low text-on-surface",
+        "surface-container": "bg-surface-container text-on-surface",
+        "surface-container-high": "bg-surface-container-high text-on-surface",
+        "surface-container-highest":
+          "bg-surface-container-highest text-on-surface",
       },
       hoverEffect: {
         true: "after:absolute after:inset-0 after:z-[-1] after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out after:opacity-0",
@@ -54,7 +62,7 @@ export const cardVariants = cva(
         className:
           "after:bg-secondary-container/50 after:scale-80 after:origin-center hover:after:opacity-100 hover:after:scale-100",
       },
-      // Standard Overlay Effect (Primary, Secondary, Surface)
+      // Standard Overlay Effect (Primary, Secondary, Surface Variants)
       {
         variant: "primary",
         hoverEffect: true,
@@ -70,13 +78,38 @@ export const cardVariants = cva(
         hoverEffect: true,
         className: "after:bg-on-surface/8 hover:after:opacity-100",
       },
-      // Tertiary Overlay (using on-tertiary-container for correct color matching)
+      {
+        variant: "surface-container-lowest",
+        hoverEffect: true,
+        className: "after:bg-on-surface/8 hover:after:opacity-100",
+      },
+      {
+        variant: "surface-container-low",
+        hoverEffect: true,
+        className: "after:bg-on-surface/8 hover:after:opacity-100",
+      },
+      {
+        variant: "surface-container",
+        hoverEffect: true,
+        className: "after:bg-on-surface/8 hover:after:opacity-100",
+      },
+      {
+        variant: "surface-container-high",
+        hoverEffect: true,
+        className: "after:bg-on-surface/8 hover:after:opacity-100",
+      },
+      {
+        variant: "surface-container-highest",
+        hoverEffect: true,
+        className: "after:bg-on-surface/8 hover:after:opacity-100",
+      },
+      // Tertiary Overlay
       {
         variant: "tertiary",
         hoverEffect: true,
         className: "after:bg-on-tertiary-container/8 hover:after:opacity-100",
       },
-      // High Contrast Overlay (using inverse-on-surface)
+      // High Contrast Overlay
       {
         variant: "high-contrast",
         hoverEffect: true,
@@ -119,9 +152,6 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     const localRef = useRef<HTMLDivElement>(null);
     useImperativeHandle(ref, () => localRef.current!);
 
-    // Ripple logic for High Contrast:
-    // In Light mode, High Contrast is Dark -> Needs White Ripple
-    // In Dark mode, High Contrast is Light -> Needs Black Ripple
     const rippleColor =
       variant === "high-contrast" || variant === "tertiary"
         ? "var(--color-ripple-dark)"

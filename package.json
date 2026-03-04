@@ -1,7 +1,7 @@
 {
   "name": "chesai-ui",
   "private": false,
-  "version": "0.7.1",
+  "version": "0.8.0",
   "packageManager": "pnpm@10.12.1",
   "repository": {
     "type": "git",
@@ -64,8 +64,10 @@
     "@react-types/datepicker": "^3.13.3",
     "@storybook/addon-essentials": "^8.6.14",
     "@storybook/theming": "^8.6.14",
+    "@tanstack/react-form": "^1.28.3",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.18",
+    "@tanstack/zod-form-adapter": "^0.42.1",
     "@types/qrcode": "^1.5.6",
     "@uidotdev/usehooks": "^2.4.1",
     "@xyflow/react": "^12.10.1",
@@ -91,7 +93,8 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "use-ripple-hook": "^1.0.24",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@babel/core": "7.27.4",

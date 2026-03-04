@@ -33,12 +33,13 @@ export {
   DataTableFacetedFilter,
   advancedFilterFn,
   advancedFilterFn as numericFilterFn,
+  DataTableContext, // <--- ADDED THIS EXPORT
 };
 
 interface DataTableProps<TData> extends Omit<TableRootProps<TData>, "table"> {
   data: TData[];
   columns: ColumnDef<TData>[];
-  variant: "primary" | "secondary";
+  variant?: "primary" | "secondary";
   // Server Side Props
   pageCount?: number;
   pagination?: PaginationState;
@@ -135,7 +136,6 @@ export function DataTable<TData>({
       filterFn: advancedFilterFn,
     },
   });
-  console.log(variant);
 
   return (
     <DataTableContext.Provider value={{ table }}>

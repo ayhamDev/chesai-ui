@@ -17,7 +17,13 @@ const meta: Meta<typeof Card> = {
         "high-contrast",
         "ghost",
         "surface",
+        "surface-container-lowest",
+        "surface-container-low",
+        "surface-container",
+        "surface-container-high",
+        "surface-container-highest",
       ],
+      description: "The visual style of the card.",
     },
     shape: {
       control: "select",
@@ -43,7 +49,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    variant: "primary",
+    variant: "surface-container",
     shape: "minimal",
     padding: "md",
   },
@@ -58,8 +64,56 @@ export const Default: Story = {
   ),
 };
 
+export const SurfaceHierarchy: Story = {
+  name: "MD3 Surface Hierarchy",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Material Design 3 uses specific surface tones to denote elevation and containment hierarchy without necessarily using shadows.",
+      },
+    },
+  },
+  render: () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <Card variant="surface-container-lowest" className="p-6">
+        <Typography variant="title-medium">Surface Container Lowest</Typography>
+        <Typography variant="body-small" muted={true}>
+          Lowest elevation
+        </Typography>
+      </Card>
+      <Card variant="surface-container-low" className="p-6">
+        <Typography variant="title-medium">Surface Container Low</Typography>
+        <Typography variant="body-small" muted={true}>
+          Low elevation
+        </Typography>
+      </Card>
+      <Card variant="surface-container" className="p-6">
+        <Typography variant="title-medium">Surface Container</Typography>
+        <Typography variant="body-small" muted={true}>
+          Default container
+        </Typography>
+      </Card>
+      <Card variant="surface-container-high" className="p-6">
+        <Typography variant="title-medium">Surface Container High</Typography>
+        <Typography variant="body-small" muted={true}>
+          High elevation
+        </Typography>
+      </Card>
+      <Card variant="surface-container-highest" className="p-6">
+        <Typography variant="title-medium">
+          Surface Container Highest
+        </Typography>
+        <Typography variant="body-small" muted={true}>
+          Highest elevation
+        </Typography>
+      </Card>
+    </div>
+  ),
+};
+
 export const ColorVariants: Story = {
-  name: "Color Variants",
+  name: "Semantic Colors",
   render: () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <Card variant="primary" className="p-6">
@@ -84,7 +138,6 @@ export const ColorVariants: Story = {
   ),
 };
 
-// --- NEW: Ghost Variant with Bloom & Ripple ---
 export const GhostInteractive: Story = {
   name: "Interactive Ghost (Bloom + Ripple)",
   args: {
@@ -121,36 +174,35 @@ export const GhostInteractive: Story = {
   ),
 };
 
-// --- NEW: Elevation Levels ---
 export const ElevationLevels: Story = {
-  name: "Modern Elevation",
+  name: "Shadow Elevation",
   render: () => (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-8 p-4">
-      <Card elevation={1} variant="primary" shape="minimal">
+      <Card elevation={1} variant="surface-container" shape="minimal">
         <Typography variant="title-large">Level 1</Typography>
         <Typography variant="body-small" muted={true}>
           Subtle shadow
         </Typography>
       </Card>
-      <Card elevation={2} variant="primary" shape="minimal">
+      <Card elevation={2} variant="surface-container" shape="minimal">
         <Typography variant="title-large">Level 2</Typography>
         <Typography variant="body-small" muted={true}>
           Default floating
         </Typography>
       </Card>
-      <Card elevation={3} variant="primary" shape="minimal">
+      <Card elevation={3} variant="surface-container" shape="minimal">
         <Typography variant="title-large">Level 3</Typography>
         <Typography variant="body-small" muted={true}>
           Lifted state
         </Typography>
       </Card>
-      <Card elevation={4} variant="primary" shape="minimal">
+      <Card elevation={4} variant="surface-container" shape="minimal">
         <Typography variant="title-large">Level 4</Typography>
         <Typography variant="body-small" muted={true}>
           Dialog / Modal
         </Typography>
       </Card>
-      <Card elevation={5} variant="primary" shape="minimal">
+      <Card elevation={5} variant="surface-container" shape="minimal">
         <Typography variant="title-large">Level 5</Typography>
         <Typography variant="body-small" muted={true}>
           Maximum lift
@@ -184,23 +236,14 @@ export const Composition: Story = {
     </Card>
   ),
 };
-// ... (existing imports)
 
 export const Outlined: Story = {
   name: "Outlined Card",
   args: {
-    variant: "primary",
+    variant: "surface",
     bordered: true,
     elevation: "none",
     shape: "minimal",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The `bordered` prop adds a subtle 1px border. This is the standard 'Outlined' card style in Material Design 3.",
-      },
-    },
   },
   render: (args) => (
     <Card {...args} className="max-w-md">
@@ -212,37 +255,6 @@ export const Outlined: Story = {
   ),
 };
 
-export const BorderedVsElevated: Story = {
-  name: "Compare: Border vs Elevation",
-  render: () => (
-    <div className="flex flex-wrap gap-6">
-      {/* Bordered */}
-      <Card bordered variant="primary" className="w-64">
-        <Typography variant="title-large">Bordered</Typography>
-        <Typography variant="body-small" muted={true}>
-          Flat, 1px stroke
-        </Typography>
-      </Card>
-
-      {/* Elevated */}
-      <Card elevation={2} variant="primary" className="w-64">
-        <Typography variant="title-large">Elevated</Typography>
-        <Typography variant="body-small" muted={true}>
-          Shadow, no stroke
-        </Typography>
-      </Card>
-
-      {/* Both */}
-      <Card bordered elevation={1} variant="primary" className="w-64">
-        <Typography variant="title-large">Both</Typography>
-        <Typography variant="body-small" muted={true}>
-          Subtle stroke + Shadow
-        </Typography>
-      </Card>
-    </div>
-  ),
-};
-// ... existing imports
 export const HighContrast: Story = {
   name: "High Contrast (Inverse)",
   args: {

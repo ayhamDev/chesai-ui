@@ -9,7 +9,16 @@ const meta: Meta<typeof Input> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["flat", "bordered", "underlined", "faded", "ghost"],
+      options: [
+        "filled",
+        "filled-inverted",
+        "outlined",
+        "outlined-inverted",
+        "underlined",
+        "underlined-inverted",
+        "ghost",
+        "ghost-inverted",
+      ],
     },
     color: {
       control: "select",
@@ -41,6 +50,7 @@ export const Default: Story = {
     label: "Email",
     placeholder: "Enter your email",
     type: "email",
+    variant: "filled",
   },
 };
 
@@ -49,25 +59,30 @@ export const Variants: Story = {
   render: () => (
     <div className="w-full flex flex-col gap-6 max-w-sm">
       <Input
-        label="Flat (Default)"
-        variant="flat"
-        placeholder="Filled no ring"
+        label="Filled (Default)"
+        variant="filled"
+        placeholder="Standard grey background"
       />
       <Input
-        label="Ghost"
-        variant="ghost"
-        placeholder="Transparent, background on hover"
+        label="Filled Inverted"
+        variant="filled-inverted"
+        placeholder="Lighter background"
       />
+      <Input label="Outlined" variant="outlined" placeholder="Bordered" />
       <Input
-        label="Faded"
-        variant="faded"
-        placeholder="Background shift on focus"
+        label="Outlined Inverted"
+        variant="outlined-inverted"
+        placeholder="Colored Border"
       />
-      <Input label="Bordered" variant="bordered" placeholder="Outline style" />
       <Input
         label="Underlined"
         variant="underlined"
         placeholder="Bottom border only"
+      />
+      <Input
+        label="Ghost"
+        variant="ghost"
+        placeholder="Transparent until hover"
       />
     </div>
   ),
@@ -80,19 +95,19 @@ export const Shapes: Story = {
       <Input
         label="Minimal (Default)"
         shape="minimal"
-        variant="flat"
+        variant="filled"
         placeholder="Rounded-2xl"
       />
       <Input
         label="Full"
         shape="full"
-        variant="flat"
+        variant="filled"
         placeholder="Rounded-full"
       />
       <Input
         label="Sharp"
         shape="sharp"
-        variant="flat"
+        variant="filled"
         placeholder="Rounded-none"
       />
     </div>
@@ -101,12 +116,11 @@ export const Shapes: Story = {
 
 export const Sizes: Story = {
   name: "Sizes (Inside Label)",
-
   render: () => (
     <div className="w-full flex flex-col gap-6 max-w-sm">
-      <Input label="Small" size="sm" variant="flat" />
-      <Input label="Medium" size="md" variant="flat" />
-      <Input label="Large" size="lg" variant="flat" />
+      <Input label="Small" size="sm" variant="filled" />
+      <Input label="Medium" size="md" variant="filled" />
+      <Input label="Large" size="lg" variant="filled" />
     </div>
   ),
 };
@@ -114,15 +128,15 @@ export const Sizes: Story = {
 export const WithIcons: Story = {
   args: {
     labelPlacement: "outside",
+    variant: "outlined",
   },
-
   name: "With Icons",
-
   render: () => (
     <div className="w-full flex flex-col gap-4 max-w-sm">
       <Input
         label="Email"
         shape="full"
+        variant="outlined"
         placeholder="you@example.com"
         labelPlacement="outside"
         startContent={
@@ -135,6 +149,7 @@ export const WithIcons: Story = {
       <Input
         label="Search"
         shape="full"
+        variant="filled"
         placeholder="Type to search..."
         endContent={
           <Search

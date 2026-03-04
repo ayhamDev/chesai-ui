@@ -1,0 +1,230 @@
+/* src/lib/components/rich-text-editor/editor-styles.css */
+
+.chesai-editor {
+  /* Scope CSS vars to this container to handle EditorJS specifics */
+  --bg-color: var(--md-sys-color-surface);
+  --text-color: var(--md-sys-color-on-surface);
+  --muted-color: var(--md-sys-color-on-surface-variant);
+  --hover-bg: var(--md-sys-color-secondary-container);
+  --hover-text: var(--md-sys-color-on-secondary-container);
+  --border-color: var(--md-sys-color-outline-variant);
+  --toolbar-bg: var(--md-sys-color-surface-container-high);
+  
+  font-family: var(--font-plain);
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+/* --- 1. CORE LAYOUT --- */
+
+
+/* --- 2. TYPOGRAPHY --- */
+
+.ce-header {
+  font-family: var(--font-brand);
+  font-weight: 600;
+  padding: 1em 0 0.5em 0;
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+}
+
+h1.ce-header { font-size: 2.25rem; line-height: 2.5rem; letter-spacing: -0.02em; }
+h2.ce-header { font-size: 1.875rem; line-height: 2.25rem; letter-spacing: -0.01em; }
+h3.ce-header { font-size: 1.5rem; line-height: 2rem; }
+h4.ce-header { font-size: 1.25rem; line-height: 1.75rem; }
+
+.ce-paragraph {
+  font-size: 1rem;
+  line-height: 1.625;
+  margin-bottom: 0.5rem;
+}
+
+/* Lists */
+.cdx-list {
+  padding-left: 20px;
+  margin: 0.5rem 0;
+}
+.cdx-list__item {
+  padding: 4px 0;
+  line-height: 1.5;
+  list-style: inherit;
+}
+.cdx-list--ordered { list-style-type: decimal; }
+.cdx-list--unordered { list-style-type: disc; }
+
+/* Selection Color */
+::selection {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+/* --- 3. MAIN TOOLBAR (Plus & Dots) --- */
+.ct__content {
+  background-color: var(--color-inverse-surface);
+  color: var(--color-inverse-on-surface);
+  border-radius: 6px;
+}
+
+/* The buttons */
+.ce-toolbar__plus,
+.ce-toolbar__settings-btn {
+  color: var(--muted-color);
+  background-color: transparent;
+  border-radius: 8px; /* Minimal shape */
+  transition: all 0.2s ease;
+}
+
+.ce-toolbar__plus:hover,
+.ce-toolbar__settings-btn:hover {
+  background-color: var(--hover-bg);
+  color: var(--hover-text);
+}
+
+/* Hide toolbar on mobile if needed, or adjust left pos */
+@media (max-width: 650px) {
+  .ce-toolbar__actions {
+    background-color: var(--toolbar-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding-right: 0;
+  }
+}
+
+/* --- 4. POPOVER (The Toolbox Menu) --- */
+
+.ce-popover {
+  background-color: var(--toolbar-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px; /* Matches Chesai Popover */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* Override EditorJS CSS variables */
+  --color-border: var(--border-color);
+  --color-text-primary: var(--text-color);
+  --color-text-secondary: var(--muted-color);
+  --color-background: var(--toolbar-bg);
+  --color-background-item-hover: var(--hover-bg);
+  --color-line-gray: var(--border-color);
+}
+
+.ce-popover__container {
+    width: fit-content;
+    height: fit-content;
+}
+.ce-popover--inline {
+    --height: 45px;
+}
+.cdx-block::before {
+    color: red;
+}
+.ce-block--selected .ce-block__content {
+    background-color: var(--color-primary-container);
+}
+/* Search Bar inside Popover */
+.cdx-search-field {
+  background-color: var(--md-sys-color-surface-container);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.cdx-search-field__input {
+  color: var(--text-color);
+}
+
+.cdx-search-field__icon {
+  color: var(--muted-color);
+}
+
+/* Popover Items */
+.ce-popover-item {
+  border-radius: 6px;
+  color: var(--text-color);
+  padding: 6px 12px;
+  transition: background-color 0.15s ease;
+}
+
+.ce-popover-item:hover {
+  background-color: var(--hover-bg) !important;
+  color: var(--hover-text);
+}
+
+.ce-popover-item__icon {
+  background-color: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-primary);
+  border-radius: 6px;
+  box-shadow: none;
+  border: 1px solid var(--border-color);
+}
+
+.ce-popover-item:hover .ce-popover-item__icon {
+  background-color: var(--md-sys-color-surface);
+}
+
+/* Scrollbar in Popover */
+.ce-popover__items {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+/* --- 5. INLINE TOOLBAR (Bold, Italic, Link) --- */
+
+.ce-inline-toolbar {
+  background-color: var(--toolbar-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  color: var(--text-color);
+}
+
+/* Buttons inside inline toolbar */
+.ce-inline-tool {
+  color: var(--muted-color);
+  transition: all 0.2s;
+  height: 32px;
+  width: 32px;
+}
+
+.ce-inline-tool:hover {
+  background-color: var(--hover-bg);
+  color: var(--hover-text);
+}
+
+.ce-inline-tool--active {
+  color: var(--md-sys-color-primary);
+  font-weight: bold;
+}
+
+/* Input (e.g. for Link) inside inline toolbar */
+.ce-inline-tool-input {
+  background-color: var(--md-sys-color-surface-container);
+  color: var(--text-color);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  font-family: var(--font-plain);
+}
+
+.ce-inline-tool-input:focus {
+  border-color: var(--md-sys-color-primary);
+  outline: none;
+}
+
+/* --- 6. BLOCK SETTINGS (3 dots menu) --- */
+/* The menu that appears when clicking the dots next to a block */
+
+.ce-settings {
+  /* Often has weird default styles */
+}
+
+.ce-settings__button {
+  color: var(--muted-color);
+}
+
+.ce-settings__button:hover {
+  background-color: var(--hover-bg);
+  color: var(--hover-text);
+}
+.chesai-editor ::selection {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}

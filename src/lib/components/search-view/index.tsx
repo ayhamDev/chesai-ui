@@ -3,7 +3,7 @@
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Mic, X } from "lucide-react";
+import { ArrowLeft, Mic, Search, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ElasticScrollArea } from "../elastic-scroll-area";
@@ -25,9 +25,42 @@ export interface SearchViewProps {
   desktopRadius?: string | number;
   className?: string;
   variant?: "modal" | "docked" | "fullscreen";
+  triggerVariant?: "default" | "minimal" | "icon";
+  color?: "surface" | "primary" | "secondary" | "transparent";
 }
 
 const TRANSITION_DURATION = DURATION.medium3;
+
+const COLOR_VARIANTS = {
+  surface: {
+    trigger:
+      "bg-surface-container-highest hover:bg-surface-container-highest/80 text-on-surface",
+    expandedHeader: "bg-surface-container-high text-on-surface",
+    expandedBody: "bg-surface-container-high",
+    placeholder: "text-on-surface-variant/60",
+  },
+  primary: {
+    trigger:
+      "bg-primary-container hover:bg-primary-container/90 text-on-primary-container",
+    expandedHeader: "bg-primary-container text-on-primary-container",
+    expandedBody: "bg-surface-container-low",
+    placeholder: "text-on-primary-container/60",
+  },
+  secondary: {
+    trigger:
+      "bg-secondary-container hover:bg-secondary-container/90 text-on-secondary-container",
+    expandedHeader: "bg-secondary-container text-on-secondary-container",
+    expandedBody: "bg-surface-container",
+    placeholder: "text-on-secondary-container/60",
+  },
+  transparent: {
+    trigger:
+      "bg-transparent hover:bg-surface-container-highest/30 text-on-surface",
+    expandedHeader: "bg-surface-container-high text-on-surface",
+    expandedBody: "bg-surface-container-high",
+    placeholder: "text-on-surface-variant/60",
+  },
+};
 
 export const SearchView = ({
   value,
@@ -43,6 +76,8 @@ export const SearchView = ({
   desktopRadius = "28px",
   className,
   variant = "modal",
+  triggerVariant = "default",
+  color = "surface",
 }: SearchViewProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
@@ -55,35 +90,57 @@ export const SearchView = ({
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const effectiveVariant = isMobile ? "fullscreen" : variant;
+  const colors = COLOR_VARIANTS[color];
 
-  // --- RECT CAPTURE ---
   const updateRect = useCallback(() => {
     if (triggerRef.current) {
-      setTriggerRect(triggerRef.current.getBoundingClientRect());
+      const rect = triggerRef.current.getBoundingClientRect();
+      setTriggerRect((prev) => {
+        if (
+          prev &&
+          prev.top === rect.top &&
+          prev.left === rect.left &&
+          prev.width === rect.width &&
+          prev.height === rect.height
+        ) {
+          return prev;
+        }
+        return rect;
+      });
     }
   }, []);
 
-  // --- OPEN/CLOSE HANDLERS ---
+  // Live Re-measurement
+  useEffect(() => {
+    if (isOpen) {
+      window.addEventListener("resize", updateRect);
+      window.addEventListener("scroll", updateRect, { capture: true });
+      updateRect();
+    }
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect, { capture: true });
+    };
+  }, [isOpen, updateRect]);
+
   const handleOpen = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const isInteractive = target.closest(
-      "button, a, [role='button'], [role='menuitem'], [role='option']",
+      "a, [role='button'], [role='menuitem'], [role='option']",
     );
-
-    if (isInteractive) return;
+    if (isInteractive && triggerVariant !== "icon") return;
 
     updateRect();
-
     if (!isControlled) setInternalOpen(true);
     onOpenChange?.(true);
   };
 
   const handleClose = () => {
+    updateRect();
     if (!isControlled) setInternalOpen(false);
     onOpenChange?.(false);
   };
 
-  // --- ACTIONS ---
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onChange("");
@@ -97,20 +154,24 @@ export const SearchView = ({
     inputRef.current?.blur();
   };
 
-  // Focus management
+  // Focus & Scroll Lock Logic
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
+      // FIX: Do NOT lock scroll if variant is 'docked' to prevent layout shift
+      if (effectiveVariant !== "docked") {
+        document.body.style.overflow = "hidden";
+      }
+
       const timer = setTimeout(() => {
         inputRef.current?.focus();
       }, TRANSITION_DURATION * 1000);
+
       return () => {
         document.body.style.overflow = "";
       };
     }
-  }, [isOpen]);
+  }, [isOpen, effectiveVariant]);
 
-  // Keyboard management
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) handleClose();
@@ -134,7 +195,7 @@ export const SearchView = ({
       case "docked":
         return {
           top: triggerRect.top,
-          left: triggerRect.left,
+          left: triggerRect.left - 10,
           width: triggerRect.width,
           height: Math.min(600, window.innerHeight - triggerRect.top - 20),
           borderRadius: desktopRadius,
@@ -142,7 +203,7 @@ export const SearchView = ({
       case "modal":
       default:
         return {
-          top: "4vh",
+          top: "8vh",
           left: "50%",
           x: "-50%",
           width: 680,
@@ -151,6 +212,8 @@ export const SearchView = ({
         };
     }
   };
+
+  const triggerBorderRadius = triggerRect ? triggerRect.height / 2 : 28;
 
   const ExpandedView = triggerRect && (
     <div className="fixed inset-0 z-[9999]" style={{ pointerEvents: "auto" }}>
@@ -169,7 +232,7 @@ export const SearchView = ({
           left: triggerRect.left,
           width: triggerRect.width,
           height: triggerRect.height,
-          borderRadius: "28px",
+          borderRadius: triggerVariant === "icon" ? 999 : triggerBorderRadius,
           x: 0,
         }}
         animate={getAnimationTarget() as any}
@@ -178,8 +241,9 @@ export const SearchView = ({
           left: triggerRect.left,
           width: triggerRect.width,
           height: triggerRect.height,
-          borderRadius: "28px",
-          x: 0,
+          borderRadius: triggerVariant === "icon" ? 999 : triggerBorderRadius,
+          // FIX: Nudge left slightly on exit to correct visual alignment
+          x: effectiveVariant === "fullscreen" ? 0 : -10,
           transition: { duration: 0.3, ease: "easeInOut" },
         }}
         transition={{
@@ -187,8 +251,9 @@ export const SearchView = ({
           ease: EASING.expressiveDefaultEffects,
         }}
         className={clsx(
-          "absolute flex flex-col bg-surface-container-high shadow-2xl overflow-hidden transform-3d",
+          "absolute flex flex-col shadow-2xl overflow-hidden transform-3d",
           effectiveVariant === "docked" && "shadow-3xl",
+          colors.expandedHeader,
         )}
       >
         <div className="relative h-[56px] shrink-0">
@@ -200,8 +265,16 @@ export const SearchView = ({
             transition={{ duration: 0.2, delay: 0.1 }}
           >
             <div className="flex h-12 w-12 items-center justify-center shrink-0">
-              <IconButton variant="ghost" onClick={handleClose}>
-                <ArrowLeft className="h-6 w-6 text-on-surface" />
+              <IconButton
+                variant="ghost"
+                onClick={handleClose}
+                className={clsx(
+                  color === "primary" || color === "secondary"
+                    ? "text-inherit hover:bg-white/10"
+                    : "text-on-surface",
+                )}
+              >
+                <ArrowLeft className="h-6 w-6" />
               </IconButton>
             </div>
 
@@ -211,7 +284,11 @@ export const SearchView = ({
             >
               <input
                 ref={inputRef}
-                className="h-full w-full bg-transparent text-lg text-on-surface outline-none placeholder:text-on-surface-variant/60"
+                className={clsx(
+                  "h-full w-full bg-transparent text-lg outline-none",
+                  "text-inherit",
+                  colors.placeholder,
+                )}
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -220,49 +297,72 @@ export const SearchView = ({
 
             <div className="flex items-center pr-2 shrink-0">
               {value && (
-                <IconButton variant="ghost" onClick={handleClear}>
-                  <X className="h-6 w-6 text-on-surface" />
+                <IconButton
+                  variant="ghost"
+                  onClick={handleClear}
+                  className={clsx(
+                    color === "primary" || color === "secondary"
+                      ? "text-inherit hover:bg-white/10"
+                      : "text-on-surface",
+                  )}
+                >
+                  <X className="h-6 w-6" />
                 </IconButton>
               )}
-              <IconButton variant="ghost">
-                <Mic className="h-6 w-6 text-on-surface" />
+              <IconButton
+                variant="ghost"
+                className={clsx(
+                  color === "primary" || color === "secondary"
+                    ? "text-inherit hover:bg-white/10"
+                    : "text-on-surface",
+                )}
+              >
+                <Mic className="h-6 w-6" />
               </IconButton>
             </div>
           </motion.div>
 
-          {/* Ghost Content: Matches input size (text-lg) and handles color state */}
-          <motion.div
-            className="absolute inset-0 flex items-center px-4 z-0 pointer-events-none"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 0 }}
-            exit={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="flex h-12 w-12 items-center justify-center text-on-surface shrink-0 -ml-2">
-              {dockedLeadingIcon}
-            </div>
-            <div
-              className={clsx(
-                "flex-1 text-lg px-2 truncate",
-                value ? "text-on-surface" : "text-on-surface-variant/60",
-              )}
+          {triggerVariant !== "icon" && (
+            <motion.div
+              className="absolute inset-0 flex items-center px-4 z-0 pointer-events-none"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 0 }}
+              exit={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
             >
-              {value || placeholder}
-            </div>
-            <div className="flex items-center pl-2 shrink-0">
-              {dockedTrailingIcon}
-            </div>
-          </motion.div>
+              {triggerVariant === "default" && (
+                <div className="flex h-12 w-12 items-center justify-center text-inherit shrink-0 -ml-2">
+                  {dockedLeadingIcon}
+                </div>
+              )}
+
+              <div
+                className={clsx(
+                  "flex-1 text-lg px-2 truncate",
+                  colors.placeholder,
+                  triggerVariant === "minimal" && "text-center",
+                )}
+              >
+                {value || placeholder}
+              </div>
+
+              {triggerVariant === "default" && (
+                <div className="flex items-center pl-2 shrink-0">
+                  {dockedTrailingIcon}
+                </div>
+              )}
+            </motion.div>
+          )}
         </div>
 
-        <Separator className="shrink-0" />
+        <Separator className="shrink-0 opacity-20" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="flex-1 relative min-h-0 bg-surface-container-high"
+          className={clsx("flex-1 relative min-h-0", colors.expandedBody)}
         >
           <ElasticScrollArea className="h-full w-full">
             {children}
@@ -272,27 +372,72 @@ export const SearchView = ({
     </div>
   );
 
-  return (
-    <>
+  const TriggerComponent = () => {
+    if (triggerVariant === "icon") {
+      return (
+        <IconButton
+          // @ts-ignore
+          ref={triggerRef}
+          onClick={handleOpen}
+          variant="ghost"
+          className={clsx(
+            "text-on-surface hover:bg-surface-container-highest",
+            isOpen && "opacity-0",
+            className,
+          )}
+          aria-label={placeholder}
+        >
+          {dockedLeadingIcon || <Search className="h-6 w-6" />}
+        </IconButton>
+      );
+    }
+
+    if (triggerVariant === "minimal") {
+      return (
+        <div
+          ref={triggerRef}
+          onClick={handleOpen}
+          className={clsx(
+            "relative flex h-[56px] w-full cursor-pointer items-center justify-center rounded-full px-4 transition-all duration-200",
+            colors.trigger,
+            isOpen
+              ? "opacity-0 pointer-events-none"
+              : "opacity-100 hover:shadow-md",
+            className,
+          )}
+        >
+          <span
+            className={clsx(
+              "text-lg truncate select-none text-center",
+              value ? "text-inherit" : "opacity-70",
+            )}
+          >
+            {value || placeholder}
+          </span>
+        </div>
+      );
+    }
+
+    return (
       <div
         ref={triggerRef}
         onClick={handleOpen}
         className={clsx(
-          "relative flex h-[56px] w-full cursor-pointer items-center rounded-full bg-surface-container-highest px-4 transition-all duration-200",
+          "relative flex h-[56px] w-full cursor-pointer items-center rounded-full px-4 transition-all duration-200",
+          colors.trigger,
           isOpen
             ? "opacity-0 pointer-events-none"
             : "opacity-100 hover:shadow-md",
           className,
         )}
       >
-        <div className="flex h-12 w-12 items-center justify-center text-on-surface shrink-0 -ml-2">
+        <div className="flex h-12 w-12 items-center justify-center text-inherit shrink-0 -ml-2">
           {dockedLeadingIcon}
         </div>
-        {/* Trigger Text: Matches input size (text-lg) and handles color state */}
         <div
           className={clsx(
             "flex flex-1 items-center px-2 text-lg truncate select-none",
-            value ? "text-on-surface" : "text-on-surface-variant/60",
+            value ? "text-inherit" : "opacity-70",
           )}
         >
           {value || placeholder}
@@ -301,7 +446,12 @@ export const SearchView = ({
           {dockedTrailingIcon}
         </div>
       </div>
+    );
+  };
 
+  return (
+    <>
+      <TriggerComponent />
       {typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence>{isOpen && ExpandedView}</AnimatePresence>,
