@@ -36,6 +36,15 @@ const meta: Meta<typeof NavigationRail.Navigator> = {
     bordered: {
       control: "boolean",
     },
+    forceExpanded: {
+      control: "boolean",
+      description: "Forces the rail to stay expanded (Desktop only).",
+    },
+    expandOnHover: {
+      control: "boolean",
+      description:
+        "Expands the rail when hovering over it on desktop. If false, users must click the menu button.",
+    },
     activeTab: { control: false },
     onTabPress: { action: "tabPressed" },
   },
@@ -111,12 +120,61 @@ const RenderWithLayout = (args: any) => {
 };
 
 export const Default: Story = {
-  name: "1. Default (Push on Desktop)",
+  name: "1. Default (Hover Expand)",
   args: {
     variant: "ghost",
     shape: "minimal",
     bordered: false,
     itemVariant: "primary",
+    expandOnHover: true,
+    forceExpanded: false,
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab">
+      <RenderWithLayout {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const ForceExpanded: Story = {
+  name: "2. Forced Expanded (Desktop)",
+  args: {
+    ...Default.args,
+    forceExpanded: true,
+    expandOnHover: false,
+    bordered: true,
+    variant: "primary",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The rail remains open on desktop. The toggle button is hidden. This behaves like a persistent sidebar.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab">
+      <RenderWithLayout {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const ManualToggle: Story = {
+  name: "3. Manual Toggle Only",
+  args: {
+    ...Default.args,
+    expandOnHover: false,
+    forceExpanded: false,
+    variant: "secondary",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Hover expansion is disabled. The user must click the menu button to expand/collapse the rail on desktop.",
+      },
+    },
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
@@ -126,19 +184,20 @@ export const Default: Story = {
 };
 
 export const OverlayOnMobile: Story = {
-  name: "2. Overlay on Mobile",
+  name: "4. Overlay on Mobile",
   args: {
     ...Default.args,
     variant: "primary",
     shape: "full",
     bordered: false,
+    expandOnHover: false,
   },
   parameters: {
     viewport: { defaultViewport: "mobile1" },
     docs: {
       description: {
         story:
-          "On smaller viewports, the rail automatically switches to an 'overlay' behavior. Tapping the menu icon expands it over the content, and a semi-transparent backdrop appears. Tapping the backdrop closes the rail.",
+          "On smaller viewports, the rail automatically switches to an 'overlay' behavior regardless of desktop settings.",
       },
     },
   },

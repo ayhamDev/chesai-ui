@@ -243,7 +243,7 @@ export const SearchView = ({
           height: triggerRect.height,
           borderRadius: triggerVariant === "icon" ? 999 : triggerBorderRadius,
           // FIX: Nudge left slightly on exit to correct visual alignment
-          x: effectiveVariant === "fullscreen" ? 0 : -10,
+          x: effectiveVariant === "fullscreen" ? -10 : -10,
           transition: { duration: 0.3, ease: "easeInOut" },
         }}
         transition={{

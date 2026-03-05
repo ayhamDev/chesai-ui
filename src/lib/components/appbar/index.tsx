@@ -83,6 +83,7 @@ export interface AppBarSharedProps {
   foldAnimationDistance?: number;
   foldBorderRadius?: number;
   routeKey?: string;
+  collapsible?: boolean;
 }
 
 export interface AppBarProps extends Omit<
@@ -104,6 +105,11 @@ export interface AppBarProps extends Omit<
   expandedContent?: React.ReactNode;
   /** Controls if the expandedContent should use the default fade/slide exit animation, or "none" for manual morphing */
   expandedAnimation?: "default" | "none";
+  /**
+   * If false, the expanded variants (medium, large) will not collapse to the small size on scroll.
+   * @default true
+   */
+  collapsible?: boolean;
 
   // --- CUSTOMIZATION THRESHOLDS ---
   /** Override the default collapsed height (default is 64px). */
@@ -133,6 +139,7 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
       topRowContent,
       expandedContent,
       expandedAnimation = "default",
+      collapsible = true,
       collapsedHeight = 64,
       expandedHeight,
       effectScrollThreshold = 5,
@@ -286,21 +293,24 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
       else if (latest <= effectScrollThreshold && isScrolled)
         setIsScrolled(false);
 
-      const heightToHide = measuredTop + measuredBottom;
+      // If not collapsible, the entire expanded height must hide.
+      const heightToHide =
+        (collapsible ? measuredTop : expandedTotalHeight) + measuredBottom;
+      const threshold = collapsible ? collapseDistance : 0;
 
       if (scrollBehavior === "hide") {
-        // We use Math.max with collapseDistance to ensure it doesn't hide while it's still collapsing
-        const scrollPastCollapse = Math.max(0, latest - collapseDistance);
+        // We use Math.max with threshold to ensure it doesn't hide while it's still collapsing
+        const scrollPastCollapse = Math.max(0, latest - threshold);
         headerY.set(Math.max(-heightToHide, -scrollPastCollapse));
       } else if (scrollBehavior === "floating") {
-        const scrollPastCollapse = latest - collapseDistance;
+        const scrollPastCollapse = latest - threshold;
 
         if (scrollPastCollapse <= 0) {
           headerY.set(0);
           return;
         }
 
-        const previousScrollPastCollapse = Math.max(0, prev - collapseDistance);
+        const previousScrollPastCollapse = Math.max(0, prev - threshold);
         const delta = scrollPastCollapse - previousScrollPastCollapse;
 
         if (latest <= 0) {
@@ -366,7 +376,7 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
         >
           <motion.div
             style={{
-              height: innerHeight,
+              height: collapsible ? innerHeight : expandedTotalHeight,
               willChange: "height",
             }}
             className="relative flex w-full flex-col justify-between overflow-hidden transform-gpu"
@@ -388,7 +398,11 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
               ) : (
                 <motion.div
                   style={{
-                    opacity: topOpacity,
+                    opacity: collapsible
+                      ? topOpacity
+                      : isExpandingVariant
+                        ? 0
+                        : 1,
                     willChange: "opacity",
                   }}
                   className={clsx(
@@ -428,8 +442,8 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
                 <motion.div
                   ref={expandedRowRef}
                   style={{
-                    opacity: expandedOpacity,
-                    y: expandedY,
+                    opacity: collapsible ? expandedOpacity : 1,
+                    y: collapsible ? expandedY : 0,
                     willChange: "opacity, transform",
                   }}
                   className="px-4 pb-4 w-full flex-1 z-10 transform-gpu"
@@ -442,9 +456,9 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
                     position: "absolute",
                     left: "16px",
                     bottom: isLarge ? "28px" : "24px",
-                    scale: titleScale,
-                    x: titleX,
-                    y: titleY,
+                    scale: collapsible ? titleScale : 1,
+                    x: collapsible ? titleX : 0,
+                    y: collapsible ? titleY : 0,
                     transformOrigin: "bottom left",
                     willChange: "transform",
                     maxWidth: trailingIcons

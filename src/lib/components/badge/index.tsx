@@ -24,7 +24,7 @@ const badgeVariants = cva(
       variant: "primary",
       shape: "full",
     },
-  }
+  },
 );
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -41,7 +41,7 @@ export const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 Badge.displayName = "Badge";

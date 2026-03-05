@@ -7,7 +7,8 @@ import React from "react";
 
 // --- VARIANTS ---
 
-const flexVariants = cva("flex", {
+const flexVariants = cva("flex relative", {
+  // Added 'relative' to fix popLayout positioning
   variants: {
     direction: {
       row: "flex-row",
@@ -66,17 +67,22 @@ export const FlexItem = React.forwardRef<HTMLDivElement, FlexItemProps>(
     return (
       <motion.div
         ref={ref}
-        layout
+        layout // Essential: Tells Framer to animate layout changes (position/size)
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        transition={{
+          type: "spring",
+          stiffness: 500,
+          damping: 30,
+          mass: 1,
+        }}
         className={clsx(
           grow === true && "flex-grow",
           grow === 0 && "flex-grow-0",
           shrink === true && "flex-shrink",
           shrink === 0 && "flex-shrink-0",
-          className
+          className,
         )}
         style={{
           flexGrow: typeof grow === "number" ? grow : undefined,
@@ -89,15 +95,14 @@ export const FlexItem = React.forwardRef<HTMLDivElement, FlexItemProps>(
         {children}
       </motion.div>
     );
-  }
+  },
 );
 FlexItem.displayName = "FlexItem";
 
 // --- COMPONENT: FLEX ---
 
 export interface FlexProps
-  extends HTMLMotionProps<"div">,
-    VariantProps<typeof flexVariants> {
+  extends HTMLMotionProps<"div">, VariantProps<typeof flexVariants> {
   asChild?: boolean;
   /**
    * If true, children are not auto-wrapped in AnimatePresence.
@@ -119,31 +124,34 @@ export const Flex = React.forwardRef<HTMLDivElement, FlexProps>(
       disableAnimatePresence = false,
       ...props
     },
-    ref
+    ref,
   ) => {
     return (
       <motion.div
         ref={ref}
-        layout
+        // Removed 'layout' from container to prevent it from fighting with children layout animations
+        // during resize, unless specifically needed.
         className={clsx(
-          flexVariants({ direction, wrap, justify, align, gap, className })
+          flexVariants({ direction, wrap, justify, align, gap, className }),
         )}
         {...props}
       >
         {disableAnimatePresence ? (
           children
         ) : (
+          // popLayout allows the exiting element to float absolutely, letting siblings slide underneath immediately
           <AnimatePresence mode="popLayout" initial={false}>
-            {/* FIX: Cast children to ReactNode to satisfy Typescript when using with Motion props */}
-            {React.Children.map(children as React.ReactNode, (child) => {
-              if (!React.isValidElement(child)) return child;
+            {React.Children.map(children, (child) => {
+              if (!React.isValidElement(child)) return null;
+              // We return the child directly. The child (FlexItem) handles the motion.
+              // Key MUST be on the child when passed to Flex.
               return child;
             })}
           </AnimatePresence>
         )}
       </motion.div>
     );
-  }
+  },
 );
 
 Flex.displayName = "Flex";

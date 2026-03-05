@@ -1,23 +1,32 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Plus, X } from "lucide-react";
+import { Check, Plus, Shuffle, Trash2, User } from "lucide-react";
 import { useState } from "react";
 import { Avatar } from "../avatar";
+import { Badge } from "../badge";
 import { Button } from "../button";
 import { Card } from "../card";
+import { IconButton } from "../icon-button";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "../item";
 import { Typography } from "../typography";
 import { Flex, FlexItem } from "./flex";
 
 const meta: Meta<typeof Flex> = {
   title: "Components/Layout/Flex",
   component: Flex,
-  // Cast to avoid strict typing issues with subcomponents in some Storybook versions
-  subcomponents: { FlexItem } as Record<string, React.ComponentType<any>>,
+  tags: ["autodocs"],
   parameters: {
     layout: "padded",
     docs: {
       description: {
         component:
-          "A flexible box layout powered by Framer Motion. It supports standard flex props and automatic layout animations (FLIP) when items are added, removed, or reordered.",
+          "Demonstrating robust addition and removal animations using `Flex` and `FlexItem`. The `popLayout` mode ensures removed items don't leave layout gaps.",
       },
     },
   },
@@ -26,171 +35,206 @@ const meta: Meta<typeof Flex> = {
 export default meta;
 type Story = StoryObj<typeof Flex>;
 
-// --- BASIC USAGE ---
+// --- MOCK DATA GENERATOR ---
+const NAMES = [
+  "Alice",
+  "Bob",
+  "Charlie",
+  "Diana",
+  "Ethan",
+  "Fiona",
+  "George",
+  "Hannah",
+];
+const ROLES = ["Designer", "Engineer", "Manager", "Director", "Support"];
 
-export const HorizontalStack: Story = {
-  name: "Horizontal Stack",
-  render: () => (
-    <Card className="p-6">
-      <Typography variant="title-small" className="mb-4">
-        Team Members
-      </Typography>
-      <Flex align="center" gap="md">
-        {[1, 2, 3, 4].map((i) => (
-          <FlexItem key={i}>
-            <Avatar fallback={`U${i}`} className="bg-blue-100 text-blue-700" />
-          </FlexItem>
-        ))}
-        <Button size="xs" variant="secondary" className="rounded-full">
-          <Plus size={16} />
-        </Button>
-      </Flex>
-    </Card>
-  ),
+const generateUser = () => {
+  const id = Math.random().toString(36).substr(2, 9);
+  const name = NAMES[Math.floor(Math.random() * NAMES.length)];
+  const role = ROLES[Math.floor(Math.random() * ROLES.length)];
+  return { id, name, role, status: "Active" };
 };
 
-export const VerticalStack: Story = {
-  name: "Vertical Stack",
-  render: () => (
-    <Card className="max-w-md p-0 overflow-hidden">
-      <div className="bg-graphite-secondary p-4 border-b border-graphite-border">
-        <Typography variant="title-small">Notifications</Typography>
-      </div>
-      <Flex direction="column" gap="none" className="divide-y divide-gray-100">
-        {[
-          { title: "New Message", time: "2m ago" },
-          { title: "Friend Request", time: "1h ago" },
-          { title: "System Update", time: "1d ago" },
-        ].map((item, i) => (
-          <FlexItem
-            key={i}
-            className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-          >
-            <Flex justify="between" align="center">
-              <Typography variant="body-small" className="font-medium">
-                {item.title}
-              </Typography>
-              <Typography variant="body-small" muted={true} className="text-xs">
-                {item.time}
-              </Typography>
-            </Flex>
-          </FlexItem>
-        ))}
-      </Flex>
-    </Card>
-  ),
-};
-
-// --- WRAPPING & TAGS ---
-
-export const TagsLayout: Story = {
-  name: "Wrap (Tags)",
-  render: () => {
-    const tags = [
-      "React",
-      "TypeScript",
-      "Tailwind CSS",
-      "Framer Motion",
-      "Storybook",
-      "Design Systems",
-      "Accessibility",
-      "Performance",
-      "UX/UI",
-      "Testing",
-    ];
-
-    return (
-      <div className="max-w-md">
-        <Typography variant="title-small" className="mb-4">
-          Skills
-        </Typography>
-        <Flex wrap="wrap" gap="sm">
-          {tags.map((tag) => (
-            <FlexItem key={tag}>
-              <div className="px-3 py-1.5 rounded-full bg-graphite-secondary border border-graphite-border text-sm font-medium hover:border-black/20 transition-colors cursor-default">
-                {tag}
-              </div>
-            </FlexItem>
-          ))}
-        </Flex>
-      </div>
-    );
-  },
-};
-
-// --- INTERACTIVE ANIMATION ---
-
-export const Interactive: Story = {
-  name: "Animated List",
+export const TaskManager: Story = {
+  name: "Interactive Task Manager",
   render: () => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [tasks, setTasks] = useState([
-      { id: 1, text: "Review Pull Requests", priority: "High" },
-      { id: 2, text: "Update Documentation", priority: "Medium" },
-      { id: 3, text: "Fix Navigation Bug", priority: "High" },
+    const [users, setUsers] = useState(() => [
+      generateUser(),
+      generateUser(),
+      generateUser(),
     ]);
 
-    const addTask = () => {
-      const id = Date.now();
-      setTasks((prev) => [
-        { id, text: `New Task #${id.toString().slice(-4)}`, priority: "Low" },
-        ...prev,
-      ]);
+    const addUser = () => {
+      setUsers((prev) => [generateUser(), ...prev]);
     };
 
-    const removeTask = (id: number) => {
-      setTasks((prev) => prev.filter((t) => t.id !== id));
+    const removeUser = (id: string) => {
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+    };
+
+    const shuffleUsers = () => {
+      setUsers((prev) => [...prev].sort(() => Math.random() - 0.5));
     };
 
     return (
-      <div className="max-w-lg">
-        <Flex justify="between" align="center" className="mb-6">
-          <Typography variant="title-medium">Task Board</Typography>
-          <Button onClick={addTask} size="sm">
-            <Plus size={16} className="mr-2" /> Add Task
-          </Button>
-        </Flex>
+      <Card className="w-full max-w-md mx-auto" padding="lg">
+        {/* Header Actions */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <Typography variant="title-medium">Team Members</Typography>
+            <Typography variant="body-small" muted>
+              {users.length} active members
+            </Typography>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={shuffleUsers}
+              startIcon={<Shuffle size={14} />}
+            >
+              Shuffle
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={addUser}
+              startIcon={<Plus size={14} />}
+            >
+              Add
+            </Button>
+          </div>
+        </div>
 
-        <Flex direction="column" gap="sm">
-          {tasks.map((task) => (
-            <FlexItem key={task.id}>
-              <Card className="flex items-center justify-between p-4 group hover:shadow-md transition-shadow">
-                <Flex align="center" gap="md">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      task.priority === "High"
-                        ? "bg-red-500"
-                        : task.priority === "Medium"
-                          ? "bg-orange-500"
-                          : "bg-green-500"
-                    }`}
+        {/* Animated List */}
+        <Flex direction="column" gap="sm" className="min-h-[300px]">
+          {users.map((user) => (
+            <FlexItem key={user.id}>
+              <Item
+                variant="secondary"
+                shape="minimal"
+                className="bg-surface-container-high border border-transparent hover:border-outline-variant transition-colors"
+              >
+                <ItemMedia variant="avatar">
+                  <Avatar
+                    fallback={user.name[0]}
+                    size="md"
+                    className="bg-primary-container text-on-primary-container"
                   />
-                  <Typography>{task.text}</Typography>
-                </Flex>
-                <button
-                  type="button"
-                  onClick={() => removeTask(task.id)}
-                  className="p-2 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  aria-label="Delete task"
-                >
-                  <X size={18} />
-                </button>
-              </Card>
+                </ItemMedia>
+
+                <ItemContent>
+                  <ItemTitle>{user.name}</ItemTitle>
+                  <ItemDescription className="flex items-center gap-2">
+                    {user.role}
+                    <Badge
+                      variant="secondary"
+                      shape="full"
+                      className="h-4 px-1.5 text-[10px]"
+                    >
+                      {user.status}
+                    </Badge>
+                  </ItemDescription>
+                </ItemContent>
+
+                <ItemActions>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    className="text-error hover:bg-error/10"
+                    onClick={() => removeUser(user.id)}
+                  >
+                    <Trash2 size={16} />
+                  </IconButton>
+                </ItemActions>
+              </Item>
             </FlexItem>
           ))}
-          {tasks.length === 0 && (
-            <FlexItem key="empty">
-              <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
-                <Typography variant="body-small" muted={true}>
-                  No tasks remaining
+
+          {users.length === 0 && (
+            <FlexItem key="empty-state">
+              <div className="h-40 flex flex-col items-center justify-center text-center border-2 border-dashed border-outline-variant rounded-xl">
+                <Typography variant="body-medium" muted>
+                  No team members found.
                 </Typography>
-                <Button variant="link" onClick={addTask}>
+                <Button variant="link" onClick={addUser}>
                   Create one?
                 </Button>
               </div>
             </FlexItem>
           )}
         </Flex>
+      </Card>
+    );
+  },
+};
+
+export const NotificationStack: Story = {
+  name: "Toast/Notification Stack",
+  render: () => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [notifications, setNotifications] = useState([
+      { id: "1", title: "New Message", time: "Just now" },
+      { id: "2", title: "System Update", time: "2m ago" },
+    ]);
+
+    const addNotification = () => {
+      const id = Date.now().toString();
+      setNotifications((prev) => [
+        { id, title: `Notification ${prev.length + 1}`, time: "Just now" },
+        ...prev,
+      ]);
+    };
+
+    const dismiss = (id: string) => {
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    };
+
+    return (
+      <div className="w-80 relative h-[400px] border border-outline-variant bg-surface-container-low rounded-2xl overflow-hidden flex flex-col">
+        <div className="p-4 bg-surface shadow-sm z-10 flex justify-between items-center">
+          <Typography variant="label-large" className="font-bold">
+            Notifications
+          </Typography>
+          <IconButton variant="ghost" size="sm" onClick={addNotification}>
+            <Plus size={16} />
+          </IconButton>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Note: We use direction="column-reverse" to stack from bottom if desired, but here standard column */}
+          <Flex direction="column" gap="sm">
+            {notifications.map((n) => (
+              <FlexItem key={n.id}>
+                <Card
+                  variant="surface"
+                  elevation={1}
+                  padding="sm"
+                  className="flex items-start gap-3 border border-outline-variant/50"
+                >
+                  <div className="mt-0.5 bg-primary text-on-primary rounded-full p-1">
+                    <Check size={12} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Typography variant="label-medium" className="font-bold">
+                      {n.title}
+                    </Typography>
+                    <Typography variant="body-small" muted>
+                      {n.time}
+                    </Typography>
+                  </div>
+                  <button
+                    onClick={() => dismiss(n.id)}
+                    className="text-on-surface-variant hover:text-error transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </Card>
+              </FlexItem>
+            ))}
+          </Flex>
+        </div>
       </div>
     );
   },

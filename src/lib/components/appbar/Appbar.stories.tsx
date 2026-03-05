@@ -17,7 +17,7 @@ import { Typography } from "../typography";
 import { AppBar, useAppBarContext } from "./index";
 
 const meta: Meta<typeof AppBar> = {
-  title: "Components/AppBar",
+  title: "Components/Navigators/AppBar",
   component: AppBar,
   tags: ["autodocs"],
   parameters: {
@@ -71,6 +71,7 @@ const meta: Meta<typeof AppBar> = {
       options: ["default", "none"],
     },
     elevateOnScroll: { control: "boolean" },
+    collapsible: { control: "boolean" },
     title: { control: "text" },
     leadingIcon: { control: false },
     trailingIcons: { control: false },
@@ -249,11 +250,14 @@ export const Floating: Story = {
     scrollBehavior: "floating",
     scrolledColor: "surface-container-high",
     title: "Floating App Bar",
+
     leadingIcon: (
       <IconButton variant="ghost">
         <Menu />
       </IconButton>
     ),
+
+    collapsible: false
   },
   render: renderWithScrollContainer,
 };
@@ -264,17 +268,44 @@ export const Hide: Story = {
     variant: "large",
     scrollBehavior: "hide",
     title: "Hiding App Bar",
+
+    leadingIcon: (
+      <IconButton variant="ghost">
+        <Menu />
+      </IconButton>
+    ),
+
+    collapsible: true
+  },
+  render: renderWithScrollContainer,
+};
+
+export const NonCollapsible: Story = {
+  name: "7. Non-Collapsing (Stays Large)",
+  args: {
+    variant: "large",
+    title: "Always Large",
+    collapsible: false,
+    scrollBehavior: "hide",
     leadingIcon: (
       <IconButton variant="ghost">
         <Menu />
       </IconButton>
     ),
   },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Setting `collapsible={false}` prevents the large app bar from shrinking. Paired with `scrollBehavior='hide'` here, it scrolls entirely out of view as a single massive block instead of morphing first.",
+      },
+    },
+  },
   render: renderWithScrollContainer,
 };
 
 export const CustomSolid: Story = {
-  name: "7. Custom Solid Color",
+  name: "8. Custom Solid Color",
   args: {
     variant: "small",
     color: "primary",
@@ -296,7 +327,7 @@ export const CustomSolid: Story = {
 };
 
 export const TransparentToSolid: Story = {
-  name: "8. Transparent to Solid",
+  name: "9. Transparent to Solid",
   args: {
     variant: "center",
     color: "transparent",
@@ -317,7 +348,7 @@ export const TransparentToSolid: Story = {
 };
 
 export const AdvancedExpandedContent: Story = {
-  name: "9. Advanced Search Content",
+  name: "10. Advanced Search Content",
   args: {
     variant: "large",
     color: "surface-container-low",
@@ -357,12 +388,12 @@ export const AdvancedExpandedContent: Story = {
 const CustomMorphingHeader = () => {
   const { collapseProgress } = useAppBarContext();
 
-  const avatarY = useTransform(collapseProgress, [0, 1], [0, -51]);
+  const avatarY = useTransform(collapseProgress, [0, 1], [0, -50]);
   const avatarX = useTransform(collapseProgress, [0, 1], [0, 48]);
   const avatarScale = useTransform(collapseProgress, [0, 1], [1, 0.4]);
 
-  const textX = useTransform(collapseProgress, [0, 1], [0, -18]);
-  const textY = useTransform(collapseProgress, [0, 1], [0, -44]);
+  const textX = useTransform(collapseProgress, [0, 1], [0, -15]);
+  const textY = useTransform(collapseProgress, [0, 1], [0, -54]);
   const textScale = useTransform(collapseProgress, [0, 1], [1, 0.75]);
 
   const subtitleOpacity = useTransform(collapseProgress, [0, 0.6], [1, 0]);
@@ -414,13 +445,15 @@ const CustomMorphingHeader = () => {
 };
 
 export const ManualMorphing: Story = {
-  name: "10. Manual Morphing (Context API)",
+  name: "11. Manual Morphing (Context API)",
   args: {
     variant: "large",
-    color: "surface-container-lowest",
-    scrolledColor: "surface-container",
+    color: "surface",
+    scrolledColor: "surface-container-low",
     elevateOnScroll: true,
     customPaddingTop: "pt-[180px]",
+    expandedHeight: 120,
+    effectScrollThreshold: 50,
     expandedAnimation: "none",
     leadingIcon: (
       <IconButton variant="ghost">
@@ -437,19 +470,17 @@ export const ManualMorphing: Story = {
   render: renderWithScrollContainer,
 };
 
-// --- NEW STORY FOR CUSTOM THRESHOLDS & SIZES ---
-
 export const CustomThresholds: Story = {
-  name: "11. Custom Sizes & Thresholds",
+  name: "12. Custom Sizes & Thresholds",
   args: {
-    variant: "large", // Base behavior
+    variant: "large",
     color: "surface",
-    scrolledColor: "primary", // Obvious color change
+    scrolledColor: "primary",
     elevateOnScroll: true,
-    collapsedHeight: 80, // Thicker top row
-    expandedHeight: 120, // Custom height for the expanded area
-    effectScrollThreshold: 150, // Don't trigger color/shadow until 150px down
-    collapseScrollDistance: 300, // Make the collapse animation super slow (stretches over 300px of scrolling)
+    collapsedHeight: 80,
+    expandedHeight: 120,
+    effectScrollThreshold: 150,
+    collapseScrollDistance: 300,
     title: "Slow Collapse",
     leadingIcon: (
       <IconButton variant="ghost">
@@ -461,7 +492,7 @@ export const CustomThresholds: Story = {
         <MoreVertical />
       </IconButton>
     ),
-    customPaddingTop: "pt-[200px]", // 80 + 120
+    customPaddingTop: "pt-[200px]",
   },
   parameters: {
     docs: {

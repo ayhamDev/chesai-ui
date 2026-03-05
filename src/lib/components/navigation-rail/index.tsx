@@ -35,8 +35,8 @@ interface NavigationRailContextProps {
   navigatorShape: "full" | "minimal" | "sharp";
   indicatorId: string;
   variant: "primary" | "secondary" | "tertiary" | "ghost" | "surface";
-  itemVariant: "primary" | "secondary" | "tertiary" | "ghost"; // Controls item look
-  isRtl: boolean; // Add isRtl to internal context
+  itemVariant: "primary" | "secondary" | "tertiary" | "ghost";
+  isRtl: boolean;
 }
 
 const NavigationRailContext = createContext<NavigationRailContextProps | null>(
@@ -70,19 +70,16 @@ const navigatorVariants = cva(
         overlay: "absolute",
       },
       shape: {
-        // Changed to logical properties (rounded-e-* handles right in LTR, left in RTL)
         full: "rounded-e-3xl",
         minimal: "rounded-e-xl",
         sharp: "rounded-none",
       },
       bordered: {
-        // Changed to logical property (border-e handles right in LTR, left in RTL)
         true: "border-e border-outline-variant",
         false: "",
       },
     },
     compoundVariants: [
-      // Tertiary shouldn't have a border usually as it's colored
       { variant: "tertiary", bordered: true, className: "border-transparent!" },
     ],
     defaultVariants: {
@@ -113,7 +110,6 @@ const NavigationRailFAB = React.forwardRef<
   HTMLButtonElement,
   NavigationRailFABProps
 >(({ icon, label, className, variant: propVariant, ...props }, ref) => {
-  // Use context itemVariant to influence default if prop not provided
   const { isExpanded, itemVariant, isRtl } = useNavigationRail();
   const variant =
     propVariant || (itemVariant === "ghost" ? "secondary" : "primary");
@@ -143,7 +139,6 @@ const NavigationRailFAB = React.forwardRef<
       "bg-transparent text-on-surface hover:bg-surface-container-highest/50 shadow-none",
   };
 
-  // Determine slide direction based on RTL
   const slideX = isRtl ? 5 : -5;
 
   return (
@@ -191,7 +186,6 @@ const NavigationRailFAB = React.forwardRef<
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: slideX }}
                 transition={{ duration: 0.15, delay: 0.05 }}
-                // Changed pr-6 to pe-6 (padding-end) for RTL support
                 className="pe-6 font-semibold text-base text-inherit whitespace-nowrap"
               >
                 {label}
@@ -227,9 +221,6 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 
   const localRef = useRef<HTMLButtonElement>(null);
 
-  // Dynamic Ripple based on itemVariant and active state
-  // Solid active states (primary/tertiary) usually need lighter ripple on dark text,
-  // or darker ripple on light text. Standard MD3 -> Primary/Tertiary are filled.
   const isSolidFilled =
     isActive && (itemVariant === "primary" || itemVariant === "tertiary");
   const rippleColor = isSolidFilled
@@ -243,7 +234,6 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     duration: 400,
   });
 
-  // Highlight color based on itemVariant
   let activeBg = "bg-secondary-container";
   let activeText = "text-on-secondary-container";
 
@@ -284,7 +274,6 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
           "flex-row gap-4 px-4 py-2",
           isActive ? `${activeText} font-semibold` : "text-on-surface-variant",
           shapeToClassName[finalShape],
-          // Hover effect for non-active items
           !isActive && [
             `after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out`,
             "hover:after:opacity-100 hover:after:scale-100",
@@ -338,10 +327,14 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
   activeTab: string;
   onTabPress: (name: string) => void;
-  variant?: "primary" | "secondary" | "tertiary" | "ghost" | "surface"; // Background color
-  itemVariant?: "primary" | "secondary" | "tertiary" | "ghost"; // Item style
+  variant?: "primary" | "secondary" | "tertiary" | "ghost" | "surface";
+  itemVariant?: "primary" | "secondary" | "tertiary" | "ghost";
   width?: string | number;
   expandedWidth?: string | number;
+  /** Force the rail to remain expanded on Desktop */
+  forceExpanded?: boolean;
+  /** Allow the rail to expand on hover (Desktop only). Defaults to false. */
+  expandOnHover?: boolean;
 }
 
 const NavigationRailNavigator: React.FC<NavigatorProps> = ({
@@ -351,32 +344,41 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   shape = "minimal",
   bordered = true,
   variant = "primary",
-  itemVariant = "secondary", // Default to standard MD3 secondary container
+  itemVariant = "secondary",
   width = "6rem",
   expandedWidth = "12rem",
+  forceExpanded = false,
+  expandOnHover = false,
   className,
   style,
   ...props
 }) => {
   const indicatorId = React.useId();
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Internal state for hover/manual toggling
+  const [internalExpanded, setInternalExpanded] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { isRtl } = useLayout(); // Access Layout Context
+  const { isRtl } = useLayout();
+
+  // Determine effective expanded state
+  const isExpanded = isMobile
+    ? internalExpanded // Mobile uses manual toggle
+    : forceExpanded || internalExpanded; // Desktop uses force OR manual/hover
 
   const handleMouseEnter = () => {
-    if (!isMobile) {
-      setIsExpanded(true);
+    // Only expand if desktop, allowed to expand on hover, and not already forced open
+    if (!isMobile && expandOnHover && !forceExpanded) {
+      setInternalExpanded(true);
     }
   };
 
   const handleMouseLeave = () => {
-    if (!isMobile) {
-      setIsExpanded(false);
+    if (!isMobile && expandOnHover && !forceExpanded) {
+      setInternalExpanded(false);
     }
   };
 
   const toggleExpanded = () => {
-    setIsExpanded(!isExpanded);
+    setInternalExpanded(!internalExpanded);
   };
 
   const childrenArray = Children.toArray(children);
@@ -433,7 +435,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="fixed inset-0 bg-black/50 z-10"
-            onClick={() => setIsExpanded(false)}
+            onClick={() => setInternalExpanded(false)}
           />
         )}
       </AnimatePresence>
@@ -445,7 +447,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
             behavior,
             shape,
             bordered,
-            variant, // Uses separate background variant
+            variant,
             className,
           }),
         )}
@@ -470,24 +472,29 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
       >
         <div
           className={clsx(
-            // Use pe-7 (padding-end) for the toggle button area
             "flex h-20 w-full shrink-0 items-center justify-end p-4 pe-7",
           )}
         >
-          <IconButton
-            variant="ghost"
-            size="md"
-            shape="minimal"
-            onClick={isMobile ? toggleExpanded : undefined}
-            aria-label={isExpanded ? "Collapse Menu" : "Expand Menu"}
-          >
-            {isExpanded ? (
-              // Rotate arrow in RTL mode so it points correctly
-              <ChevronLeft className={clsx("w-5 h-5", isRtl && "rotate-180")} />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
-          </IconButton>
+          {/* Hide toggle button if forced expanded on Desktop (redundant) */}
+          {(!forceExpanded || isMobile) && (
+            <IconButton
+              variant="ghost"
+              size="md"
+              shape="minimal"
+              // On desktop: click works only if expandOnHover is OFF (manual mode).
+              // If expandOnHover is ON, the hover handles it, click is superfluous but harmless.
+              onClick={isMobile || !expandOnHover ? toggleExpanded : undefined}
+              aria-label={isExpanded ? "Collapse Menu" : "Expand Menu"}
+            >
+              {isExpanded ? (
+                <ChevronLeft
+                  className={clsx("w-5 h-5", isRtl && "rotate-180")}
+                />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </IconButton>
+          )}
         </div>
 
         {fab && <div className="shrink-0">{fab}</div>}
