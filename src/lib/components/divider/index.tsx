@@ -21,24 +21,9 @@ const solidThicknessMap = {
 };
 
 const wavyConfig = {
-  // Stroke width of the SVG path
-  thickness: {
-    sm: 1.5,
-    md: 2.5,
-    lg: 4,
-  },
-  // Length of one wave cycle (pattern width)
-  length: {
-    sm: 12, // Tighter waves
-    md: 20, // Standard
-    lg: 32, // Wide, relaxed waves
-  },
-  // Amplitude (Height of the wave peak from center)
-  amplitude: {
-    sm: 3,
-    md: 5,
-    lg: 8,
-  },
+  thickness: { sm: 1.5, md: 2.5, lg: 4 },
+  length: { sm: 12, md: 20, lg: 32 },
+  amplitude: { sm: 3, md: 5, lg: 8 },
 };
 
 // --- VARIANTS ---
@@ -66,8 +51,8 @@ const dividerContainerVariants = cva("flex items-center shrink-0 w-full", {
 const solidLineVariants = cva("flex-1", {
   variants: {
     variant: {
-      solid: "bg-current border-transparent", // Background handles thickness for solid
-      dashed: "bg-transparent border-current", // Border handles thickness/style for dashed
+      solid: "bg-current border-transparent",
+      dashed: "bg-transparent border-current",
       dotted: "bg-transparent border-current border-dotted",
     },
   },
@@ -94,17 +79,11 @@ const WavyLine = ({
   const length = wavyConfig.length[waveSize];
   const amplitude = wavyConfig.amplitude[waveSize];
 
-  // Calculate SVG container dimensions to prevent clipping
-  // Height needs to be (amplitude * 2) + padding for stroke width
   const trackSize = amplitude * 2 + strokeWidth * 2;
   const mid = trackSize / 2;
 
-  // Vertical Wavy Line
   if (orientation === "vertical") {
-    // Generate Path: M {mid} 0 Q {mid+amp} {len/4} {mid} {len/2} T {mid} {len}
-    // Rotated 90deg logic for vertical flow
     const d = `M ${mid} 0 Q ${mid + amplitude} ${length / 4} ${mid} ${length / 2} T ${mid} ${length}`;
-
     return (
       <div
         className="h-full flex justify-center overflow-hidden"
@@ -114,7 +93,9 @@ const WavyLine = ({
           height="100%"
           width={trackSize}
           className="stroke-current text-inherit block"
+          role="img"
         >
+          <title>Vertical wavy divider</title>
           <defs>
             <pattern
               id={patternId}
@@ -144,10 +125,7 @@ const WavyLine = ({
     );
   }
 
-  // Horizontal Wavy Line (Default)
-  // Path: M 0 {mid} Q {len/4} {mid-amp} {len/2} {mid} T {len} {mid}
   const d = `M 0 ${mid} Q ${length / 4} ${mid - amplitude} ${length / 2} ${mid} T ${length} ${mid}`;
-
   return (
     <div
       className="w-full flex items-center overflow-hidden"
@@ -157,7 +135,9 @@ const WavyLine = ({
         width="100%"
         height={trackSize}
         className="stroke-current text-inherit block"
+        role="img"
       >
+        <title>Horizontal wavy divider</title>
         <defs>
           <pattern
             id={patternId}
@@ -192,14 +172,14 @@ const WavyLine = ({
 export interface DividerProps
   extends
     React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof dividerContainerVariants> {
+    Omit<VariantProps<typeof dividerContainerVariants>, "color"> {
   variant?: "solid" | "dashed" | "dotted";
   shape?: "regular" | "wavy";
-  /** Thickness of the line */
   size?: "sm" | "md" | "lg";
-  /** Length/Width of the wave cycles (only for shape="wavy") */
   waveSize?: "sm" | "md" | "lg";
   textAlign?: "start" | "center" | "end";
+  // Explicitly type color to match the CVA keys, handling nullable from VariantProps
+  color?: "default" | "primary" | "secondary" | "tertiary" | "error";
 }
 
 export const Divider = React.forwardRef<HTMLDivElement, DividerProps>(
@@ -219,58 +199,54 @@ export const Divider = React.forwardRef<HTMLDivElement, DividerProps>(
     ref,
   ) => {
     const hasContent = React.Children.count(children) > 0;
+    const effectiveOrientation = orientation || "horizontal";
 
-    // Helper to render the specific line type
     const renderLine = () => {
       if (shape === "wavy") {
         return (
           <WavyLine
-            orientation={orientation || "horizontal"}
-            size={size}
+            orientation={effectiveOrientation}
+            size={size || "sm"}
             waveSize={waveSize}
           />
         );
       }
 
-      // Resolve solid/dashed classes based on orientation and size
+      // @ts-ignore - indexing constant map
       const thicknessClass =
-        solidThicknessMap[orientation || "horizontal"][size];
-
-      // For 'solid', we usually use background color for the line (div height).
-      // For 'dashed'/'dotted', we must use borders.
+        solidThicknessMap[effectiveOrientation][size || "sm"];
       const isBorderBased = variant === "dashed" || variant === "dotted";
-
-      // If solid, we remove the border class from the thickness map and just use dimensions + bg
-      // If dashed/dotted, we keep the border class.
       const finalSizeClass = isBorderBased
         ? thicknessClass
-        : thicknessClass.split(" ")[0]; // Take only w- or h- class, drop border-
+        : thicknessClass.split(" ")[0];
 
       return (
         <div className={clsx(solidLineVariants({ variant }), finalSizeClass)} />
       );
     };
 
+    // biome-ignore lint/a11y/useFocusableInteractive: This is a static separator, standard practice.
     return (
       <div
         ref={ref}
         role="separator"
-        aria-orientation={orientation}
+        aria-orientation={effectiveOrientation}
         className={clsx(
-          dividerContainerVariants({ orientation, color }),
+          dividerContainerVariants({
+            orientation: effectiveOrientation,
+            color,
+          }),
           hasContent && "gap-4",
           className,
         )}
         {...props}
       >
-        {/* Left/Top Line */}
         {(!hasContent ||
-          (orientation === "horizontal" &&
+          (effectiveOrientation === "horizontal" &&
             (textAlign === "center" || textAlign === "end")) ||
-          orientation === "vertical") &&
+          effectiveOrientation === "vertical") &&
           renderLine()}
 
-        {/* Content */}
         {hasContent && (
           <span className="shrink-0 max-w-[80%]">
             {typeof children === "string" ? (
@@ -286,11 +262,10 @@ export const Divider = React.forwardRef<HTMLDivElement, DividerProps>(
           </span>
         )}
 
-        {/* Right/Bottom Line */}
         {hasContent &&
-          ((orientation === "horizontal" &&
+          ((effectiveOrientation === "horizontal" &&
             (textAlign === "center" || textAlign === "start")) ||
-            orientation === "vertical") &&
+            effectiveOrientation === "vertical") &&
           renderLine()}
       </div>
     );

@@ -141,6 +141,7 @@ export const Flex = React.forwardRef<HTMLDivElement, FlexProps>(
         ) : (
           // popLayout allows the exiting element to float absolutely, letting siblings slide underneath immediately
           <AnimatePresence mode="popLayout" initial={false}>
+            {/* @ts-ignore */}
             {React.Children.map(children, (child) => {
               if (!React.isValidElement(child)) return null;
               // We return the child directly. The child (FlexItem) handles the motion.

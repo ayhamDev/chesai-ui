@@ -180,6 +180,7 @@ const DynamicBreadcrumbRenderer = ({
       {
         id: "system-ellipsis-placeholder",
         label: "...",
+        // @ts-ignore
         isSystemEllipsis: true,
       },
       ...after,

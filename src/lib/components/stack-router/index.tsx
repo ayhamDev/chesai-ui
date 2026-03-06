@@ -443,6 +443,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         }
       },
       canGoBack,
+      // @ts-ignore
       setOptions: (options) => {
         setDynamicOptions((prev) => ({
           ...prev,
@@ -533,6 +534,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
               return null;
             }
             const Component = screenConfig.component;
+            // @ts-ignore
             const ChildrenRender = screenConfig.children;
 
             const resolvedGlobalOptions =

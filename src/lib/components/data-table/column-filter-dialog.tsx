@@ -80,7 +80,7 @@ export function ColumnFilterDialog<TData, TValue>({
         <Select
           size="sm"
           label="Condition"
-          variant="flat"
+          variant="filled"
           value={operator}
           onValueChange={setOperator}
           items={type === "number" ? NUMBER_OPERATORS : TEXT_OPERATORS}
@@ -88,7 +88,7 @@ export function ColumnFilterDialog<TData, TValue>({
         <Input
           size="sm"
           label="Value"
-          variant="flat"
+          variant="filled"
           type={type === "number" ? "number" : "text"}
           placeholder="Type a value..."
           value={value}

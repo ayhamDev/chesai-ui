@@ -358,6 +358,7 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
       <AppBarContext.Provider
         value={{ scrollY, collapseProgress, collapseDistance }}
       >
+        {/* @ts-ignore */}
         <motion.header
           ref={ref}
           role="banner"

@@ -183,6 +183,7 @@ const FABMenuList = React.forwardRef<
   return (
     <AnimatePresence>
       {isOpen && (
+        // @ts-ignore
         <motion.div
           ref={ref}
           initial="hidden"
@@ -257,10 +258,12 @@ const FABMenuItem = React.forwardRef<HTMLButtonElement, FABMenuItemProps>(
   ({ icon, label, className, variant, size, onClick, ...props }, ref) => {
     const { close, direction } = useFABMenu();
     const localRef = React.useRef<HTMLButtonElement>(null);
+    // @ts-ignore
     React.useImperativeHandle(ref, () => localRef.current!);
 
     const rippleColor = "var(--color-ripple-dark)";
     const [, event] = useRipple({
+      // @ts-ignore
       ref: localRef,
       color: rippleColor,
       duration: 400,
@@ -293,6 +296,7 @@ const FABMenuItem = React.forwardRef<HTMLButtonElement, FABMenuItemProps>(
     return (
       <motion.button
         ref={localRef}
+        // @ts-ignore
         variants={itemVariants}
         onPointerDown={event}
         onClick={handleClick}

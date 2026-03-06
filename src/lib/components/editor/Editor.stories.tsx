@@ -163,7 +163,7 @@ const PropertiesPanel = ({
         <NumberInput
           label="X"
           size="sm"
-          variant="faded"
+          variant="filled"
           value={Math.round(el.x)}
           onValueChange={(val) => updateElement(el.id, { x: Number(val) })}
           hideStepper
@@ -171,7 +171,7 @@ const PropertiesPanel = ({
         <NumberInput
           label="Y"
           size="sm"
-          variant="faded"
+          variant="filled"
           value={Math.round(el.y)}
           onValueChange={(val) => updateElement(el.id, { y: Number(val) })}
           hideStepper
@@ -179,7 +179,7 @@ const PropertiesPanel = ({
         <NumberInput
           label="Width"
           size="sm"
-          variant="faded"
+          variant="filled"
           value={Math.round(el.width)}
           onValueChange={(val) => updateElement(el.id, { width: Number(val) })}
           hideStepper
@@ -187,7 +187,7 @@ const PropertiesPanel = ({
         <NumberInput
           label="Height"
           size="sm"
-          variant="faded"
+          variant="filled"
           value={Math.round(el.height)}
           onValueChange={(val) => updateElement(el.id, { height: Number(val) })}
           hideStepper
@@ -200,7 +200,7 @@ const PropertiesPanel = ({
         <NumberInput
           label="Rotation"
           size="sm"
-          variant="faded"
+          variant="filled"
           value={Math.round(el.rotation)}
           onValueChange={(val) =>
             updateElement(el.id, { rotation: Number(val) })
@@ -210,7 +210,7 @@ const PropertiesPanel = ({
         <NumberInput
           label="Z-Index"
           size="sm"
-          variant="faded"
+          variant="filled"
           value={el.z}
           onValueChange={(val) => updateElement(el.id, { z: Number(val) })}
         />

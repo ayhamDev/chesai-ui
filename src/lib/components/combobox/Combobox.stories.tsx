@@ -66,7 +66,7 @@ export const Variations: StoryObj = {
       <div className="flex flex-col gap-6 w-80">
         <Combobox
           label="Bordered & Icon"
-          variant="bordered"
+          variant="outlined"
           startContent={<Database className="w-4 h-4" />}
           options={frameworks}
           value={value}
@@ -75,14 +75,14 @@ export const Variations: StoryObj = {
         <Combobox
           label="Outside Label"
           labelPlacement="outside"
-          variant="flat"
+          variant="filled"
           options={frameworks}
         />
         <Combobox
           label="Error State"
           isInvalid
           errorMessage="Please select a valid option."
-          variant="faded"
+          variant="filled"
           options={frameworks}
         />
       </div>

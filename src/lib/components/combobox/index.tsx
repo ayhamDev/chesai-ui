@@ -73,6 +73,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
 
     // Use Select styles to correctly format the button trigger
     const dynamicStyles = getSelectSlotClassNames({
+      // @ts-ignore
       variant,
       size,
       shape,

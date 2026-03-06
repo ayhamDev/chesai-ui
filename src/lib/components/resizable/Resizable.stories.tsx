@@ -207,7 +207,7 @@ const ComposeModal = ({
           <div className="border-b border-graphite-border/50">
             {/* UPDATED INPUT */}
             <Input
-              variant="flat"
+              variant="filled"
               shape="sharp"
               placeholder="Recipients"
               className="bg-transparent shadow-none" // Remove default background/shadow
@@ -220,7 +220,7 @@ const ComposeModal = ({
           <div className="border-b border-graphite-border/50">
             {/* UPDATED INPUT */}
             <Input
-              variant="flat"
+              variant="filled"
               shape="sharp"
               placeholder="Subject"
               className="bg-transparent shadow-none"
@@ -232,7 +232,7 @@ const ComposeModal = ({
           </div>
           {/* UPDATED TEXTAREA */}
           <Textarea
-            variant="flat"
+            variant="filled"
             shape="sharp"
             placeholder="Compose email..."
             className="flex-1 bg-transparent shadow-none"

@@ -121,7 +121,7 @@ export const BugReportForm: Story = {
                         isInvalid={isInvalid}
                         placeholder="Login button not working on mobile"
                         autoComplete="off"
-                        variant="faded"
+                        variant="filled"
                       />
                       {isInvalid && (
                         <FieldError errors={field.state.meta.errors} />
@@ -149,7 +149,7 @@ export const BugReportForm: Story = {
                           onChange={(e) => field.handleChange(e.target.value)}
                           placeholder="I'm having an issue with the login button on mobile."
                           minRows={4}
-                          variant="flat"
+                          variant="filled"
                           isInvalid={isInvalid}
                         />
                         <InputGroupAddon align="block-end">

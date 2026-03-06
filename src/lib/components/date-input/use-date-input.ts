@@ -70,7 +70,6 @@ export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
       {
         ...otherProps,
         label,
-        // @ts-expect-error
         inputRef,
       },
       state,

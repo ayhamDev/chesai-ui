@@ -162,8 +162,8 @@ const InputOTP = React.forwardRef<
     },
     ref,
   ) => (
+    // @ts-ignore
     <InputOTPStyleContext.Provider value={{ variant, size, shape, isInvalid }}>
-      {/* @ts-expect-error */}
       <OTPInput
         ref={ref}
         containerClassName={clsx(

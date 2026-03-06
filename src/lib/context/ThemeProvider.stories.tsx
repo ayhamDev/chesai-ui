@@ -80,7 +80,7 @@ const AdvancedThemeDemo = () => {
             <ColorPicker
               value={seedColor || "#8F4C38"}
               onChange={setSeedColor}
-              variant="bordered"
+              variant="outlined"
               shape="full"
               label="Seed"
             />
@@ -128,13 +128,13 @@ const AdvancedThemeDemo = () => {
             label="Primary Color Override"
             value={primaryOverride || (seedColor ? "Generated" : "")}
             onChange={handleManualPrimaryChange}
-            variant="faded"
+            variant="filled"
           />
           <ColorPicker
             label="Background Color Override"
             value={backgroundOverride || (seedColor ? "Generated" : "")}
             onChange={handleManualBackgroundChange}
-            variant="faded"
+            variant="filled"
           />
           {/* Add more specific pickers here as needed */}
         </Grid>

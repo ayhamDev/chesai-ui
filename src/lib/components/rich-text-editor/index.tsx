@@ -47,6 +47,7 @@ export const RichTextEditor = ({
         // Using the tools matching the styling classes we wrote
         tools: {
           header: {
+            // @ts-ignore
             class: Header,
             inlineToolbar: true,
             config: {

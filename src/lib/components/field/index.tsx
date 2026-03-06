@@ -139,7 +139,7 @@ export const FieldError = React.forwardRef<
     if (!errors || !errors.length) return null;
 
     return errors
-      .map((err) => {
+      .map((err: unknown) => {
         if (typeof err === "string") return err;
         if (typeof err === "object" && err !== null && "message" in err) {
           return String(err.message);

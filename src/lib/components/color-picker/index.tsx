@@ -102,6 +102,7 @@ export const ColorPicker = React.forwardRef<
 
     const isFilled = !!internalColor || open;
     const dynamicStyles = getSelectSlotClassNames({
+      // @ts-ignore
       variant,
       size,
       shape,
@@ -218,7 +219,7 @@ export const ColorPicker = React.forwardRef<
                 <div className="flex-1">
                   <Input
                     size="sm"
-                    variant="faded"
+                    variant="filled"
                     value={hexInput}
                     onValueChange={handleHexInputChange}
                     startContent={

@@ -95,7 +95,7 @@ export const Variants: Story = {
         <Typography variant="body-s" className="text-muted-foreground">
           Bordered
         </Typography>
-        <Image {...args} variant="bordered" />
+        <Image {...args} variant="outlined" />
       </GridItem>
       <GridItem className="flex flex-col gap-2 items-center">
         <Typography variant="body-s" className="text-muted-foreground">

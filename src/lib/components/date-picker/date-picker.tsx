@@ -166,7 +166,7 @@ const DatePickerBody = ({
                 setTempDate(v.toDate("UTC"));
               }
             }}
-            variant="bordered"
+            variant="outlined"
             shape={shape}
             className="w-full"
           />

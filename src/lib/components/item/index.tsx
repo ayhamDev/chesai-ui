@@ -2,17 +2,35 @@
 
 import { Slot } from "@radix-ui/react-slot";
 import { useLongPress } from "@uidotdev/usehooks";
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import * as React from "react";
 import useRipple from "use-ripple-hook";
 export * from "./virtual-item-list";
 
-// --- Context for Item Configuration ---
+// --- Types ---
+
+// Expanded to match Card variants
+type ItemVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "high-contrast"
+  | "ghost"
+  | "surface"
+  | "surface-container-lowest"
+  | "surface-container-low"
+  | "surface-container"
+  | "surface-container-high"
+  | "surface-container-highest";
+
+type ItemSize = "sm" | "md" | "lg";
+type ItemDirection = "horizontal" | "vertical";
+
 interface ItemContextProps {
-  variant: "primary" | "secondary" | "ghost";
-  size: "sm" | "md" | "lg";
-  direction: "horizontal" | "vertical";
+  variant: ItemVariant;
+  size: ItemSize;
+  direction: ItemDirection;
 }
 
 const ItemContext = React.createContext<ItemContextProps>({
@@ -24,24 +42,47 @@ const ItemContext = React.createContext<ItemContextProps>({
 const useItemContext = () => React.useContext(ItemContext);
 
 // --- CVA Variants ---
+
 const itemVariants = cva(
-  "group/item relative flex flex-wrap items-center border text-sm outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 overflow-hidden z-0",
+  "group/item relative flex flex-wrap items-center transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 overflow-hidden z-0",
   {
     variants: {
       variant: {
-        primary:
-          "bg-surface-container-low border-outline-variant text-on-surface",
-        secondary:
-          "bg-surface-container-high border-transparent text-on-surface",
+        primary: "bg-surface-container-low text-on-surface",
+        secondary: "bg-surface-container-high text-on-surface",
+        tertiary: "bg-tertiary-container text-on-tertiary-container",
+        "high-contrast": "bg-inverse-surface text-inverse-on-surface",
         ghost:
-          "bg-transparent border-transparent text-on-surface " +
+          "bg-transparent text-on-surface " +
           "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-250 after:ease-out " +
           "hover:after:opacity-100 hover:after:scale-100",
+
+        // --- MD3 Surface Container Variants ---
+        surface: "bg-surface text-on-surface",
+        "surface-container-lowest":
+          "bg-surface-container-lowest text-on-surface",
+        "surface-container-low": "bg-surface-container-low text-on-surface",
+        "surface-container": "bg-surface-container text-on-surface",
+        "surface-container-high": "bg-surface-container-high text-on-surface",
+        "surface-container-highest":
+          "bg-surface-container-highest text-on-surface",
+      },
+      bordered: {
+        true: "border border-outline-variant",
+        false: "border border-transparent",
+      },
+      elevation: {
+        none: "shadow-none",
+        1: "shadow-sm",
+        2: "shadow-md",
+        3: "shadow-lg",
+        4: "shadow-xl",
+        5: "shadow-2xl",
       },
       size: {
-        sm: "gap-3",
-        md: "gap-4",
-        lg: "gap-4",
+        sm: "gap-3 text-xs",
+        md: "gap-4 text-sm",
+        lg: "gap-5 text-base",
       },
       padding: {
         none: "p-0",
@@ -65,12 +106,14 @@ const itemVariants = cva(
       padding: "md",
       shape: "minimal",
       direction: "horizontal",
+      bordered: false,
+      elevation: "none",
     },
   },
 );
 
 const itemMediaVariants = cva(
-  "flex shrink-0 items-center justify-center gap-2 [&_svg]:pointer-events-none",
+  "flex shrink-0 items-center justify-center gap-2 [&_svg]:pointer-events-none transition-colors",
   {
     variants: {
       variant: {
@@ -103,9 +146,10 @@ const ItemGroup = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
+  // Changed role from "list" to "group" to satisfy semantic element linting (generic container)
   <div
     ref={ref}
-    role="list"
+    role="group"
     data-slot="item-group"
     className={clsx("group/item-group flex flex-col gap-2", className)}
     {...props}
@@ -126,24 +170,17 @@ const ItemSeparator = React.forwardRef<
 ));
 ItemSeparator.displayName = "ItemSeparator";
 
-const Item = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & {
-    variant?: "primary" | "secondary" | "ghost";
-    size?: "sm" | "md" | "lg";
-    padding?: "none" | "sm" | "md" | "lg";
-    shape?: "full" | "minimal" | "sharp";
-    direction?: "horizontal" | "vertical";
-    asChild?: boolean;
-    disabled?: boolean;
-    disableRipple?: boolean;
-    onLongPress?: (
-      event:
-        | React.PointerEvent<HTMLDivElement>
-        | React.MouseEvent<HTMLDivElement>,
-    ) => void;
-  }
->(
+export interface ItemProps
+  extends
+    React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof itemVariants> {
+  asChild?: boolean;
+  disabled?: boolean;
+  disableRipple?: boolean;
+  onLongPress?: (e: any) => void;
+}
+
+const Item = React.forwardRef<HTMLDivElement, ItemProps>(
   (
     {
       className,
@@ -152,6 +189,8 @@ const Item = React.forwardRef<
       shape = "minimal",
       direction = "horizontal",
       padding = "md",
+      bordered = false,
+      elevation = "none",
       asChild = false,
       disabled,
       disableRipple = false,
@@ -166,52 +205,65 @@ const Item = React.forwardRef<
     const localRef = React.useRef<HTMLDivElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
+    // Fix TS error: Ensure variants are never null for Context/Styles
+    const effectiveVariant = (variant || "primary") as ItemVariant;
+    const effectiveSize = (size || "md") as ItemSize;
+    const effectiveDirection = (direction || "horizontal") as ItemDirection;
+
+    // Dynamic ripple color based on variant contrast
+    const rippleColor = "var(--color-ripple-dark)";
+
     const [, event] = useRipple({
-      ref: localRef as React.RefObject<HTMLElement>, // FIX: Cast ref
-      color: "var(--color-ripple-dark)",
+      ref: localRef as React.RefObject<HTMLElement>,
+      color: rippleColor,
       duration: 400,
       disabled: disabled || disableRipple,
     });
 
-    // @ts-ignore
-    const longPressBindings = useLongPress(onLongPress || null);
+    // Provide a no-op function if onLongPress is undefined to satisfy useLongPress types
+    const longPressBindings = useLongPress(onLongPress ?? (() => {}), {
+      threshold: 500,
+    });
 
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-      if (
-        onLongPress &&
-        // @ts-ignore
-        typeof longPressBindings.onPointerDown === "function"
-      ) {
-        // @ts-ignore
-        longPressBindings.onPointerDown(e);
-      }
+      // We do not call longPressBindings handlers here manually.
+      // They are spread onto the element below.
       event(e);
       onPointerDown?.(e);
     };
 
     const finalProps = {
       ...props,
+      // Apply aria-disabled for accessibility
+      "aria-disabled": disabled,
+      // Spread the long press bindings (onMouseDown, onTouchStart, etc.) if handler exists
       ...(onLongPress ? longPressBindings : {}),
       onPointerDown: handlePointerDown,
     };
 
     return (
-      <ItemContext.Provider value={{ variant, size, direction }}>
+      <ItemContext.Provider
+        value={{
+          variant: effectiveVariant,
+          size: effectiveSize,
+          direction: effectiveDirection,
+        }}
+      >
         <Comp
           ref={localRef}
           data-slot="item"
-          // @ts-ignore
-          disabled={disabled}
           className={clsx(
             itemVariants({
-              variant,
-              size,
+              variant: effectiveVariant,
+              size: effectiveSize,
               shape,
-              direction,
+              direction: effectiveDirection,
               padding,
+              bordered,
+              elevation,
               className,
             }),
-            disabled && "opacity-50 cursor-not-allowed",
+            disabled && "opacity-50 cursor-not-allowed pointer-events-none",
           )}
           {...finalProps}
         />
@@ -279,7 +331,7 @@ const ItemTitle = React.forwardRef<
       data-slot="item-title"
       // MD3 standard for list titles is title-medium
       className={clsx(
-        "flex w-fit items-center gap-2 text-title-medium font-semibold leading-snug text-on-surface",
+        "flex w-fit items-center gap-2 text-title-medium font-semibold leading-snug text-inherit",
         direction === "vertical" && "justify-center",
         className,
       )}
@@ -297,7 +349,7 @@ const ItemDescription = React.forwardRef<
     ref={ref}
     data-slot="item-description"
     className={clsx(
-      "text-on-surface-variant line-clamp-2 text-sm font-normal leading-normal",
+      "opacity-80 line-clamp-2 text-sm font-normal leading-normal text-inherit",
       className,
     )}
     {...props}

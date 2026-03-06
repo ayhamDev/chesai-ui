@@ -73,7 +73,7 @@ export function DataTableNumericFilter<TData, TValue>({
         <div className="flex flex-col gap-3 my-2">
           <Select
             size="sm"
-            variant="flat"
+            variant="filled"
             value={operator}
             onValueChange={setOperator}
             items={[
@@ -86,7 +86,7 @@ export function DataTableNumericFilter<TData, TValue>({
           <Input
             type="number"
             size="sm"
-            variant="flat"
+            variant="filled"
             placeholder="Value..."
             value={value}
             onChange={(e) => setValue(e.target.value)}

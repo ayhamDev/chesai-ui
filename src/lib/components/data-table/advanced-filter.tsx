@@ -80,7 +80,7 @@ const AdvancedFilterRow = ({
       <div className="w-[120px] flex-shrink-0">
         <Select
           size="sm"
-          variant="flat" // Updated variant
+          variant="filled" // Updated variant
           position="item-aligned"
           value={filter.id}
           onValueChange={(newId) => {
@@ -102,7 +102,7 @@ const AdvancedFilterRow = ({
         <Select
           size="sm"
           position="item-aligned"
-          variant="flat" // Updated variant
+          variant="filled" // Updated variant
           value={initialFilterValue.operator}
           onValueChange={(val) => {
             table.getColumn(filter.id)?.setFilterValue({
@@ -116,7 +116,7 @@ const AdvancedFilterRow = ({
       <div className="flex-1 min-w-0">
         <Input
           size="sm"
-          variant="flat" // Updated variant
+          variant="filled" // Updated variant
           placeholder="Value..."
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}

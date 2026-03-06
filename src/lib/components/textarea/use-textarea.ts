@@ -3,13 +3,16 @@ import React, { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { type UseInputProps, useInput } from '../input/use-input'
 import { getTextareaSlotClassNames, textareaSlots, textareaStyles } from './textarea-styles'
 
-export interface UseTextareaProps extends Omit<UseInputProps, 'ref' | 'onValueChange' | 'onChange'> {
+export interface UseTextareaProps
+  extends Omit<UseInputProps, 'ref' | 'onValueChange' | 'onChange' | 'onFocus' | 'onBlur'> {
   ref?: React.Ref<HTMLTextAreaElement>
   minRows?: number
   maxRows?: number
   disableAutosize?: boolean
   onValueChange?: (value: string) => void
   onChange?: React.ChangeEventHandler<HTMLTextAreaElement>
+  onFocus?: React.FocusEventHandler<HTMLTextAreaElement>
+  onBlur?: React.FocusEventHandler<HTMLTextAreaElement>
 }
 
 export function useTextarea(props: UseTextareaProps) {
@@ -22,15 +25,16 @@ export function useTextarea(props: UseTextareaProps) {
     onValueChange,
     classNames,
     className,
-    isInvalid: isInvalidProp, // <--- Destructure isInvalid from props
+    isInvalid: isInvalidProp,
     ...otherProps
   } = props
 
+  // Cast props to UseInputProps because useInput expects Input attributes,
+  // but we are sharing the logic for label/wrapper/helper generation.
   const {
     label,
     description,
     errorMessage,
-    // isInvalid, // <--- Remove this, use isInvalidProp instead
     isClearable,
     isOutsideLeft,
     isOutsideTop,
@@ -42,12 +46,12 @@ export function useTextarea(props: UseTextareaProps) {
     getDescriptionProps,
     getErrorMessageProps,
     getClearButtonProps,
-  } = useInput(props as any) // Cast to any to bypass strict variant check compatibility if UseInputProps variants differ slightly during dev
+  } = useInput(props as unknown as UseInputProps)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [isFocused, setIsFocused] = useState(false)
 
-  React.useImperativeHandle(ref, () => textareaRef.current!)
+  React.useImperativeHandle(ref, () => textareaRef.current as HTMLTextAreaElement)
 
   useLayoutEffect(() => {
     if (disableAutosize || !textareaRef.current) return
@@ -66,6 +70,8 @@ export function useTextarea(props: UseTextareaProps) {
     textarea.addEventListener('input', adjustHeight)
     adjustHeight()
     return () => textarea.removeEventListener('input', adjustHeight)
+    // We intentionally include value dependencies to trigger resize when controlled value changes
+    // biome-ignore lint/correctness/useExhaustiveDependencies: value/defaultValue changes affect DOM scrollHeight
   }, [minRows, maxRows, disableAutosize, props.value, props.defaultValue])
 
   const isFilled = !!props.value || !!props.placeholder || isFocused
@@ -76,14 +82,14 @@ export function useTextarea(props: UseTextareaProps) {
     size: props.size,
     shape: props.shape,
     labelPlacement: props.labelPlacement,
-    isInvalid: isInvalidProp, // <--- Use the destructured prop
+    isInvalid: isInvalidProp,
     isFilled,
   })
 
   const handleFocus = useCallback(
     (e: React.FocusEvent<HTMLTextAreaElement>) => {
       setIsFocused(true)
-      props.onFocus?.(e as any)
+      props.onFocus?.(e)
     },
     [props.onFocus],
   )
@@ -91,7 +97,7 @@ export function useTextarea(props: UseTextareaProps) {
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLTextAreaElement>) => {
       setIsFocused(false)
-      props.onBlur?.(e as any)
+      props.onBlur?.(e)
     },
     [props.onBlur],
   )
@@ -103,14 +109,14 @@ export function useTextarea(props: UseTextareaProps) {
       'data-filled': isFilled,
       'data-filled-within': isFilled || isFocused,
       'data-focus': isFocused,
-      'data-invalid': isInvalidProp, // <--- Use the destructured prop
-      'data-disabled': props.isDisabled,
-      'data-readonly': props.isReadOnly,
+      'data-invalid': isInvalidProp,
+      'data-disabled': props.disabled,
+      'data-readonly': props.readOnly,
       'data-label-placement': props.labelPlacement,
       className: clsx(
         textareaSlots.base,
         textareaStyles({ labelPlacement: props.labelPlacement }),
-        className, // Apply the passed className to the root
+        className,
         classNames?.base,
       ),
     }
@@ -151,7 +157,7 @@ export function useTextarea(props: UseTextareaProps) {
       onChange?.(e)
       onValueChange?.(e.target.value)
     },
-    ...otherProps, // otherProps does not contain className anymore
+    ...otherProps,
   })
 
   const getInnerWrapperProps = () => ({
@@ -171,7 +177,7 @@ export function useTextarea(props: UseTextareaProps) {
     isOutsideTop,
     shouldLabelBeOutside,
     errorMessage,
-    isInvalid: isInvalidProp, // <-- Use the prop directly for isInvalid state
+    isInvalid: isInvalidProp,
     getBaseProps,
     getLabelProps,
     getInputProps,

@@ -55,7 +55,19 @@ const meta: Meta<typeof Item> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "ghost"],
+      options: [
+        "primary",
+        "secondary",
+        "tertiary",
+        "high-contrast",
+        "ghost",
+        "surface",
+        "surface-container-lowest",
+        "surface-container-low",
+        "surface-container",
+        "surface-container-high",
+        "surface-container-highest",
+      ],
     },
     size: {
       control: "select",

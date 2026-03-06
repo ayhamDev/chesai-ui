@@ -97,7 +97,7 @@ export const Variants: Story = {
         </Typography>
       </div>
       <div className="flex flex-col items-center gap-2">
-        <Kbd variant="flat">Flat</Kbd>
+        <Kbd variant="filled">Flat</Kbd>
         <Typography variant="body-small" muted={true} className="text-xs">
           Secondary
         </Typography>

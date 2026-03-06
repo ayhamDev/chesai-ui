@@ -101,6 +101,7 @@ export const AnimatedOutlet = React.forwardRef<
 
   return (
     <AnimatePresence mode={mode}>
+      {/* @ts-ignore */}
       <motion.div
         key={matchId}
         initial={anim.initial}

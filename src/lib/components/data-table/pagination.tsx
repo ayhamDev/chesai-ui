@@ -75,7 +75,7 @@ export function DataTablePagination<TData>() {
             <div className="w-[80px]">
               <Select
                 size="sm"
-                variant="flat"
+                variant="filled"
                 value={String(pageSize)}
                 onValueChange={(value) => {
                   table.setPageSize(Number(value));
@@ -100,7 +100,7 @@ export function DataTablePagination<TData>() {
               }}
               style={{ width: `${Math.max(pageInput.length, 1) + 2}ch` }}
               classNames={{ input: " text-center px-1 min-w-[2.5rem]" }}
-              variant="flat"
+              variant="filled"
               size="sm"
             />
             <span className="whitespace-nowrap">of {pageCount || 1}</span>
