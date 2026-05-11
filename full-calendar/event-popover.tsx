@@ -9,16 +9,21 @@ import { Check, Clock, GripHorizontal, Repeat, Trash2, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { Button } from "../button";
-import { DatePicker } from "../date-picker/date-picker";
-import { IconButton } from "../icon-button";
-import { Input } from "../input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../sheet";
-import { TimePicker } from "../time-picker";
-import { Typography } from "../typography";
-import { Switch } from "../switch";
-import { Select } from "../select";
-import { NumberInput } from "../number-input";
+import { Button } from "../src/lib/components/button";
+import { DatePicker } from "../src/lib/components/date-picker/date-picker";
+import { IconButton } from "../src/lib/components/icon-button";
+import { Input } from "../src/lib/components/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "../src/lib/components/sheet";
+import { TimePicker } from "../src/lib/components/time-picker";
+import { Typography } from "../src/lib/components/typography";
+import { Switch } from "../src/lib/components/switch";
+import { Select } from "../src/lib/components/select";
+import { NumberInput } from "../src/lib/components/number-input";
 
 import { useFullCalendar } from "./calendar-context";
 import type { CalendarEvent, RecurrenceRule } from "./types";
@@ -37,7 +42,6 @@ const COLOR_PALETTE = [
   { name: "pink", hex: "#ec4899" },
 ] as const;
 
-// Helper to format custom recurrence rules for the Select Dropdown
 const formatRecurrence = (rule: RecurrenceRule, startDate: Date) => {
   const f = rule.frequency;
   const i = rule.interval;
@@ -94,7 +98,6 @@ const formatRecurrence = (rule: RecurrenceRule, startDate: Date) => {
   return s;
 };
 
-// Custom layout component to fix Radio Group alignment issues
 const CustomRadioOption = ({
   checked,
   onChange,
@@ -152,11 +155,9 @@ export const EventPopover = () => {
   } = calendar;
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  // --- POSITIONING STATE (Desktop) ---
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  // --- RECURRENCE STATE ---
   const [isRecurrenceOpen, setIsRecurrenceOpen] = useState(false);
   const [recurrenceDraft, setRecurrenceDraft] = useState<RecurrenceRule>({
     frequency: "weekly",
@@ -248,7 +249,6 @@ export const EventPopover = () => {
     setDraftEvent((prev) => (prev ? { ...prev, ...updates } : null));
   };
 
-  // --- REPEAT SELECT BUILDER ---
   const repeatOptions = draftEvent
     ? [
         { value: "none", label: "Does not repeat" },
@@ -291,7 +291,6 @@ export const EventPopover = () => {
       else if (r.frequency === "yearly") activeRepeatValue = "yearly";
     }
 
-    // If it's a custom rule that doesn't match presets, insert it into the list
     if (activeRepeatValue === "none") {
       activeRepeatValue = "custom_active";
       repeatOptions.push({
@@ -582,7 +581,8 @@ export const EventPopover = () => {
   const recurrenceDialog = (
     <AnimatePresence>
       {isRecurrenceOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4 pointer-events-auto">
+        // Changed z-index from 99999 to 100 to allow radix popovers (z-1000) to overlay
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 pointer-events-auto">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -791,7 +791,6 @@ export const EventPopover = () => {
 
   if (!popover.isOpen) return null;
 
-  // MOBILE RENDER (BottomSheet)
   if (isMobile) {
     return (
       <>
@@ -846,7 +845,6 @@ export const EventPopover = () => {
     );
   }
 
-  // DESKTOP RENDER (Draggable Popover)
   const desktopPopover = (
     <div className="fixed inset-0 pointer-events-none z-[50]">
       <AnimatePresence>

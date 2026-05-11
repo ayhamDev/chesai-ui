@@ -6,6 +6,8 @@ import {
   addMonths,
   addWeeks,
   addYears,
+  endOfWeek,
+  startOfWeek,
   subDays,
   subMonths,
   subWeeks,
@@ -18,7 +20,12 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import type { CalendarEvent, CalendarView, FullCalendarProps } from "./types";
+import type {
+  CalendarEvent,
+  CalendarView,
+  FullCalendarProps,
+  PrintSettings,
+} from "./types";
 
 export interface PopoverState {
   isOpen: boolean;
@@ -47,8 +54,10 @@ interface FullCalendarContextType extends FullCalendarProps {
   ) => void;
   closePopover: () => void;
 
-  isPrinting: boolean;
-  triggerPrint: () => void;
+  isPrintPreviewOpen: boolean;
+  setPrintPreviewOpen: (v: boolean) => void;
+  printSettings: PrintSettings;
+  setPrintSettings: React.Dispatch<React.SetStateAction<PrintSettings>>;
 }
 
 const FullCalendarContext = createContext<FullCalendarContextType | null>(null);
@@ -61,6 +70,39 @@ export const useFullCalendar = () => {
   return context;
 };
 
+// --- PRINT MODE LOGIC ---
+export const PrintModeContext = createContext<boolean>(false);
+
+export const PrintOverrideProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const context = useFullCalendar();
+  const printView =
+    context.printSettings.view === "auto"
+      ? context.view
+      : context.printSettings.view;
+
+  const printContextValue = useMemo(
+    () => ({
+      ...context,
+      view: printView as CalendarView,
+      // Override current date so Month/Year views center around the print range
+      currentDate: context.printSettings.rangeStart,
+    }),
+    [context, printView],
+  );
+
+  return (
+    <PrintModeContext.Provider value={true}>
+      <FullCalendarContext.Provider value={printContextValue}>
+        {children}
+      </FullCalendarContext.Provider>
+    </PrintModeContext.Provider>
+  );
+};
+
 export const FullCalendarProvider = ({
   children,
   initialDate = new Date(),
@@ -70,7 +112,6 @@ export const FullCalendarProvider = ({
 }: FullCalendarProps & { children: React.ReactNode }) => {
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [view, setViewState] = useState<CalendarView>(initialView);
-  const [isPrinting, setIsPrinting] = useState(false);
 
   const [popover, setPopover] = useState<PopoverState>({
     isOpen: false,
@@ -78,6 +119,18 @@ export const FullCalendarProvider = ({
   });
 
   const [draftEvent, setDraftEvent] = useState<CalendarEvent | null>(null);
+
+  const [isPrintPreviewOpen, setPrintPreviewOpen] = useState(false);
+  const [printSettings, setPrintSettings] = useState<PrintSettings>({
+    rangeStart: startOfWeek(initialDate),
+    rangeEnd: endOfWeek(initialDate),
+    view: "auto",
+    fontSize: "normal",
+    orientation: "auto",
+    colorStyle: "full",
+    showWeekends: true,
+    showDeclined: false,
+  });
 
   const handleSetView = useCallback(
     (newView: CalendarView) => {
@@ -117,7 +170,6 @@ export const FullCalendarProvider = ({
       event?: CalendarEvent,
     ) => {
       if (mode === "edit" && event) {
-        // FIX: Remove isDraft for edited events so they stay solid on the grid
         setDraftEvent({ ...event, isDraft: false });
       } else {
         const initStart = new Date(initialDate || new Date());
@@ -137,7 +189,7 @@ export const FullCalendarProvider = ({
           isAllDay: false,
           type: "event",
           colorVariant: "primary",
-          isDraft: true, // Only true for newly created drafts
+          isDraft: true,
         });
       }
       setPopover({ isOpen: true, mode, anchorRect });
@@ -148,14 +200,6 @@ export const FullCalendarProvider = ({
   const closePopover = useCallback(() => {
     setPopover((prev) => ({ ...prev, isOpen: false }));
     setDraftEvent(null);
-  }, []);
-
-  const triggerPrint = useCallback(() => {
-    setIsPrinting(true);
-    setTimeout(() => {
-      window.print();
-      setIsPrinting(false);
-    }, 100);
   }, []);
 
   const value = useMemo(
@@ -174,8 +218,10 @@ export const FullCalendarProvider = ({
       setDraftEvent,
       openPopover,
       closePopover,
-      isPrinting,
-      triggerPrint,
+      isPrintPreviewOpen,
+      setPrintPreviewOpen,
+      printSettings,
+      setPrintSettings,
     }),
     [
       props,
@@ -190,8 +236,8 @@ export const FullCalendarProvider = ({
       draftEvent,
       openPopover,
       closePopover,
-      isPrinting,
-      triggerPrint,
+      isPrintPreviewOpen,
+      printSettings,
     ],
   );
 

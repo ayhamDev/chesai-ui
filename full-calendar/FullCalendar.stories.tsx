@@ -3,11 +3,11 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Plus } from "lucide-react";
 import React, { useState } from "react";
 import { FullCalendar, CalendarEvent } from "./index";
-import { ThemeProvider } from "../../context/ThemeProvider";
-import { FAB } from "../fab";
-import { toast, Toaster } from "../toast";
-import { Typography } from "../typography";
-import { Input } from "../input";
+import { ThemeProvider } from "../src/lib/context/ThemeProvider";
+import { FAB } from "../src/lib/components/fab";
+import { toast, Toaster } from "../src/lib/components/toast";
+import { Typography } from "../src/lib/components/typography";
+import { Input } from "../src/lib/components/input";
 
 const meta: Meta<typeof FullCalendar> = {
   title: "Components/Data/FullCalendar",

@@ -2,17 +2,17 @@
 "use client";
 
 import { clsx } from "clsx";
-import { addDays, format, isSameDay, isToday } from "date-fns";
+import { addDays, format, isSameDay, isToday, startOfDay } from "date-fns";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Typography } from "../typography";
-import { useFullCalendar } from "./calendar-context";
+import { Typography } from "../src/lib/components/typography";
+import { useFullCalendar, PrintModeContext } from "./calendar-context";
 import {
   expandEvents,
   getDaysForWeekView,
   getEventSegments,
   getTimelinePositionsForDay,
 } from "./utils";
-import { ElasticScrollArea } from "../elastic-scroll-area";
+import { ElasticScrollArea } from "../src/lib/components/elastic-scroll-area";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -29,6 +29,8 @@ const COLOR_MAP = {
 };
 
 export const TimelineView = () => {
+  const isPrintMode = React.useContext(PrintModeContext);
+
   const {
     currentDate,
     view,
@@ -40,14 +42,33 @@ export const TimelineView = () => {
     openPopover,
     onEventUpdate,
     renderEventContent,
+    printSettings,
   } = useFullCalendar();
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const days = useMemo(() => {
+    if (isPrintMode) {
+      if (
+        printSettings.view === "day" ||
+        printSettings.view === "week" ||
+        printSettings.view === "auto"
+      ) {
+        const start = startOfDay(printSettings.rangeStart);
+        const end = startOfDay(printSettings.rangeEnd);
+        const d = [];
+        let curr = start;
+        // Cap the max amount of days so it isn't rendered infinitely.
+        while (curr <= end && d.length < 14) {
+          d.push(curr);
+          curr = addDays(curr, 1);
+        }
+        return d.length > 0 ? d : [start];
+      }
+    }
     return view === "week" ? getDaysForWeekView(currentDate) : [currentDate];
-  }, [currentDate, view]);
+  }, [currentDate, view, isPrintMode, printSettings]);
 
   const displayEvents = useMemo(() => {
     let baseEvents = events;
@@ -58,11 +79,47 @@ export const TimelineView = () => {
         draftEvent,
       ];
     }
-    const viewStart = days[0];
-    const viewEnd = addDays(days[days.length - 1], 1);
+    // Fix Empty Events in Day view: Strips time components
+    const viewStart = startOfDay(days[0]);
+    const viewEnd = addDays(startOfDay(days[days.length - 1]), 1);
 
     return expandEvents(baseEvents, viewStart, viewEnd);
   }, [events, draftEvent, days]);
+
+  const printRange = useMemo(() => {
+    if (!isPrintMode) return { start: 0, end: 24, hours: HOURS };
+    let minMins = 24 * 60;
+    let maxMins = 0;
+    displayEvents.forEach((e) => {
+      if (e.isAllDay) return;
+      const sMins = e.start.getHours() * 60 + e.start.getMinutes();
+      const eMins = e.end.getHours() * 60 + e.end.getMinutes();
+      if (sMins < minMins) minMins = sMins;
+      if (eMins > maxMins) maxMins = eMins;
+    });
+
+    if (minMins >= maxMins) {
+      return {
+        start: 8,
+        end: 18,
+        hours: Array.from({ length: 11 }, (_, i) => i + 8),
+      };
+    }
+
+    let s = Math.max(0, Math.floor(minMins / 60) - 1);
+    let e = Math.min(24, Math.ceil(maxMins / 60) + 1);
+    if (e - s < 6) e = Math.min(24, s + 6);
+
+    return {
+      start: s,
+      end: e,
+      hours: Array.from({ length: e - s }, (_, i) => i + s),
+    };
+  }, [isPrintMode, displayEvents]);
+
+  const displayHours = printRange.hours;
+  const startMinsOffset = printRange.start * 60;
+  const totalDisplayMins = displayHours.length * 60;
 
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -71,20 +128,25 @@ export const TimelineView = () => {
   }, []);
 
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const currentTimeTopPercentage = (currentMinutes / (24 * 60)) * 100;
+  const currentTimeTopPercentage = isPrintMode
+    ? 0
+    : (currentMinutes / (24 * 60)) * 100;
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
+    if (scrollAreaRef.current && !isPrintMode) {
       const targetScroll = Math.max(0, 8 * 60 - 50);
       scrollAreaRef.current.scrollTop = targetScroll;
     }
-  }, [view]);
+  }, [view, isPrintMode]);
 
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>, day: Date) => {
-    if (dragState.current) return;
+    if (dragState.current || isPrintMode) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top;
-    const hour = Math.floor((y / rect.height) * 24);
+
+    const totalHours = isPrintMode ? displayHours.length : 24;
+    const baseHour = isPrintMode ? printRange.start : 0;
+    const hour = baseHour + Math.floor((y / rect.height) * totalHours);
 
     const clickDate = new Date(day);
     clickDate.setHours(hour, 0, 0, 0);
@@ -101,6 +163,7 @@ export const TimelineView = () => {
     startTopMins: number;
     startHeightMins: number;
     originalEvent: any;
+    hasMoved: boolean;
   } | null>(null);
 
   const handlePointerDown = (
@@ -109,7 +172,7 @@ export const TimelineView = () => {
     type: "move" | "resize",
     colDay: Date,
   ) => {
-    if (event.isDraft || event.editable === false) return;
+    if (event.isDraft || event.editable === false || isPrintMode) return;
     e.stopPropagation();
     e.preventDefault();
 
@@ -130,13 +193,11 @@ export const TimelineView = () => {
       startTopMins: startMins,
       startHeightMins: durationMins,
       originalEvent: baseEventObj,
+      hasMoved: false,
     };
-
-    setDraftEvent({ ...baseEventObj, isDraft: true });
 
     document.addEventListener("pointermove", handlePointerMove);
     document.addEventListener("pointerup", handlePointerUp);
-    document.body.style.cursor = type === "move" ? "grabbing" : "ns-resize";
   };
 
   const handlePointerMove = (e: PointerEvent) => {
@@ -150,6 +211,19 @@ export const TimelineView = () => {
       originalEvent,
       type,
     } = dragState.current;
+
+    if (!dragState.current.hasMoved) {
+      if (
+        Math.abs(e.clientX - startX) > 3 ||
+        Math.abs(e.clientY - startY) > 3
+      ) {
+        dragState.current.hasMoved = true;
+        document.body.style.cursor = type === "move" ? "grabbing" : "ns-resize";
+        setDraftEvent({ ...originalEvent, isDraft: true });
+      } else {
+        return;
+      }
+    }
 
     const deltaY = e.clientY - startY;
     const deltaMins = Math.round(deltaY / 15) * 15;
@@ -197,14 +271,16 @@ export const TimelineView = () => {
     document.body.style.cursor = "";
 
     if (dragState.current) {
-      setDraftEvent((currentDraft) => {
-        if (currentDraft && onEventUpdate) {
-          const finalEvent = { ...currentDraft };
-          delete finalEvent.isDraft;
-          onEventUpdate(finalEvent);
-        }
-        return null;
-      });
+      if (dragState.current.hasMoved) {
+        setDraftEvent((currentDraft) => {
+          if (currentDraft && onEventUpdate) {
+            const finalEvent = { ...currentDraft };
+            delete finalEvent.isDraft;
+            onEventUpdate(finalEvent);
+          }
+          return null;
+        });
+      }
       dragState.current = null;
     }
   };
@@ -223,23 +299,25 @@ export const TimelineView = () => {
   }, [allDaySegments]);
 
   return (
-    <div className="flex flex-col flex-1 h-full min-h-0 bg-surface">
-      <div className="flex flex-col border-b border-outline-variant/30 shrink-0 bg-surface z-20">
+    <div className="flex flex-col flex-1 h-full min-h-0 bg-surface print:bg-white print:text-black">
+      <div className="flex flex-col border-b border-outline-variant/30 shrink-0 bg-surface z-20 print:bg-white print:border-b-2 print:border-black/50">
         <div className="flex">
-          <div className="w-16 shrink-0 border-r border-outline-variant/30" />
+          <div className="w-16 shrink-0 border-r border-outline-variant/30 print:border-black/50" />
           <div className="flex flex-1">
             {days.map((day) => {
               const isDayToday = isToday(day);
               return (
                 <div
                   key={day.toISOString()}
-                  className="flex-1 flex flex-col items-center justify-center py-3 border-r border-outline-variant/30 last:border-r-0"
+                  className="flex-1 flex flex-col items-center justify-center py-3 border-r border-outline-variant/30 last:border-r-0 print:border-black/50"
                 >
                   <Typography
                     variant="label-small"
                     className={clsx(
                       "font-semibold mb-1",
-                      isDayToday ? "text-primary" : "text-on-surface-variant",
+                      isDayToday && !isPrintMode
+                        ? "text-primary"
+                        : "text-on-surface-variant print:text-black",
                     )}
                   >
                     {format(day, "EEE").toUpperCase()}
@@ -247,16 +325,20 @@ export const TimelineView = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      if (view !== "day") {
+                      if (view !== "day" && !isPrintMode) {
                         setCurrentDate(day);
                         setView("day");
                       }
                     }}
                     className={clsx(
-                      "flex items-center justify-center w-10 h-10 rounded-full text-lg hover:bg-surface-container-highest transition-colors cursor-pointer",
-                      isDayToday
+                      "flex items-center justify-center w-10 h-10 rounded-full text-lg transition-colors cursor-pointer",
+                      !isPrintMode && "hover:bg-surface-container-highest",
+                      isDayToday && !isPrintMode
                         ? "bg-primary text-on-primary font-bold shadow-md hover:bg-primary/90"
-                        : "text-on-surface",
+                        : "text-on-surface print:text-black",
+                      isDayToday &&
+                        isPrintMode &&
+                        "font-bold border-2 border-black rounded-full",
                     )}
                   >
                     {format(day, "d")}
@@ -268,22 +350,29 @@ export const TimelineView = () => {
         </div>
 
         {allDayMaxRows > 0 && (
-          <div className="flex border-t border-outline-variant/30">
-            <div className="w-16 shrink-0 border-r border-outline-variant/30 flex items-center justify-center py-2">
+          <div className="flex border-t border-outline-variant/30 print:border-black/50">
+            <div className="w-16 shrink-0 border-r border-outline-variant/30 flex items-center justify-center py-2 print:border-black/50">
               <Typography
                 variant="label-small"
-                className="text-[10px] text-on-surface-variant opacity-70"
+                className="text-[10px] text-on-surface-variant opacity-70 print:text-black"
               >
                 All day
               </Typography>
             </div>
 
-            <div className="flex-1 relative py-1 overflow-y-auto max-h-[120px] scrollbar-thin">
+            <div
+              className={clsx(
+                "flex-1 relative py-1 scrollbar-thin",
+                isPrintMode
+                  ? "overflow-visible"
+                  : "overflow-y-auto max-h-[120px]",
+              )}
+            >
               <div className="absolute inset-0 flex pointer-events-none">
                 {days.map((day, i) => (
                   <div
                     key={i}
-                    className="flex-1 border-r border-outline-variant/30 last:border-r-0"
+                    className="flex-1 border-r border-outline-variant/30 last:border-r-0 print:border-black/50"
                   />
                 ))}
               </div>
@@ -313,7 +402,7 @@ export const TimelineView = () => {
                         gridRowStart: row,
                       }}
                       onClick={(e) => {
-                        if (isCurrentlyDraft) return;
+                        if (isCurrentlyDraft || isPrintMode) return;
                         e.stopPropagation();
                         const rect = e.currentTarget.getBoundingClientRect();
                         const originalId = String(event.id).split("-occ-")[0];
@@ -328,6 +417,7 @@ export const TimelineView = () => {
                         className={clsx(
                           "h-full w-full rounded-md px-2 flex items-center overflow-hidden transition-all",
                           !isCurrentlyDraft &&
+                            !isPrintMode &&
                             "cursor-pointer hover:opacity-90",
                           isCurrentlyDraft &&
                             "border-2 border-dashed border-current shadow-lg ring-2 ring-primary ring-offset-1",
@@ -336,12 +426,13 @@ export const TimelineView = () => {
                             : COLOR_MAP[variant].split(" ")[0] +
                                 " " +
                                 COLOR_MAP[variant].split(" ")[1],
+                          isPrintMode && "!shadow-none border border-black/20",
                         )}
                         style={{ backgroundColor: event.colorHex }}
                       >
                         <Typography
                           variant="label-small"
-                          className="truncate font-semibold text-inherit"
+                          className="truncate font-semibold text-inherit print:text-black"
                         >
                           {event.title || "(No title)"}
                         </Typography>
@@ -357,19 +448,26 @@ export const TimelineView = () => {
 
       <ElasticScrollArea
         ref={scrollAreaRef}
-        className="flex-1 w-full bg-surface"
+        className={clsx(
+          "flex-1 w-full bg-surface",
+          isPrintMode && "print:bg-white overflow-hidden",
+        )}
+        viewportClassName={clsx(isPrintMode ? "overflow-hidden" : "")}
       >
-        <div className="flex min-w-max md:min-w-full">
-          <div className="w-16 shrink-0 flex flex-col border-r border-outline-variant/30 bg-surface relative z-10">
-            {HOURS.map((hour) => (
+        <div className="flex min-w-max md:min-w-full print:w-full print:min-w-full h-full">
+          <div className="w-16 shrink-0 flex flex-col border-r border-outline-variant/30 bg-surface relative z-10 print:bg-white print:border-black/50">
+            {displayHours.map((hour) => (
               <div
                 key={hour}
-                className="h-[60px] relative flex justify-end pr-2"
+                className={clsx(
+                  "relative flex justify-end pr-2",
+                  isPrintMode ? "flex-1" : "h-[60px]",
+                )}
               >
-                {hour !== 0 && (
+                {(hour !== 0 || isPrintMode) && (
                   <Typography
                     variant="label-small"
-                    className="text-on-surface-variant text-[10px] -mt-2 opacity-80"
+                    className="text-on-surface-variant text-[10px] -mt-2 opacity-80 print:text-black print:opacity-100"
                   >
                     {hour === 12
                       ? "12 PM"
@@ -383,18 +481,23 @@ export const TimelineView = () => {
           </div>
 
           <div className="flex-1 flex relative" ref={gridRef}>
-            <div className="absolute inset-0 pointer-events-none">
-              {HOURS.map((hour) => (
+            <div className="absolute inset-0 pointer-events-none flex flex-col">
+              {displayHours.map((hour) => (
                 <div
                   key={hour}
-                  className="h-[60px] border-b border-outline-variant/20 w-full"
+                  className={clsx(
+                    "border-b w-full",
+                    isPrintMode
+                      ? "flex-1 border-black/30 border-dashed"
+                      : "h-[60px] border-outline-variant/20",
+                  )}
                 />
               ))}
             </div>
 
-            {days.some((d) => isSameDay(d, now)) && (
+            {!isPrintMode && days.some((d) => isSameDay(d, now)) && (
               <div
-                className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                className="absolute left-0 right-0 z-20 pointer-events-none flex items-center print:hidden"
                 style={{
                   top: `${currentTimeTopPercentage}%`,
                   marginLeft: "-6px",
@@ -411,15 +514,35 @@ export const TimelineView = () => {
               return (
                 <div
                   key={day.toISOString()}
-                  className="flex-1 relative border-r border-outline-variant/30 last:border-r-0 cursor-pointer"
-                  style={{ height: "1440px" }}
+                  className="flex-1 relative border-r border-outline-variant/30 last:border-r-0 cursor-pointer print:border-black/50"
+                  style={isPrintMode ? undefined : { height: "1440px" }}
                   onClick={(e) => handleGridClick(e, day)}
                 >
                   {positions.map((pos) => {
-                    const { event, top, height, left, width } = pos;
+                    let { top, height } = pos;
+                    const { event, left, width } = pos;
                     const variant = event.colorVariant || "primary";
                     const colorClass = event.colorHex ? "" : COLOR_MAP[variant];
                     const isCurrentlyDraft = event.isDraft;
+
+                    if (isPrintMode) {
+                      const absoluteStartMins = (top / 100) * 1440;
+                      const durationMins = (height / 100) * 1440;
+                      top =
+                        ((absoluteStartMins - startMinsOffset) /
+                          totalDisplayMins) *
+                        100;
+                      height = (durationMins / totalDisplayMins) * 100;
+
+                      if (top < 0) {
+                        height += top;
+                        top = 0;
+                      }
+                      if (top + height > 100) {
+                        height = 100 - top;
+                      }
+                      if (height <= 0) return null;
+                    }
 
                     return (
                       <div
@@ -439,12 +562,15 @@ export const TimelineView = () => {
                       >
                         <div
                           className={clsx(
-                            "w-full h-full rounded-md border-l-4 p-1.5 overflow-hidden shadow-sm transition-shadow flex flex-col relative group",
+                            "w-full h-full rounded-md border-l-4 p-1.5 overflow-hidden shadow-sm flex flex-col relative group",
                             !isCurrentlyDraft &&
-                              "cursor-pointer hover:shadow-md",
+                              !isPrintMode &&
+                              "cursor-pointer hover:shadow-md transition-shadow",
                             isCurrentlyDraft &&
                               "border-dashed shadow-lg ring-2 ring-primary ring-offset-1",
                             colorClass,
+                            isPrintMode &&
+                              "!shadow-none border border-black/20",
                           )}
                           style={{
                             backgroundColor: event.colorHex
@@ -457,7 +583,7 @@ export const TimelineView = () => {
                             handlePointerDown(e, event, "move", day)
                           }
                           onClick={(e) => {
-                            if (isCurrentlyDraft) return;
+                            if (isCurrentlyDraft || isPrintMode) return;
                             e.stopPropagation();
                             const rect =
                               e.currentTarget.getBoundingClientRect();
@@ -477,14 +603,14 @@ export const TimelineView = () => {
                             <>
                               <Typography
                                 variant="label-small"
-                                className="font-bold text-inherit leading-tight truncate"
+                                className="font-bold text-inherit leading-tight truncate print:text-black"
                               >
                                 {event.title || "(No title)"}
                               </Typography>
-                              {height > (30 / (24 * 60)) * 100 && (
+                              {height > (30 / totalDisplayMins) * 100 && (
                                 <Typography
                                   variant="body-small"
-                                  className="text-[10px] text-inherit opacity-80 truncate mt-0.5 pointer-events-none"
+                                  className="text-[10px] text-inherit opacity-80 truncate mt-0.5 pointer-events-none print:text-black"
                                 >
                                   {format(event.start, "h:mm a")} -{" "}
                                   {format(event.end, "h:mm a")}
@@ -493,16 +619,18 @@ export const TimelineView = () => {
                             </>
                           )}
 
-                          {event.editable !== false && !isCurrentlyDraft && (
-                            <div
-                              className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 flex justify-center items-center"
-                              onPointerDown={(e) =>
-                                handlePointerDown(e, event, "resize", day)
-                              }
-                            >
-                              <div className="w-4 h-1 bg-current opacity-50 rounded-full" />
-                            </div>
-                          )}
+                          {event.editable !== false &&
+                            !isCurrentlyDraft &&
+                            !isPrintMode && (
+                              <div
+                                className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 flex justify-center items-center"
+                                onPointerDown={(e) =>
+                                  handlePointerDown(e, event, "resize", day)
+                                }
+                              >
+                                <div className="w-4 h-1 bg-current opacity-50 rounded-full" />
+                              </div>
+                            )}
                         </div>
                       </div>
                     );

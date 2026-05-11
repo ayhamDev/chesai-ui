@@ -110,6 +110,7 @@ export const ChartShowcase: StoryObj = {
               Profit Margins
             </Typography>
             <BarChart
+              shape="full"
               variant="secondary"
               data={salesData}
               index="month"
@@ -191,6 +192,7 @@ export const ChartShowcase: StoryObj = {
                 index="month"
                 categories={["profit"]}
                 height="100%"
+                shape="sharp"
               />
             </div>
           </Card>

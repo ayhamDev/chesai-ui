@@ -1,3 +1,4 @@
+// src/lib/components/select/select-styles.ts
 import { cva, type VariantProps } from 'class-variance-authority'
 
 export const selectStyles = cva('group flex flex-col w-full relative', {
@@ -12,7 +13,6 @@ export const selectStyles = cva('group flex flex-col w-full relative', {
       ghost: '',
       'ghost-inverted': '',
     },
-    // ... colors, sizes, etc.
     color: { primary: '', secondary: '', error: '' },
     size: { sm: '', md: '', lg: '' },
     shape: { full: '', minimal: '', sharp: '' },
@@ -33,10 +33,9 @@ export const selectStyles = cva('group flex flex-col w-full relative', {
   },
 })
 
-// ... selectContentVariants, selectSlots remain the same ...
 export const selectContentVariants = cva(
   [
-    'z-50 min-w-[var(--radix-select-trigger-width)]  max-h-[calc(var(--radix-select-content-available-height)-10.5rem)] overflow-hidden',
+    'z-[1000] min-w-[var(--radix-select-trigger-width)] max-h-[calc(var(--radix-select-content-available-height)-10.5rem)] overflow-hidden',
     'border border-outline-variant bg-surface-container text-on-surface p-1.5',
     'shadow-md',
     'data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit',
@@ -134,17 +133,14 @@ export const getSelectSlotClassNames = (
       break
   }
 
-  // --- FIX: Unified Error Handling ---
   if (isInvalid) {
     if (variant?.includes('filled')) {
-      // Replaced 'border-b-error' with 'ring-inset ring-2 ring-error'
       triggerClasses.push('bg-error-container/20 !text-error ring-inset ring-2 ring-error')
     } else {
       triggerClasses.push('!border-error text-error')
     }
   }
 
-  // ... sizing and label logic ...
   let height = 'h-14'
   let py = 'py-2'
   let px = 'px-3'

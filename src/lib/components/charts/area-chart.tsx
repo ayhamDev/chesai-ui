@@ -75,7 +75,7 @@ export const AreaChart = ({
                   y2="1"
                 >
                   <stop
-                    offset="5%"
+                    offset="100%"
                     stopColor={color}
                     stopOpacity={isGhost ? 0.2 : 0.4}
                   />

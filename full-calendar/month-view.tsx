@@ -2,9 +2,9 @@
 "use client";
 
 import { clsx } from "clsx";
-import { addDays, format, isSameMonth, isToday } from "date-fns";
+import { addDays, format, isSameMonth, isToday, startOfDay } from "date-fns";
 import React, { useMemo } from "react";
-import { Typography } from "../typography";
+import { Typography } from "../src/lib/components/typography";
 import { useFullCalendar } from "./calendar-context";
 import { expandEvents, getDaysForMonthView, getEventSegments } from "./utils";
 
@@ -50,15 +50,15 @@ export const MonthView = () => {
   const displayEvents = useMemo(() => {
     let baseEvents = events;
     if (draftEvent) {
-      // Find original base event of draft to replace it dynamically
       const baseDraftId = String(draftEvent.id).split("-occ-")[0];
       baseEvents = [
         ...events.filter((e) => String(e.id) !== baseDraftId),
         draftEvent,
       ];
     }
-    const viewStart = days[0];
-    const viewEnd = addDays(days[days.length - 1], 1);
+    // Fixed Empty filtering: strips off the specific time of current day.
+    const viewStart = startOfDay(days[0]);
+    const viewEnd = addDays(startOfDay(days[days.length - 1]), 1);
 
     return expandEvents(baseEvents, viewStart, viewEnd);
   }, [events, draftEvent, days]);
@@ -72,13 +72,13 @@ export const MonthView = () => {
   }, [days]);
 
   return (
-    <div className="flex flex-col flex-1 h-full min-h-0 bg-surface">
-      <div className="grid grid-cols-7 border-b border-outline-variant/30 shrink-0">
+    <div className="flex flex-col flex-1 h-full min-h-0 bg-surface print:bg-white print:text-black print:h-full">
+      <div className="grid grid-cols-7 border-b border-outline-variant/30 shrink-0 print:border-black/50">
         {WEEKDAYS.map((day) => (
           <div key={day} className="py-2 text-center">
             <Typography
               variant="label-small"
-              className="text-on-surface-variant font-semibold"
+              className="text-on-surface-variant font-semibold print:text-black"
             >
               {day}
             </Typography>
@@ -86,16 +86,16 @@ export const MonthView = () => {
         ))}
       </div>
 
-      <div className="flex-1 grid grid-rows-6 min-h-0">
+      <div className="flex-1 grid grid-rows-6 min-h-0 print:h-full print:grid">
         {weeks.map((week, weekIndex) => {
           const segments = getEventSegments(week, displayEvents);
 
           return (
             <div
               key={weekIndex}
-              className="relative border-b border-outline-variant/30 last:border-b-0 min-h-[80px] overflow-hidden"
+              className="relative border-b border-outline-variant/30 last:border-b-0 min-h-[80px] overflow-hidden print:min-h-0 print:border-black/50"
             >
-              <div className="absolute inset-0 grid grid-cols-7">
+              <div className="absolute inset-0 grid grid-cols-7 print:h-full print:static">
                 {week.map((day) => {
                   const isCurrentMonth = isSameMonth(day, currentDate);
                   const isDayToday = isToday(day);
@@ -105,9 +105,9 @@ export const MonthView = () => {
                     <div
                       key={day.toISOString()}
                       className={clsx(
-                        "border-r border-outline-variant/30 last:border-r-0 p-1 flex flex-col",
+                        "border-r border-outline-variant/30 last:border-r-0 p-1 flex flex-col print:border-black/50",
                         !isCurrentMonth &&
-                          "bg-surface-container-lowest/50 opacity-50",
+                          "bg-surface-container-lowest/50 opacity-50 print:bg-transparent",
                         "hover:bg-surface-container-highest/20 cursor-pointer transition-colors",
                       )}
                       onClick={(e) => {
@@ -124,10 +124,10 @@ export const MonthView = () => {
                             setView("day");
                           }}
                           className={clsx(
-                            "flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium hover:bg-surface-container-highest transition-colors z-10",
+                            "flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium transition-colors z-10",
                             isDayToday
-                              ? "bg-primary text-on-primary hover:bg-primary/90"
-                              : "text-on-surface",
+                              ? "bg-primary text-on-primary hover:bg-primary/90 print:bg-transparent print:text-black print:border print:border-black"
+                              : "text-on-surface hover:bg-surface-container-highest print:text-black",
                           )}
                         >
                           {isFirstDayOfMonth
@@ -140,15 +140,15 @@ export const MonthView = () => {
                 })}
               </div>
 
-              <div className="absolute inset-0 grid grid-cols-7 pointer-events-none mt-10 p-1 gap-y-1">
+              <div className="absolute inset-0 grid grid-cols-7 pointer-events-none mt-10 p-1 gap-y-1 print:mt-8">
                 {segments.map((segment) => {
                   const { event, colStart, colSpan, row } = segment;
                   const isAllDayOrSpanning = event.isAllDay || colSpan > 1;
                   const variant = event.colorVariant || "tertiary";
 
-                  if (row > 4) return null;
+                  // Soft cap visual rows
+                  if (row > 5) return null;
 
-                  // Propagate draft status from the base object to occurrences visually
                   const isCurrentlyDraft = event.isDraft;
 
                   return (
@@ -168,7 +168,6 @@ export const MonthView = () => {
                         if (isCurrentlyDraft) return;
                         e.stopPropagation();
                         const rect = e.currentTarget.getBoundingClientRect();
-                        // Tracing back to the base event ID
                         const originalId = String(event.id).split("-occ-")[0];
                         const baseEventObj =
                           events.find(
@@ -192,12 +191,13 @@ export const MonthView = () => {
                               : COLOR_MAP[variant].split(" ")[0] +
                                   " " +
                                   COLOR_MAP[variant].split(" ")[1],
+                            "print:border print:border-black/50 print:bg-transparent print:text-black",
                           )}
                           style={{ backgroundColor: event.colorHex }}
                         >
                           <Typography
                             variant="label-small"
-                            className="truncate font-semibold text-inherit"
+                            className="truncate font-semibold text-inherit print:text-black"
                           >
                             {event.title || "(No title)"}
                           </Typography>
@@ -214,16 +214,16 @@ export const MonthView = () => {
                         >
                           <div
                             className={clsx(
-                              "w-2 h-2 rounded-full shrink-0",
+                              "w-2 h-2 rounded-full shrink-0 print:bg-transparent print:border print:border-black/50",
                               event.colorHex ? "" : DOT_COLOR_MAP[variant],
                             )}
                             style={{ backgroundColor: event.colorHex }}
                           />
                           <Typography
                             variant="label-small"
-                            className="truncate font-medium text-on-surface"
+                            className="truncate font-medium text-on-surface print:text-black"
                           >
-                            <span className="opacity-70 mr-1">
+                            <span className="opacity-70 mr-1 print:opacity-100">
                               {format(event.start, "h:mma").toLowerCase()}
                             </span>
                             {event.title || "(No title)"}

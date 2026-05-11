@@ -1,3 +1,4 @@
+// src/lib/components/select/index.tsx
 "use client";
 
 import * as SelectPrimitive from "@radix-ui/react-select";
@@ -303,7 +304,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
           <MobileContent
             padding="none"
             className={clsx(
-              "p-0 flex flex-col overflow-hidden",
+              "z-[1000] p-0 flex flex-col overflow-hidden",
               mobileLayout === "dialog" && "max-w-[90vw] h-[60vh]",
               mobileLayout === "bottom-sheet" && "max-h-[85vh] h-[500px]",
             )}
@@ -320,7 +321,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 
             <div className="p-2 border-b border-outline-variant/10 shrink-0">
               <Input
-                variant="filled" // Ensure consistency with mobile layout design
+                variant="filled"
                 size="sm"
                 placeholder="Search..."
                 startContent={
