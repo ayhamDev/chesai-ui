@@ -17,7 +17,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  type RefObject,
 } from "react";
 import { AppBar, type AppBarProps } from "../appbar";
 import { IconButton } from "../icon-button";
@@ -127,7 +126,6 @@ const Header = <T extends Record<string, object | undefined>>({
     ? { duration: 0.12, ease: "easeInOut" }
     : { duration: 0 };
 
-  // Map legacy color values if passed
   const rawBgColor =
     options.headerStyle?.backgroundColor || options.appBarProps?.color;
   const mappedColor =
@@ -136,6 +134,18 @@ const Header = <T extends Record<string, object | undefined>>({
       : rawBgColor === "background"
         ? "surface"
         : rawBgColor;
+
+  const bottomContentNode = options.headerBottom
+    ? options.headerBottom({ canGoBack: navigation.canGoBack() })
+    : options.appBarProps?.bottomContent;
+
+  const topRowContentNode = options.headerTopRow
+    ? options.headerTopRow({ canGoBack: navigation.canGoBack() })
+    : options.appBarProps?.topRowContent;
+
+  const expandedContentNode = options.headerExpanded
+    ? options.headerExpanded({ canGoBack: navigation.canGoBack() })
+    : options.appBarProps?.expandedContent;
 
   return (
     <AppBar
@@ -192,9 +202,157 @@ const Header = <T extends Record<string, object | undefined>>({
           </motion.div>
         </AnimatePresence>
       }
+      topRowContent={
+        topRowContentNode ? (
+          <AnimatePresence mode="wait" key={`${routeKey}-toprow-presence`}>
+            <motion.div
+              key={`${routeKey}-toprow`}
+              variants={contentAnimation}
+              transition={contentTransition}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="w-full flex items-center h-full"
+            >
+              {topRowContentNode}
+            </motion.div>
+          </AnimatePresence>
+        ) : undefined
+      }
+      expandedContent={
+        expandedContentNode ? (
+          <AnimatePresence mode="wait" key={`${routeKey}-expanded-presence`}>
+            <motion.div
+              key={`${routeKey}-expanded`}
+              variants={contentAnimation}
+              transition={contentTransition}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="w-full h-full"
+            >
+              {expandedContentNode}
+            </motion.div>
+          </AnimatePresence>
+        ) : undefined
+      }
+      bottomContent={
+        bottomContentNode ? (
+          <AnimatePresence mode="wait" key={`${routeKey}-bottom-presence`}>
+            <motion.div
+              key={`${routeKey}-bottom`}
+              variants={contentAnimation}
+              transition={contentTransition}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="w-full"
+            >
+              {bottomContentNode}
+            </motion.div>
+          </AnimatePresence>
+        ) : undefined
+      }
     />
   );
 };
+
+// --- Extracted Screen Wrapper (FIXES HOOKS-IN-LOOP ISSUE) ---
+function StackScreenWrapper<T extends Record<string, object | undefined>>({
+  route,
+  index,
+  stateIndex,
+  stateRoutes,
+  baseNavigation,
+  screenConfig,
+  dynamicOpts,
+  activeAnimationConfig,
+  handleAnimationStart,
+  handleAnimationComplete,
+  scrollRefs,
+  activeScrollRef,
+}: {
+  route: Route<T, keyof T>;
+  index: number;
+  stateIndex: number;
+  stateRoutes: Route<T, keyof T>[];
+  baseNavigation: Omit<NavigationProp<T>, "scrollContainerRef">;
+  screenConfig: any;
+  dynamicOpts: any;
+  activeAnimationConfig: any;
+  handleAnimationStart: (isPop: boolean) => void;
+  handleAnimationComplete: (isPop: boolean) => void;
+  scrollRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
+  activeScrollRef: React.MutableRefObject<HTMLElement | null>;
+}) {
+  const Component = screenConfig.component;
+  const ChildrenRender = screenConfig.children;
+  const pageClassName = dynamicOpts.pageClassName;
+
+  const isActive = index === stateIndex;
+  const variantName = isActive ? "center" : "behind";
+
+  // Safe to call hook here as it is statically defined per component mount
+  const routeNavigation = useMemo(
+    (): NavigationProp<T> =>
+      ({
+        ...baseNavigation,
+        scrollContainerRef: (node: HTMLElement | null) => {
+          scrollRefs.current[route.key] = node;
+          if (stateRoutes[stateIndex]?.key === route.key) {
+            activeScrollRef.current = node;
+          }
+        },
+      }) as NavigationProp<T>,
+    [
+      baseNavigation,
+      route.key,
+      stateIndex,
+      stateRoutes,
+      scrollRefs,
+      activeScrollRef,
+    ],
+  );
+
+  return (
+    <motion.div
+      variants={activeAnimationConfig.variants}
+      transition={activeAnimationConfig.transition}
+      initial="enter"
+      animate={variantName}
+      exit="exit"
+      onAnimationStart={
+        isActive ? () => handleAnimationStart(false) : undefined
+      }
+      onAnimationComplete={
+        isActive ? () => handleAnimationComplete(false) : undefined
+      }
+      style={{ zIndex: index, willChange: "transform, opacity" }}
+      className={clsx(
+        "absolute inset-x-0 bottom-0 top-0 bg-graphite-background",
+        pageClassName,
+      )}
+    >
+      {/* @ts-expect-error */}
+      <NavigationContext.Provider value={routeNavigation}>
+        {/* @ts-ignore */}
+        <RouteContext.Provider value={route}>
+          {Component ? (
+            <Component
+              navigation={routeNavigation}
+              route={route as RouteProp<T, keyof T>}
+            />
+          ) : ChildrenRender ? (
+            ChildrenRender({
+              navigation: routeNavigation,
+              route: route as RouteProp<T, keyof T>,
+            })
+          ) : null}
+        </RouteContext.Provider>
+      </NavigationContext.Provider>
+    </motion.div>
+  );
+}
 
 // --- Main Navigator Logic ---
 interface StackNavigatorProps<T extends Record<string, object | undefined>> {
@@ -208,15 +366,7 @@ interface StackNavigatorProps<T extends Record<string, object | undefined>> {
         route: RouteProp<T, keyof T>;
         navigation: NavigationProp<T>;
       }) => StackScreenOptions);
-  /**
-   * 'memory': Routes are stored in memory/history state. The URL bar does not change path (default).
-   * 'path': Routes update the browser URL path.
-   */
   mode?: "memory" | "path";
-  /**
-   * The base URL path for 'path' mode.
-   * e.g., "/app" if your router is mounted at mydomain.com/app
-   */
   basePath?: string;
 }
 
@@ -249,7 +399,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     Record<string, Partial<StackScreenOptions>>
   >({});
 
-  // Helper to extract params from URL query string
   const getParamsFromUrl = () => {
     if (typeof window === "undefined") return undefined;
     const search = new URLSearchParams(window.location.search);
@@ -260,12 +409,9 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     return Object.keys(params).length > 0 ? (params as any) : undefined;
   };
 
-  // Helper to construct URL for 'path' mode
   const constructUrl = (name: string, params?: object) => {
     if (mode !== "path") return undefined;
-
     let url = `${basePath}/${String(name)}`;
-    // Normalize double slashes
     url = url.replace(/\/+/g, "/");
 
     if (params) {
@@ -283,17 +429,12 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
 
   const [state, setState] = useState<StackNavigationState<T>>(() => {
     if (typeof window !== "undefined") {
-      // 1. Try to restore from history state
       if (window.history.state?.routes) {
         return window.history.state as StackNavigationState<T>;
       }
-
-      // 2. If 'path' mode, try to hydration from current URL
       if (mode === "path") {
         const path = window.location.pathname;
         const currentPathName = path.replace(basePath, "").replace(/^\//, "");
-
-        // Find if the current URL matches a defined screen
         if (currentPathName && screens[currentPathName]) {
           const params = getParamsFromUrl();
           return {
@@ -309,8 +450,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         }
       }
     }
-
-    // 3. Fallback to initialRouteName
     return {
       index: 0,
       routes: [
@@ -330,22 +469,26 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     transitionEnd: new Set(),
   }).current;
 
-  // Sync state to history on mount or change
+  const scrollRefs = useRef<Record<string, HTMLElement | null>>({});
+  const activeScrollRef = useRef<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    const currentRouteKey = state.routes[state.index]?.key;
+    if (currentRouteKey) {
+      activeScrollRef.current = scrollRefs.current[currentRouteKey] || null;
+    }
+  }, [state.index, state.routes]);
+
   useLayoutEffect(() => {
     if (typeof window !== "undefined") {
       const currentState = window.history.state;
-      // Only replace if the state structure doesn't match our router structure
       if (!currentState?.routes) {
         const currentRoute = state.routes[state.index];
         const url = constructUrl(
           currentRoute.name as string,
           currentRoute.params,
         );
-        window.history.replaceState(
-          { ...currentState, ...state },
-          "",
-          url, // This updates the URL on initial load/hydration
-        );
+        window.history.replaceState({ ...currentState, ...state }, "", url);
       }
     }
   }, [state, mode, basePath]);
@@ -356,16 +499,17 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         setState(event.state as StackNavigationState<T>);
       }
     };
-
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const scrollContainerRef = useRef<HTMLElement | null>(null);
   const currentRoute = state.routes[state.index] as RouteProp<T, keyof T>;
   const screen = screens[currentRoute.name as string];
 
-  const navigation = useMemo((): NavigationProp<T> => {
+  const baseNavigation = useMemo((): Omit<
+    NavigationProp<T>,
+    "scrollContainerRef"
+  > => {
     const canGoBack = () => state.index > 0;
 
     return {
@@ -379,7 +523,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-
         const url = constructUrl(name as string, params as any);
         window.history.pushState(
           { ...window.history.state, ...newState },
@@ -398,7 +541,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: state.routes.length,
           routes: [...state.routes, newRoute],
         };
-
         const url = constructUrl(name as string, params as any);
         window.history.pushState(
           { ...window.history.state, ...newState },
@@ -418,7 +560,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
           index: newRoutes.length - 1,
           routes: newRoutes,
         };
-
         const url = constructUrl(name as string, params as any);
         window.history.replaceState(
           { ...window.history.state, ...newState },
@@ -428,19 +569,13 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         setState(newState);
       },
       goBack: () => {
-        if (canGoBack()) {
-          window.history.back();
-        }
+        if (canGoBack()) window.history.back();
       },
       pop: (count = 1) => {
-        if (canGoBack()) {
-          window.history.go(-count);
-        }
+        if (canGoBack()) window.history.go(-count);
       },
       popToTop: () => {
-        if (canGoBack()) {
-          window.history.go(-state.index);
-        }
+        if (canGoBack()) window.history.go(-state.index);
       },
       canGoBack,
       // @ts-ignore
@@ -457,14 +592,16 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
       removeListener: (event, callback) => {
         listeners[event].delete(callback);
       },
-      scrollContainerRef,
     };
   }, [state.index, state.routes, listeners, currentRoute, mode, basePath]);
 
   const activeScreenOptions = useMemo(() => {
     const resolvedGlobalOptions =
       typeof globalScreenOptions === "function"
-        ? globalScreenOptions({ route: currentRoute, navigation })
+        ? globalScreenOptions({
+            route: currentRoute,
+            navigation: baseNavigation as NavigationProp<T>,
+          })
         : globalScreenOptions || {};
 
     const resolvedLocalOptions =
@@ -493,7 +630,7 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     globalScreenOptions,
     screen?.options,
     currentRoute,
-    navigation,
+    baseNavigation,
     dynamicOptions,
   ]);
 
@@ -517,9 +654,9 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
       <Header
         options={activeScreenOptions}
         screenName={screen?.name as any}
-        navigation={navigation}
+        navigation={baseNavigation as NavigationProp<T>}
         route={currentRoute}
-        scrollContainerRef={scrollContainerRef}
+        scrollContainerRef={activeScrollRef}
         routeKey={currentRoute.key}
       />
       <div className="relative h-full w-full">
@@ -529,82 +666,24 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         >
           {state.routes.map((route, index) => {
             const screenConfig = screens[route.name as string];
-
-            if (!screenConfig) {
-              return null;
-            }
-            const Component = screenConfig.component;
-            // @ts-ignore
-            const ChildrenRender = screenConfig.children;
-
-            const resolvedGlobalOptions =
-              typeof globalScreenOptions === "function"
-                ? globalScreenOptions({
-                    route: route as RouteProp<T, keyof T>,
-                    navigation,
-                  })
-                : globalScreenOptions || {};
-            const localOptions =
-              typeof screenConfig.options === "function"
-                ? screenConfig.options({
-                    route: route as RouteProp<T, keyof T>,
-                  })
-                : screenConfig.options || {};
-            const dynamicOpts = dynamicOptions[route.key] || {};
-
-            const finalOptions = {
-              ...resolvedGlobalOptions,
-              ...localOptions,
-              ...dynamicOpts,
-            };
-            const pageClassName = finalOptions.pageClassName;
-
-            const isActive = index === state.index;
-            const variantName = isActive ? "center" : "behind";
-
-            const style: React.CSSProperties = {
-              zIndex: index,
-              willChange: "transform, opacity",
-            };
+            if (!screenConfig) return null;
 
             return (
-              <motion.div
+              <StackScreenWrapper
                 key={route.key}
-                variants={activeAnimationConfig.variants}
-                transition={activeAnimationConfig.transition}
-                initial="enter"
-                animate={variantName}
-                exit="exit"
-                onAnimationStart={
-                  isActive ? () => handleAnimationStart(false) : undefined
-                }
-                onAnimationComplete={
-                  isActive ? () => handleAnimationComplete(false) : undefined
-                }
-                style={style}
-                className={clsx(
-                  "absolute inset-x-0 bottom-0 top-0 bg-graphite-background",
-                  pageClassName,
-                )}
-              >
-                {/* @ts-expect-error */}
-                <NavigationContext.Provider value={navigation}>
-                  {/* @ts-ignore */}
-                  <RouteContext.Provider value={route}>
-                    {Component ? (
-                      <Component
-                        navigation={navigation}
-                        route={route as RouteProp<T, keyof T>}
-                      />
-                    ) : ChildrenRender ? (
-                      ChildrenRender({
-                        navigation,
-                        route: route as RouteProp<T, keyof T>,
-                      })
-                    ) : null}
-                  </RouteContext.Provider>
-                </NavigationContext.Provider>
-              </motion.div>
+                route={route}
+                index={index}
+                stateIndex={state.index}
+                stateRoutes={state.routes}
+                baseNavigation={baseNavigation}
+                screenConfig={screenConfig}
+                dynamicOpts={dynamicOptions[route.key] || {}}
+                activeAnimationConfig={activeAnimationConfig}
+                handleAnimationStart={handleAnimationStart}
+                handleAnimationComplete={handleAnimationComplete}
+                scrollRefs={scrollRefs}
+                activeScrollRef={activeScrollRef}
+              />
             );
           })}
         </AnimatePresence>
@@ -613,7 +692,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
   );
 };
 
-// --- Factory Function ---
 export function createStackNavigator<
   T extends Record<string, object | undefined>,
 >() {

@@ -59,6 +59,7 @@ export const ChartShowcase: StoryObj = {
               index="month"
               categories={["sales", "profit"]}
               valueFormatter={(v) => `$${v}`}
+              shape="minimal"
             />
           </Card>
         </GridItem>
@@ -72,6 +73,7 @@ export const ChartShowcase: StoryObj = {
               index="month"
               categories={["sales", "profit"]}
               valueFormatter={(v) => `$${v},`}
+              shape="full"
             />
           </Card>
         </GridItem>
@@ -131,6 +133,7 @@ export const ChartShowcase: StoryObj = {
               category="value"
               index="name"
               height={150}
+              shape="full"
             />
           </Card>
         </GridItem>

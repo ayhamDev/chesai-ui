@@ -55,12 +55,12 @@ export const PullToRefresh = ({
   const indicatorOpacity = useTransform(
     pullProgress,
     [0, pullThreshold * 0.75],
-    [0, 1]
+    [0, 1],
   );
   const indicatorScale = useTransform(
     pullProgress,
     [pullThreshold * 0.5, pullThreshold],
-    [0.5, 1]
+    [0.5, 1],
   );
 
   const handleTouchStart = (event: TouchEvent): void => {
@@ -194,7 +194,7 @@ export const PullToRefresh = ({
       className={clsx(
         // Use standard surface background
         "relative w-full h-full overflow-hidden bg-surface",
-        className
+        className,
       )}
     >
       {/* Indicator */}

@@ -569,8 +569,8 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
       ref: localRef,
       color:
         variant === "primary"
-          ? "var(--color-ripple-dark)"
-          : "var(--color-ripple-light)",
+          ? "var(--color-ripple-dark)" // Defined in theme.css as rgba(255,255,255, 0.1)
+          : "var(--color-ripple-light)", // Defined in theme.css as rgba(0,0,0, 0.1)
       duration: 400,
     });
 

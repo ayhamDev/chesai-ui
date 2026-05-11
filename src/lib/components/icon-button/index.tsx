@@ -21,7 +21,7 @@ export const iconButtonVariants = cva(
           "bg-error text-on-error disabled:bg-error/70 hover:bg-error/90 focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-error",
         ghost:
           "bg-transparent text-on-surface-variant disabled:opacity-70 focus-visible:bg-primary/10 " +
-          "after:absolute after:inset-0 after:z-[-1] after:bg-primary/5 after:opacity-0 after:scale-50 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
+          "after:absolute after:inset-0 after:z-[-1] after:bg-primary/20 after:opacity-0 after:scale-50 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
           "hover:after:opacity-100 hover:after:scale-100 " +
           "disabled:after:opacity-0",
         link: "bg-transparent text-primary disabled:opacity-70 hover:text-primary hover:underline !p-1 focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-primary",

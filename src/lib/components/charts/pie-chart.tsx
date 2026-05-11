@@ -15,8 +15,6 @@ import { getColorForIndex } from "./chart-utils";
 import { clsx } from "clsx";
 import { motion } from "framer-motion";
 
-// 1. Create an Animated Sector Component
-// We wrap the Recharts Sector in a component that handles the animation state
 const AnimatedSector = ({
   cx,
   cy,
@@ -28,25 +26,15 @@ const AnimatedSector = ({
   isActive,
   cornerRadius = 6,
 }: any) => {
-  // We want to animate the outerRadius.
-  // When active: base radius + 6px. When inactive: base radius.
   const targetOuterRadius = isActive ? outerRadius + 6 : outerRadius;
 
   return (
-    // We cannot animate the <Sector> directly because it is a functional component.
-    // Instead, we use a motion component (like a group) to drive state,
-    // OR simply use the "initial/animate" props on a standard HTML element
-    // and a custom hook, but Framer Motion has a cleaner way via `motion.create`
-    // or simply animating a generic object.
-
-    // Simplest approach: Use <Sector> with a React Key to force update? No.
-    // Use an animated value generator.
     <MotionSector
       cx={cx}
       cy={cy}
       innerRadius={innerRadius}
-      outerRadius={outerRadius} // Pass base for initial
-      targetRadius={targetOuterRadius} // Pass target for animation
+      outerRadius={outerRadius}
+      targetRadius={targetOuterRadius}
       startAngle={startAngle}
       endAngle={endAngle}
       fill={fill}
@@ -55,34 +43,22 @@ const AnimatedSector = ({
   );
 };
 
-// Helper to bridge Framer Motion and Recharts Sector
 const MotionSector = ({ targetRadius, ...props }: any) => {
   return (
     <motion.g>
-      {/* We create a "virtual" animation of a value "r" */}
       <motion.circle
         r={targetRadius}
         initial={{ r: props.outerRadius }}
         animate={{ r: targetRadius }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        style={{ display: "none" }} // Invisible, just used to drive the value
-        onUpdate={(latest) => {
-          // This is a bit hacky for SVG.
-          // Better approach below:
-        }}
+        style={{ display: "none" }}
+        onUpdate={() => {}}
       />
-      {/* 
-         ACTUALLY, the cleanest way in Recharts + Framer Motion 
-         without complex render props is to just render the Sector 
-         and let React handle the frame updates if we use a hook.
-      */}
       <TweenedSector {...props} targetRadius={targetRadius} />
     </motion.g>
   );
 };
 
-// Pure React State Animation (Dependency Free / Cleanest Logic)
-// You can use this Hook without installing Framer Motion too.
 const TweenedSector = ({ targetRadius, ...props }: any) => {
   const [radius, setRadius] = useState(props.outerRadius);
 
@@ -121,6 +97,7 @@ interface PieChartProps {
   category: string;
   index: string;
   variant?: "primary" | "secondary" | "ghost";
+  shape?: "full" | "minimal" | "sharp";
   colors?: string[];
   height?: number | string;
   className?: string;
@@ -132,6 +109,7 @@ export const PieChart = ({
   category,
   index,
   variant = "primary",
+  shape = "minimal",
   colors,
   height = 300,
   className,
@@ -140,10 +118,16 @@ export const PieChart = ({
   const [activeIndex, setActiveIndex] = useState<number | undefined>();
   const isGhost = variant === "ghost";
 
+  const getCornerRadius = () => {
+    if (isGhost || shape === "sharp") return 0;
+    if (shape === "full") return 999;
+    return 6; // Minimal
+  };
+
   const innerRadius = donut ? "60%" : "0%";
   const outerRadius = isGhost ? "80%" : "90%";
-  const paddingAngle = isGhost ? 0 : 4;
-  const cornerRadius = isGhost ? 0 : 6;
+  const paddingAngle = isGhost || shape === "sharp" ? 0 : 4;
+  const cornerRadiusValue = getCornerRadius();
 
   const onPieEnter = (_: any, idx: number) => {
     if (!isGhost) setActiveIndex(idx);
@@ -156,7 +140,7 @@ export const PieChart = ({
   return (
     <div
       className={clsx(
-        "outline-none [&_.recharts-surface]:outline-none",
+        "outline-none[&_.recharts-surface]:outline-none",
         className,
       )}
       style={{ height }}
@@ -178,10 +162,9 @@ export const PieChart = ({
               <AnimatedSector
                 {...props}
                 isActive={props.index === activeIndex}
-                cornerRadius={cornerRadius}
+                cornerRadius={cornerRadiusValue}
               />
             )}
-            // FIX: Removed invalid 'activeIndex' prop
             onMouseEnter={onPieEnter}
             onMouseLeave={onPieLeave}
           >

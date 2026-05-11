@@ -25,6 +25,7 @@ const meta: Meta<typeof NavigationRail.Navigator> = {
       control: "select",
       options: ["primary", "secondary", "ghost"],
     },
+
     itemVariant: {
       control: "select",
       options: ["primary", "secondary", "tertiary", "ghost"],
@@ -44,6 +45,11 @@ const meta: Meta<typeof NavigationRail.Navigator> = {
       control: "boolean",
       description:
         "Expands the rail when hovering over it on desktop. If false, users must click the menu button.",
+    },
+    overlay: {
+      control: "boolean",
+      description:
+        "Forces the rail to act as an overlay with a dimmed backdrop on desktop viewports, rather than pushing the main content.",
     },
     activeTab: { control: false },
     onTabPress: { action: "tabPressed" },
@@ -128,6 +134,7 @@ export const Default: Story = {
     itemVariant: "primary",
     expandOnHover: true,
     forceExpanded: false,
+    overlay: false,
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
@@ -198,6 +205,29 @@ export const OverlayOnMobile: Story = {
       description: {
         story:
           "On smaller viewports, the rail automatically switches to an 'overlay' behavior regardless of desktop settings.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab">
+      <RenderWithLayout {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const OverlayOnDesktop: Story = {
+  name: "5. Overlay on Desktop",
+  args: {
+    ...Default.args,
+    variant: "surface",
+    overlay: true,
+    expandOnHover: true, // You can still hover to open the overlay!
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Setting `overlay={true}` forces the rail to act as an overlay (like a Drawer) on desktop viewports, appearing over the content rather than pushing it. It works cleanly with both hover and manual click triggers.",
       },
     },
   },

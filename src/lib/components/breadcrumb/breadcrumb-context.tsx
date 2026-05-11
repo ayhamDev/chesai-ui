@@ -10,7 +10,7 @@ export interface BreadcrumbItemType {
   isCurrent?: boolean;
 }
 
-interface BreadcrumbContextType {
+export interface BreadcrumbContextType {
   items: BreadcrumbItemType[];
   setItems: (items: BreadcrumbItemType[]) => void;
   addItem: (item: Omit<BreadcrumbItemType, "id">) => void;

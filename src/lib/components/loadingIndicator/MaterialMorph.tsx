@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { interpolate } from "flubber";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import React, { useEffect } from "react";
+import { EASING } from "../stack-router/transitions";
 
 // The path data extracted from the provided assets.
 const MD3_PATHS = [
@@ -70,7 +71,7 @@ export const MaterialMorph: React.FC<MaterialMorphProps> = ({
 
     const numSteps = MD3_PATHS.length - 1;
     const stepDuration = cycleDuration / numSteps;
-    const fastActionTime = 0.35;
+    const fastActionTime = 0.3;
     const delayTime = stepDuration - fastActionTime;
 
     const runAnimationLoop = async () => {
@@ -88,12 +89,15 @@ export const MaterialMorph: React.FC<MaterialMorphProps> = ({
 
         const scalePromise = animate(scale, [1, 1.12, 1], {
           duration: fastActionTime,
-          ease: "easeInOut",
+          ease: EASING.expressiveSlowEffects,
+          bounce: 2,
+          mass: 3,
+          damping: 10,
         });
 
         const rotatePromise = animate(rotation, rotation.get() + 220, {
           duration: stepDuration + 0.1,
-          ease: [0.5, 0.6, 0.1, 0.8],
+          ease: [0.5, 0.6, 0.3, 0.8],
         });
 
         controls = [morphPromise, scalePromise, rotatePromise];

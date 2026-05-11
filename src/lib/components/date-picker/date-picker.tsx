@@ -1,3 +1,4 @@
+// src/lib/components/date-picker/date-picker.tsx
 "use client";
 
 import { parseDate } from "@internationalized/date";
@@ -16,11 +17,9 @@ import { Typography } from "../typography";
 import { Calendar } from "./calendar";
 import { InfiniteCalendar } from "./infinite-calendar";
 
-// --- TYPES ---
 type DatePickerVariant = "docked" | "modal" | "fullscreen";
 type Shape = "full" | "minimal" | "sharp";
 
-// Matches Input variants
 export type DatePickerInputVariant =
   | "filled"
   | "filled-inverted"
@@ -34,9 +33,7 @@ export type DatePickerInputVariant =
 export interface DatePickerProps {
   value?: Date;
   onChange?: (date: Date | undefined) => void;
-  /** Controls the display mode of the picker (popover vs dialog) */
   variant?: DatePickerVariant;
-  /** Controls the visual style of the input trigger */
   inputVariant?: DatePickerInputVariant;
   label?: string;
   placeholder?: string;
@@ -48,14 +45,12 @@ export interface DatePickerProps {
   itemShape?: Shape;
 }
 
-// --- HELPER STYLES ---
 const shapeStyles: Record<Shape, string> = {
   full: "rounded-[28px]",
   minimal: "rounded-xl",
   sharp: "rounded-none",
 };
 
-// --- HEADER COMPONENT ---
 const DatePickerHeader = ({
   selectedDate,
   viewMode,
@@ -122,7 +117,6 @@ const DatePickerHeader = ({
   );
 };
 
-// --- BODY COMPONENT ---
 const DatePickerBody = ({
   viewMode,
   tempDate,
@@ -184,14 +178,12 @@ const DatePickerBody = ({
           )}
         >
           {isFullscreen ? (
-            // Fullscreen uses Infinite Vertical Scroll
             <InfiniteCalendar
               value={tempDate}
               onSelect={setTempDate}
               mode="single"
             />
           ) : (
-            // Modal/Docked uses Standard Horizontal Slide
             <Calendar
               mode="single"
               value={tempDate}
@@ -207,8 +199,6 @@ const DatePickerBody = ({
     </AnimatePresence>
   );
 };
-
-// --- MAIN DATE PICKER ---
 
 export const DatePicker = ({
   value,
@@ -228,12 +218,15 @@ export const DatePicker = ({
   const [tempDate, setTempDate] = useState<Date | undefined>(value);
   const [viewMode, setViewMode] = useState<"calendar" | "input">("calendar");
 
+  // FIX 1: Prevent infinite loops by comparing timestamps, not objects
+  const valueTime = value?.getTime();
   useEffect(() => {
     if (open) {
       setTempDate(value || new Date());
       setViewMode("calendar");
     }
-  }, [open, value]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, valueTime]);
 
   const handleConfirm = () => {
     onChange?.(tempDate);
@@ -263,9 +256,6 @@ export const DatePicker = ({
           isErrored: isInvalid,
         }),
         "w-full justify-start text-left font-normal text-on-surface",
-        // Only if it's filled/filled-inverted do we not need extra text color logic,
-        // but for ghost/outlined we might. Text-on-surface covers most cases.
-        // Placeholder handling:
         !isValidValue && "text-on-surface-variant/50",
       )}
     >
@@ -274,7 +264,7 @@ export const DatePicker = ({
     </button>
   );
 
-  // --- 1. DOCKED (POPOVER) ---
+  // --- DOCKED (POPOVER) ---
   if (variant === "docked") {
     return (
       <div className="flex w-full flex-col gap-1.5">
@@ -292,34 +282,37 @@ export const DatePicker = ({
           <PopoverPrimitive.Trigger asChild>
             {TriggerButton}
           </PopoverPrimitive.Trigger>
-          <PopoverPrimitive.Content
-            align="start"
-            sideOffset={4}
-            className={clsx(
-              "z-50 w-[330px] min-w-auto bg-surface-container-high p-0 shadow-xl overflow-hidden",
-              shapeStyles[shape],
-              "data-[state=open]:animate-menu-enter",
-              "data-[state=closed]:animate-menu-exit",
-            )}
-          >
-            <Calendar
-              mode="single"
-              value={value}
-              onSelect={(d) => {
-                onChange?.(d);
-                setOpen(false);
-              }}
-              itemShape={itemShape}
-              shape={shape}
-              variant="embedded"
-            />
-          </PopoverPrimitive.Content>
+          {/* FIX 2: Wrapped in Portal to prevent clipping */}
+          <PopoverPrimitive.Portal>
+            <PopoverPrimitive.Content
+              align="start"
+              sideOffset={4}
+              className={clsx(
+                "z-50 w-[330px] min-w-auto bg-surface-container-high p-0 shadow-xl overflow-hidden",
+                shapeStyles[shape],
+                "data-[state=open]:animate-menu-enter",
+                "data-[state=closed]:animate-menu-exit",
+              )}
+            >
+              <Calendar
+                mode="single"
+                value={value}
+                onSelect={(d) => {
+                  onChange?.(d);
+                  setOpen(false);
+                }}
+                itemShape={itemShape}
+                shape={shape}
+                variant="embedded"
+              />
+            </PopoverPrimitive.Content>
+          </PopoverPrimitive.Portal>
         </PopoverPrimitive.Root>
       </div>
     );
   }
 
-  // --- 2. MODAL / FULLSCREEN (DIALOG) ---
+  // --- MODAL / FULLSCREEN (DIALOG) ---
   const isFullscreen = variant === "fullscreen";
 
   return (
@@ -344,22 +337,16 @@ export const DatePicker = ({
         <DialogTrigger asChild>{TriggerButton}</DialogTrigger>
         <DialogContent
           variant="primary"
-          // Enable Layout Animation ("size") to animate height/width changes automatically
           layout={!isFullscreen ? "size" : undefined}
-          // Pass shape directly to DialogContent to affect the Card background
           shape={shape}
           className={clsx(
             "gap-0 overflow-hidden p-0 transition-[width,height]",
             !isFullscreen
-              ? [
-                  "min-w-[320px] max-w-[420px]! shadow-2xl",
-                  shapeStyles[shape], // Apply border-radius to the wrapper
-                ]
+              ? ["min-w-[320px] max-w-[420px]! shadow-2xl", shapeStyles[shape]]
               : ["max-w-[500px]!"],
           )}
           padding="sm"
         >
-          {/* Header Area */}
           <DatePickerHeader
             selectedDate={tempDate}
             viewMode={viewMode}
@@ -369,8 +356,6 @@ export const DatePicker = ({
             onClose={() => setOpen(false)}
             isFullscreen={isFullscreen}
           />
-
-          {/* Calendar/Input Area */}
           <div className="flex-1 overflow-hidden flex flex-col">
             <DatePickerBody
               viewMode={viewMode}
@@ -381,8 +366,6 @@ export const DatePicker = ({
               isFullscreen={isFullscreen}
             />
           </div>
-
-          {/* Action Buttons Area */}
           <DialogFooter className="flex justify-end gap-2 border-t border-transparent p-3 pr-4 shrink-0 z-30">
             <Button variant="ghost" onClick={handleCancel} shape={shape}>
               Cancel

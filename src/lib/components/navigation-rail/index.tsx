@@ -335,6 +335,8 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   forceExpanded?: boolean;
   /** Allow the rail to expand on hover (Desktop only). Defaults to false. */
   expandOnHover?: boolean;
+  /** Forces the rail to act as an overlay (drawer) on desktop viewports. */
+  overlay?: boolean;
 }
 
 const NavigationRailNavigator: React.FC<NavigatorProps> = ({
@@ -349,6 +351,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   expandedWidth = "12rem",
   forceExpanded = false,
   expandOnHover = false,
+  overlay = false,
   className,
   style,
   ...props
@@ -363,6 +366,11 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   const isExpanded = isMobile
     ? internalExpanded // Mobile uses manual toggle
     : forceExpanded || internalExpanded; // Desktop uses force OR manual/hover
+
+  const behavior = isMobile || overlay ? "overlay" : "push";
+  const finalExpandedWidth =
+    typeof expandedWidth === "number" ? `${expandedWidth}px` : expandedWidth;
+  const finalCollapsedWidth = typeof width === "number" ? `${width}px` : width;
 
   const handleMouseEnter = () => {
     // Only expand if desktop, allowed to expand on hover, and not already forced open
@@ -416,17 +424,14 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
     ],
   );
 
-  const behavior = isMobile ? "overlay" : "push";
-  const finalExpandedWidth =
-    typeof expandedWidth === "number" ? `${expandedWidth}px` : expandedWidth;
-  const finalCollapsedWidth = typeof width === "number" ? `${width}px` : width;
-
   return (
     <NavigationRailContext.Provider value={contextValue}>
-      {isMobile && (
+      {/* Spacer to hold the layout position when using absolute (overlay) positioning */}
+      {behavior === "overlay" && (
         <div style={{ width: finalCollapsedWidth, flexShrink: 0 }} />
       )}
 
+      {/* Dimmed backdrop for overlay modes when expanded */}
       <AnimatePresence>
         {isExpanded && behavior === "overlay" && (
           <motion.div

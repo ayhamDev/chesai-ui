@@ -1,3 +1,4 @@
+// src/lib/components/time-picker/index.tsx
 "use client";
 
 import * as PopoverPrimitive from "@radix-ui/react-popover";
@@ -19,11 +20,8 @@ import { useTimePicker } from "../../hooks/use-time-picker";
 import { Button } from "../button";
 import { Dialog, DialogContent, DialogTrigger } from "../dialog";
 import { ElasticScrollArea } from "../elastic-scroll-area";
-import { IconButton } from "../icon-button";
 import { inputWrapperVariants } from "../input";
 import { Typography } from "../typography";
-
-// --- TYPES ---
 
 interface TimePickerProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -39,9 +37,6 @@ interface TimePickerProps extends Omit<
   variant?: "docked" | "modal";
 }
 
-// --- SUB-COMPONENTS (Extracted to prevent re-renders/focus loss) ---
-
-// 1. Single Number Input Block (Hour/Minute)
 interface NumberInputBlockProps {
   value: string;
   onChange: (val: string) => void;
@@ -81,7 +76,6 @@ const NumberInputBlock = memo(
               onFocus?.();
             }}
             onChange={(e) => {
-              // Only allow numbers
               const val = e.target.value.replace(/\D/g, "").slice(0, 2);
               onChange(val);
             }}
@@ -98,7 +92,6 @@ const NumberInputBlock = memo(
 );
 NumberInputBlock.displayName = "NumberInputBlock";
 
-// 2. Material 3 Logic Wrapper
 interface MaterialTimeInputProps {
   value: Date;
   onValueChange: (date: Date) => void;
@@ -106,10 +99,8 @@ interface MaterialTimeInputProps {
 
 const MaterialTimeInput = memo(
   ({ value, onValueChange }: MaterialTimeInputProps) => {
-    const { displayHour, minutes, period, setHour, setMinute, setPeriod } =
-      useTimePicker(value);
+    const { displayHour, minutes, period, setPeriod } = useTimePicker(value);
 
-    // Local state for typing
     const [localHour, setLocalHour] = useState(
       String(displayHour).padStart(2, "0"),
     );
@@ -117,28 +108,22 @@ const MaterialTimeInput = memo(
       String(minutes).padStart(2, "0"),
     );
 
-    // Sync external changes (e.g. from AM/PM toggle or init) to local state
     useEffect(() => {
       setLocalHour(String(displayHour).padStart(2, "0"));
       setLocalMinute(String(minutes).padStart(2, "0"));
     }, [displayHour, minutes]);
-
-    // --- Handlers ---
 
     const validateHour = () => {
       let num = parseInt(localHour, 10);
       if (isNaN(num) || num < 1) num = 1;
       if (num > 12) num = 12;
 
-      // 1. Update local display state
       setLocalHour(String(num).padStart(2, "0"));
 
-      // 2. Calculate new 24h hour based on current AM/PM period
       let newHour = num;
       if (period === "PM" && num < 12) newHour += 12;
       if (period === "AM" && num === 12) newHour = 0;
 
-      // 3. Update the actual Date object and notify parent
       const newDate = new Date(value);
       newDate.setHours(newHour);
       onValueChange(newDate);
@@ -149,10 +134,8 @@ const MaterialTimeInput = memo(
       if (isNaN(num) || num < 0) num = 0;
       if (num > 59) num = 59;
 
-      // 1. Update local display state
       setLocalMinute(String(num).padStart(2, "0"));
 
-      // 2. Update the actual Date object and notify parent
       const newDate = new Date(value);
       newDate.setMinutes(num);
       onValueChange(newDate);
@@ -162,7 +145,6 @@ const MaterialTimeInput = memo(
       if (newPeriod === period) return;
       setPeriod(newPeriod);
 
-      // Manually trigger onValueChange because setPeriod might be async/internal
       let currentHours = value.getHours();
       if (newPeriod === "AM" && currentHours >= 12) currentHours -= 12;
       if (newPeriod === "PM" && currentHours < 12) currentHours += 12;
@@ -174,28 +156,21 @@ const MaterialTimeInput = memo(
 
     return (
       <div className="flex items-start gap-3 select-none">
-        {/* Hour Input */}
         <NumberInputBlock
           value={localHour}
           onChange={setLocalHour}
           onBlur={validateHour}
           label="Hour"
         />
-
-        {/* Separator */}
         <div className="flex h-[80px] items-center pb-2">
           <span className="text-[57px] leading-[64px] text-on-surface">:</span>
         </div>
-
-        {/* Minute Input */}
         <NumberInputBlock
           value={localMinute}
           onChange={setLocalMinute}
           onBlur={validateMinute}
           label="Minute"
         />
-
-        {/* AM/PM Column */}
         <div className="ml-3 flex flex-col gap-[1px] h-[80px] rounded-lg border border-outline-variant bg-outline-variant overflow-hidden">
           <button
             type="button"
@@ -203,8 +178,8 @@ const MaterialTimeInput = memo(
             className={clsx(
               "flex-1 px-4 text-sm font-medium transition-colors hover:bg-surface-container-highest",
               period === "AM"
-                ? "bg-secondary-container text-on-secondary-container" // Active State
-                : "bg-surface-container-high text-on-surface-variant", // Inactive State
+                ? "bg-secondary-container text-on-secondary-container"
+                : "bg-surface-container-high text-on-surface-variant",
             )}
           >
             AM
@@ -215,8 +190,8 @@ const MaterialTimeInput = memo(
             className={clsx(
               "flex-1 px-4 text-sm font-medium transition-colors hover:bg-surface-container-highest",
               period === "PM"
-                ? "bg-secondary-container text-on-secondary-container" // Active State
-                : "bg-surface-container-high text-on-surface-variant", // Inactive State
+                ? "bg-secondary-container text-on-secondary-container"
+                : "bg-surface-container-high text-on-surface-variant",
             )}
           >
             PM
@@ -228,7 +203,6 @@ const MaterialTimeInput = memo(
 );
 MaterialTimeInput.displayName = "MaterialTimeInput";
 
-// 3. Roller Component (Desktop)
 interface TimeRollerProps {
   items: (string | number)[];
   value: string | number;
@@ -321,7 +295,6 @@ const TimeRoller = React.forwardRef<HTMLDivElement, TimeRollerProps>(
 );
 TimeRoller.displayName = "TimeRoller";
 
-// 4. Roller Panel Wrapper
 const TimePickerRollerPanel = ({
   value,
   onValueChange,
@@ -332,8 +305,14 @@ const TimePickerRollerPanel = ({
   const { time, displayHour, minutes, period, setHour, setMinute, setPeriod } =
     useTimePicker(value);
 
+  // Use a ref to prevent continuous triggering
+  const lastTimeRef = useRef(time.getTime());
+
   useEffect(() => {
-    onValueChange(time);
+    if (time.getTime() !== lastTimeRef.current) {
+      lastTimeRef.current = time.getTime();
+      onValueChange(time);
+    }
   }, [time, onValueChange]);
 
   const hours = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -367,8 +346,6 @@ const TimePickerRollerPanel = ({
   );
 };
 
-// --- MAIN COMPONENT ---
-
 export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
   (
     {
@@ -399,12 +376,13 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
 
     const formattedValue = value ? format(value, "hh:mm a") : "";
 
-    // Sync temp value when dialog opens
+    // FIX 1: Prevent infinite loops by comparing timestamps, not objects
+    const valueTime = value?.getTime();
     useEffect(() => {
       if (isOpen) setTempValue(value || new Date());
-    }, [isOpen, value]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, valueTime]);
 
-    // Common Trigger Button
     const TriggerButton = (
       <button
         ref={ref}
@@ -423,14 +401,13 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
         )}
         {...props}
       >
-        <Clock className="mr-2 h-4 w-4 opacity-50" />
-        <span className="flex-1 text-left">
+        <Clock className="mr-2 h-4 w-4 opacity-50 shrink-0" />
+        <span className="flex-1 text-left truncate">
           {formattedValue || placeholder}
         </span>
       </button>
     );
 
-    // --- 1. MODAL / FULLSCREEN (Material 3 Spec) ---
     if (variant === "modal") {
       const handleConfirm = () => {
         setValue(tempValue);
@@ -444,7 +421,6 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
               {label}
             </label>
           )}
-
           <Dialog
             open={isOpen}
             onOpenChange={setIsOpen}
@@ -455,11 +431,9 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
 
             <DialogContent
               shape={shape}
-              // MD3 Spec specific layout override
               className="w-auto min-w-[312px] max-w-[400px]! p-0 bg-surface-container-high rounded-[28px] overflow-visible"
-              layout={false} // Disable auto-layout for this specific fixed structure
+              layout={false}
             >
-              {/* Header */}
               <div className="flex flex-col gap-1 px-6 pt-2 pb-5">
                 <Typography
                   variant="label-medium"
@@ -469,7 +443,6 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
                 </Typography>
               </div>
 
-              {/* Body: Inputs */}
               <div className="flex justify-center px-6 pb-6">
                 <MaterialTimeInput
                   value={tempValue}
@@ -477,7 +450,6 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
                 />
               </div>
 
-              {/* Footer */}
               <div className="flex items-center justify-end px-4">
                 <div className="flex gap-1">
                   <Button
@@ -505,7 +477,6 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
       );
     }
 
-    // --- 2. DOCKED (Desktop Popover) ---
     return (
       <div className="flex w-full flex-col gap-1.5">
         {label && (

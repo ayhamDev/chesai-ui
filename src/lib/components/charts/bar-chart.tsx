@@ -24,6 +24,7 @@ export const BarChart = ({
   categories,
   index,
   variant = "primary",
+  shape = "minimal",
   colors,
   height = 300,
   className,
@@ -31,6 +32,12 @@ export const BarChart = ({
 }: ChartProps) => {
   const isGhost = variant === "ghost";
   const isSecondary = variant === "secondary";
+
+  const getRadius = () => {
+    if (shape === "sharp") return [0, 0, 0, 0];
+    if (shape === "full") return [999, 999, 999, 999]; // Pill
+    return [4, 4, 4, 4]; // Minimal default
+  };
 
   return (
     <div
@@ -61,7 +68,7 @@ export const BarChart = ({
               {...chartAxisConfig}
               tickFormatter={valueFormatter}
               hide={isSecondary}
-              width={45} // Explicit width ensures labels aren't cut off
+              width={45}
             />
           )}
 
@@ -82,9 +89,7 @@ export const BarChart = ({
                 key={category}
                 dataKey={category}
                 fill={color}
-                // Updated radius: [TopLeft, TopRight, BottomRight, BottomLeft]
-                // Now rounding all corners to 4px for non-ghost variants.
-                radius={isGhost ? [4, 4, 4, 4] : [4, 4, 4, 4]}
+                radius={getRadius() as any}
                 animationDuration={1500}
                 animationEasing="ease-out"
                 maxBarSize={isGhost ? undefined : 60}

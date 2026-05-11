@@ -113,7 +113,7 @@ const SidebarContentExample = ({
           icon={<Box />}
           onClick={() => alert("FAB Clicked")}
           label={"New Item"}
-          variant="secondary"
+          variant="tertiary"
         />
         <Sidebar.Group>
           <Sidebar.Item

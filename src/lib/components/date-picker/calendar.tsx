@@ -53,7 +53,7 @@ const getDayButtonClasses = (shape: "full" | "minimal" | "sharp") => {
     "relative z-10 w-10 h-10 flex items-center justify-center text-sm focus:outline-none overflow-hidden",
     "transition-colors duration-200",
     radiusClass,
-    "after:absolute after:inset-0 after:z-[-1] after:bg-primary/5 after:opacity-0 after:scale-50 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
+    "after:absolute after:inset-0 after:z-[-1] after:bg-primary/20 after:opacity-0 after:scale-50 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out " +
       "hover:after:opacity-100 hover:after:scale-100 " +
       "disabled:after:opacity-0",
     `after:${radiusClass}`,

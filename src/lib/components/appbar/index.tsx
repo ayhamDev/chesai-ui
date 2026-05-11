@@ -7,7 +7,6 @@ import {
   type MotionValue,
   useMotionValue,
   useMotionValueEvent,
-  useScroll,
   useTransform,
 } from "framer-motion";
 import React, {
@@ -103,22 +102,11 @@ export interface AppBarProps extends Omit<
   routeKey?: string;
   topRowContent?: React.ReactNode;
   expandedContent?: React.ReactNode;
-  /** Controls if the expandedContent should use the default fade/slide exit animation, or "none" for manual morphing */
   expandedAnimation?: "default" | "none";
-  /**
-   * If false, the expanded variants (medium, large) will not collapse to the small size on scroll.
-   * @default true
-   */
   collapsible?: boolean;
-
-  // --- CUSTOMIZATION THRESHOLDS ---
-  /** Override the default collapsed height (default is 64px). */
   collapsedHeight?: number;
-  /** Override the expanded area height (skips MD3 presets and automatic measurements). */
   expandedHeight?: number;
-  /** Scroll distance in pixels required to trigger the scrolled color and shadow effects. (default 5px) */
   effectScrollThreshold?: number;
-  /** Scroll distance in pixels required to fully collapse the App Bar. Defaults to the measured expanded area height. */
   collapseScrollDistance?: number;
 }
 
@@ -150,12 +138,51 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
     },
     ref,
   ) => {
-    const { scrollY } = useScroll(
-      scrollContainerRef ? { container: scrollContainerRef } : undefined,
-    );
+    // --- MANUAL SCROLL TRACKING ---
+    // Replaced Framer Motion's useScroll to perfectly handle dynamic ref swaps during route transitions.
+    const scrollY = useMotionValue(0);
+
+    useEffect(() => {
+      let rafId: number;
+      let retries = 0;
+      let cleanup: (() => void) | null = null;
+
+      const attach = () => {
+        const container = scrollContainerRef?.current;
+        if (!container) {
+          if (retries < 15) {
+            retries++;
+            rafId = requestAnimationFrame(attach);
+          }
+          return;
+        }
+
+        const handleScroll = () => {
+          scrollY.set(container.scrollTop);
+        };
+
+        container.addEventListener("scroll", handleScroll, { passive: true });
+        handleScroll(); // Force initial sync
+
+        cleanup = () => container.removeEventListener("scroll", handleScroll);
+      };
+
+      attach();
+
+      return () => {
+        cancelAnimationFrame(rafId);
+        if (cleanup) cleanup();
+      };
+    }, [scrollContainerRef, routeKey]); // Critically depends on routeKey to re-attach cleanly
 
     const [isScrolled, setIsScrolled] = useState(false);
     const headerY = useMotionValue(0);
+
+    // Reset layout state seamlessly on route change
+    useEffect(() => {
+      headerY.set(0);
+      setIsScrolled(false);
+    }, [routeKey, headerY]);
 
     // --- DYNAMIC MEASUREMENTS ---
     const topRowRef = useRef<HTMLDivElement>(null);
@@ -185,7 +212,6 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
     }, [title, topRowContent, children, bottomContent, collapsedHeight]);
 
     useEffect(() => {
-      // If expanded height is explicitly provided via props, strictly use it and skip observing
       if (expandedHeight !== undefined) {
         setMeasuredExpanded(expandedHeight);
         return;
@@ -204,13 +230,7 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
       }
     }, [expandedContent, isLarge, isMedium, expandedHeight]);
 
-    useEffect(() => {
-      headerY.set(0);
-    }, [routeKey, headerY]);
-
     // --- ANIMATION MATH ---
-    // If a custom collapse distance is provided, use it for the transition mapping.
-    // Otherwise, perfectly map it to the height of the expanded content.
     const collapseDistance = Math.max(
       collapseScrollDistance ?? measuredExpanded,
       1,
@@ -269,9 +289,7 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
       scrollY,
       [0, collapseDistance],
       [0, xCollapsed],
-      {
-        clamp: true,
-      },
+      { clamp: true },
     );
 
     const yCollapsed = isLarge ? 10 : 7;
@@ -279,27 +297,22 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
       scrollY,
       [0, collapseDistance],
       [0, yCollapsed],
-      {
-        clamp: true,
-      },
+      { clamp: true },
     );
 
     // --- HIDE/FLOAT LOGIC ---
     useMotionValueEvent(scrollY, "change", (latest) => {
       const prev = scrollY.getPrevious() || 0;
 
-      // TRIGGER EFFECTS (Shadow / Scrolled Color) based on custom threshold
       if (latest > effectScrollThreshold && !isScrolled) setIsScrolled(true);
       else if (latest <= effectScrollThreshold && isScrolled)
         setIsScrolled(false);
 
-      // If not collapsible, the entire expanded height must hide.
       const heightToHide =
         (collapsible ? measuredTop : expandedTotalHeight) + measuredBottom;
       const threshold = collapsible ? collapseDistance : 0;
 
       if (scrollBehavior === "hide") {
-        // We use Math.max with threshold to ensure it doesn't hide while it's still collapsing
         const scrollPastCollapse = Math.max(0, latest - threshold);
         headerY.set(Math.max(-heightToHide, -scrollPastCollapse));
       } else if (scrollBehavior === "floating") {
@@ -358,22 +371,20 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
       <AppBarContext.Provider
         value={{ scrollY, collapseProgress, collapseDistance }}
       >
-        {/* @ts-ignore */}
         <motion.header
-          ref={ref}
+          ref={ref as any}
           role="banner"
           style={{
-            y: headerY,
+            y: headerY as any,
             willChange: "transform, background-color, box-shadow",
           }}
           className={clsx(
-            "absolute inset-x-0 top-0 z-40 flex flex-col font-manrope transition-[background-color,color,box-shadow] duration-300",
-            "transform-gpu", // Force hardware acceleration
+            "absolute inset-x-0 top-0 z-40 flex flex-col font-manrope transition-[background-color,color,box-shadow] duration-300 transform-gpu",
             resolveColorClass(),
             isScrolled && elevateOnScroll && "shadow-md",
             className,
           )}
-          {...props}
+          {...(props as any)}
         >
           <motion.div
             style={{

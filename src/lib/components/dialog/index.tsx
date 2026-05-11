@@ -152,10 +152,10 @@ const basicDialogVariants: Variants = {
     },
   },
   exit: {
-    scale: 0.85,
+    scale: 0.9,
     opacity: 0,
     transition: {
-      duration: DURATION.short3,
+      duration: DURATION.short2,
       ease: EASING.emphasizedAccelerate,
     },
   },

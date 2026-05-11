@@ -9,10 +9,19 @@ export interface StackScreenOptions {
   headerShown?: boolean
   headerLeft?: (props: { canGoBack: boolean }) => React.ReactNode
   headerRight?: (props: { canGoBack: boolean }) => React.ReactNode
+
+  // --- NEW: Advanced AppBar Slots ---
+  headerBottom?: (props: { canGoBack: boolean }) => React.ReactNode
+  headerTopRow?: (props: { canGoBack: boolean }) => React.ReactNode
+  headerExpanded?: (props: { canGoBack: boolean }) => React.ReactNode
+
   headerStyle?: {
     backgroundColor?: AppBarColor | 'card' | 'background' // kept legacy names for safety
   }
+
+  // Full access to the underlying AppBar configuration
   appBarProps?: Partial<AppBarProps>
+
   animation?: any
   pageClassName?: string
   headerAnimationEnabled?: boolean
@@ -58,7 +67,7 @@ export interface NavigationProp<T extends Record<string, object | undefined>> {
   canGoBack: () => boolean
   addListener: (event: NavigationEvent, callback: NavigationEventCallback) => () => void
   removeListener: (event: NavigationEvent, callback: NavigationEventCallback) => void
-  scrollContainerRef: ForwardedRef<any | null>
+  scrollContainerRef: React.RefCallback<HTMLElement | null> | React.MutableRefObject<HTMLElement | null>
 }
 
 export interface StackAnimation {

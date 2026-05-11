@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Mail, MoreVertical, Search } from "lucide-react";
+import { Mail, MoreVertical, Search, Sparkles } from "lucide-react";
 import { Button } from "../button";
 import DeviceFrame from "../device";
 import { ElasticScrollArea } from "../elastic-scroll-area";
@@ -9,9 +9,10 @@ import { Item, ItemContent, ItemTitle } from "../item";
 import { Typography } from "../typography";
 import { createStackNavigator, useNavigation, useRoute } from "./index";
 import type { RouteProp } from "./types";
+
 const meta: Meta = {
   title: "Components/Navigators/StackRouter",
-  component: undefined, // Component is a factory, not a single element
+  component: undefined,
   tags: ["autodocs"],
   parameters: {
     layout: "centered",
@@ -95,74 +96,122 @@ export const BasicNavigation: StoryObj = {
   ),
 };
 
-// --- 2. Header Customization Example ---
-type HeaderStackParamList = {
-  Feed: undefined;
-  Article: { articleId: string };
-  Settings: undefined;
+// --- 2. Advanced AppBar Integration Example ---
+type AdvancedStackParamList = {
+  SearchFeed: undefined;
+  Detail: { itemId: string };
 };
-const HeaderStack = createStackNavigator<HeaderStackParamList>();
+const AdvancedStack = createStackNavigator<AdvancedStackParamList>();
 
-const FeedScreen = () => {
-  const navigation = useNavigation<HeaderStackParamList>();
+const SearchFeedScreen = () => {
+  const navigation = useNavigation<AdvancedStackParamList>();
 
   return (
-    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
-      <Typography variant="title-small">Feed</Typography>
-      <div className="flex flex-col gap-4 mt-4">
-        <Button onClick={() => navigation.push("Article", { articleId: "a1" })}>
-          Go to Article (Custom Header)
-        </Button>
-        <Button variant="secondary" onClick={() => navigation.push("Settings")}>
-          Go to Settings (No Header)
+    <ElasticScrollArea ref={navigation.scrollContainerRef}>
+      {/* 152px for the Large variant height */}
+      <div className="p-4 pt-[164px] flex flex-col gap-3">
+        <Typography variant="body-medium" className="mb-4">
+          This screen utilizes the expanded features of the AppBar API via the
+          Stack Router options. The search bar is injected into the{" "}
+          <code>headerExpanded</code> slot and smoothly transitions across
+          screens.
+        </Typography>
+        {Array.from({ length: 15 }).map((_, i) => (
+          <Item
+            key={i}
+            variant="secondary"
+            shape="minimal"
+            onClick={() => navigation.push("Detail", { itemId: `item-${i}` })}
+            className="cursor-pointer"
+          >
+            <ItemContent>
+              <ItemTitle>Search Result {i + 1}</ItemTitle>
+            </ItemContent>
+          </Item>
+        ))}
+      </div>
+    </ElasticScrollArea>
+  );
+};
+
+const DetailScreen = () => {
+  const navigation = useNavigation<AdvancedStackParamList>();
+  return (
+    <ElasticScrollArea ref={navigation.scrollContainerRef}>
+      {/* 64px for the Small variant height */}
+      <div className="p-4 pt-[84px]">
+        <Typography variant="title-medium">Item Details</Typography>
+        <Typography variant="body-medium" className="mt-4">
+          Notice how the expanded search input cross-faded out, and the custom
+          Top Row content faded in perfectly without overlapping.
+        </Typography>
+        <Button
+          onClick={() => navigation.goBack()}
+          variant="outline"
+          className="mt-8"
+        >
+          Go Back
         </Button>
       </div>
-    </div>
+    </ElasticScrollArea>
   );
 };
 
-const ArticleScreen = () => {
-  const navigation = useNavigation<BasicStackParamList>();
-
-  return (
-    <div className="p-6 pt-[70px]" ref={navigation.scrollContainerRef}>
-      <Typography variant="large">This is the article content.</Typography>
-    </div>
-  );
-};
-const SettingsScreen = () => {
-  const navigation = useNavigation<HeaderStackParamList>();
-  return (
-    <div className="p-6 pt-6" ref={navigation.scrollContainerRef}>
-      <Typography variant="title-small">Settings</Typography>
-      <Typography variant="body-medium">This screen has no header.</Typography>
-    </div>
-  );
-};
-
-export const HeaderCustomization: StoryObj = {
-  name: "2. Header Customization",
+export const AdvancedAppBarIntegration: StoryObj = {
+  name: "2. Advanced AppBar Features",
   render: () => (
-    <HeaderStack.Navigator initialRouteName="Feed">
-      <HeaderStack.Screen name="Feed" component={FeedScreen} />
-      <HeaderStack.Screen
-        name="Article"
-        component={ArticleScreen}
+    <AdvancedStack.Navigator initialRouteName="SearchFeed">
+      <AdvancedStack.Screen
+        name="SearchFeed"
+        component={SearchFeedScreen}
         options={{
-          title: "Article Details",
+          appBarProps: {
+            variant: "large",
+            color: "surface-container-low",
+            scrollBehavior: "conditionally-sticky",
+          },
+          headerTopRow: () => (
+            <Typography variant="title-large">Discover</Typography>
+          ),
+          headerExpanded: () => (
+            <Input
+              variant="secondary"
+              shape="full"
+              placeholder="Search components..."
+              startContent={
+                <Search className="w-5 h-5 text-on-surface-variant" />
+              }
+            />
+          ),
           headerRight: () => (
             <IconButton variant="ghost">
-              <MoreVertical />
+              <Sparkles className="w-5 h-5" />
             </IconButton>
           ),
         }}
       />
-      <HeaderStack.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{ headerShown: false }}
+      <AdvancedStack.Screen
+        name="Detail"
+        component={DetailScreen}
+        options={{
+          appBarProps: {
+            variant: "small", // FIX: Used "small" to avoid rendering default expanded title
+            color: "surface",
+          },
+          headerTopRow: () => (
+            <Typography variant="title-large" className="text-primary">
+              Custom Title Row
+            </Typography>
+          ),
+
+          headerRight: () => (
+            <IconButton variant="ghost">
+              <MoreVertical className="w-5 h-5" />
+            </IconButton>
+          ),
+        }}
       />
-    </HeaderStack.Navigator>
+    </AdvancedStack.Navigator>
   ),
 };
 
@@ -363,7 +412,7 @@ const InboxScreen = () => {
   const { scrollContainerRef } = useNavigation();
   return (
     <ElasticScrollArea scrollbarVisibility="hidden" ref={scrollContainerRef}>
-      <div className="pt-[120px] p-4">
+      <div className="pt-[140px] p-4">
         {emails.map((email) => (
           <Item
             key={email.id}
@@ -405,6 +454,7 @@ const EmailScreen = () => {
     </div>
   );
 };
+
 export const FullAppExample: StoryObj = {
   name: "4. Full App Example (Mail Client)",
   render: () => (
@@ -418,7 +468,7 @@ export const FullAppExample: StoryObj = {
         name="Inbox"
         component={InboxScreen}
         options={{
-          title: "Inbox",
+          headerTitle: "Inbox",
           headerRight: () => (
             <IconButton
               variant="ghost"
@@ -430,16 +480,16 @@ export const FullAppExample: StoryObj = {
           appBarProps: {
             size: "lg",
             scrollBehavior: "conditionally-sticky",
-            largeHeaderRowHeight: 50,
-            largeHeaderContent: (
-              <Input
-                variant="secondary"
-                shape="full"
-                startAdornment={<Search className="h-5 w-5 text-gray-500" />}
-                placeholder="Search mail..."
-              />
-            ),
+            largeHeaderRowHeight: 64,
           },
+          headerExpanded: () => (
+            <Input
+              variant="secondary"
+              shape="full"
+              startContent={<Search className="h-5 w-5 text-gray-500" />}
+              placeholder="Search mail..."
+            />
+          ),
         }}
       />
       <MailStack.Screen

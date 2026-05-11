@@ -23,6 +23,7 @@ export interface ChartProps {
   categories: string[];
   index: string;
   variant?: "primary" | "secondary" | "ghost";
+  shape?: "full" | "minimal" | "sharp";
   colors?: string[];
   height?: number | string;
   className?: string;
@@ -34,6 +35,7 @@ export const AreaChart = ({
   categories,
   index,
   variant = "primary",
+  shape = "minimal", // Extracted but visual impact on Area is minimal
   colors,
   height = 300,
   className,
@@ -46,7 +48,7 @@ export const AreaChart = ({
   return (
     <div
       className={clsx(
-        "outline-none [&_.recharts-surface]:outline-none",
+        "outline-none[&_.recharts-surface]:outline-none",
         className,
       )}
       style={{ height }}
@@ -98,7 +100,7 @@ export const AreaChart = ({
               {...chartAxisConfig}
               tickFormatter={valueFormatter}
               hide={isSecondary}
-              width={45} // Explicit width ensures labels aren't cut off
+              width={45}
             />
           )}
 

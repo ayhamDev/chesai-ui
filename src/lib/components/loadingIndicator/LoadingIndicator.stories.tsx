@@ -44,11 +44,8 @@ export const MaterialDesign3: Story = {
   render: ({ variant }) => (
     <div className="flex gap-8 items-center">
       <LoadingIndicator variant={variant} className="w-8 h-8" />
-      <LoadingIndicator variant={variant} className="w-12 h-12 text-blue-500" />
-      <LoadingIndicator
-        variant={variant}
-        className="w-24 h-24 text-purple-600"
-      />
+      <LoadingIndicator variant={variant} className="w-12 h-1" />
+      <LoadingIndicator variant={variant} className="w-24 h-24" />
     </div>
   ),
 };
