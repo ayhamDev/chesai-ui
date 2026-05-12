@@ -44,7 +44,7 @@ export interface MaterialMorphProps extends React.SVGProps<SVGSVGElement> {
 
 export const MaterialMorph: React.FC<MaterialMorphProps> = ({
   className,
-  cycleDuration = 4,
+  cycleDuration = 5,
   background = true,
   isPlaying = true, // Added default value
   ...props
@@ -87,17 +87,14 @@ export const MaterialMorph: React.FC<MaterialMorphProps> = ({
           ease: "easeInOut",
         });
 
-        const scalePromise = animate(scale, [1, 1.12, 1], {
+        const scalePromise = animate(scale, [1, 1.125, 1], {
           duration: fastActionTime,
-          ease: EASING.expressiveSlowEffects,
-          bounce: 2,
-          mass: 3,
-          damping: 10,
+          ease: "easeIn",
         });
 
-        const rotatePromise = animate(rotation, rotation.get() + 220, {
-          duration: stepDuration + 0.1,
-          ease: [0.5, 0.6, 0.3, 0.8],
+        const rotatePromise = animate(rotation, rotation.get() + 180, {
+          duration: stepDuration,
+          ease: [0.5, 0.6, 0.4, 0.8],
         });
 
         controls = [morphPromise, scalePromise, rotatePromise];

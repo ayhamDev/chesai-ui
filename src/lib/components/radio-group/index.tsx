@@ -54,7 +54,8 @@ const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
           {/* The Inner Dot */}
           <div
             className={clsx(
-              "pointer-events-none absolute h-2.5 w-2.5 rounded-full bg-primary z-20",
+              // Added explicit absolute centering: top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+              "pointer-events-none absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary z-20",
               "transition-transform duration-200 ease-in-out transform scale-0 peer-checked:scale-100",
               // Handle disabled inner dot color
               "peer-disabled:bg-outline-variant",

@@ -6,7 +6,6 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import * as React from "react";
 import useRipple from "use-ripple-hook";
-export * from "./virtual-item-list";
 
 // --- Types ---
 
@@ -142,19 +141,119 @@ const itemMediaVariants = cva(
 
 // --- Compound Components ---
 
-const ItemGroup = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  // Changed role from "list" to "group" to satisfy semantic element linting (generic container)
-  <div
-    ref={ref}
-    role="group"
-    data-slot="item-group"
-    className={clsx("group/item-group flex flex-col gap-2", className)}
-    {...props}
-  />
-));
+export type ItemGroupShape = "full" | "minimal" | "sharp";
+export type ItemGroupDirection = "horizontal" | "vertical";
+export type ItemGroupGap = "none" | "xs" | "sm" | "md" | "lg";
+
+export interface ItemGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+  shape?: ItemGroupShape;
+  direction?: ItemGroupDirection;
+  gap?: ItemGroupGap;
+}
+
+const gapMap: Record<ItemGroupGap, string> = {
+  none: "gap-0",
+  xs: "gap-0.5",
+  sm: "gap-1",
+  md: "gap-2",
+  lg: "gap-4",
+};
+
+// Explicit static class mapping to ensure Tailwind compiles them correctly
+// and using [30px] to prevent the browser from clamping the inner curves.
+const getShapeClasses = (
+  index: number,
+  total: number,
+  shape: ItemGroupShape,
+  direction: ItemGroupDirection,
+) => {
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+  const isOnly = total === 1;
+
+  if (shape === "sharp") return "!rounded-none";
+
+  if (isOnly) {
+    if (shape === "full") return "!rounded-[30px]";
+    if (shape === "minimal") return "!rounded-xl";
+  }
+
+  if (direction === "vertical") {
+    if (shape === "full") {
+      if (isFirst) return "!rounded-t-[30px] !rounded-b-md";
+      if (isLast) return "!rounded-t-md !rounded-b-[30px]";
+      return "!rounded-t-md !rounded-b-md";
+    }
+    if (shape === "minimal") {
+      if (isFirst) return "!rounded-t-xl !rounded-b-sm";
+      if (isLast) return "!rounded-t-sm !rounded-b-xl";
+      return "!rounded-t-sm !rounded-b-sm";
+    }
+  } else {
+    // horizontal
+    if (shape === "full") {
+      if (isFirst) return "!rounded-l-[30px] !rounded-r-md";
+      if (isLast) return "!rounded-l-md !rounded-r-[30px]";
+      return "!rounded-l-md !rounded-r-md";
+    }
+    if (shape === "minimal") {
+      if (isFirst) return "!rounded-l-xl !rounded-r-sm";
+      if (isLast) return "!rounded-l-sm !rounded-r-xl";
+      return "!rounded-l-sm !rounded-r-sm";
+    }
+  }
+  return "";
+};
+
+const ItemGroup = React.forwardRef<HTMLDivElement, ItemGroupProps>(
+  (
+    {
+      className,
+      children,
+      shape = "minimal",
+      direction = "vertical",
+      gap = "xs",
+      ...props
+    },
+    ref,
+  ) => {
+    const childArray = React.Children.toArray(children).filter(
+      React.isValidElement,
+    );
+
+    return (
+      <div
+        ref={ref}
+        role="group"
+        data-slot="item-group"
+        className={clsx(
+          "flex",
+          direction === "vertical" ? "flex-col" : "flex-row",
+          gapMap[gap],
+          className,
+        )}
+        {...props}
+      >
+        {childArray.map((child, index) => {
+          const shapeClass = getShapeClasses(
+            index,
+            childArray.length,
+            shape,
+            direction,
+          );
+
+          return React.cloneElement(child as React.ReactElement<any>, {
+            className: clsx(
+              (child as React.ReactElement<any>).props.className,
+              shapeClass,
+              "focus-visible:z-10", // Ensures focus rings sit above sibling elements
+            ),
+          });
+        })}
+      </div>
+    );
+  },
+);
 ItemGroup.displayName = "ItemGroup";
 
 const ItemSeparator = React.forwardRef<

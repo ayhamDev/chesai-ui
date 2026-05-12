@@ -38,7 +38,7 @@ import {
 } from "./index";
 
 const meta: Meta = {
-  title: "Showcase/Forms/Kitchen Sink",
+  title: "Showcase/Forms",
   parameters: {
     layout: "padded",
   },

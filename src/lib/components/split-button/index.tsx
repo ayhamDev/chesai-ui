@@ -5,7 +5,7 @@ type ButtonShape = "full" | "minimal" | "sharp";
 
 type SplitButtonChildren = [
   React.ReactElement<{ className?: string }>,
-  React.ReactElement<{ className?: string }>
+  React.ReactElement<{ className?: string }>,
 ];
 
 interface SplitButtonProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -26,25 +26,31 @@ export const SplitButton = ({
 
   const [mainAction, dropdownTrigger] = children;
 
-  const shapeClasses: Record<ButtonShape, { left: string; right: string }> = {
-    full: { left: "rounded-l-full", right: "rounded-r-full" },
-    minimal: { left: "rounded-l-lg", right: "rounded-r-lg" },
-    sharp: { left: "rounded-l-none", right: "rounded-r-none" },
-  };
+  // 1. We use !important to guarantee the inner Button's default shape is overridden.
+  // 2. For 'full', we use 40px instead of '9999px'. 40px is a perfect semicircle for buttons,
+  //    but it prevents the browser's border-radius clamping algorithm from squashing the tiny 2px inner curve.
 
   const clonedMainAction = React.cloneElement(mainAction, {
     className: clsx(
       mainAction.props.className,
-      shapeClasses[shape].left,
-      shape === "sharp" ? "!rounded-r-none" : "!rounded-r-xs"
+      shape === "full"
+        ? "!rounded-l-[40px]"
+        : shape === "minimal"
+          ? "!rounded-l-lg"
+          : "!rounded-l-none",
+      shape === "sharp" ? "!rounded-r-none" : "!rounded-r-[5px]",
     ),
   });
 
   const clonedDropdownTrigger = React.cloneElement(dropdownTrigger, {
     className: clsx(
       dropdownTrigger.props.className,
-      shapeClasses[shape].right,
-      shape === "sharp" ? "!rounded-l-none" : "!rounded-l-xs"
+      shape === "full"
+        ? "!rounded-r-[40px]"
+        : shape === "minimal"
+          ? "!rounded-r-lg"
+          : "!rounded-r-none",
+      shape === "sharp" ? "!rounded-l-none" : "!rounded-l-[5px]",
     ),
   });
 
