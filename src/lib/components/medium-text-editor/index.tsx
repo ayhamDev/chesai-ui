@@ -11,7 +11,7 @@ import Header from "@editorjs/header";
 import List from "@editorjs/list";
 import { clsx } from "clsx";
 
-export interface RichTextEditorProps {
+export interface MediumTextEditorProps {
   data?: OutputData;
   onChange?: (data: OutputData) => void;
   placeholder?: string;
@@ -24,14 +24,14 @@ export interface RichTextEditorProps {
   minHeight?: number;
 }
 
-export const RichTextEditor = ({
+export const MediumTextEditor = ({
   data,
   onChange,
   placeholder,
   readOnly = false,
   className,
   minHeight = 300,
-}: RichTextEditorProps) => {
+}: MediumTextEditorProps) => {
   // Generate a stable unique ID so we can render multiple editors if needed
   const holderId = useRef(`editorjs-${Math.random().toString(36).slice(2, 9)}`);
   const editorInstance = useRef<EditorJS | null>(null);
@@ -114,4 +114,4 @@ export const RichTextEditor = ({
   );
 };
 
-RichTextEditor.displayName = "RichTextEditor";
+MediumTextEditor.displayName = "MediumTextEditor";

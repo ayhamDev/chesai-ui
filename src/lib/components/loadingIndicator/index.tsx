@@ -3,20 +3,24 @@ import React from "react";
 import { MaterialMorph } from "./MaterialMorph";
 
 export interface LoadingIndicatorProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?:
-    | "material-morph" // Add new variant
-    | "material-morph-background";
+  variant?: "material-morph" | "material-morph-background";
   isPlaying?: boolean;
+  /** The initial shape index (0 to 6) for material-morph variants */
+  startingShape?: number;
 }
-
-// Path data for a continuous sine-wave circle (8 waves)
 
 export const LoadingIndicator = React.forwardRef<
   HTMLDivElement,
   LoadingIndicatorProps
 >(
   (
-    { variant = "linear-straight", isPlaying = true, className, ...props },
+    {
+      variant = "linear-straight",
+      isPlaying = true,
+      startingShape,
+      className,
+      ...props
+    },
     ref,
   ) => {
     // Shared container styles
@@ -35,6 +39,7 @@ export const LoadingIndicator = React.forwardRef<
               <MaterialMorph
                 isPlaying={isPlaying}
                 background={true}
+                startingShape={startingShape}
                 className="w-full h-full"
               />
             </div>
@@ -50,6 +55,7 @@ export const LoadingIndicator = React.forwardRef<
               <MaterialMorph
                 isPlaying={isPlaying}
                 background={false}
+                startingShape={startingShape}
                 className="w-full h-full"
               />
             </div>

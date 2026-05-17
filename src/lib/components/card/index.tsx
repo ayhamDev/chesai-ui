@@ -126,10 +126,24 @@ export const cardVariants = cva(
   },
 );
 
-export interface CardProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof cardVariants> {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?:
+    | "primary"
+    | "secondary"
+    | "tertiary"
+    | "high-contrast"
+    | "ghost"
+    | "surface"
+    | "surface-container-lowest"
+    | "surface-container-low"
+    | "surface-container"
+    | "surface-container-high"
+    | "surface-container-highest";
+  hoverEffect?: boolean;
+  shape?: "full" | "minimal" | "sharp";
+  padding?: "none" | "sm" | "md" | "lg";
+  bordered?: boolean;
+  elevation?: "none" | 1 | 2 | 3 | 4 | 5;
   enableRipple?: boolean;
 }
 

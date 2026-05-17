@@ -30,6 +30,12 @@ const meta: Meta<typeof NavigationRail.Navigator> = {
       control: "select",
       options: ["primary", "secondary", "tertiary", "ghost"],
     },
+    itemLayout: {
+      control: "select",
+      options: ["inline", "stacked"],
+      description:
+        "Controls label positioning. 'stacked' permanently shows labels below icons and disables expansion.",
+    },
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
@@ -50,6 +56,11 @@ const meta: Meta<typeof NavigationRail.Navigator> = {
       control: "boolean",
       description:
         "Forces the rail to act as an overlay with a dimmed backdrop on desktop viewports, rather than pushing the main content.",
+    },
+    expandable: {
+      control: "boolean",
+      description:
+        "Allow the rail to expand. If false, it remains collapsed permanently and hides the menu button.",
     },
     activeTab: { control: false },
     onTabPress: { action: "tabPressed" },
@@ -132,9 +143,33 @@ export const Default: Story = {
     shape: "minimal",
     bordered: false,
     itemVariant: "primary",
+    itemLayout: "inline",
     expandOnHover: true,
     forceExpanded: false,
     overlay: false,
+    expandable: true,
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab">
+      <RenderWithLayout {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const StackedMode: Story = {
+  name: "2. Stacked Mode (Permanent Labels)",
+  args: {
+    ...Default.args,
+    itemLayout: "stacked",
+    variant: "secondary",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Setting `itemLayout='stacked'` permanently renders the labels beneath the icons. In this mode, the rail disables expansion entirely, making it function perfectly as a compact, fixed-width side navigation bar.",
+      },
+    },
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
@@ -144,7 +179,7 @@ export const Default: Story = {
 };
 
 export const ForceExpanded: Story = {
-  name: "2. Forced Expanded (Desktop)",
+  name: "3. Forced Expanded (Desktop)",
   args: {
     ...Default.args,
     forceExpanded: true,
@@ -168,7 +203,7 @@ export const ForceExpanded: Story = {
 };
 
 export const ManualToggle: Story = {
-  name: "3. Manual Toggle Only",
+  name: "4. Manual Toggle Only",
   args: {
     ...Default.args,
     expandOnHover: false,
@@ -191,7 +226,7 @@ export const ManualToggle: Story = {
 };
 
 export const OverlayOnMobile: Story = {
-  name: "4. Overlay on Mobile",
+  name: "5. Overlay on Mobile",
   args: {
     ...Default.args,
     variant: "primary",
@@ -204,7 +239,7 @@ export const OverlayOnMobile: Story = {
     docs: {
       description: {
         story:
-          "On smaller viewports, the rail automatically switches to an 'overlay' behavior regardless of desktop settings.",
+          "On smaller viewports, the rail automatically switches to an 'overlay' behavior regardless of desktop settings. It also intelligently forces `itemLayout='inline'` so it looks correct inside the wider drawer.",
       },
     },
   },
@@ -216,7 +251,7 @@ export const OverlayOnMobile: Story = {
 };
 
 export const OverlayOnDesktop: Story = {
-  name: "5. Overlay on Desktop",
+  name: "6. Overlay on Desktop",
   args: {
     ...Default.args,
     variant: "surface",
@@ -228,6 +263,27 @@ export const OverlayOnDesktop: Story = {
       description: {
         story:
           "Setting `overlay={true}` forces the rail to act as an overlay (like a Drawer) on desktop viewports, appearing over the content rather than pushing it. It works cleanly with both hover and manual click triggers.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab">
+      <RenderWithLayout {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const NotExpandable: Story = {
+  name: "7. Not Expandable",
+  args: {
+    ...Default.args,
+    expandable: false,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Setting `expandable={false}` permanently locks the rail in its collapsed state, disabling hover expansion and hiding the toggle button entirely. Note: if you want labels visible in this state, use `itemLayout='stacked'` instead.",
       },
     },
   },

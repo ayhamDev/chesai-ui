@@ -216,7 +216,7 @@ export const InfiniteCalendar = ({
   const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
 
   return (
-    <div className="flex h-full w-full flex-col bg-surface-container-high">
+    <div className="flex h-full w-full flex-col bg-surface-container">
       {/* Sticky Weekday Header */}
       <div className="grid shrink-0 grid-cols-7 border-b border-outline-variant/50 bg-surface-container-high px-4 py-2 z-20">
         {weekdays.map((day, i) => (

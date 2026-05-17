@@ -15,7 +15,11 @@ export interface VirtualListProps<T> {
   renderItem: (item: T, index: number) => React.ReactNode;
 
   /** Scroll direction of the virtual list. @default "vertical" */
-  direction?: "vertical" | "horizontal";
+  direction?:
+    | "vertical"
+    | "horizontal"
+    | "vertical-reverse"
+    | "horizontal-reverse";
 
   /**
    * The component used as the outer scrollable container viewport.
@@ -50,7 +54,6 @@ export interface VirtualListProps<T> {
 
   /**
    * Access to the raw TanStack Virtual options for advanced logic
-   * (e.g., initialOffset, scrollMargin, etc.)
    */
   virtualOptions?: Partial<VirtualizerOptions<any, any>>;
 
@@ -78,7 +81,9 @@ function VirtualListInner<T>(
   ref: React.ForwardedRef<HTMLElement>,
 ) {
   const parentRef = useRef<HTMLElement>(null);
-  const isHorizontal = direction === "horizontal";
+
+  const isHorizontal = direction.includes("horizontal");
+  const isReverse = direction.includes("reverse");
 
   // Expose the DOM container ref to the parent
   useImperativeHandle(ref, () => parentRef.current!);
@@ -89,10 +94,59 @@ function VirtualListInner<T>(
     estimateSize: () => estimateSize + gap, // Add gap to estimation
     overscan,
     horizontal: isHorizontal,
+
+    // Conditionally spread overrides so we don't pass undefined and break TanStack defaults
+    ...(isReverse
+      ? {
+          // Intercept scroll tracking for reverse layouts because browsers track
+          // reverse-flex scroll coordinates using negative numbers.
+          observeElementOffset: (instance, cb) => {
+            const element = instance.scrollElement;
+            if (!element) return;
+
+            let timeoutId: ReturnType<typeof setTimeout> | null = null;
+            const handler = () => {
+              const offset = isHorizontal
+                ? element.scrollLeft
+                : element.scrollTop;
+              cb(Math.abs(offset), true);
+
+              if (timeoutId) clearTimeout(timeoutId);
+              timeoutId = setTimeout(() => {
+                cb(Math.abs(offset), false);
+              }, 150);
+            };
+
+            element.addEventListener("scroll", handler, { passive: true });
+            handler(); // Trigger immediately for initial offset
+            return () => {
+              element.removeEventListener("scroll", handler);
+              if (timeoutId) clearTimeout(timeoutId);
+            };
+          },
+
+          // Intercept programmatic scrolling for negative coordinates
+          scrollToFn: (offset, canSmooth, instance) => {
+            const element = instance.scrollElement;
+            if (!element) return;
+
+            const finalOffset = -offset;
+            if (canSmooth) {
+              element.scrollTo({
+                [isHorizontal ? "left" : "top"]: finalOffset,
+                behavior: "smooth",
+              });
+            } else {
+              element[isHorizontal ? "scrollLeft" : "scrollTop"] = finalOffset;
+            }
+          },
+        }
+      : {}),
+
     ...virtualOptions,
   });
 
-  // Allow parent to control/read virtualizer (useful for `scrollToIndex` etc.)
+  // Allow parent to control/read virtualizer
   useImperativeHandle(virtualizerRef, () => virtualizer);
 
   const { className: containerClassName, ...restContainerProps } =
@@ -104,34 +158,69 @@ function VirtualListInner<T>(
   } = contentProps;
 
   // Pre-map the virtual items to inject into the DOM
-  const items = virtualizer.getVirtualItems().map((virtualItem) => (
-    <div
-      key={virtualItem.key}
-      data-index={virtualItem.index}
-      ref={virtualizer.measureElement}
-      className="absolute top-0 left-0"
-      style={{
-        width: isHorizontal ? undefined : "100%",
-        height: isHorizontal ? "100%" : undefined,
-        transform: isHorizontal
-          ? `translateX(${virtualItem.start}px)`
-          : `translateY(${virtualItem.start}px)`,
-        paddingRight: isHorizontal ? `${gap}px` : undefined,
-        paddingBottom: !isHorizontal ? `${gap}px` : undefined,
-      }}
-    >
-      {renderItem(data[virtualItem.index], virtualItem.index)}
-    </div>
-  ));
+  const items = virtualizer.getVirtualItems().map((virtualItem) => {
+    // Determine Native Flex reverse positioning
+    const positionClass =
+      direction === "vertical"
+        ? "top-0 left-0"
+        : direction === "vertical-reverse"
+          ? "bottom-0 left-0"
+          : direction === "horizontal"
+            ? "top-0 left-0"
+            : "top-0 right-0"; // horizontal-reverse
+
+    let transform = "";
+    if (direction === "vertical") {
+      transform = `translateY(${virtualItem.start}px)`;
+    } else if (direction === "vertical-reverse") {
+      transform = `translateY(-${virtualItem.start}px)`;
+    } else if (direction === "horizontal") {
+      transform = `translateX(${virtualItem.start}px)`;
+    } else if (direction === "horizontal-reverse") {
+      transform = `translateX(-${virtualItem.start}px)`;
+    }
+
+    // Keep spacing consistent visually within the item box
+    const paddingBottom = direction === "vertical" ? `${gap}px` : undefined;
+    const paddingTop =
+      direction === "vertical-reverse" ? `${gap}px` : undefined;
+    const paddingRight = direction === "horizontal" ? `${gap}px` : undefined;
+    const paddingLeft =
+      direction === "horizontal-reverse" ? `${gap}px` : undefined;
+
+    return (
+      <div
+        key={virtualItem.key}
+        data-index={virtualItem.index}
+        ref={virtualizer.measureElement}
+        className={clsx("absolute", positionClass)}
+        style={{
+          width: isHorizontal ? undefined : "100%",
+          height: isHorizontal ? "100%" : undefined,
+          transform,
+          paddingTop,
+          paddingBottom,
+          paddingLeft,
+          paddingRight,
+        }}
+      >
+        {renderItem(data[virtualItem.index], virtualItem.index)}
+      </div>
+    );
+  });
 
   return (
     <Component
       ref={parentRef}
       className={clsx(
         "h-full w-full contain-strict scrollbar-thin",
-        isHorizontal
-          ? "overflow-x-auto overflow-y-hidden"
-          : "overflow-y-auto overflow-x-hidden",
+        // Using flex-col-reverse forces native bottom anchoring while preserving trackpad & wheel axes
+        direction === "vertical" && "overflow-y-auto overflow-x-hidden",
+        direction === "horizontal" && "overflow-x-auto overflow-y-hidden",
+        direction === "vertical-reverse" &&
+          "overflow-y-auto overflow-x-hidden flex flex-col-reverse",
+        direction === "horizontal-reverse" &&
+          "overflow-x-auto overflow-y-hidden flex flex-row-reverse",
         containerClassName,
       )}
       {...restContainerProps}
@@ -141,6 +230,7 @@ function VirtualListInner<T>(
           height: isHorizontal ? "100%" : `${virtualizer.getTotalSize()}px`,
           width: isHorizontal ? `${virtualizer.getTotalSize()}px` : "100%",
           position: "relative",
+          flexShrink: 0, // Guarantees the sizer component doesn't get squashed by flex wrappers
           ...contentStyle,
         }}
         className={contentClassName}

@@ -50,12 +50,11 @@ const windowControlVariants = cva(
     defaultVariants: {
       size: "md",
     },
-  }
+  },
 );
 
 // --- Internal Window Control Button ---
-interface WindowButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface WindowButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant: "minimize" | "maximize" | "close";
   size: "sm" | "md" | "lg";
 }
@@ -66,7 +65,7 @@ const WindowButton = React.forwardRef<HTMLButtonElement, WindowButtonProps>(
     const [isPressed, setIsPressed] = useState(false);
 
     const stopPropagation = (
-      e: React.MouseEvent | React.PointerEvent<HTMLButtonElement>
+      e: React.MouseEvent | React.PointerEvent<HTMLButtonElement>,
     ) => e.stopPropagation();
 
     return (
@@ -95,7 +94,7 @@ const WindowButton = React.forwardRef<HTMLButtonElement, WindowButtonProps>(
         </motion.span>
       </button>
     );
-  }
+  },
 );
 WindowButton.displayName = "WindowButton";
 
@@ -128,7 +127,7 @@ export const Taskbar = React.forwardRef<HTMLElement, TaskbarProps>(
       onClose,
       ...props
     },
-    ref
+    ref,
   ) => {
     const iconSizeMap = {
       sm: 14,
@@ -142,7 +141,7 @@ export const Taskbar = React.forwardRef<HTMLElement, TaskbarProps>(
         ref={ref}
         data-tauri-drag-region
         className={clsx(
-          taskbarVariants({ variant, bordered, size, className })
+          taskbarVariants({ variant, bordered, size, className }),
         )}
         {...props}
       >
@@ -185,12 +184,12 @@ export const Taskbar = React.forwardRef<HTMLElement, TaskbarProps>(
             onClick={onClose}
             aria-label="Close"
           >
-            <X size={currentIconSize} />
+            <X size={currentIconSize + 4} />
           </WindowButton>
         </div>
       </header>
     );
-  }
+  },
 );
 
 Taskbar.displayName = "Taskbar";

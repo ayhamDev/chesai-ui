@@ -257,7 +257,7 @@ export const Floating: Story = {
       </IconButton>
     ),
 
-    collapsible: false
+    collapsible: true
   },
   render: renderWithScrollContainer,
 };

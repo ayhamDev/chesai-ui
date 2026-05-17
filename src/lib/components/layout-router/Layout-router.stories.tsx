@@ -347,7 +347,7 @@ const DismissibleScrollScreen = ({
 export const DismissibleWithScroll: Story = {
   name: "4. Dismissible with Scrolling",
   args: {
-    duration: 0.3,
+    duration: 0.4,
     dismissible: true,
     dismissDirection: "y",
   },

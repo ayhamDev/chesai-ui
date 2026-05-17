@@ -20,22 +20,14 @@ const rootVariants = cva("relative inline-flex items-center justify-center", {
   },
 });
 
-export interface CircularProgressProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof rootVariants> {
-  /** The current value (0-100) */
+export interface CircularProgressProps extends React.HTMLAttributes<HTMLDivElement> {
+  size?: "sm" | "md" | "lg" | "xl";
   value?: number;
-  /** The maximum value (default 100) */
   max?: number;
-  /** If true, shows an indeterminate loading animation */
   indeterminate?: boolean;
-  /** Stroke thickness of the circle */
   thickness?: number;
-  /** The gap in pixels between the active segment and the track */
   gap?: number;
 }
-
 export const CircularProgress = React.forwardRef<
   HTMLDivElement,
   CircularProgressProps

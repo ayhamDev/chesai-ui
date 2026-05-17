@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { NavigationMenu } from "../navigation-menu";
 import { Typography } from "../typography";
 import { Taskbar } from "./index";
-
+import { Menubar } from "../menubar";
 const meta: Meta<typeof Taskbar> = {
   title: "Components/Navigators/Taskbar",
   component: Taskbar,
@@ -115,13 +115,50 @@ export const Default: Story = {
           {...args}
           isMaximized={isMaximized}
           onMaximize={() => setIsMaximized(!isMaximized)}
+          centerAdornment={<Typography>My App</Typography>}
           startAdornment={
-            <div className="flex items-center gap-2 pl-2">
-              <Mountain size={16} />
-              <Typography variant="body-small" className="font-semibold">
-                App Title
-              </Typography>
-            </div>
+            <Menubar>
+              <Menubar.Menu>
+                <Menubar.Trigger>File</Menubar.Trigger>
+                <Menubar.Content>
+                  <Menubar.Item>
+                    New Tab <Menubar.Shortcut>⌘T</Menubar.Shortcut>
+                  </Menubar.Item>
+                  <Menubar.Item>
+                    New Window <Menubar.Shortcut>⌘N</Menubar.Shortcut>
+                  </Menubar.Item>
+                  <Menubar.Item disabled>New Incognito Window</Menubar.Item>
+                  <Menubar.Separator />
+                  <Menubar.Item>
+                    Print... <Menubar.Shortcut>⌘P</Menubar.Shortcut>
+                  </Menubar.Item>
+                </Menubar.Content>
+              </Menubar.Menu>
+              <Menubar.Menu>
+                <Menubar.Trigger>Edit</Menubar.Trigger>
+                <Menubar.Content>
+                  <Menubar.Item>
+                    Undo <Menubar.Shortcut>⌘Z</Menubar.Shortcut>
+                  </Menubar.Item>
+                  <Menubar.Item>
+                    Redo <Menubar.Shortcut>⇧⌘Z</Menubar.Shortcut>
+                  </Menubar.Item>
+                  <Menubar.Separator />
+                  <Menubar.Item>Cut</Menubar.Item>
+                  <Menubar.Item>Copy</Menubar.Item>
+                  <Menubar.Item>Paste</Menubar.Item>
+                </Menubar.Content>
+              </Menubar.Menu>
+              <Menubar.Menu>
+                <Menubar.Trigger>View</Menubar.Trigger>
+                <Menubar.Content>
+                  <Menubar.Item>Reload</Menubar.Item>
+                  <Menubar.Item>Force Reload</Menubar.Item>
+                  <Menubar.Separator />
+                  <Menubar.Item>Toggle Fullscreen</Menubar.Item>
+                </Menubar.Content>
+              </Menubar.Menu>
+            </Menubar>
           }
         />
         <div className="flex-1 p-6">

@@ -4,7 +4,7 @@
 import { clsx } from "clsx";
 import { addDays, format, isSameDay, isToday, startOfDay } from "date-fns";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Typography } from "../src/lib/components/typography";
+import { Typography } from "../typography";
 import { useFullCalendar, PrintModeContext } from "./calendar-context";
 import {
   expandEvents,
@@ -12,7 +12,7 @@ import {
   getEventSegments,
   getTimelinePositionsForDay,
 } from "./utils";
-import { ElasticScrollArea } from "../src/lib/components/elastic-scroll-area";
+import { ElasticScrollArea } from "../elastic-scroll-area";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 

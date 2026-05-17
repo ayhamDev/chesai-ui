@@ -34,13 +34,14 @@ const kbdVariants = cva(
       size: "md",
       shape: "minimal",
     },
-  }
+  },
 );
 
-export interface KbdProps
-  extends React.HTMLAttributes<HTMLElement>,
-    VariantProps<typeof kbdVariants> {}
-
+export interface KbdProps extends React.HTMLAttributes<HTMLElement> {
+  variant?: "default" | "flat" | "outline" | "ghost";
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
+}
 export const Kbd = React.forwardRef<HTMLElement, KbdProps>(
   ({ className, variant, size, shape, ...props }, ref) => {
     return (
@@ -50,7 +51,7 @@ export const Kbd = React.forwardRef<HTMLElement, KbdProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 Kbd.displayName = "Kbd";

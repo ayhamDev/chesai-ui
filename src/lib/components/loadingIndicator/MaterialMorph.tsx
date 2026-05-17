@@ -5,7 +5,6 @@ import clsx from "clsx";
 import { interpolate } from "flubber";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import React, { useEffect } from "react";
-import { EASING } from "../stack-router/transitions";
 
 // The path data extracted from the provided assets.
 const MD3_PATHS = [
@@ -40,6 +39,11 @@ export interface MaterialMorphProps extends React.SVGProps<SVGSVGElement> {
    * @default true
    */
   isPlaying?: boolean;
+  /**
+   * The index of the shape to start the animation from (0 to 6).
+   * @default 0
+   */
+  startingShape?: number;
 }
 
 export const MaterialMorph: React.FC<MaterialMorphProps> = ({
@@ -47,9 +51,12 @@ export const MaterialMorph: React.FC<MaterialMorphProps> = ({
   cycleDuration = 5,
   background = true,
   isPlaying = true, // Added default value
+  startingShape = 0, // Added default value
   ...props
 }) => {
-  const progress = useMotionValue(0);
+  // Constrain to available shapes (0-6)
+  const initialStep = Math.max(0, Math.min(6, startingShape));
+  const progress = useMotionValue(initialStep);
   const rotation = useMotionValue(0);
   const scale = useMotionValue(1);
 
@@ -74,15 +81,16 @@ export const MaterialMorph: React.FC<MaterialMorphProps> = ({
     const fastActionTime = 0.3;
     const delayTime = stepDuration - fastActionTime;
 
-    const runAnimationLoop = async () => {
-      // Check if cancelled before starting a new cycle
-      if (isCancelled) return;
+    // Pick up exactly where the progress is left off (handles pause/play beautifully)
+    let currentStep = Math.round(progress.get());
 
-      for (let i = 0; i < numSteps; i++) {
-        if (isCancelled) return;
+    const runAnimationLoop = async () => {
+      // Loop continually from the current step
+      while (!isCancelled) {
+        const nextStep = currentStep + 1;
 
         // Start animations and store controls so we can .stop() them later
-        const morphPromise = animate(progress, i + 1, {
+        const morphPromise = animate(progress, nextStep, {
           duration: fastActionTime,
           ease: "easeInOut",
         });
@@ -107,11 +115,16 @@ export const MaterialMorph: React.FC<MaterialMorphProps> = ({
 
         if (isCancelled) return;
         await rotatePromise;
-      }
 
-      // Seamless reset
-      progress.set(0);
-      runAnimationLoop();
+        // Assign the finished step
+        currentStep = nextStep;
+
+        // Reset for a seamless loop if we've reached the duplicate frame
+        if (currentStep >= numSteps) {
+          progress.set(0);
+          currentStep = 0;
+        }
+      }
     };
 
     runAnimationLoop();
@@ -119,7 +132,7 @@ export const MaterialMorph: React.FC<MaterialMorphProps> = ({
     // Cleanup: Stop animations and flag loop as cancelled
     return () => {
       isCancelled = true;
-      controls.forEach((control) => control.stop());
+      controls.forEach((control) => control.stop && control.stop());
     };
   }, [cycleDuration, isPlaying, progress, rotation, scale]);
 

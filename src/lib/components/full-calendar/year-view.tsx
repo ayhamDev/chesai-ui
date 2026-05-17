@@ -4,7 +4,7 @@
 import { clsx } from "clsx";
 import { format, isSameMonth, isToday } from "date-fns";
 import React, { useMemo } from "react";
-import { Typography } from "../src/lib/components/typography";
+import { Typography } from "../typography";
 import { useFullCalendar } from "./calendar-context";
 import {
   expandEvents,
@@ -12,7 +12,7 @@ import {
   getEventDaysMap,
   getMonthsForYear,
 } from "./utils";
-import { ElasticScrollArea } from "../src/lib/components/elastic-scroll-area";
+import { ElasticScrollArea } from "../elastic-scroll-area";
 import { startOfMonth, endOfMonth } from "date-fns";
 
 const WEEKDAYS_NARROW = ["S", "M", "T", "W", "T", "F", "S"];

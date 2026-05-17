@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { RichTextEditor } from "./index";
+import { MediumTextEditor } from "./index";
 import { Card } from "../card";
 import { Button } from "../button";
 import { useState } from "react";
 import { OutputData } from "@editorjs/editorjs";
 
-const meta: Meta<typeof RichTextEditor> = {
-  title: "Components/Forms & Inputs/RichTextEditor",
-  component: RichTextEditor,
+const meta: Meta<typeof MediumTextEditor> = {
+  title: "Components/Forms & Inputs/MediumTextEditor",
+  component: MediumTextEditor,
   tags: ["autodocs"],
   parameters: {
     layout: "padded",
@@ -25,7 +25,7 @@ const meta: Meta<typeof RichTextEditor> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof RichTextEditor>;
+type Story = StoryObj<typeof MediumTextEditor>;
 
 const INITIAL_DATA: OutputData = {
   time: 1635603431943,
@@ -75,7 +75,7 @@ export const Default: Story = {
   },
   render: (args) => (
     <Card className="max-w-4xl mx-auto p-8 bg-surface border-outline-variant">
-      <RichTextEditor {...args} />
+      <MediumTextEditor {...args} />
     </Card>
   ),
 };
@@ -87,7 +87,7 @@ export const WithInitialData: Story = {
   },
   render: (args) => (
     <Card className="max-w-4xl mx-auto p-8 bg-surface border-outline-variant">
-      <RichTextEditor {...args} />
+      <MediumTextEditor {...args} />
     </Card>
   ),
 };
@@ -100,7 +100,7 @@ export const ReadOnly: Story = {
   },
   render: (args) => (
     <Card className="max-w-4xl mx-auto p-8 bg-surface-container-low border-transparent">
-      <RichTextEditor {...args} />
+      <MediumTextEditor {...args} />
     </Card>
   ),
 };
@@ -123,7 +123,7 @@ export const Interactive: Story = {
         </div>
 
         <Card className="p-8 bg-surface border-outline-variant min-h-[400px]">
-          <RichTextEditor
+          <MediumTextEditor
             data={data}
             onChange={setData}
             placeholder="Start typing ..."

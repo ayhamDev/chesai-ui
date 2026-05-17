@@ -36,6 +36,7 @@ interface NavigationRailContextProps {
   indicatorId: string;
   variant: "primary" | "secondary" | "tertiary" | "ghost" | "surface";
   itemVariant: "primary" | "secondary" | "tertiary" | "ghost";
+  itemLayout: "stacked" | "inline";
   isRtl: boolean;
 }
 
@@ -110,9 +111,10 @@ const NavigationRailFAB = React.forwardRef<
   HTMLButtonElement,
   NavigationRailFABProps
 >(({ icon, label, className, variant: propVariant, ...props }, ref) => {
-  const { isExpanded, itemVariant, isRtl } = useNavigationRail();
+  const { isExpanded, itemVariant, itemLayout, isRtl } = useNavigationRail();
   const variant =
     propVariant || (itemVariant === "ghost" ? "secondary" : "primary");
+  const isStacked = itemLayout === "stacked";
 
   const localRef = useRef<HTMLButtonElement>(null);
   // @ts-ignore
@@ -142,7 +144,13 @@ const NavigationRailFAB = React.forwardRef<
   const slideX = isRtl ? 5 : -5;
 
   return (
-    <div className="w-full px-4 mb-6 mt-2 flex justify-start">
+    <div
+      className={clsx(
+        "w-full mb-6 mt-2 flex",
+        // Center the FAB properly when in stacked mode
+        isStacked ? "justify-center px-0" : "justify-start px-4",
+      )}
+    >
       {/* @ts-ignore */}
       <motion.button
         ref={localRef}
@@ -151,9 +159,10 @@ const NavigationRailFAB = React.forwardRef<
         layout
         initial={false}
         animate={{
-          width: isExpanded
-            ? Math.max(140, (label?.toString().length || 0) * 12 + 60)
-            : "3.5rem",
+          width:
+            isExpanded && !isStacked
+              ? Math.max(140, (label?.toString().length || 0) * 12 + 60)
+              : "3.5rem",
           borderRadius: "1rem",
         }}
         transition={{
@@ -165,6 +174,7 @@ const NavigationRailFAB = React.forwardRef<
         className={clsx(
           "h-14 relative flex items-center overflow-hidden transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          isStacked && "justify-center",
           variantClasses[variant],
           className,
         )}
@@ -180,7 +190,7 @@ const NavigationRailFAB = React.forwardRef<
 
         <div className="flex items-center h-full overflow-hidden">
           <AnimatePresence mode="popLayout" initial={false}>
-            {isExpanded && label && (
+            {isExpanded && !isStacked && label && (
               <motion.span
                 initial={{ opacity: 0, x: slideX }}
                 animate={{ opacity: 1, x: 0 }}
@@ -214,10 +224,12 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     indicatorId,
     navigatorShape,
     itemVariant,
+    itemLayout,
   } = useNavigationRail();
 
   const isActive = activeTab === name;
   const finalShape = itemShape || navigatorShape;
+  const isStacked = itemLayout === "stacked";
 
   const localRef = useRef<HTMLButtonElement>(null);
 
@@ -261,7 +273,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   };
 
   return (
-    <li className="w-full">
+    <li className={clsx("flex justify-center", !isStacked && "w-full")}>
       <button
         ref={localRef}
         type="button"
@@ -270,8 +282,11 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
         onClick={() => onTabPress(name)}
         onPointerDown={event}
         className={clsx(
-          "relative z-10 flex h-14 w-full items-center justify-start transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-          "flex-row gap-4 px-4 py-2",
+          "relative z-10 flex transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+          // Force a 1:1 square aspect ratio when stacked
+          isStacked
+            ? "flex-col items-center justify-center gap-1 h-[4.5rem] w-[4.5rem] px-1"
+            : "flex-row items-center justify-start gap-4 px-4 py-2 h-14 w-full",
           isActive ? `${activeText} font-semibold` : "text-on-surface-variant",
           shapeToClassName[finalShape],
           !isActive && [
@@ -294,26 +309,39 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
             }}
           />
         )}
-        <div className="relative z-10">{icon({ isActive })}</div>
-
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{
-                width: "auto",
-                opacity: 1,
-                transition: { delay: 0.1, duration: 0.2 },
-              }}
-              exit={{ width: 0, opacity: 0, transition: { duration: 0.1 } }}
-              className="relative z-10 overflow-hidden whitespace-nowrap"
-            >
-              <Typography body-medium className="font-semibold text-inherit!">
-                {label}
-              </Typography>
-            </motion.div>
+        <div
+          className={clsx(
+            "relative z-10 flex items-center justify-center shrink-0",
+            isStacked ? "h-6" : "",
           )}
-        </AnimatePresence>
+        >
+          {icon({ isActive })}
+        </div>
+
+        {isStacked ? (
+          <span className="relative z-10 text-[11px] font-semibold tracking-wide text-inherit truncate max-w-full mt-0.5">
+            {label}
+          </span>
+        ) : (
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{
+                  width: "auto",
+                  opacity: 1,
+                  transition: { delay: 0.1, duration: 0.2 },
+                }}
+                exit={{ width: 0, opacity: 0, transition: { duration: 0.1 } }}
+                className="relative z-10 overflow-hidden whitespace-nowrap"
+              >
+                <Typography body-medium className="font-semibold text-inherit!">
+                  {label}
+                </Typography>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
       </button>
     </li>
   );
@@ -329,6 +357,7 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   onTabPress: (name: string) => void;
   variant?: "primary" | "secondary" | "tertiary" | "ghost" | "surface";
   itemVariant?: "primary" | "secondary" | "tertiary" | "ghost";
+  itemLayout?: "stacked" | "inline";
   width?: string | number;
   expandedWidth?: string | number;
   /** Force the rail to remain expanded on Desktop */
@@ -337,6 +366,8 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   expandOnHover?: boolean;
   /** Forces the rail to act as an overlay (drawer) on desktop viewports. */
   overlay?: boolean;
+  /** Allow the rail to expand. If false, it remains collapsed permanently. Defaults to true. */
+  expandable?: boolean;
 }
 
 const NavigationRailNavigator: React.FC<NavigatorProps> = ({
@@ -347,11 +378,13 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   bordered = true,
   variant = "primary",
   itemVariant = "secondary",
+  itemLayout = "inline",
   width = "6rem",
   expandedWidth = "12rem",
   forceExpanded = false,
   expandOnHover = false,
   overlay = false,
+  expandable = true,
   className,
   style,
   ...props
@@ -362,10 +395,19 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { isRtl } = useLayout();
 
-  // Determine effective expanded state
-  const isExpanded = isMobile
-    ? internalExpanded // Mobile uses manual toggle
-    : forceExpanded || internalExpanded; // Desktop uses force OR manual/hover
+  // If on mobile, force the layout to be inline (mobile drawer style)
+  const effectiveItemLayout = isMobile ? "inline" : itemLayout;
+
+  // If layout is stacked, it cannot be expanded
+  const effectivelyExpandable =
+    effectiveItemLayout === "stacked" ? false : expandable;
+
+  // Determine effective expanded state respecting the expandable prop
+  const isExpanded = effectivelyExpandable
+    ? isMobile
+      ? internalExpanded // Mobile uses manual toggle
+      : forceExpanded || internalExpanded // Desktop uses force OR manual/hover
+    : false; // If not expandable, it's never expanded
 
   const behavior = isMobile || overlay ? "overlay" : "push";
   const finalExpandedWidth =
@@ -373,20 +415,21 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   const finalCollapsedWidth = typeof width === "number" ? `${width}px` : width;
 
   const handleMouseEnter = () => {
-    // Only expand if desktop, allowed to expand on hover, and not already forced open
-    if (!isMobile && expandOnHover && !forceExpanded) {
+    if (effectivelyExpandable && !isMobile && expandOnHover && !forceExpanded) {
       setInternalExpanded(true);
     }
   };
 
   const handleMouseLeave = () => {
-    if (!isMobile && expandOnHover && !forceExpanded) {
+    if (effectivelyExpandable && !isMobile && expandOnHover && !forceExpanded) {
       setInternalExpanded(false);
     }
   };
 
   const toggleExpanded = () => {
-    setInternalExpanded(!internalExpanded);
+    if (effectivelyExpandable) {
+      setInternalExpanded(!internalExpanded);
+    }
   };
 
   const childrenArray = Children.toArray(children);
@@ -410,6 +453,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
       indicatorId,
       variant,
       itemVariant,
+      itemLayout: effectiveItemLayout,
       isRtl,
     }),
     [
@@ -420,6 +464,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
       indicatorId,
       variant,
       itemVariant,
+      effectiveItemLayout,
       isRtl,
     ],
   );
@@ -477,17 +522,19 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
       >
         <div
           className={clsx(
-            "flex h-20 w-full shrink-0 items-center justify-end p-4 pe-7",
+            "flex h-20 w-full shrink-0 items-center",
+            // Keep padding symmetric if stacked, otherwise keep standard placement
+            effectiveItemLayout === "stacked"
+              ? "justify-center p-4"
+              : "justify-end p-4 pe-7",
           )}
         >
-          {/* Hide toggle button if forced expanded on Desktop (redundant) */}
-          {(!forceExpanded || isMobile) && (
+          {/* Hide toggle button if not expandable or if forced expanded on Desktop */}
+          {effectivelyExpandable && (!forceExpanded || isMobile) && (
             <IconButton
               variant="ghost"
               size="md"
               shape="minimal"
-              // On desktop: click works only if expandOnHover is OFF (manual mode).
-              // If expandOnHover is ON, the hover handles it, click is superfluous but harmless.
               onClick={isMobile || !expandOnHover ? toggleExpanded : undefined}
               aria-label={isExpanded ? "Collapse Menu" : "Expand Menu"}
             >
@@ -503,7 +550,15 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
         </div>
 
         {fab && <div className="shrink-0">{fab}</div>}
-        <ul className="flex flex-1 flex-col items-center justify-start gap-2 p-4 pt-0 pe-6">
+        <ul
+          className={clsx(
+            "flex flex-1 flex-col items-center justify-start gap-2 pt-0",
+            // Fix asymmetric padding when stacked
+            effectiveItemLayout === "stacked"
+              ? "px-2 w-full"
+              : "p-4 pe-6 w-full",
+          )}
+        >
           <Divider variant="dashed" />
           {screens.map((screen) => (
             <TabItem key={screen.name} screen={screen} />

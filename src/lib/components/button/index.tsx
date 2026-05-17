@@ -7,7 +7,7 @@ import React from "react";
 import useRipple from "use-ripple-hook";
 
 export const buttonVariants = cva(
-  "font-button font-semibold cursor-pointer active:scale-95 min-w-max focus-visible:outline-none transition-all duration-300 ease-emphasized flex items-center justify-center relative overflow-hidden z-0",
+  "font-button select-none font-semibold cursor-pointer active:scale-95 min-w-max focus-visible:outline-none transition-all duration-300 ease-emphasized flex items-center justify-center relative overflow-hidden z-0",
   {
     variants: {
       variant: {

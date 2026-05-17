@@ -2,12 +2,12 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "../src/lib/components/button";
-import { DatePicker } from "../src/lib/components/date-picker/date-picker";
-import { Dialog, DialogContent } from "../src/lib/components/dialog";
-import { Select } from "../src/lib/components/select";
-import { Checkbox } from "../src/lib/components/checkbox";
-import { Typography } from "../src/lib/components/typography";
+import { Button } from "../button";
+import { DatePicker } from "../date-picker/date-picker";
+import { Dialog, DialogContent } from "../dialog";
+import { Select } from "../select";
+import { Checkbox } from "../checkbox";
+import { Typography } from "../typography";
 import { useFullCalendar, PrintOverrideProvider } from "./calendar-context";
 import { FullCalendarViewDispatcher, PrintHeader } from "./index";
 

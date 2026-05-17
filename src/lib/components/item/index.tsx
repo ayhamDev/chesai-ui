@@ -269,16 +269,30 @@ const ItemSeparator = React.forwardRef<
 ));
 ItemSeparator.displayName = "ItemSeparator";
 
-export interface ItemProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof itemVariants> {
+export interface ItemProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?:
+    | "primary"
+    | "secondary"
+    | "tertiary"
+    | "high-contrast"
+    | "ghost"
+    | "surface"
+    | "surface-container-lowest"
+    | "surface-container-low"
+    | "surface-container"
+    | "surface-container-high"
+    | "surface-container-highest";
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
+  direction?: "horizontal" | "vertical";
+  padding?: "none" | "sm" | "md" | "lg";
+  bordered?: boolean;
+  elevation?: "none" | 1 | 2 | 3 | 4 | 5;
   asChild?: boolean;
   disabled?: boolean;
   disableRipple?: boolean;
   onLongPress?: (e: any) => void;
 }
-
 const Item = React.forwardRef<HTMLDivElement, ItemProps>(
   (
     {

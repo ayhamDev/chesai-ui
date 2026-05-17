@@ -251,7 +251,7 @@ export const SearchView = ({
           ease: EASING.expressiveDefaultEffects,
         }}
         className={clsx(
-          "absolute flex flex-col shadow-2xl overflow-hidden transform-3d",
+          "absolute flex flex-col shadow-2xl  overflow-hidden transform-3d",
           effectiveVariant === "docked" && "shadow-3xl",
           colors.expandedHeader,
         )}

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { clsx } from "clsx";
 import { Mail } from "lucide-react";
 import React, { useRef } from "react";
 import { Button } from "../button";
@@ -35,7 +36,7 @@ export const WithElasticScroll: StoryObj<typeof VirtualList> = {
     };
 
     return (
-      <div className="h-[600px] w-96 mx-auto border border-graphite-border rounded-2xl overflow-hidden bg-graphite-background shadow-xl">
+      <div className="h-[600px] w-96 mx-auto border border-outline-variant rounded-2xl overflow-hidden bg-surface shadow-xl">
         <Toaster position="bottom-center" />
         <VirtualList
           data={data}
@@ -69,14 +70,11 @@ export const WithElasticScroll: StoryObj<typeof VirtualList> = {
 export const HorizontalWithControls: StoryObj<typeof VirtualList> = {
   name: "2. Horizontal with Scroll Controls",
   render: () => {
-    // 1. You can track the virtualizer instance
     const virtualizerRef = useRef<any>(null);
-    // 2. You can track the actual DOM element
     const scrollContainerRef = useRef<HTMLElement>(null);
 
     const handleScrollTo = () => {
       if (virtualizerRef.current) {
-        // API exposes all TanStack Virtual commands
         virtualizerRef.current.scrollToIndex(2500, {
           align: "center",
           behavior: "smooth",
@@ -96,7 +94,7 @@ export const HorizontalWithControls: StoryObj<typeof VirtualList> = {
             direction="horizontal"
             ref={scrollContainerRef}
             virtualizerRef={virtualizerRef}
-            itemsWrapper="ul" // <-- Demonstrating inner wrapper
+            itemsWrapper="ul"
             gap={12}
             estimateSize={250}
             renderItem={(item) => (
@@ -113,6 +111,62 @@ export const HorizontalWithControls: StoryObj<typeof VirtualList> = {
                 </ItemContent>
               </Item>
             )}
+          />
+        </div>
+      </div>
+    );
+  },
+};
+
+export const ChatInterface: StoryObj<typeof VirtualList> = {
+  name: "3. Chat Interface (Vertical Reverse)",
+  render: () => {
+    // In a vertical-reverse layout, item index 0 is rendered at the absolute bottom.
+    // Make sure your newest message is passed in as data[0] so users start viewing the newest content.
+    const chatData = [...data].slice(0, 50).reverse();
+
+    return (
+      <div className="h-[600px] w-96 mx-auto border border-outline-variant rounded-2xl overflow-hidden bg-surface-container-low shadow-xl flex flex-col">
+        <div className="p-4 bg-surface-container border-b border-outline-variant text-center font-bold z-10 shadow-sm">
+          Group Chat
+        </div>
+
+        <div className="flex-1 overflow-hidden">
+          <VirtualList
+            data={chatData}
+            direction="vertical-reverse" // Native Flex-based bottom anchoring
+            gap={12}
+            estimateSize={80}
+            containerProps={{
+              className: "px-4 pb-4 pt-2",
+            }}
+            renderItem={(item) => {
+              // Mock distinguishing who sent the message
+              const isMe = item.id % 2 === 0;
+
+              return (
+                <div
+                  className={clsx(
+                    "flex w-full",
+                    isMe ? "justify-end" : "justify-start",
+                  )}
+                >
+                  <div
+                    className={clsx(
+                      "px-4 py-3 max-w-[80%] text-sm shadow-sm",
+                      isMe
+                        ? "bg-primary text-on-primary rounded-2xl rounded-br-sm"
+                        : "bg-surface text-on-surface border border-outline-variant/30 rounded-2xl rounded-bl-sm",
+                    )}
+                  >
+                    <div className="font-semibold text-[11px] opacity-70 mb-1 uppercase tracking-wider">
+                      {isMe ? "You" : `User ${item.id}`}
+                    </div>
+                    {item.desc} Let's hang out this weekend!
+                  </div>
+                </div>
+              );
+            }}
           />
         </div>
       </div>

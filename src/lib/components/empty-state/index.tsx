@@ -20,10 +20,8 @@ const emptyStateVariants = cva(
   },
 );
 
-export interface EmptyStateProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof emptyStateVariants> {
+export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "default" | "card";
   icon?: React.ReactNode;
   title: string;
   description?: string;

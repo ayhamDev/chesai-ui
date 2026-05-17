@@ -6,15 +6,11 @@ import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Button } from "../src/lib/components/button";
-import { IconButton } from "../src/lib/components/icon-button";
-import { Select } from "../src/lib/components/select";
-import { Typography } from "../src/lib/components/typography";
-import {
-  TooltipProvider,
-  Tooltip,
-  TooltipTrigger,
-} from "../src/lib/components/tooltip";
+import { Button } from "../button";
+import { IconButton } from "../icon-button";
+import { Select } from "../select";
+import { Typography } from "../typography";
+import { TooltipProvider, Tooltip, TooltipTrigger } from "../tooltip";
 import {
   FullCalendarProvider,
   useFullCalendar,

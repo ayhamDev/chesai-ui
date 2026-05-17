@@ -4,7 +4,7 @@
 import { clsx } from "clsx";
 import { addDays, format, isSameMonth, isToday, startOfDay } from "date-fns";
 import React, { useMemo } from "react";
-import { Typography } from "../src/lib/components/typography";
+import { Typography } from "../typography";
 import { useFullCalendar } from "./calendar-context";
 import { expandEvents, getDaysForMonthView, getEventSegments } from "./utils";
 

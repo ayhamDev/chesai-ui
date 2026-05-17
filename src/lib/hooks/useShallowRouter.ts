@@ -1,218 +1,211 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { flushSync } from 'react-dom' // <-- ADD THIS IMPORT
 
-// --- TYPE DEFINITIONS (Fix for TypeScript errors) ---
-type HistoryMode = "search" | "pathname";
+// --- TYPE DEFINITIONS ---
+type HistoryMode = 'search' | 'pathname'
 
 interface UseHistoryOptions {
-  mode?: HistoryMode;
-  paramName?: string;
-  basePath?: string;
+  mode?: HistoryMode
+  paramName?: string
+  basePath?: string
+  /**
+   * NEW: Enable View Transitions automatically on browser back/forward buttons
+   * Defaults to true to make it universal
+   */
+  enableViewTransitions?: boolean
 }
 
-type Params = Record<string, string | number | boolean | null | undefined>;
+type Params = Record<string, string | number | boolean | null | undefined>
 
 // --- HOOK IMPLEMENTATION ---
-
-// Custom useHistory Hook with configurable routing modes
 const useShallowRouter = (options: UseHistoryOptions = {}) => {
-  const { mode = "search", paramName = "path", basePath = "/" } = options;
+  const {
+    mode = 'search',
+    paramName = 'path',
+    basePath = '/',
+    enableViewTransitions = true, // <-- NEW DEFAULT
+  } = options
 
   const [searchParams, setSearchParams] = useState(
-    () => new URLSearchParams(window.location.search)
-  );
-  const [pathname, setPathname] = useState(() => window.location.pathname);
+    () => new URLSearchParams(typeof window !== 'undefined' ? window.location.search : ''),
+  )
+  const [pathname, setPathname] = useState(() => (typeof window !== 'undefined' ? window.location.pathname : ''))
 
   // Get current path based on mode
   const currentPath = useMemo(() => {
-    if (mode === "pathname") {
-      // Extract path relative to basePath
-      // FIX: Used template literal instead of concatenation
+    if (mode === 'pathname') {
       if (pathname === basePath || pathname === `${basePath}/`) {
-        return "/";
+        return '/'
       }
       if (pathname.startsWith(basePath)) {
-        return pathname.slice(basePath.length) || "/";
+        return pathname.slice(basePath.length) || '/'
       }
-      return "/";
+      return '/'
     }
-    // Search param mode
-    return searchParams.get(paramName) || "/";
-  }, [mode, pathname, searchParams, paramName, basePath]);
+    return searchParams.get(paramName) || '/'
+  }, [mode, pathname, searchParams, paramName, basePath])
 
-  // Get all other params except the routing param
   const otherParams = useMemo(() => {
-    const params = new URLSearchParams(searchParams);
-    params.delete(paramName);
-    return params;
-  }, [searchParams, paramName]);
+    const params = new URLSearchParams(searchParams)
+    params.delete(paramName)
+    return params
+  }, [searchParams, paramName])
 
-  // Update state when browser navigation occurs (e.g., back/forward buttons)
+  // --- THE FIX: Wrap popstate in a View Transition ---
   useEffect(() => {
     const handlePopState = () => {
-      setSearchParams(new URLSearchParams(window.location.search));
-      setPathname(window.location.pathname);
-    };
+      const updateState = () => {
+        setSearchParams(new URLSearchParams(window.location.search))
+        setPathname(window.location.pathname)
+      }
 
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+      // Intercept the browser back/forward buttons with View Transitions
+      if (enableViewTransitions && document.startViewTransition) {
+        document.startViewTransition(() => {
+          flushSync(() => {
+            updateState()
+          })
+        })
+      } else {
+        updateState()
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [enableViewTransitions])
 
   // Push new path to history
   const push = useCallback(
     (path: string, additionalParams: Params = {}, state: any = null) => {
-      if (mode === "pathname") {
-        // --- FEATURE: Handle pathname mode navigation ---
-        const newPathname =
-          path === "/" || !path ? basePath : `${basePath}${path}`;
-        const newParams = new URLSearchParams();
+      if (mode === 'pathname') {
+        const newPathname = path === '/' || !path ? basePath : `${basePath}${path}`
+        const newParams = new URLSearchParams()
         Object.entries(additionalParams).forEach(([key, value]) => {
-          if (value !== null && value !== undefined) {
-            // FIX: Ensure value is a string
-            newParams.set(key, String(value));
-          }
-        });
-        const newSearch = newParams.toString();
-        const newUrl = `${newPathname}${newSearch ? `?${newSearch}` : ""}`;
+          if (value !== null && value !== undefined) newParams.set(key, String(value))
+        })
+        const newSearch = newParams.toString()
+        const newUrl = `${newPathname}${newSearch ? `?${newSearch}` : ''}`
 
-        window.history.pushState(state, "", newUrl);
-        setPathname(newPathname);
-        setSearchParams(newParams);
+        window.history.pushState(state, '', newUrl)
+        setPathname(newPathname)
+        setSearchParams(newParams)
       } else {
-        // --- Original search mode logic ---
-        const newParams = new URLSearchParams(window.location.search);
+        const newParams = new URLSearchParams(window.location.search)
         if (path) {
-          newParams.set(paramName, path);
+          newParams.set(paramName, path)
         } else {
-          newParams.delete(paramName);
+          newParams.delete(paramName)
         }
 
         Object.entries(additionalParams).forEach(([key, value]) => {
           if (value !== null && value !== undefined) {
-            // FIX: Ensure value is a string to prevent ts(2345)
-            newParams.set(key, String(value));
+            newParams.set(key, String(value))
           } else {
-            newParams.delete(key);
+            newParams.delete(key)
           }
-        });
+        })
 
-        const newUrl = `${window.location.pathname}?${newParams.toString()}`;
-        window.history.pushState(state, "", newUrl);
-        setSearchParams(newParams);
+        const newUrl = `${window.location.pathname}?${newParams.toString()}`
+        window.history.pushState(state, '', newUrl)
+        setSearchParams(newParams)
       }
     },
-    [mode, basePath, paramName] // Updated dependencies
-  );
+    [mode, basePath, paramName],
+  )
 
   // Replace current path in history
   const replace = useCallback(
     (path: string, additionalParams: Params = {}, state: any = null) => {
-      if (mode === "pathname") {
-        // --- FEATURE: Handle pathname mode navigation ---
-        const newPathname =
-          path === "/" || !path ? basePath : `${basePath}${path}`;
-        const newParams = new URLSearchParams();
+      if (mode === 'pathname') {
+        const newPathname = path === '/' || !path ? basePath : `${basePath}${path}`
+        const newParams = new URLSearchParams()
         Object.entries(additionalParams).forEach(([key, value]) => {
-          if (value !== null && value !== undefined) {
-            newParams.set(key, String(value));
-          }
-        });
-        const newSearch = newParams.toString();
-        const newUrl = `${newPathname}${newSearch ? `?${newSearch}` : ""}`;
+          if (value !== null && value !== undefined) newParams.set(key, String(value))
+        })
+        const newSearch = newParams.toString()
+        const newUrl = `${newPathname}${newSearch ? `?${newSearch}` : ''}`
 
-        window.history.replaceState(state, "", newUrl);
-        setPathname(newPathname);
-        setSearchParams(newParams);
+        window.history.replaceState(state, '', newUrl)
+        setPathname(newPathname)
+        setSearchParams(newParams)
       } else {
-        // --- Original search mode logic ---
-        const newParams = new URLSearchParams(window.location.search);
+        const newParams = new URLSearchParams(window.location.search)
         if (path) {
-          newParams.set(paramName, path);
+          newParams.set(paramName, path)
         } else {
-          newParams.delete(paramName);
+          newParams.delete(paramName)
         }
 
         Object.entries(additionalParams).forEach(([key, value]) => {
           if (value !== null && value !== undefined) {
-            // FIX: Ensure value is a string to prevent ts(2345)
-            newParams.set(key, String(value));
+            newParams.set(key, String(value))
           } else {
-            newParams.delete(key);
+            newParams.delete(key)
           }
-        });
+        })
 
-        const newUrl = `${window.location.pathname}?${newParams.toString()}`;
-        window.history.replaceState(state, "", newUrl);
-        setSearchParams(newParams);
+        const newUrl = `${window.location.pathname}?${newParams.toString()}`
+        window.history.replaceState(state, '', newUrl)
+        setSearchParams(newParams)
       }
     },
-    [mode, basePath, paramName] // Updated dependencies
-  );
+    [mode, basePath, paramName],
+  )
 
-  // Update only specific params without changing the path
   const updateParams = useCallback(
     (params: Params, replaceHistory = false) => {
-      const newParams = new URLSearchParams(window.location.search);
+      const newParams = new URLSearchParams(window.location.search)
 
       Object.entries(params).forEach(([key, value]) => {
         if (key !== paramName) {
           if (value !== null && value !== undefined) {
-            // FIX: Ensure value is a string to prevent ts(2345)
-            newParams.set(key, String(value));
+            newParams.set(key, String(value))
           } else {
-            newParams.delete(key);
+            newParams.delete(key)
           }
         }
-      });
+      })
 
-      const newUrl = `${window.location.pathname}?${newParams.toString()}`;
+      const newUrl = `${window.location.pathname}?${newParams.toString()}`
 
       if (replaceHistory) {
-        window.history.replaceState(null, "", newUrl);
+        window.history.replaceState(null, '', newUrl)
       } else {
-        window.history.pushState(null, "", newUrl);
+        window.history.pushState(null, '', newUrl)
       }
-      setSearchParams(newParams);
+      setSearchParams(newParams)
     },
-    [paramName]
-  );
+    [paramName],
+  )
 
-  // Clear all params except the path
   const clearParams = useCallback(
     (keepPath = true) => {
-      const newParams = new URLSearchParams();
-      let newUrl = window.location.pathname;
+      const newParams = new URLSearchParams()
+      let newUrl = window.location.pathname
 
-      if (mode === "search" && keepPath && currentPath && currentPath !== "/") {
-        newParams.set(paramName, currentPath);
+      if (mode === 'search' && keepPath && currentPath && currentPath !== '/') {
+        newParams.set(paramName, currentPath)
       }
 
-      const newSearchString = newParams.toString();
+      const newSearchString = newParams.toString()
       if (newSearchString) {
-        newUrl = `${newUrl}?${newSearchString}`;
+        newUrl = `${newUrl}?${newSearchString}`
       }
 
-      window.history.pushState(null, "", newUrl);
-      setSearchParams(newParams);
+      window.history.pushState(null, '', newUrl)
+      setSearchParams(newParams)
     },
-    [currentPath, paramName, mode] // Updated dependencies
-  );
+    [currentPath, paramName, mode],
+  )
 
-  // Get a specific param value
-  const getParam = useCallback(
-    (key: string) => searchParams.get(key),
-    [searchParams]
-  );
+  const getParam = useCallback((key: string) => searchParams.get(key), [searchParams])
 
-  // Check if a param exists
-  const hasParam = useCallback(
-    (key: string) => searchParams.has(key),
-    [searchParams]
-  );
+  const hasParam = useCallback((key: string) => searchParams.has(key), [searchParams])
 
-  // Navigation helpers
-  const goBack = useCallback(() => window.history.back(), []);
-  const goForward = useCallback(() => window.history.forward(), []);
-  const go = useCallback((n: number) => window.history.go(n), []);
+  const goBack = useCallback(() => window.history.back(), [])
+  const goForward = useCallback(() => window.history.forward(), [])
+  const go = useCallback((n: number) => window.history.go(n), [])
 
   return {
     path: currentPath,
@@ -227,12 +220,10 @@ const useShallowRouter = (options: UseHistoryOptions = {}) => {
     clearParams,
     getParam,
     hasParam,
-    // Note: These values are snapshots and won't update on their own.
-    // They are provided for convenience but could become stale.
-    length: window.history.length,
-    href: window.location.href,
-    basename: window.location.pathname,
-  };
-};
+    length: typeof window !== 'undefined' ? window.history.length : 0,
+    href: typeof window !== 'undefined' ? window.location.href : '',
+    basename: typeof window !== 'undefined' ? window.location.pathname : '',
+  }
+}
 
-export default useShallowRouter;
+export default useShallowRouter

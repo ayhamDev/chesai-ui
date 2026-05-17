@@ -182,10 +182,10 @@ const getShapeMask = (shape: ShapeType) => {
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 };
 
-export interface ShapedIconButtonProps
-  extends
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof shapedButtonVariants> {
+export interface ShapedIconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "ghost" | "destructive";
+  size?: "sm" | "md" | "lg";
+  shadow?: "none" | "sm" | "md" | "lg" | "xl" | "2xl" | "glow";
   shape: ShapeType;
   morphEase?: number[];
   morphDuration?: number;
@@ -298,10 +298,10 @@ const shapedBadgeVariants = cva(
   },
 );
 
-export interface ShapedBadgeProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof shapedBadgeVariants> {
+export interface ShapedBadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "primary" | "secondary" | "destructive" | "outline";
+  size?: "sm" | "md" | "lg";
+  shadow?: "none" | "sm" | "md";
   shape: ShapeType;
 }
 

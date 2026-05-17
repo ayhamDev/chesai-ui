@@ -172,11 +172,16 @@ const ToolbarItemTooltip = ({
 };
 
 // @ts-ignore
-export interface ToolbarProps
-  extends
-    React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Root>,
-    VariantProps<typeof toolbarVariants> {
-  size: "sm" | "md" | "lg";
+export interface ToolbarProps extends React.ComponentPropsWithoutRef<
+  typeof ToolbarPrimitive.Root
+> {
+  orientation?: "horizontal" | "vertical";
+  variant?: "primary" | "secondary" | "ghost";
+  shape?: "full" | "minimal" | "sharp";
+  shadow?: "none" | "sm" | "md" | "lg";
+  padding?: "none" | "sm" | "md" | "lg";
+  gap?: "none" | "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg";
 }
 
 const ToolbarRoot = React.forwardRef<
@@ -245,14 +250,22 @@ const ToolbarSeparator = React.forwardRef<
 });
 ToolbarSeparator.displayName = "ToolbarSeparator";
 
-interface ToolbarButtonProps
-  extends
-    React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Button>,
-    VariantProps<typeof iconButtonVariants> {
-  size?: ToolbarSize;
-  shape?: ToolbarShape;
+export interface ToolbarButtonProps extends React.ComponentPropsWithoutRef<
+  typeof ToolbarPrimitive.Button
+> {
+  variant?:
+    | "primary"
+    | "secondary"
+    | "tertiary"
+    | "outline"
+    | "destructive"
+    | "ghost"
+    | "link";
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
   tooltip?: string;
   shortcut?: string;
+  isLoading?: boolean;
 }
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
@@ -357,12 +370,12 @@ const ToolbarToggleGroup = React.forwardRef<
 });
 ToolbarToggleGroup.displayName = "ToolbarToggleGroup";
 
-interface ToolbarToggleItemProps
-  extends
-    React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleItem>,
-    VariantProps<typeof toggleItemVariants> {
-  size?: ToolbarSize;
-  shape?: ToolbarShape;
+export interface ToolbarToggleItemProps extends React.ComponentPropsWithoutRef<
+  typeof ToolbarPrimitive.ToggleItem
+> {
+  variant?: "default" | "outline" | "primary";
+  size?: "sm" | "md" | "lg";
+  shape?: "full" | "minimal" | "sharp";
   tooltip?: string;
   shortcut?: string;
 }

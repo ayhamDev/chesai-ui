@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import useRipple from "use-ripple-hook";
 
 export const iconButtonVariants = cva(
-  "font-semibold focus-visible:outline-none min-w-max transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden p-0 z-0",
+  "font-semibold select-none focus-visible:outline-none min-w-max transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden p-0 z-0",
   {
     variants: {
       variant: {

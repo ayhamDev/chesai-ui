@@ -307,7 +307,11 @@ const DetailView = ({
       </IconButton>
     </div>
 
-    <ElasticScrollArea className="flex-1">
+    <ElasticScrollArea
+      className="flex-1 z-100000"
+      pullToRefresh={true}
+      onRefresh={async () => await new Promise((r) => setTimeout(r, 10000))}
+    >
       <div className="p-6 md:p-8">
         <div className="mb-6 flex flex-col md:flex-row md:items-start md:justify-between gap-2">
           <Typography

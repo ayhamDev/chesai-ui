@@ -2,7 +2,6 @@
 
 export * from './accordion'
 export * from './alert'
-export * from './animated-outlet'
 export * from './appbar'
 export * from './avatar'
 export * from './avatar/AvatarGroup'
@@ -87,4 +86,4 @@ export * from './toolbar'
 export * from './tooltip'
 export * from './typography'
 export * from './video-player'
-export * from './window-controls'
+export * from './virtual-list'

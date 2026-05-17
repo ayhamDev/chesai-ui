@@ -3,6 +3,7 @@
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import { clsx } from "clsx";
 import {
+  AnimatePresence,
   type MotionValue,
   animate,
   motion,
@@ -23,6 +24,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { LoadingIndicator } from "../loadingIndicator";
 
 // --- CONSTANTS ---
 const OVERSCROLL_DAMPING = 0.25;
@@ -61,14 +63,19 @@ const DefaultRefreshIndicator: FC<RefreshIndicatorProps> = ({
   const rotation = useTransform(
     pullProgress,
     [0, DEFAULT_PULL_THRESHOLD],
-    [0, 180],
+    [0, 360],
   );
 
-  return isRefreshing ? (
-    <Loader2 className="h-5 w-5 animate-spin text-graphite-primary" />
-  ) : (
-    <motion.div style={{ rotate: rotation }}>
-      <ArrowDown className="h-5 w-5 text-graphite-foreground/70" />
+  const scale = useTransform(pullProgress, [0, DEFAULT_PULL_THRESHOLD], [0, 1]);
+
+  return (
+    <motion.div style={{ rotate: rotation, scale: isRefreshing ? 1 : scale }}>
+      <LoadingIndicator
+        variant="material-morph-background"
+        className="w-10 h-10"
+        isPlaying={isRefreshing}
+        startingShape={1}
+      />
     </motion.div>
   );
 };
@@ -102,11 +109,22 @@ const useElasticAndRefresh = (
   const isOverscrolling = useRef(false);
   const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // New refs to track recovery state and explicitly stop animations
+  const isRecovering = useRef(false);
+  const recoveryAnimation = useRef<any>(null);
+
   const springToZero = useCallback(() => {
-    animate(motionValue, 0, {
+    isRecovering.current = true;
+    if (recoveryAnimation.current) recoveryAnimation.current.stop();
+
+    recoveryAnimation.current = animate(motionValue, 0, {
       type: "spring",
       stiffness: SNAP_BACK_STIFFNESS,
       damping: SNAP_BACK_DAMPING,
+      onComplete: () => {
+        isRecovering.current = false;
+        recoveryAnimation.current = null;
+      },
     });
   }, [motionValue]);
 
@@ -116,13 +134,22 @@ const useElasticAndRefresh = (
       return;
     }
     setIsRefreshing(true);
-    springToZero();
+    isRecovering.current = true;
+
+    if (recoveryAnimation.current) recoveryAnimation.current.stop();
+    recoveryAnimation.current = animate(motionValue, 0, {
+      type: "spring",
+      stiffness: SNAP_BACK_STIFFNESS,
+      damping: SNAP_BACK_DAMPING,
+    });
+
     try {
       await onRefresh();
     } finally {
       setIsRefreshing(false);
+      isRecovering.current = false;
     }
-  }, [onRefresh, springToZero, isVertical]);
+  }, [onRefresh, springToZero, isVertical, motionValue]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -153,36 +180,55 @@ const useElasticAndRefresh = (
         (isAtStart && isScrollingTowardsStart) ||
         (isAtEnd && isScrollingTowardsEnd)
       ) {
-        // Only prevent default if we are actually overscrolling
-        const currentVal = motionValue.get();
-        // If we are starting to overscroll or already overscrolling
-        if (Math.abs(currentVal) > 0 || Math.abs(delta) > 1) {
-          event.preventDefault();
-          const resistance = Math.abs(currentVal) / MAX_OVERSCROLL_DESKTOP;
-          const adjustedDelta = delta * damping * (1 - resistance);
-          const newVal = Math.max(
-            -MAX_OVERSCROLL_DESKTOP,
-            Math.min(MAX_OVERSCROLL_DESKTOP, currentVal - adjustedDelta),
-          );
-          motionValue.set(newVal);
-
-          if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
-          wheelTimeoutRef.current = setTimeout(() => {
-            const finalVal = motionValue.get();
-            if (Math.abs(finalVal) > 0) {
-              if (isRefreshEnabled && finalVal >= pullThreshold) {
-                triggerRefresh();
-              } else {
-                springToZero();
-              }
-            }
-          }, 50);
+        // 1. Ignore small sub-pixel events (momentum tail) so the 50ms timeout can fire.
+        if (Math.abs(delta) < 4) {
+          // Keep preventing default if we are visually displaced, avoiding native page jump
+          if (Math.abs(motionValue.get()) > 0 && event.cancelable) {
+            event.preventDefault();
+          }
+          return;
         }
+
+        // 2. If we receive a solid swipe (delta >= 4) while bouncing back,
+        // it means the user took control again. Interrupt the recovery animation!
+        if (isRecovering.current) {
+          isRecovering.current = false;
+          if (recoveryAnimation.current) recoveryAnimation.current.stop();
+        }
+
+        event.preventDefault();
+        const currentVal = motionValue.get();
+        const resistance = Math.abs(currentVal) / MAX_OVERSCROLL_DESKTOP;
+        const adjustedDelta = delta * damping * (1 - resistance);
+        const newVal = Math.max(
+          -MAX_OVERSCROLL_DESKTOP,
+          Math.min(MAX_OVERSCROLL_DESKTOP, currentVal - adjustedDelta),
+        );
+        motionValue.set(newVal);
+
+        if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
+        wheelTimeoutRef.current = setTimeout(() => {
+          const finalVal = motionValue.get();
+          if (Math.abs(finalVal) > 0 && !isRecovering.current) {
+            if (isRefreshEnabled && finalVal >= pullThreshold) {
+              triggerRefresh();
+            } else {
+              springToZero();
+            }
+          }
+        }, 50);
       }
     };
 
     const handleTouchStart = (event: TouchEvent) => {
       if (isRefreshing || event.touches.length !== 1) return;
+
+      // Interrupt bounce-back if screen is physically touched
+      if (isRecovering.current) {
+        isRecovering.current = false;
+        if (recoveryAnimation.current) recoveryAnimation.current.stop();
+      }
+
       isTouching.current = true;
       startPos.current = isVertical
         ? event.touches[0].clientY
@@ -220,13 +266,11 @@ const useElasticAndRefresh = (
         (isAtStart && isPullingTowardsStart) ||
         (isAtEnd && isPullingTowardsEnd)
       ) {
-        // Allow slight deadzone before engaging
+        // Allow slight deadzone before engaging touch (delta is absolute distance here)
         if (Math.abs(delta) > 5 || isOverscrolling.current) {
           isOverscrolling.current = true;
-          // Apply damping to touch delta as well
           const dampedDelta = delta * 0.5;
           motionValue.set(dampedDelta);
-          // Prevent default to stop browser overscroll glow/nav
           if (event.cancelable) event.preventDefault();
         }
       } else {
@@ -365,14 +409,15 @@ const ElasticScrollAreaRoot = forwardRef<
       >
         {pullToRefresh && isVertical && (
           <motion.div
-            className="pointer-events-none absolute inset-x-0 top-[-40px] z-50 flex justify-center"
+            key={"refresh"}
+            className="pointer-events-none absolute inset-x-0 top-[-10px] z-50 flex justify-center"
             style={{
               y: isRefreshing ? pullThreshold + 40 : pullProgress,
               opacity: isRefreshing ? 1 : indicatorOpacity,
             }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-graphite-card shadow-md">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-transparent">
               <RefreshIndicatorComponent
                 pullProgress={pullProgress}
                 isRefreshing={isRefreshing}
@@ -380,6 +425,7 @@ const ElasticScrollAreaRoot = forwardRef<
             </div>
           </motion.div>
         )}
+
         <motion.div
           style={{ [isVertical ? "y" : "x"]: motionValue }}
           className="h-full w-full"

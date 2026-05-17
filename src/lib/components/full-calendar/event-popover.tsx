@@ -9,21 +9,16 @@ import { Check, Clock, GripHorizontal, Repeat, Trash2, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { Button } from "../src/lib/components/button";
-import { DatePicker } from "../src/lib/components/date-picker/date-picker";
-import { IconButton } from "../src/lib/components/icon-button";
-import { Input } from "../src/lib/components/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "../src/lib/components/sheet";
-import { TimePicker } from "../src/lib/components/time-picker";
-import { Typography } from "../src/lib/components/typography";
-import { Switch } from "../src/lib/components/switch";
-import { Select } from "../src/lib/components/select";
-import { NumberInput } from "../src/lib/components/number-input";
+import { Button } from "../button";
+import { DatePicker } from "../date-picker/date-picker";
+import { IconButton } from "../icon-button";
+import { Input } from "../input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../sheet";
+import { TimePicker } from "../time-picker";
+import { Typography } from "../typography";
+import { Switch } from "../switch";
+import { Select } from "../select";
+import { NumberInput } from "../number-input";
 
 import { useFullCalendar } from "./calendar-context";
 import type { CalendarEvent, RecurrenceRule } from "./types";

@@ -1,3 +1,4 @@
+// scripts/generate-llm.ts
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -39,21 +40,29 @@ User-agent: CCBot
 Allow: /
 `
 
-// Categories Mapping
+// Categories Mapping (UPDATED with all new components)
 const CATEGORIES: Record<string, string[]> = {
   'Form & Input': [
     'button',
     'button-group',
-    'calculator-input',
     'checkbox',
     'chip',
+    'color-picker',
+    'combobox',
+    'date-input',
     'date-picker',
+    'dropzone',
     'fab',
+    'fab-menu',
+    'field',
     'icon-button',
     'input',
+    'input-group',
+    'multi-select',
     'number-input',
     'otp-field',
     'radio-group',
+    'rich-text-editor',
     'select',
     'slider',
     'split-button',
@@ -61,46 +70,41 @@ const CATEGORIES: Record<string, string[]> = {
     'textarea',
     'time-picker',
   ],
-  Layout: [
-    'elastic-scroll-area',
-    'flex',
-    'grid',
-    'infinite-scroll',
-    'item',
-    'layout-router',
-    'masonry',
-    'resizable',
-    'separator',
-    'stack-router',
-    'virtual-flex',
-    'virtual-grid',
-    'virtual-item-list',
-    'virtual-masonry',
-  ],
+  Layout: ['divider', 'elastic-scroll-area', 'infinite-scroll', 'item', 'layout', 'resizable', 'separator'],
   Navigation: [
+    'animated-outlet',
     'appbar',
     'bottom-tabs',
+    'breadcrumb',
     'command',
+    'layout-router',
+    'layout-toggle',
     'menubar',
     'navigation-menu',
     'navigation-rail',
     'search-view',
     'shallow-router',
     'sidebar',
+    'stack-router',
     'tabs',
     'taskbar',
     'toolbar',
   ],
   'Overlays & Feedback': [
+    'action-sheet',
+    'alert',
     'badge',
     'bouncy-box',
     'context-menu',
     'dialog',
     'dropdown-menu',
+    'empty-state',
     'loadingIndicator',
+    'progress',
     'pull-to-refresh',
     'sheet',
     'skeleton',
+    'stepper',
     'toast',
     'tooltip',
     'window-controls',
@@ -108,18 +112,25 @@ const CATEGORIES: Record<string, string[]> = {
   'Data Display & Media': [
     'accordion',
     'avatar',
-    'calendar',
     'card',
     'charts',
+    'data-display',
     'data-table',
     'device',
+    'editor',
+    'image',
     'kbd',
+    'location-picker',
+    'map',
+    'material3-carousel',
+    'qr-code',
     'shape',
     'table',
     'typography',
     'video-player',
+    'virtual-list',
   ],
-  Misc: [],
+  Misc: ['theme-controls'],
 }
 
 // --- HELPERS ---
@@ -202,6 +213,7 @@ chesai-ui is an expressive, high-performance UI library designed for modern web 
 - **Virtualized Layouts:** Optimized components for large datasets including 'VirtualGrid', 'VirtualFlex', and 'VirtualMasonry' (via TanStack Virtual).
 - **Data & Maps:** Built-in support for 'MapLibre' (Map) and 'Recharts' (Charts), fully integrated with the system's color tokens.
 - **Global Context:** Managed via 'ChesaiProvider', which coordinates theming, accessibility, and imperative APIs for 'Dialogs' and 'ActionSheets'.
+make sure to import the stylesheet using import "chesai-ui/styles.css" to apply the styles in the root of your app.
   \n\n`,
     ...validFiles.map(f => `\n## File: ${f.originalPath}\n\`\`\`${f.ext}\n${f.content}\n\`\`\``),
   ].join('\n')
@@ -227,7 +239,9 @@ chesai-ui is an expressive, high-performance UI library designed for modern web 
 - **Virtualized Layouts:** Optimized components for large datasets including 'VirtualGrid', 'VirtualFlex', and 'VirtualMasonry' (via TanStack Virtual).
 - **Data & Maps:** Built-in support for 'MapLibre' (Map) and 'Recharts' (Charts), fully integrated with the system's color tokens.
 - **Global Context:** Managed via 'ChesaiProvider', which coordinates theming, accessibility, and imperative APIs for 'Dialogs' and 'ActionSheets'.
+make sure to import the stylesheet using import "chesai-ui/styles.css" to apply the styles in the root of your app
   \n\n`
+
   // Scan component directories
   const componentFolders = fs
     .readdirSync(COMPONENTS_DIR)

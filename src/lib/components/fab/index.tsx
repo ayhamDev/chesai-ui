@@ -10,15 +10,13 @@ import React from "react";
 import useRipple from "use-ripple-hook";
 
 const fabVariants = cva(
-  "font-semibold active:scale-95 focus-visible:outline-none flex transition-all duration-200 items-center justify-start relative overflow-hidden group shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary",
+  "font-semibold select-none active:scale-95 focus-visible:outline-none flex transition-all duration-200 items-center justify-start relative overflow-hidden group shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary",
   {
     variants: {
       variant: {
-        primary:
-          "bg-primary-container text-on-primary-container hover:bg-primary-container/90",
-        secondary: "bg-secondary text-on-secondary hover:bg-secondary/90",
-        tertiary:
-          "bg-tertiary-container text-on-tertiary-container hover:bg-tertiary-container/90",
+        primary: "bg-primary-container text-on-primary-container",
+        secondary: "bg-secondary text-on-secondary",
+        tertiary: "bg-tertiary-container text-on-tertiary",
         outline:
           "bg-surface text-primary border border-outline hover:bg-primary/5 shadow-sm hover:shadow-md",
       },

@@ -4,7 +4,7 @@ import "react-medium-image-zoom/dist/styles.css";
 import { LayoutProvider } from "../src/lib/context/layout-context";
 import "../src/lib/tailwind/theme.css";
 import "../src/lib/tailwind/typography.css";
-import "../src/lib/components/rich-text-editor/editor-styles.css";
+import "../src/lib/components/medium-text-editor/editor-styles.css";
 
 const preview: Preview = {
   parameters: {

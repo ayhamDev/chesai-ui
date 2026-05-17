@@ -52,7 +52,7 @@ const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {
 };
 
 const highlightVariants = cva(
-  "font-mono text-sm font-semibold inline-block align-baseline leading-none mx-0.5",
+  "font-plain text-sm font-semibold inline-block align-baseline leading-none mx-0.5",
   {
     variants: {
       highlightedVariant: {
