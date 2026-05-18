@@ -25,7 +25,7 @@
     "dev": "bunx storybook dev -p 8000",
     "build": "storybook build",
     "build:lib": "tsc && vite build",
-    "build:docs": "bun run ./scripts/generate-llm.ts",
+    "build:docs": "npx ts-node  ./scripts/generate-llm.ts",
     "lint": "npx @biomejs/biome lint --write ./src",
     "format": "npx @biomejs/biome check --write --organize-imports-enabled=true ./src",
     "test": "vitest",

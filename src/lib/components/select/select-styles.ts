@@ -35,7 +35,7 @@ export const selectStyles = cva('group flex flex-col w-full relative', {
 
 export const selectContentVariants = cva(
   [
-    'z-[1000] min-w-[var(--radix-select-trigger-width)] max-h-[calc(var(--radix-select-content-available-height)-10.5rem)] overflow-hidden',
+    'z-[1000] min-w-[var(--radix-select-trigger-width)] max-h-[var(--radix-select-content-available-height)] overflow-hidden',
     'border border-outline-variant bg-surface-container text-on-surface p-1.5',
     'shadow-md',
     'data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit',
