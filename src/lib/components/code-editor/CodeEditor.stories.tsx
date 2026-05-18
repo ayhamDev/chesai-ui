@@ -1,20 +1,10 @@
-// src/lib/components/code-view/CodeView.stories.tsx
+// src/lib/components/code-editor/CodeEditor.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  AlignLeft,
-  Check,
-  Copy,
-  FileText,
-  GitBranch,
-  Play,
-  Scissors,
-  Trash2,
-} from "lucide-react";
+import { AlignLeft, GitBranch, Play } from "lucide-react";
 import { useState } from "react";
 import { ThemeProvider, useTheme } from "../../context/ThemeProvider";
 import { Button } from "../button";
 import { Card } from "../card";
-import { ContextMenu } from "../context-menu";
 import { toast, Toaster } from "../toast";
 import { Typography } from "../typography";
 import { CodeEditor } from "./index";
@@ -59,12 +49,23 @@ const meta: Meta<typeof CodeEditor> = {
   argTypes: {
     language: {
       control: "select",
-      options: ["typescript", "javascript", "json", "html", "css", "python"],
+      options: [
+        "tsx",
+        "jsx",
+        "typescript",
+        "javascript",
+        "json",
+        "html",
+        "css",
+        "python",
+      ],
     },
     isDiff: { control: "boolean" },
     readOnly: { control: "boolean" },
     collapsible: { control: "boolean" },
     enableCopy: { control: "boolean" },
+    hideToolbar: { control: "boolean" },
+    disableContextMenu: { control: "boolean" },
     toolbarSize: {
       control: "select",
       options: ["sm", "md", "lg"],
@@ -132,7 +133,8 @@ export const App = () => {
 export const EditorMode: Story = {
   name: "1. Editing Mode",
   args: {
-    collapsible: true, // Show off collapsible
+    collapsible: true,
+    language: "tsx"
   },
   render: (args) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -163,14 +165,6 @@ export const GitDiff: Story = {
     fileName: "src/App.tsx",
     height: 500,
     collapsible: true,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Passing `isDiff={true}` renders a Git Diff view. The toolbar automatically gains a toggle button so users can instantly switch between **Side-by-Side** and **Inline** diff views.",
-      },
-    },
   },
 };
 
@@ -207,14 +201,6 @@ export const ToolbarSizes: Story = {
 
 export const CustomToolbarContent: Story = {
   name: "4. Custom Toolbar Content",
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Pass elements to `toolbarContent` to insert custom buttons, badges, or toggles straight into the editor toolbar. (Clicks inside custom content safely prevent the editor from collapsing).",
-      },
-    },
-  },
   render: (args) => {
     return (
       <CodeEditor
@@ -255,49 +241,92 @@ export const CustomToolbarContent: Story = {
   },
 };
 
-export const WithContextMenu: Story = {
-  name: "5. With Context Menu",
+export const WithCustomActions: Story = {
+  name: "5. Custom Native Context Menu",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Rather than overriding Monaco's context menu, you can inject commands directly into the native editor right-click menu using `customActions`. Try right-clicking the code!",
+      },
+    },
+  },
   render: (args) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [code, setCode] = useState(INITIAL_CODE);
 
-    const MyContextMenu = (
-      <ContextMenu.Content className="w-56">
-        <ContextMenu.Item onClick={() => toast("Running code...")}>
-          <Play className="mr-2 h-4 w-4" /> Run Script
-          <ContextMenu.Shortcut>⌘R</ContextMenu.Shortcut>
-        </ContextMenu.Item>
-        <ContextMenu.Separator />
-        <ContextMenu.Item onClick={() => navigator.clipboard.writeText(code)}>
-          <Copy className="mr-2 h-4 w-4" /> Copy Entire File
-        </ContextMenu.Item>
-        <ContextMenu.Item>
-          <Scissors className="mr-2 h-4 w-4" /> Cut
-        </ContextMenu.Item>
-        <ContextMenu.Separator />
-        <ContextMenu.Item className="text-error focus:bg-error/10">
-          <Trash2 className="mr-2 h-4 w-4" /> Delete File
-        </ContextMenu.Item>
-      </ContextMenu.Content>
-    );
-
     return (
-      <div className="flex flex-col gap-4">
-        <Card variant="secondary" className="p-4" shape="minimal">
-          <Typography variant="body-small" muted>
-            Right-click anywhere inside the editor below to see the custom
-            Context Menu instead of the default Monaco menu.
-          </Typography>
-        </Card>
-        <CodeEditor
-          {...args}
-          value={code}
-          onChange={(v) => setCode(v || "")}
-          fileName="main.ts"
-          language="typescript"
-          contextMenu={MyContextMenu}
-        />
-      </div>
+      <CodeEditor
+        {...args}
+        value={code}
+        onChange={(v) => setCode(v || "")}
+        fileName="main.ts"
+        language="typescript"
+        customActions={[
+          {
+            id: "run-script",
+            label: "▶ Run Script via Context Menu",
+            contextMenuGroupId: "navigation",
+            contextMenuOrder: 1,
+            run: (editor) => {
+              toast.success("Running code...");
+              console.log("Executed code payload:", editor.getValue());
+            },
+          },
+          {
+            id: "delete-file",
+            label: "Delete Component",
+            contextMenuGroupId: "2_workspace", // Grouped lower down
+            run: () => toast.error("File deleted!"),
+          },
+        ]}
+      />
     );
+  },
+};
+
+export const NoToolbar: Story = {
+  name: "6. No Toolbar (Raw Block)",
+  args: {
+    hideToolbar: true,
+    value: INITIAL_CODE,
+    height: 300,
+    variant: "ghost",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Pass `hideToolbar={true}` to hide the toolbar completely, leaving just the raw code block.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card className="max-w-3xl p-6" shape="minimal">
+      <Typography variant="title-medium" className="mb-4">
+        Raw Code Block Embed
+      </Typography>
+      <CodeEditor
+        {...args}
+        className="rounded-xl border border-outline-variant/30"
+      />
+    </Card>
+  ),
+};
+
+export const DisabledContextMenu: Story = {
+  name: "7. Disabled Context Menu",
+  args: {
+    disableContextMenu: true,
+    value: "Right-clicking inside this editor will do nothing.",
+    height: 150,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Pass `disableContextMenu={true}` to completely disable the right-click menu inside the code editor.",
+      },
+    },
   },
 };

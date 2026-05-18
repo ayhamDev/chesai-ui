@@ -2,8 +2,10 @@
 
 import { Slot } from "@radix-ui/react-slot";
 import React, { forwardRef } from "react";
-import { useViewTransition } from "../../hooks/use-view-transition";
-export * from "../../hooks/use-view-transition";
+import { useViewTransition } from "./use-view-transition";
+export * from "./use-view-transition";
+export * from "./useGlobalViewTransitions";
+
 export interface TransitionLinkProps extends React.HTMLAttributes<HTMLElement> {
   /**
    * The imperative navigation function to execute (e.g., router.push('/about'))

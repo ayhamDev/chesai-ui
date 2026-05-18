@@ -3,11 +3,11 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { Check, Copy } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { IconButton } from "../icon-button";
 
 const installCommandVariants = cva(
-  "relative flex flex-col overflow-hidden border transition-colors duration-300 w-full",
+  "relative flex flex-col overflow-hidden border transition-all duration-300 w-full",
   {
     variants: {
       variant: {
@@ -40,9 +40,7 @@ export interface InstallCommandProps
   extends
     React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof installCommandVariants> {
-  /** The name of the npm package */
   packageName: string;
-  /** Whether to install as a dev dependency (-D) */
   isDevDependency?: boolean;
 }
 
@@ -67,7 +65,7 @@ export const InstallCommand = React.forwardRef<
     const [pm, setPm] = useState<PackageManager>("npm");
     const [copied, setCopied] = useState(false);
 
-    const getCommand = () => {
+    const commandString = useMemo(() => {
       const devFlag = isDevDependency ? " -D" : "";
       switch (pm) {
         case "npm":
@@ -81,10 +79,49 @@ export const InstallCommand = React.forwardRef<
         default:
           return `npm install ${packageName}${devFlag}`;
       }
-    };
+    }, [pm, packageName, isDevDependency]);
+
+    // Fixed Tokenizer using Flex Gap to prevent "npminstall" merging
+    const tokens = useMemo(() => {
+      return commandString.split(" ").map((part, index) => {
+        if (index === 0) {
+          // Package Manager (npm, pnpm)
+          return (
+            <span key={index} className="text-primary font-bold">
+              {part}
+            </span>
+          );
+        }
+        if (part === "install" || part === "add") {
+          // Action
+          return (
+            <span key={index} className="text-secondary font-medium">
+              {part}
+            </span>
+          );
+        }
+        if (part.startsWith("-")) {
+          // Flags
+          return (
+            <span key={index} className="text-on-surface-variant/70 italic">
+              {part}
+            </span>
+          );
+        }
+        // Package Name
+        return (
+          <span
+            key={index}
+            className="text-on-surface font-semibold tracking-tight"
+          >
+            {part}
+          </span>
+        );
+      });
+    }, [commandString]);
 
     const handleCopy = () => {
-      navigator.clipboard.writeText(getCommand());
+      navigator.clipboard.writeText(commandString);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     };
@@ -98,18 +135,18 @@ export const InstallCommand = React.forwardRef<
         )}
         {...props}
       >
-        {/* Header / Tabs */}
-        <div className="flex items-center justify-between bg-surface-container-highest/30 px-3 py-1.5 border-b border-outline-variant/30">
-          <div className="flex gap-1 sm:gap-2">
+        {/* Header */}
+        <div className="flex items-center justify-between bg-surface-container-highest/40 px-3 py-2 border-b border-outline-variant/20">
+          <div className="flex gap-1.5">
             {(["npm", "pnpm", "yarn", "bun"] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => setPm(p)}
                 className={clsx(
-                  "text-xs font-mono px-3 py-1.5 rounded-md transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                  "text-[10px] font-bold font-mono px-2.5 py-1 rounded-md transition-all cursor-pointer uppercase tracking-widest",
                   pm === p
-                    ? "bg-secondary-container text-on-secondary-container font-bold shadow-sm"
-                    : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest/50",
+                    ? "bg-primary text-on-primary shadow-md scale-105"
+                    : "text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-highest",
                 )}
               >
                 {p}
@@ -121,22 +158,31 @@ export const InstallCommand = React.forwardRef<
             size="xs"
             onClick={handleCopy}
             className={clsx(
+              "transition-all active:scale-90",
               copied
-                ? "text-green-600 hover:text-green-700 hover:bg-green-600/10 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-400/10"
-                : "text-on-surface-variant hover:text-on-surface",
+                ? "text-green-500"
+                : "text-on-surface-variant opacity-70 hover:opacity-100",
             )}
-            aria-label="Copy command"
           >
             {copied ? <Check size={16} strokeWidth={3} /> : <Copy size={16} />}
           </IconButton>
         </div>
 
         {/* Terminal Body */}
-        <div className="p-4 sm:p-5 overflow-x-auto flex items-center">
-          <code className="text-sm sm:text-base font-mono text-on-surface whitespace-nowrap flex items-center">
-            {/* Using the primary brand color for the terminal prompt symbol */}
-            <span className="text-primary mr-3 font-bold select-none">$</span>
-            {getCommand()}
+        <div className="p-5 font-mono bg-black/[0.03] dark:bg-white/[0.03] flex items-baseline gap-4 group">
+          {/* Gutter / Line Number */}
+          <span className="text-on-surface-variant/20 select-none text-sm shrink-0">
+            1
+          </span>
+
+          <code className="text-sm sm:text-base flex items-center whitespace-pre shrink-0">
+            {/* Prompt Symbol */}
+            <span className="text-primary/40 mr-3 select-none font-bold">
+              $
+            </span>
+
+            {/* The actual command with spacing handled by gap */}
+            <div className="flex flex-wrap gap-x-2.5">{tokens}</div>
           </code>
         </div>
       </div>

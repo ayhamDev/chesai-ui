@@ -1,4 +1,4 @@
-// src/lib/components/code-view/index.tsx
+// src/lib/components/code-editor/index.tsx
 "use client";
 
 import { DiffEditor, Editor, useMonaco } from "@monaco-editor/react";
@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTheme } from "../../context/ThemeProvider";
-import { ContextMenu } from "../context-menu";
 import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
 
@@ -71,6 +70,15 @@ const toolbarSizeMap = {
   },
 } as const;
 
+export interface CodeEditorAction {
+  id: string;
+  label: string;
+  keybindings?: number[];
+  contextMenuGroupId?: string;
+  contextMenuOrder?: number;
+  run: (editor: any, monaco: any) => void;
+}
+
 export interface CodeEditorProps
   extends
     Omit<React.HTMLAttributes<HTMLDivElement>, "onChange">,
@@ -82,19 +90,16 @@ export interface CodeEditorProps
   readOnly?: boolean;
   height?: string | number;
   fileName?: string;
-  contextMenu?: React.ReactNode;
   onChange?: (value: string | undefined) => void;
   options?: any;
-  /** Enables a collapse/expand toggle in the header */
   collapsible?: boolean;
-  /** Initial state for the collapsible behavior */
   defaultCollapsed?: boolean;
-  /** Shows a copy button in the header toolbar */
   enableCopy?: boolean;
-  /** The size of the top toolbar */
   toolbarSize?: "sm" | "md" | "lg";
-  /** Inject custom actions or components into the toolbar */
   toolbarContent?: React.ReactNode;
+  hideToolbar?: boolean;
+  disableContextMenu?: boolean;
+  customActions?: CodeEditorAction[];
 }
 
 export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
@@ -107,7 +112,6 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
       readOnly = false,
       height = 400,
       fileName,
-      contextMenu,
       onChange,
       options = {},
       variant,
@@ -119,6 +123,9 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
       enableCopy = true,
       toolbarSize = "md",
       toolbarContent,
+      hideToolbar = false,
+      disableContextMenu = false,
+      customActions,
       ...props
     },
     ref,
@@ -127,7 +134,6 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
     const monaco = useMonaco();
     const [isEditorReady, setIsEditorReady] = useState(false);
 
-    // Toolbar States
     const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
     const [isSideBySide, setIsSideBySide] = useState(true);
     const [isCopied, setIsCopied] = useState(false);
@@ -136,6 +142,7 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
       resolvedTheme === "dark" ? "chesai-dark" : "chesai-light";
 
     const handleBeforeMount = (monacoInstance: any) => {
+      // 1. Define Visual Themes
       monacoInstance.editor.defineTheme("chesai-dark", {
         base: "vs-dark",
         inherit: true,
@@ -159,19 +166,25 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
         },
       });
 
+      // 2. CONFIGURE TYPESCRIPT TO SUPPORT JSX (The fix for the typos/errors)
       monacoInstance.languages.typescript.typescriptDefaults.setCompilerOptions(
         {
-          jsx: monacoInstance.languages.typescript.JsxEmit.React,
+          jsx: monacoInstance.languages.typescript.JsxEmit.React, // Enables JSX parsing
           allowNonTsExtensions: true,
+          target: monacoInstance.languages.typescript.ScriptTarget.Latest,
+          allowJs: true,
+          module: monacoInstance.languages.typescript.ModuleKind.ESNext,
         },
       );
 
-      monacoInstance.languages.typescript.typescriptDefaults.setDiagnosticsOptions(
-        {
-          noSemanticValidation: true,
-          noSyntaxValidation: false,
-        },
-      );
+      // Optional: Add basic React types for better intellisense
+      // monacoInstance.languages.typescript.typescriptDefaults.addExtraLib(
+      //   `declare module 'react' {
+      //     export function useState<T>(initial: T): [T, (val: T) => void];
+      //     export default { useState };
+      //   }`,
+      //   "file:///node_modules/@types/react/index.d.ts",
+      // );
     };
 
     useEffect(() => {
@@ -193,9 +206,7 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
     };
 
     const toggleCollapse = () => {
-      if (collapsible) {
-        setIsCollapsed((prev) => !prev);
-      }
+      if (collapsible) setIsCollapsed((prev) => !prev);
     };
 
     const editorOptions = {
@@ -208,13 +219,39 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
       smoothScrolling: true,
       cursorBlinking: "smooth",
       padding: { top: 16, bottom: 16 },
-      contextmenu: !contextMenu,
+      contextmenu: !disableContextMenu,
       ...options,
     };
 
-    const handleEditorMount = () => {
+    const handleEditorMount = (editorInstance: any, monacoInstance: any) => {
       setIsEditorReady(true);
+
+      const targetEditor = isDiff
+        ? editorInstance.getModifiedEditor()
+        : editorInstance;
+
+      if (customActions && targetEditor) {
+        customActions.forEach((action) => {
+          targetEditor.addAction({
+            id: action.id,
+            label: action.label,
+            keybindings: action.keybindings,
+            contextMenuGroupId: action.contextMenuGroupId || "navigation",
+            contextMenuOrder: action.contextMenuOrder || 1.5,
+            run: () => action.run(targetEditor, monacoInstance),
+          });
+        });
+      }
     };
+
+    // 3. FORCE .TSX PATH (The secondary fix for JSX errors)
+    // Monaco needs to see a .tsx extension in the virtual file path
+    // to enable the JSX parser for that specific model.
+    const path = fileName
+      ? fileName.endsWith("x")
+        ? fileName
+        : `${fileName}x`
+      : "model.tsx";
 
     const EditorComponent = isDiff ? (
       <DiffEditor
@@ -232,6 +269,7 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
       />
     ) : (
       <Editor
+        path={path} // Setting the path ensures TSX mode is active
         value={value}
         language={language}
         theme={activeTheme}
@@ -244,8 +282,11 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
     );
 
     const tSize = toolbarSizeMap[toolbarSize];
+    const shouldShowToolbar =
+      !hideToolbar &&
+      (fileName || collapsible || enableCopy || isDiff || toolbarContent);
 
-    const Container = (
+    return (
       <div
         ref={ref}
         className={clsx(
@@ -254,12 +295,7 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
         )}
         {...props}
       >
-        {/* HEADER / TOOLBAR */}
-        {(fileName ||
-          collapsible ||
-          enableCopy ||
-          isDiff ||
-          toolbarContent) && (
+        {shouldShowToolbar && (
           <div
             className={clsx(
               "flex shrink-0 items-center gap-2 border-b border-outline-variant/30 bg-surface-container-highest/30",
@@ -302,7 +338,7 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
               {toolbarContent && (
                 <div
                   className="flex items-center gap-1 mr-1"
-                  onClick={(e) => e.stopPropagation()} // Prevent clicking custom actions from collapsing the editor
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {toolbarContent}
                 </div>
@@ -320,7 +356,6 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
                 </div>
               )}
 
-              {/* BUILT-IN ACTIONS TOOLBAR */}
               <div className="flex items-center gap-1">
                 {isDiff && !isCollapsed && (
                   <IconButton
@@ -360,7 +395,6 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
           </div>
         )}
 
-        {/* EDITOR BODY WITH ANIMATED HEIGHT */}
         <AnimatePresence initial={false}>
           {!isCollapsed && (
             <motion.div
@@ -379,17 +413,6 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
         </AnimatePresence>
       </div>
     );
-
-    if (contextMenu && !isCollapsed) {
-      return (
-        <ContextMenu>
-          <ContextMenu.Trigger asChild>{Container}</ContextMenu.Trigger>
-          {contextMenu}
-        </ContextMenu>
-      );
-    }
-
-    return Container;
   },
 );
 

@@ -200,6 +200,7 @@ const chesaiRegistry: ComponentRegistry = {
           shape="minimal"
           toolbarSize="sm"
           enableCopy={true}
+          disableContextMenu={true}
         />
       </div>
     ),
@@ -256,6 +257,7 @@ const chesaiRegistry: ComponentRegistry = {
     category: "Blocks",
     render: ({ title }) => (
       <AppBar
+        className="container mx-auto"
         variant="small"
         color="transparent"
         title={<span className="font-bold tracking-tight">{title}</span>}

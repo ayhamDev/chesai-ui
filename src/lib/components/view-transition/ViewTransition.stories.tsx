@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import {
-  createMemoryHistory,
+  createHashHistory,
+  createhashHistory,
   createRootRoute,
   createRoute,
   createRouter,
@@ -10,7 +11,6 @@ import {
 } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import React from "react";
-
 // Chesai UI Components
 import { Button } from "../button";
 import { Card } from "../card";
@@ -24,7 +24,11 @@ import {
 import { Typography } from "../typography";
 
 // The View Transition Hook & Component (From previous step)
-import { TransitionLink, useViewTransition } from "./index";
+import {
+  TransitionLink,
+  useGlobalViewTransitions,
+  useViewTransition,
+} from "./index";
 
 const meta: Meta = {
   title: "Components/Navigators/View Transitions",
@@ -323,10 +327,14 @@ const detailRoute = createRoute({
 const routeTree = rootRoute.addChildren([indexRoute, detailRoute]);
 
 // For Storybook, we create a memory history router instance
-const memoryHistory = createMemoryHistory({
-  initialEntries: ["/"],
+const hashHistory = createHashHistory({
+  window: window,
 });
-const router = createRouter({ routeTree, history: memoryHistory });
+const router = createRouter({
+  routeTree,
+  history: hashHistory,
+  defaultViewTransition: true, // Enable view transitions globally (optional, can also be triggered imperatively)
+});
 
 // Module declaration required by TanStack Router
 declare module "@tanstack/react-router" {

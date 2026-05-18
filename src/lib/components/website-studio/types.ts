@@ -1,3 +1,4 @@
+// src/lib/components/website-studio/types.ts
 import type React from 'react'
 
 // --- 1. Property Control Schemas ---
@@ -14,13 +15,16 @@ export interface ComponentControl {
   description?: string
 }
 
-// --- 2. Registry Schema ---
+// --- NEW: Agnostic Theme Registry ---
+// The developer defines what theme variables exist for their library.
+export type ThemeRegistry = Record<
+  string, // Group Name (e.g., "Colors", "Typography", "Spacing")
+  Record<string, ComponentControl> // The CSS Variable Name mapped to an input control
+>
+
+// --- 2. Component Registry ---
 export interface RegistryComponent {
   name: string
-  /**
-   * Folder-like categorization for the future Builder UI.
-   * e.g., "Primitives/Typography", "Blocks/Navbars", "Blocks/Pricing"
-   */
   category: string
   thumbnail?: string
   render: React.FC<any>
@@ -34,7 +38,15 @@ export interface StudioNode {
   id: string
   type: string
   props: Record<string, any>
+  events?: Record<string, StudioEventAction[]> // NEW: Added event schema
   children?: StudioNode[]
+}
+
+// NEW: Event Action Schema
+export interface StudioEventAction {
+  actionId: string // Refers to the developer's Actions Registry OR "$customCode"
+  args?: any[] // Arguments passed into the action
+  code?: string // Used ONLY if actionId is "$customCode"
 }
 
 export interface PageSchema {
@@ -45,14 +57,13 @@ export interface PageSchema {
   content: StudioNode[]
 }
 
+// --- UPDATED: 100% Agnostic Design System Schema ---
 export interface DesignSystemSchema {
-  seedColor?: string | null
-  theme?: 'light' | 'dark' | 'system'
-  contrast?: 'standard' | 'medium' | 'high'
-  fonts?: {
-    brand: string
-    plain: string
-  }
+  // Stored values map directly to the keys defined in the ThemeRegistry
+  // Example: { "--color-primary": "#3b82f6", "--font-base": "Inter" }
+  tokens: Record<string, string | number>
+  // Allow for dark/light mode toggles if the developer's system supports it
+  mode?: string
 }
 
 export interface WebsiteSchema {
