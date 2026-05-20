@@ -52,6 +52,7 @@ export const Default: Story = {
     variant: "surface-container",
     shape: "minimal",
     padding: "md",
+    glass: false,
   },
   render: (args) => (
     <Card {...args} className="max-w-md">
@@ -296,6 +297,54 @@ export const HighContrast: Story = {
           <Typography variant="label-small">Standard Outlined</Typography>
         </Card>
       </div>
+    </div>
+  ),
+};
+
+export const GlassEffect: Story = {
+  name: "Glass Effect (Backdrop Blur)",
+  args: {
+    glass: true,
+    padding: "md",
+    shape: "minimal",
+    variant: "primary",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Applies a highly polished glassmorphism effect using `backdrop-blur-xl`. It flawlessly blends the translucent alpha level to perfectly match whichever surface `variant` you select (Primary, Secondary, Surface, etc).",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-full max-w-3xl h-[450px] bg-gradient-to-br from-indigo-500 via-rose-500 to-pink-500 rounded-3xl p-6 md:p-12 flex items-center justify-center relative overflow-hidden shadow-inner">
+      {/* Decorative blurred blobs in the background to show off the glass */}
+      <div className="absolute top-10 left-10 w-48 h-48 bg-white/30 rounded-full blur-2xl animate-pulse" />
+      <div className="absolute bottom-10 right-10 w-64 h-64 bg-black/20 rounded-full blur-3xl animate-pulse" />
+
+      <Card
+        {...args}
+        variant={args.variant}
+        className="max-w-md w-full relative z-10"
+      >
+        <Typography variant="title-large">Glassmorphism Card</Typography>
+        <Typography
+          variant="body-medium"
+          className="mt-2 opacity-80 leading-relaxed"
+        >
+          This card dynamically adjusts its transparency based on the variant
+          you pass to it, blurring the vibrant gradient behind it.
+        </Typography>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button variant="ghost" shape="minimal">
+            Dismiss
+          </Button>
+          <Button variant="primary" shape="minimal">
+            Awesome
+          </Button>
+        </div>
+      </Card>
     </div>
   ),
 };

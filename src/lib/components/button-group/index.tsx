@@ -1,6 +1,8 @@
 import { clsx } from "clsx";
 import React from "react";
 
+export * from "./expressive-button-group";
+
 // Explicitly define the shape type for clarity and type safety
 type ButtonShape = "full" | "minimal" | "sharp";
 
@@ -64,7 +66,7 @@ export const ButtonGroup = ({
           // Create the overlapping border effect for a seamless look.
           !isFirst && "-ml-px",
           // Ensure the focused button renders on top of its siblings.
-          "focus:z-10"
+          "focus:z-10",
         );
 
         return React.cloneElement(child, {

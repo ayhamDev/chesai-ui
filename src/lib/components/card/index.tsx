@@ -1,8 +1,9 @@
 "use client";
 
 import { cva, type VariantProps } from "class-variance-authority";
-import clsx from "clsx";
+import { clsx } from "clsx";
 import React, { useImperativeHandle, useRef } from "react";
+import { twMerge } from "tailwind-merge";
 import useRipple from "use-ripple-hook";
 
 export const cardVariants = cva(
@@ -15,8 +16,6 @@ export const cardVariants = cva(
         tertiary: "bg-tertiary-container text-on-tertiary-container",
         "high-contrast": "bg-inverse-surface text-inverse-on-surface",
         ghost: "bg-transparent text-on-surface",
-
-        // --- MD3 Surface Container Variants ---
         surface: "bg-surface text-on-surface",
         "surface-container-lowest":
           "bg-surface-container-lowest text-on-surface",
@@ -53,6 +52,10 @@ export const cardVariants = cva(
         4: "shadow-xl",
         5: "shadow-2xl",
       },
+      glass: {
+        true: "",
+        false: "",
+      },
     },
     compoundVariants: [
       // Ghost Bloom Effect
@@ -62,7 +65,6 @@ export const cardVariants = cva(
         className:
           "after:bg-secondary-container/50 after:scale-80 after:origin-center hover:after:opacity-100 hover:after:scale-100",
       },
-      // Standard Overlay Effect (Primary, Secondary, Surface Variants)
       {
         variant: "primary",
         hoverEffect: true,
@@ -103,17 +105,83 @@ export const cardVariants = cva(
         hoverEffect: true,
         className: "after:bg-on-surface/8 hover:after:opacity-100",
       },
-      // Tertiary Overlay
       {
         variant: "tertiary",
         hoverEffect: true,
         className: "after:bg-on-tertiary-container/8 hover:after:opacity-100",
       },
-      // High Contrast Overlay
       {
         variant: "high-contrast",
         hoverEffect: true,
         className: "after:bg-inverse-on-surface/10 hover:after:opacity-100",
+      },
+
+      // --- Glass Variants ---
+      {
+        glass: true,
+        variant: "primary",
+        className:
+          "bg-surface-container-low/50 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+      },
+      {
+        glass: true,
+        variant: "secondary",
+        className:
+          "bg-surface-container-highest/50 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+      },
+      {
+        glass: true,
+        variant: "tertiary",
+        className:
+          "bg-tertiary-container/50 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+      },
+      {
+        glass: true,
+        variant: "high-contrast",
+        className:
+          "bg-inverse-surface/50 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+      },
+      {
+        glass: true,
+        variant: "ghost",
+        className:
+          "backdrop-blur-xl shadow-xl border border-outline-variant/30",
+      },
+      {
+        glass: true,
+        variant: "surface",
+        className:
+          "bg-surface/50 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+      },
+      {
+        glass: true,
+        variant: "surface-container-lowest",
+        className:
+          "bg-surface-container-lowest/50 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+      },
+      {
+        glass: true,
+        variant: "surface-container-low",
+        className:
+          "bg-surface-container-low/50 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+      },
+      {
+        glass: true,
+        variant: "surface-container",
+        className:
+          "bg-surface-container/50 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+      },
+      {
+        glass: true,
+        variant: "surface-container-high",
+        className:
+          "bg-surface-container-high/50 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+      },
+      {
+        glass: true,
+        variant: "surface-container-highest",
+        className:
+          "bg-surface-container-highest/50 backdrop-blur-xl shadow-xl border border-outline-variant/30",
       },
     ],
     defaultVariants: {
@@ -122,6 +190,7 @@ export const cardVariants = cva(
       padding: "md",
       bordered: false,
       elevation: "none",
+      glass: false,
     },
   },
 );
@@ -145,6 +214,7 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   bordered?: boolean;
   elevation?: "none" | 1 | 2 | 3 | 4 | 5;
   enableRipple?: boolean;
+  glass?: boolean;
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
@@ -158,6 +228,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       elevation,
       enableRipple,
       hoverEffect,
+      glass,
       onPointerDown,
       ...props
     },
@@ -181,16 +252,20 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={localRef}
-        className={clsx(
-          cardVariants({
-            shape,
-            variant,
-            padding,
-            bordered,
-            elevation,
-            hoverEffect,
-          }),
-          className,
+        // Use twMerge to ensure /60 background colors cleanly override solid variant defaults
+        className={twMerge(
+          clsx(
+            cardVariants({
+              shape,
+              variant,
+              padding,
+              bordered,
+              elevation,
+              hoverEffect,
+              glass,
+            }),
+            className,
+          ),
         )}
         onPointerDown={(e) => {
           if (enableRipple) event(e);

@@ -4,6 +4,7 @@ import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { createContext, forwardRef, useContext, useEffect } from "react";
+import { twMerge } from "tailwind-merge";
 import { Drawer as VaulDrawer } from "vaul";
 
 // --- Types ---
@@ -28,6 +29,7 @@ interface SheetContextProps {
   direction: "top" | "bottom" | "left" | "right";
   variant: SheetVariant;
   isLocked: boolean;
+  glass: boolean;
 }
 
 const SheetContext = createContext<SheetContextProps>({
@@ -37,6 +39,7 @@ const SheetContext = createContext<SheetContextProps>({
   direction: "bottom",
   variant: "primary",
   isLocked: false,
+  glass: false,
 });
 
 const useSheetContext = () => useContext(SheetContext);
@@ -50,6 +53,7 @@ type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
   forceBottomSheet?: boolean;
   forceSideSheet?: boolean;
   isLocked?: boolean;
+  glass?: boolean;
 };
 
 const SheetRoot: React.FC<SheetProps> = ({
@@ -60,6 +64,7 @@ const SheetRoot: React.FC<SheetProps> = ({
   forceBottomSheet = false,
   forceSideSheet = false,
   isLocked = false,
+  glass = false,
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
@@ -92,6 +97,7 @@ const SheetRoot: React.FC<SheetProps> = ({
         shape,
         variant,
         isLocked,
+        glass,
         hasSnapPoints: renderAsSideSheet
           ? false
           : !!snapPoints && snapPoints.length > 0,
@@ -160,6 +166,10 @@ const contentVariants = cva(
       mode: {
         normal: "",
         detached: "",
+      },
+      glass: {
+        true: "",
+        false: "",
       },
     },
     compoundVariants: [
@@ -277,11 +287,80 @@ const contentVariants = cva(
         mode: "detached",
         className: "top-4 bottom-4 right-4 rounded-none",
       },
+
+      // --- Glass Variants ---
+      {
+        glass: true,
+        variant: "primary",
+        className:
+          "bg-surface-container-low/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "secondary",
+        className:
+          "bg-surface-container-highest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "tertiary",
+        className:
+          "bg-tertiary-container/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "high-contrast",
+        className:
+          "bg-inverse-surface/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "ghost",
+        className:
+          "backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface",
+        className:
+          "bg-surface/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface-container-lowest",
+        className:
+          "bg-surface-container-lowest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface-container-low",
+        className:
+          "bg-surface-container-low/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface-container",
+        className:
+          "bg-surface-container/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface-container-high",
+        className:
+          "bg-surface-container-high/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface-container-highest",
+        className:
+          "bg-surface-container-highest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
     ],
     defaultVariants: {
       variant: "primary",
       shape: "full",
       mode: "normal",
+      glass: false,
     },
   },
 );
@@ -292,48 +371,65 @@ type SheetContentProps = React.ComponentProps<typeof VaulDrawer.Content> &
 const SheetContent = forwardRef<
   React.ElementRef<typeof VaulDrawer.Content>,
   SheetContentProps
->(({ className, shape: shapeProp, variant: variantProp, ...props }, ref) => {
-  const {
-    mode,
-    shape: shapeContext,
-    variant: variantContext,
-    hasSnapPoints,
-    direction,
-    isLocked,
-  } = useSheetContext();
+>(
+  (
+    {
+      className,
+      shape: shapeProp,
+      variant: variantProp,
+      glass: glassProp,
+      ...props
+    },
+    ref,
+  ) => {
+    const {
+      mode,
+      shape: shapeContext,
+      variant: variantContext,
+      hasSnapPoints,
+      direction,
+      isLocked,
+      glass: glassContext,
+    } = useSheetContext();
 
-  const shape = shapeProp || shapeContext;
-  const variant = variantProp || variantContext;
+    const shape = shapeProp || shapeContext;
+    const variant = variantProp || variantContext;
+    const glass = glassProp !== undefined ? glassProp : glassContext;
 
-  const style =
-    mode === "detached"
-      ? ({ "--vaul-after-display": "0" } as React.CSSProperties)
-      : {};
+    const style =
+      mode === "detached"
+        ? ({ "--vaul-after-display": "0" } as React.CSSProperties)
+        : {};
 
-  return (
-    <SheetPortal>
-      <VaulDrawer.Overlay
-        className="fixed inset-0 z-50 bg-black/50"
-        onClick={(e) => isLocked && e.stopPropagation()}
-      />
-      <VaulDrawer.Content
-        ref={ref}
-        style={{ ...props.style, ...style }}
-        className={clsx(
-          contentVariants({
-            side: direction,
-            mode,
-            shape,
-            variant,
-            height: direction === "bottom" && hasSnapPoints ? "snap" : "auto",
-          }),
-          className,
-        )}
-        {...props}
-      />
-    </SheetPortal>
-  );
-});
+    return (
+      <SheetPortal>
+        <VaulDrawer.Overlay
+          className="fixed inset-0 z-50 bg-black/50"
+          onClick={(e) => isLocked && e.stopPropagation()}
+        />
+        <VaulDrawer.Content
+          ref={ref}
+          style={{ ...props.style, ...style }}
+          className={twMerge(
+            clsx(
+              contentVariants({
+                side: direction,
+                mode,
+                shape,
+                variant,
+                glass,
+                height:
+                  direction === "bottom" && hasSnapPoints ? "snap" : "auto",
+              }),
+              className,
+            ),
+          )}
+          {...props}
+        />
+      </SheetPortal>
+    );
+  },
+);
 SheetContent.displayName = "Sheet.Content";
 
 const SheetHeader = ({

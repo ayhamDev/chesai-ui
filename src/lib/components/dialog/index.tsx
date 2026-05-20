@@ -25,14 +25,14 @@ import {
   type ReactNode,
 } from "react";
 import ReactDOM from "react-dom";
-import { Card, type CardProps } from "../card";
+import { twMerge } from "tailwind-merge";
+import { cardVariants, type CardProps } from "../card";
 import {
   ElasticScrollArea,
   type ElasticScrollAreaProps,
 } from "../elastic-scroll-area";
 import { DURATION, EASING } from "../stack-router/transitions";
 import { Typography } from "../typography";
-import { Shape } from "flubber";
 
 // --- HELPERS ---
 const smShapeStyles = {
@@ -54,6 +54,7 @@ interface DialogContextProps {
   variant: DialogVariant;
   animation: DialogAnimationType;
   isLocked: boolean;
+  glass: boolean;
 }
 
 const DialogContext = createContext<DialogContextProps | null>(null);
@@ -80,6 +81,7 @@ export interface DialogProps {
   variant?: DialogVariant;
   animation?: DialogAnimationType;
   isLocked?: boolean;
+  glass?: boolean;
 }
 
 const Dialog: FC<DialogProps> = ({
@@ -89,6 +91,7 @@ const Dialog: FC<DialogProps> = ({
   variant = "basic",
   animation = "default",
   isLocked = false,
+  glass = false,
 }) => {
   const [, setTriggerRef] = useState<HTMLElement | null>(null);
   const titleId = useId();
@@ -104,6 +107,7 @@ const Dialog: FC<DialogProps> = ({
         variant,
         animation,
         isLocked,
+        glass,
       }}
     >
       {children}
@@ -249,7 +253,9 @@ export interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
   variant?: CardProps["variant"];
   padding?: CardProps["padding"];
   layout?: boolean | "size" | "position" | "preserve-aspect";
+  glass?: boolean;
 }
+
 const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
   (
     {
@@ -259,6 +265,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       variant = "primary",
       padding = "md",
       layout,
+      glass: glassProp,
       ...props
     },
     ref,
@@ -271,8 +278,11 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       variant: dialogVariant,
       animation,
       isLocked,
+      glass: glassContext,
     } = useDialogContext();
     const dragControls = useDragControls();
+
+    const glass = glassProp !== undefined ? glassProp : glassContext;
 
     // --- ESCAPE KEY LOCK ---
     useEffect(() => {
@@ -284,7 +294,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
         }
       };
       if (open && isLocked) {
-        window.addEventListener("keydown", handleKeyDown, true); // Capture phase
+        window.addEventListener("keydown", handleKeyDown, true);
       }
       return () => window.removeEventListener("keydown", handleKeyDown, true);
     }, [open, isLocked]);
@@ -317,8 +327,8 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
               active={open}
               focusTrapOptions={{
                 onDeactivate: () => !isLocked && onOpenChange(false),
-                clickOutsideDeactivates: !isLocked, // FIX: Prevent outside clicks from leaving trap when locked
-                escapeDeactivates: !isLocked, // FIX: Prevent Escape key
+                clickOutsideDeactivates: !isLocked,
+                escapeDeactivates: !isLocked,
                 allowOutsideClick: () => !isLocked,
               }}
             >
@@ -346,6 +356,13 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   onClick={() => !isLocked && onOpenChange(false)}
                   style={{ willChange: "opacity" }}
                 />
+
+                {/* 
+                  THE FIX: We map the Card variants directly onto the motion.div.
+                  Crucially, we add `!transition-none` to prevent standard CSS
+                  transitions from hijacking the Framer Motion animation loop.
+                  This ensures the glass effect is applied to the root rendered container.
+                */}
                 <motion.div
                   role="dialog"
                   layout={layout}
@@ -368,24 +385,41 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   dragConstraints={{ top: 0, bottom: 0 }}
                   dragElastic={{ top: 0, bottom: 1 }}
                   onDragEnd={handleDragEnd}
-                  className={clsx(
-                    "relative z-10 flex flex-col",
-                    isFullscreen
-                      ? [
-                          "w-full bg-surface-container-high shadow-2xl",
-                          "h-full sm:max-h-[90vh] sm:max-w-2xl",
-                          "rounded-none",
-                          smShapeStyles[shape as keyof typeof smShapeStyles],
-                          "overflow-hidden",
-                        ]
-                      : "w-full max-w-lg",
-                    className,
-                  )}
                   style={{
                     willChange: "transform, opacity, height, width",
-                    backfaceVisibility: "hidden",
                     touchAction: isFullscreen && !isLocked ? "none" : "auto",
                   }}
+                  className={twMerge(
+                    clsx(
+                      "relative z-10 flex flex-col shadow-2xl",
+                      isFullscreen
+                        ? [
+                            "w-full",
+                            "h-full sm:max-h-[90vh] sm:max-w-2xl",
+                            "rounded-none",
+                            smShapeStyles[shape as keyof typeof smShapeStyles],
+                            "overflow-hidden",
+                            glass
+                              ? "bg-surface-container-high/60 backdrop-blur-xl border border-white/20 dark:border-white/10"
+                              : "bg-surface-container-high",
+                          ]
+                        : [
+                            "w-full max-w-lg",
+                            // Pass cardVariants here directly
+                            cardVariants({
+                              shape,
+                              variant,
+                              padding,
+                              glass,
+                              elevation: "none",
+                              bordered: false,
+                            }),
+                            // Suppress the CSS transition applied by cardVariants
+                            "!transition-none",
+                          ],
+                      className,
+                    ),
+                  )}
                 >
                   {isFullscreen && (
                     <div className="absolute left-1/2 top-2 z-50 -translate-x-1/2 opacity-80 pointer-events-none">
@@ -425,14 +459,8 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                       </div>
                     </motion.div>
                   ) : (
-                    <Card
-                      shape={shape}
-                      variant={variant}
-                      padding={padding}
-                      className="relative h-full w-full shadow-2xl"
-                    >
-                      {children}
-                    </Card>
+                    // Since the motion.div IS now the card, we just render children directly!
+                    children
                   )}
                 </motion.div>
               </div>
@@ -478,7 +506,7 @@ const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row items-center justify-between",
           "px-6 py-4 sm:px-8 sm:py-6",
-          "bg-surface-container-high border-b border-outline-variant",
+          "bg-transparent border-b border-outline-variant",
           "touch-none select-none",
         ],
         props.className,
@@ -497,7 +525,7 @@ const DialogFooter = (props: HTMLAttributes<HTMLDivElement>) => {
         variant === "fullscreen" && [
           "flex flex-shrink-0 flex-row gap-3",
           "px-6 py-4 sm:px-8 sm:py-6",
-          "bg-surface-container-high border-t border-outline-variant",
+          "bg-transparent border-t border-outline-variant",
         ],
         props.className,
       )}
@@ -511,7 +539,6 @@ const DialogTitle = forwardRef<
   HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
   const { titleId } = useDialogContext();
-  // Changed variant="title-medium" to "headline-small"
   return (
     <Typography ref={ref} id={titleId} variant="headline-small" {...props} />
   );
@@ -522,7 +549,6 @@ const DialogDescription = forwardRef<
   HTMLAttributes<HTMLParagraphElement>
 >((props, ref) => {
   const { descriptionId } = useDialogContext();
-  // Changed variant="body-small" muted={true} to "body-medium" with variant class
   return (
     <Typography
       variant="body-medium"
@@ -577,6 +603,7 @@ const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
     );
   },
 );
+DialogBody.displayName = "DialogBody";
 
 export {
   Dialog,

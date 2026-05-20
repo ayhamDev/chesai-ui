@@ -45,6 +45,10 @@ const meta: Meta<StoryComponentProps> = {
       options: ["default", "material3"],
       description: "Controls the open/close animation style.",
     },
+    glass: {
+      control: "boolean",
+      description: "Applies a glassmorphism effect to the dialog background.",
+    },
     // The variant passed here is for the dialog structure, but DialogContent
     // wraps a Card. We typically rely on the Card's defaults, but if you want
     // to control the card variant in the story, you'd pass it to DialogContent directly in render.
@@ -70,6 +74,7 @@ export const Basic: Story = {
     variant: "basic",
     shape: "minimal",
     animation: "default",
+    glass: false,
   },
   parameters: { layout: "centered" },
   render: (args) => {
@@ -80,6 +85,7 @@ export const Basic: Story = {
         onOpenChange={setIsOpen}
         variant={args.variant}
         animation={args.animation}
+        glass={args.glass}
       >
         <DialogTrigger asChild>
           <Button>Open Basic Dialog</Button>
@@ -111,7 +117,12 @@ export const Basic: Story = {
 
 export const MaterialAnimation: Story = {
   name: "Material Design 3 Animation",
-  args: { variant: "basic", shape: "full", animation: "material3" },
+  args: {
+    variant: "basic",
+    shape: "full",
+    animation: "material3",
+    glass: true
+  },
   parameters: { layout: "centered" },
   render: (args) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -121,6 +132,7 @@ export const MaterialAnimation: Story = {
         onOpenChange={setIsOpen}
         variant={args.variant}
         animation={args.animation}
+        glass={args.glass}
       >
         <DialogTrigger asChild>
           <Button variant="secondary">Open Material Dialog</Button>

@@ -83,7 +83,10 @@ export const Shape: React.FC<ShapeProps> = ({
       className={className}
       {...props}
     >
-      <motion.path className={"will-change-transform transform-3d"} d={pathD} />
+      <motion.path
+        className={"will-change-transform will-change-contents transform-3d"}
+        d={pathD}
+      />
     </svg>
   );
 };

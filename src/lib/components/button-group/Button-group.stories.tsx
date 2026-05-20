@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Bold, Italic, Underline } from "lucide-react";
 import { Button } from "../button";
 import { IconButton } from "../icon-button";
-import { ButtonGroup } from "./index";
+import { ButtonGroup, ExpressiveButtonGroup } from "./index";
 
 const meta: Meta<typeof ButtonGroup> = {
   title: "Components/Buttons/ButtonGroup",
@@ -60,6 +60,11 @@ export const AllShapes: Story = {
         <Button variant="secondary">Sharp</Button>
         <Button variant="secondary">Sharp</Button>
       </ButtonGroup>
+      <ExpressiveButtonGroup>
+        <Button variant="primary">Expressive</Button>
+        <Button variant="primary">Expressive</Button>
+        <Button variant="primary">Expressive</Button>
+      </ExpressiveButtonGroup>
     </div>
   ),
 };
