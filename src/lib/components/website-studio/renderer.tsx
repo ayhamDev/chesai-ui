@@ -1,3 +1,4 @@
+// src/lib/components/website-studio/renderer.tsx
 import React, { ErrorInfo } from "react";
 import type {
   ComponentRegistry,
@@ -13,9 +14,6 @@ import { ScriptAndStyleInjector } from "./ScriptAndStyleInjector";
 // 1. HELPERS: CMS Interpolation & Event Binding
 // ============================================================================
 
-/**
- * Safely resolves dot-notation paths (e.g. "hero.title") against an object.
- */
 function getNestedValue(obj: any, path: string): any {
   return path
     .split(".")
@@ -25,10 +23,6 @@ function getNestedValue(obj: any, path: string): any {
     );
 }
 
-/**
- * Recursively scans component props. If a string contains {{ path.to.data }},
- * it resolves it against the provided CMS Data object.
- */
 function compileProps(
   props: Record<string, any>,
   cmsData: any,
@@ -39,7 +33,6 @@ function compileProps(
 
   for (const [key, value] of Object.entries(props)) {
     if (typeof value === "string" && value.includes("{{")) {
-      // Replace all instances of {{ ... }} in the string
       compiled[key] = value.replace(/\{\{([^}]+)\}\}/g, (_, path) => {
         const val = getNestedValue(cmsData, path.trim());
         return val !== undefined ? String(val) : "";
@@ -56,10 +49,6 @@ function compileProps(
   return compiled;
 }
 
-/**
- * Safely executes dynamic user actions inside a localized, wrapped evaluation environment.
- * Prevents dynamic exceptions from interrupting the core browser execution paths.
- */
 async function executeCustomCodeSafely(
   code: string,
   event: React.SyntheticEvent,
@@ -92,10 +81,6 @@ async function executeCustomCodeSafely(
   }
 }
 
-/**
- * Maps the JSON "events" array back into executable React event handlers (e.g. onClick).
- * Resolves standard actions from the registry or executes $customCode sandboxes.
- */
 function bindEvents(
   nodeEvents: Record<string, StudioEventAction[]> | undefined,
   actionRegistry: Record<string, Function> = {},
@@ -160,9 +145,6 @@ export interface ResponsiveValue {
   default?: string | number;
 }
 
-/**
- * Checks if a prop value matches the structured responsive definition.
- */
 export function isResponsiveValue(value: any): value is ResponsiveValue {
   return (
     value !== null &&
@@ -179,9 +161,6 @@ interface ProcessedStyles {
   styleTagContent: string | null;
 }
 
-/**
- * Extracts responsive values from props and generates corresponding breakpoint-specific style rules.
- */
 export function processResponsiveStyles(
   nodeId: string,
   props: Record<string, any>,
@@ -327,7 +306,6 @@ const RenderNode: React.FC<RenderNodeProps> = ({
 
   const compiledProps = compileProps(node.props, cmsData);
 
-  // Parse responsive definitions on stylistic layout fields
   const { cleanProps, styleTagContent } = processResponsiveStyles(
     node.id,
     compiledProps,
@@ -377,7 +355,8 @@ export const ThemeInjector: React.FC<{
 
   return (
     <div
-      className="website-studio-theme-root w-full h-full"
+      // ADDED: bg-background text-on-background and min-h-screen to ensure the canvas acts like a real web body
+      className="website-studio-theme-root w-full min-h-screen flex flex-col bg-background text-on-background"
       style={cssVariables}
       data-theme-mode={designSystem.mode}
     >
@@ -391,23 +370,14 @@ export const ThemeInjector: React.FC<{
 // ============================================================================
 
 export interface RendererProps {
-  /** The Component Registry mapping strings to React components */
   components: ComponentRegistry;
-  /** The JSON layout data to render (PageSchema or raw array of StudioNodes) */
   data: PageSchema | StudioNode[];
-  /** Optional Design System schema for dynamic CSS variable injection */
   designSystem?: DesignSystemSchema;
-  /** Optional external CMS data object to resolve {{ bindings }} */
   cms?: any;
-  /** Optional registry of safe, executable functions for user interactions */
   actions?: Record<string, Function>;
-  /** Optional custom API object injected into $customCode scripts */
   customApi?: any;
-  /** Optional head code (global script or stylesheets) injected at site load */
   globalHeadCode?: string;
-  /** Optional body code (global tracking pixels or scripts) injected at body end */
   globalBodyCode?: string;
-  /** Optional specific custom script configurations assigned only on dynamic pages */
   pageHeadCode?: string;
 }
 
@@ -426,7 +396,6 @@ export const Renderer: React.FC<RendererProps> = ({
 
   if (!nodes || nodes.length === 0) return null;
 
-  // Layer built-in action helper maps beneath user-defined override maps
   const consolidatedActions = {
     ...defaultActions,
     ...actions,
@@ -434,7 +403,6 @@ export const Renderer: React.FC<RendererProps> = ({
 
   const content = (
     <>
-      {/* Dynamic Script Injection Managers */}
       {globalHeadCode && (
         <ScriptAndStyleInjector html={globalHeadCode} target="head" />
       )}

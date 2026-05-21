@@ -1,5 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import React from "react";
+import {
+  Badge,
+  BarChart2,
+  Database,
+  Edit3,
+  Globe,
+  LayoutGrid,
+  PenTool,
+  Play,
+  Plus,
+  Settings,
+  Type,
+} from "lucide-react";
+import { useState } from "react";
 import { WebsiteStudio } from "./index";
 import type { ComponentRegistry, WebsiteSchema } from "./types";
 
@@ -12,7 +25,6 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
-import { ThemeProvider } from "../../context/ThemeProvider";
 import { AppBar } from "../appbar";
 import { Button } from "../button";
 import { Card } from "../card";
@@ -22,6 +34,7 @@ import { Flex } from "../layout/flex";
 import { Grid, GridItem } from "../layout/grid";
 import { toast, Toaster } from "../toast";
 import { Typography } from "../typography";
+import { IconButton } from "../icon-button";
 
 const meta: Meta<typeof WebsiteStudio.Renderer> = {
   title: "Website Studio/Chesai UI Landing Page",
@@ -641,19 +654,167 @@ const injectedStyles = `
 // STORY RENDERER
 // ============================================================================
 
-export const AdvancedEngineSimulation: Story = {
-  name: "Chesai UI Landing Page (with CMS & Interactivity)",
-  render: () => (
-    <div className="w-full bg-background text-on-background min-h-screen">
-      <Toaster />
-      <WebsiteStudio.Renderer
-        components={chesaiRegistry}
-        data={landingPageJSON.pages[0]}
-        cms={mockCMSData}
-        actions={mockCustomActions}
-        customApi={mockCustomAPI}
-        globalHeadCode={injectedStyles}
-      />
-    </div>
-  ),
+export const VisualBuilderMode: Story = {
+  name: "Website Studio Builder (Canvas)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Phase 1 & 2: React Flow infinite canvas implementation with Artboards, Iframe scaling, and CMS data bindings.",
+      },
+    },
+  },
+  render: () => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [isEditing, setIsEditing] = useState(true);
+
+    if (isEditing) {
+      return (
+        <WebsiteStudio.Builder
+          components={chesaiRegistry}
+          initialState={landingPageJSON}
+          cms={mockCMSData}
+          onExit={() => setIsEditing(false)}
+          // --- CUSTOM DEVELOPER HEADER PROPS ---
+          topBarLeft={
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                startIcon={<Plus size={16} />}
+                className="text-on-surface-variant hover:text-on-surface h-8 font-medium"
+              >
+                Insert
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                startIcon={<LayoutGrid size={16} />}
+                className="text-on-surface-variant hover:text-on-surface h-8 font-medium"
+              >
+                Layout
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                startIcon={<Type size={16} />}
+                className="text-on-surface-variant hover:text-on-surface h-8 font-medium"
+              >
+                Text
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                startIcon={<PenTool size={16} />}
+                className="text-on-surface-variant hover:text-on-surface h-8 font-medium"
+              >
+                Vector
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                startIcon={<Database size={16} />}
+                className="text-on-surface-variant hover:text-on-surface h-8 font-medium"
+              >
+                CMS
+              </Button>
+            </div>
+          }
+          topBarCenter={
+            <>
+              <Typography
+                variant="label-medium"
+                className="font-bold text-on-surface tracking-wide"
+              >
+                {landingPageJSON.projectSettings.name}
+              </Typography>
+              <span className="text-on-surface-variant opacity-40 text-sm">
+                &middot;
+              </span>
+              <Typography
+                variant="body-small"
+                className="text-on-surface-variant opacity-80"
+              >
+                draft.framer.app
+              </Typography>
+            </>
+          }
+          topBarRight={
+            <>
+              <div className="flex items-center gap-1 border-l border-outline-variant/30 pl-4 pr-2">
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
+                >
+                  <Globe size={16} />
+                </IconButton>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
+                >
+                  <Settings size={16} />
+                </IconButton>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
+                >
+                  <BarChart2 size={16} />
+                </IconButton>
+                <IconButton
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
+                >
+                  <Play size={16} className="ml-0.5 fill-current" />
+                </IconButton>
+              </div>
+              <Button
+                size="sm"
+                variant="primary"
+                className="h-8 px-5 font-bold shadow-none bg-orange-200 text-orange-900 hover:bg-orange-300"
+              >
+                Publish
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 px-4 font-bold shadow-none"
+                onClick={() => setIsEditing(false)}
+              >
+                Exit
+              </Button>
+            </>
+          }
+        />
+      );
+    }
+
+    return (
+      <div className="w-full bg-background text-on-background min-h-screen relative group/site">
+        <Toaster />
+        <div className="fixed bottom-8 right-8 z-[9999] opacity-0 group-hover/site:translate-y-0 group-hover/site:opacity-100 transition-all duration-300">
+          <Button
+            size="lg"
+            variant="primary"
+            className="shadow-2xl font-bold bg-orange-200 text-orange-900 hover:bg-orange-300"
+            startIcon={<Edit3 size={18} />}
+            onClick={() => setIsEditing(true)}
+          >
+            Edit in Website Studio
+          </Button>
+        </div>
+
+        <WebsiteStudio.Renderer
+          components={chesaiRegistry}
+          data={landingPageJSON.pages[0]}
+          cms={mockCMSData}
+          actions={mockCustomActions}
+          customApi={mockCustomAPI}
+        />
+      </div>
+    );
+  },
 };

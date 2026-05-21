@@ -1,5 +1,5 @@
 import { Renderer } from "./renderer";
-import { Builder } from "./builder";
+import { Builder } from "./builder"; // <-- Added
 import { ScriptAndStyleInjector } from "./ScriptAndStyleInjector";
 import { defaultActions } from "./defaultActions";
 
@@ -9,7 +9,7 @@ export { defaultActions } from "./defaultActions";
 
 export const WebsiteStudio = {
   Renderer,
-  Builder,
+  Builder, // <-- Added
   ScriptAndStyleInjector,
   defaultActions,
 };

@@ -121,67 +121,67 @@ export const cardVariants = cva(
         glass: true,
         variant: "primary",
         className:
-          "bg-surface-container-low/60 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "bg-surface-container-low/60 backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
       {
         glass: true,
         variant: "secondary",
         className:
-          "bg-surface-container-highest/60 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "bg-surface-container-highest/60 backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
       {
         glass: true,
         variant: "tertiary",
         className:
-          "bg-tertiary-container/60 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "bg-tertiary-container/60 backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
       {
         glass: true,
         variant: "high-contrast",
         className:
-          "bg-inverse-surface/60 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "bg-inverse-surface/60 backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
       {
         glass: true,
         variant: "ghost",
         className:
-          "backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
       {
         glass: true,
         variant: "surface",
         className:
-          "bg-surface/60 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "bg-surface/60 backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
       {
         glass: true,
         variant: "surface-container-lowest",
         className:
-          "bg-surface-container-lowest/60 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "bg-surface-container-lowest/60 backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
       {
         glass: true,
         variant: "surface-container-low",
         className:
-          "bg-surface-container-low/60 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "bg-surface-container-low/60 backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
       {
         glass: true,
         variant: "surface-container",
         className:
-          "bg-surface-container/60 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "bg-surface-container/60 backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
       {
         glass: true,
         variant: "surface-container-high",
         className:
-          "bg-surface-container-high/60 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "bg-surface-container-high/60 backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
       {
         glass: true,
         variant: "surface-container-highest",
         className:
-          "bg-surface-container-highest/60 backdrop-blur-xl shadow-xl border border-outline-variant/30",
+          "bg-surface-container-highest/60 backdrop-blur-2xl shadow-xl border border-outline-variant/30",
       },
     ],
     defaultVariants: {
