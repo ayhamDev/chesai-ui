@@ -2,7 +2,11 @@
 "use client";
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
+import {
+  $createLinkNode,
+  $isLinkNode,
+  TOGGLE_LINK_COMMAND,
+} from "@lexical/link";
 import {
   $isListNode,
   INSERT_ORDERED_LIST_COMMAND,
@@ -17,13 +21,16 @@ import {
 } from "@lexical/rich-text";
 import { $setBlocksType } from "@lexical/selection";
 import { $getNearestNodeOfType, mergeRegister } from "@lexical/utils";
-import { $createCodeNode } from "@lexical/code";
 import {
   $createParagraphNode,
+  $createTextNode,
+  $getNodeByKey,
   $getSelection,
   $isRangeSelection,
+  $getNearestNodeFromDOMNode,
   CAN_REDO_COMMAND,
-  CAN_UNDO_COMMAND,
+  CAN_REDO_COMMAND as CAN_UNDO_COMMAND,
+  CLICK_COMMAND,
   FORMAT_ELEMENT_COMMAND,
   FORMAT_TEXT_COMMAND,
   REDO_COMMAND,
@@ -36,14 +43,13 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
-  Code,
-  Heading1,
-  Heading2,
+  Code, // <-- Added Lucide Icon
+  Highlighter,
+  ChevronDown,
   Italic,
   Link as LinkIcon,
   List,
   ListOrdered,
-  Quote,
   Redo,
   Strikethrough,
   Underline,
@@ -51,10 +57,36 @@ import {
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { Toolbar } from "../../toolbar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../dropdown-menu";
+import { useDialog } from "../../../context/DialogProvider";
+import { Input } from "../../input";
+import { Switch } from "../../switch";
+import { $createCodeBlockNode } from "../nodes/CodeBlockNode";
 
-export const ToolbarPlugin = () => {
+const blockTypeToLabel: Record<string, string> = {
+  paragraph: "Normal Text",
+  h1: "Heading 1",
+  h2: "Heading 2",
+  h3: "Heading 3",
+  h4: "Heading 4",
+  h5: "Heading 5",
+  h6: "Heading 6",
+  quote: "Quote",
+};
+
+export const ToolbarPlugin = ({
+  shape = "minimal",
+}: {
+  shape?: "full" | "minimal" | "sharp";
+}) => {
   const [editor] = useLexicalComposerContext();
   const [activeEditor, setActiveEditor] = useState(editor);
+  const { show } = useDialog();
 
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -70,23 +102,21 @@ export const ToolbarPlugin = () => {
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
     if ($isRangeSelection(selection)) {
-      // Text Formats
       setIsBold(selection.hasFormat("bold"));
       setIsItalic(selection.hasFormat("italic"));
       setIsUnderline(selection.hasFormat("underline"));
       setIsStrikethrough(selection.hasFormat("strikethrough"));
       setIsCode(selection.hasFormat("code"));
 
-      // Alignment
-      // @ts-ignore
-      setAlign(selection.format || "left");
-
-      // Block Type
       const anchorNode = selection.anchor.getNode();
       const element =
         anchorNode.getKey() === "root"
           ? anchorNode
           : anchorNode.getTopLevelElementOrThrow();
+
+      const elementFormat = element.getFormatType();
+      setAlign(elementFormat || "left");
+
       const elementKey = element.getKey();
       const elementDOM = activeEditor.getElementByKey(elementKey);
 
@@ -105,7 +135,6 @@ export const ToolbarPlugin = () => {
         }
       }
 
-      // Links
       const node = selection.isBackward()
         ? selection.focus.getNode()
         : selection.anchor.getNode();
@@ -129,9 +158,9 @@ export const ToolbarPlugin = () => {
         1,
       ),
       editor.registerCommand(
-        CAN_UNDO_COMMAND,
-        (payload) => {
-          setCanUndo(payload);
+        UNDO_COMMAND,
+        () => {
+          setCanUndo(editor.hasNodes());
           return false;
         },
         1,
@@ -144,10 +173,82 @@ export const ToolbarPlugin = () => {
         },
         1,
       ),
-    );
-  }, [editor, updateToolbar]);
+      editor.registerCommand(
+        CLICK_COMMAND,
+        (payload: MouseEvent) => {
+          const target = payload.target as HTMLElement;
+          const linkElement = target.closest("a");
 
-  const formatHeading = (headingSize: "h1" | "h2") => {
+          if (linkElement) {
+            editor.read(() => {
+              let node = $getNearestNodeFromDOMNode(linkElement);
+              if (node && !$isLinkNode(node)) {
+                node = node.getParent();
+              }
+
+              if (node && $isLinkNode(node)) {
+                const url = node.getURL();
+                const text = node.getTextContent();
+                const key = node.getKey();
+
+                setTimeout(() => {
+                  let tempUrl = url;
+                  let tempText = text;
+
+                  show({
+                    title: "Edit Hyperlink",
+                    body: (
+                      <div className="flex flex-col gap-4 py-2">
+                        <Input
+                          label="Text to display"
+                          defaultValue={tempText}
+                          onChange={(e) => {
+                            tempText = e.target.value;
+                          }}
+                        />
+                        <Input
+                          label="URL"
+                          defaultValue={tempUrl}
+                          onChange={(e) => {
+                            tempUrl = e.target.value;
+                          }}
+                        />
+                      </div>
+                    ),
+                    confirmLabel: "Update",
+                    onConfirm: () => {
+                      editor.update(() => {
+                        const linkNode = $getNodeByKey(key);
+                        if (linkNode && $isLinkNode(linkNode)) {
+                          const textNode = $createTextNode(tempText);
+                          if (!tempUrl || tempUrl === "https://") {
+                            linkNode.replace(textNode);
+                            textNode.select(0, tempText.length);
+                          } else {
+                            const newLinkNode = $createLinkNode(tempUrl);
+                            newLinkNode.append(textNode);
+                            linkNode.replace(newLinkNode);
+                            textNode.select(0, tempText.length);
+                          }
+                        }
+                      });
+                    },
+                  });
+                }, 0);
+              }
+            });
+            return true;
+          }
+          return false;
+        },
+        1,
+      ),
+    );
+  }, [editor, updateToolbar, show]);
+
+  const formatHeading = (
+    headingSize: "h1" | "h2" | "h3" | "h4" | "h5" | "h6",
+  ) => {
     if (blockType !== headingSize) {
       editor.update(() => {
         const selection = $getSelection();
@@ -194,32 +295,151 @@ export const ToolbarPlugin = () => {
     } else formatParagraph();
   };
 
-  const formatCodeBlock = () => {
-    if (blockType !== "code") {
-      editor.update(() => {
-        const selection = $getSelection();
-        if ($isRangeSelection(selection)) {
-          $setBlocksType(selection, () => $createCodeNode());
-        }
-      });
-    } else formatParagraph();
-  };
+  const formatCodeBlock = useCallback(() => {
+    let fileName = "";
+    let hideToolbar = false;
+    let collapsible = false;
+
+    show({
+      title: "Insert Code Block",
+      body: (
+        <div className="flex flex-col gap-4 py-2">
+          <Input
+            label="File Name (Optional)"
+            placeholder="e.g. main.tsx"
+            onChange={(e) => {
+              fileName = e.target.value;
+            }}
+            autoFocus
+          />
+          <div className="flex items-center justify-between px-1">
+            <span className="text-sm font-medium">Hide Toolbar</span>
+            <Switch
+              onCheckedChange={(checked) => {
+                hideToolbar = checked;
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between px-1">
+            <span className="text-sm font-medium">Collapsible</span>
+            <Switch
+              onCheckedChange={(checked) => {
+                collapsible = checked;
+              }}
+            />
+          </div>
+        </div>
+      ),
+      confirmLabel: "Insert",
+      onConfirm: () => {
+        editor.update(() => {
+          const selection = $getSelection();
+          if ($isRangeSelection(selection)) {
+            const codeBlockNode = $createCodeBlockNode(
+              "// Write code here...",
+              "typescript",
+              fileName || undefined,
+              hideToolbar,
+              collapsible,
+            );
+            selection.insertNodes([codeBlockNode]);
+          }
+        });
+      },
+    });
+  }, [editor, show]);
 
   const insertLink = useCallback(() => {
-    if (!isLink) {
-      const url = window.prompt("Enter URL:", "https://");
-      if (url) editor.dispatchCommand(TOGGLE_LINK_COMMAND, url);
-    } else {
-      editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
-    }
-  }, [editor, isLink]);
+    let tempUrl = "https://";
+    let tempText = "";
+    let existingLinkKey: string | null = null;
+
+    editor.read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        tempText = selection.getTextContent();
+
+        if (isLink) {
+          const node = selection.isBackward()
+            ? selection.focus.getNode()
+            : selection.anchor.getNode();
+          const parent = node.getParent();
+          if ($isLinkNode(parent)) {
+            tempUrl = parent.getURL();
+            existingLinkKey = parent.getKey();
+          } else if ($isLinkNode(node)) {
+            tempUrl = node.getURL();
+            existingLinkKey = node.getKey();
+          }
+        }
+      }
+    });
+
+    show({
+      title: isLink ? "Edit Hyperlink" : "Insert Hyperlink",
+      body: (
+        <div className="flex flex-col gap-4 py-2">
+          <Input
+            label="Text to display"
+            placeholder="e.g. Click here"
+            defaultValue={tempText}
+            onChange={(e) => {
+              tempText = e.target.value;
+            }}
+            autoFocus
+          />
+          <Input
+            label="URL"
+            placeholder="https://example.com"
+            defaultValue={tempUrl}
+            onChange={(e) => {
+              tempUrl = e.target.value;
+            }}
+          />
+        </div>
+      ),
+      confirmLabel: isLink ? "Update" : "Insert",
+      onConfirm: () => {
+        editor.update(() => {
+          if (isLink && existingLinkKey) {
+            const linkNode = $getNodeByKey(existingLinkKey);
+            if (linkNode && $isLinkNode(linkNode)) {
+              const textNode = $createTextNode(tempText);
+              if (!tempUrl || tempUrl === "https://") {
+                linkNode.replace(textNode);
+                textNode.select(0, tempText.length);
+              } else {
+                const newLinkNode = $createLinkNode(tempUrl);
+                newLinkNode.append(textNode);
+                linkNode.replace(newLinkNode);
+                textNode.select(0, tempText.length);
+              }
+            }
+          } else {
+            const selection = $getSelection();
+            if ($isRangeSelection(selection)) {
+              if (tempText && tempText !== selection.getTextContent()) {
+                const linkNode = $createLinkNode(tempUrl);
+                const textNode = $createTextNode(tempText);
+                linkNode.append(textNode);
+                selection.insertNodes([linkNode]);
+                textNode.select(0, tempText.length);
+              } else {
+                editor.dispatchCommand(TOGGLE_LINK_COMMAND, tempUrl);
+              }
+            }
+          }
+        });
+      },
+    });
+  }, [editor, isLink, show]);
 
   return (
     <Toolbar
       variant="ghost"
       size="sm"
-      shape="sharp"
-      className="w-full flex-wrap border-b border-outline-variant/50 bg-surface-container/50 px-2 py-1.5"
+      shape={shape}
+      className="w-full flex-wrap border-b border-outline-variant/30 bg-surface-container/40 px-2 py-1.5"
     >
       <Toolbar.Button
         disabled={!canUndo}
@@ -237,6 +457,59 @@ export const ToolbarPlugin = () => {
       >
         <Redo className="w-4 h-4" />
       </Toolbar.Button>
+
+      <Toolbar.Separator />
+
+      <DropdownMenu shape={shape}>
+        <DropdownMenuTrigger asChild>
+          <Toolbar.Button
+            tooltip="Typography Styles"
+            className="w-fit justify-between gap-2 px-3 text-left font-medium"
+          >
+            <span className="truncate text-xs font-semibold">
+              {blockTypeToLabel[blockType] || "Normal Text"}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
+          </Toolbar.Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          className="w-52 max-h-80 overflow-y-auto"
+        >
+          <DropdownMenuItem onClick={formatParagraph}>
+            <span className="body-large !text-xs">Normal Text</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatHeading("h1")}>
+            <span className="display-small !text-base font-bold">
+              Heading 1
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatHeading("h2")}>
+            <span className="headline-large !text-sm font-semibold">
+              Heading 2
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatHeading("h3")}>
+            <span className="headline-medium !text-xs font-medium">
+              Heading 3
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatHeading("h4")}>
+            <span className="title-large !text-xs font-medium">Heading 4</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatHeading("h5")}>
+            <span className="title-medium !text-xs font-medium">Heading 5</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatHeading("h6")}>
+            <span className="title-small !text-xs font-medium">Heading 6</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={formatQuote}>
+            <span className="blockquote !text-xs italic pl-2 border-l-2 border-primary">
+              Quote
+            </span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Toolbar.Separator />
 
@@ -284,9 +557,9 @@ export const ToolbarPlugin = () => {
           value="code"
           data-state={isCode ? "on" : "off"}
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "code")}
-          tooltip="Inline Code"
+          tooltip="Highlight"
         >
-          <Code className="w-4 h-4" />
+          <Highlighter className="w-4 h-4" />
         </Toolbar.ToggleItem>
       </Toolbar.ToggleGroup>
 
@@ -301,6 +574,11 @@ export const ToolbarPlugin = () => {
         <LinkIcon className="w-4 h-4" />
       </Toolbar.Button>
 
+      {/* Dedicated Code Block Button */}
+      <Toolbar.Button onClick={formatCodeBlock} tooltip="Insert Code Block">
+        <Code className="w-4 h-4" />
+      </Toolbar.Button>
+
       <Toolbar.Separator />
 
       <Toolbar.ToggleGroup
@@ -308,20 +586,6 @@ export const ToolbarPlugin = () => {
         value={blockType}
         onValueChange={() => {}}
       >
-        <Toolbar.ToggleItem
-          value="h1"
-          onClick={() => formatHeading("h1")}
-          tooltip="Heading 1"
-        >
-          <Heading1 className="w-4 h-4" />
-        </Toolbar.ToggleItem>
-        <Toolbar.ToggleItem
-          value="h2"
-          onClick={() => formatHeading("h2")}
-          tooltip="Heading 2"
-        >
-          <Heading2 className="w-4 h-4" />
-        </Toolbar.ToggleItem>
         <Toolbar.ToggleItem
           value="bullet"
           onClick={formatBulletList}
@@ -335,20 +599,6 @@ export const ToolbarPlugin = () => {
           tooltip="Numbered List"
         >
           <ListOrdered className="w-4 h-4" />
-        </Toolbar.ToggleItem>
-        <Toolbar.ToggleItem
-          value="quote"
-          onClick={formatQuote}
-          tooltip="Quote Block"
-        >
-          <Quote className="w-4 h-4" />
-        </Toolbar.ToggleItem>
-        <Toolbar.ToggleItem
-          value="code"
-          onClick={formatCodeBlock}
-          tooltip="Code Block"
-        >
-          <Code className="w-4 h-4" />
         </Toolbar.ToggleItem>
       </Toolbar.ToggleGroup>
 

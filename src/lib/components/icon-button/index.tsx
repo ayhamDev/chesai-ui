@@ -1,8 +1,9 @@
 import { cva } from "class-variance-authority";
+import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import React, { useState } from "react";
 import useRipple from "use-ripple-hook";
+import { LoadingIndicator } from "../loadingIndicator";
 
 export const iconButtonVariants = cva(
   "font-semibold select-none focus-visible:outline-none min-w-max transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden p-0 z-0",
@@ -31,6 +32,7 @@ export const iconButtonVariants = cva(
         sm: "h-10 w-10",
         md: "h-12 w-12",
         lg: "h-14 w-14",
+        xl: "h-20 w-20 [&_svg]:size-8",
       },
       shape: {
         full: "rounded-full",
@@ -38,7 +40,7 @@ export const iconButtonVariants = cva(
         sharp: "rounded-none",
       },
       isLoading: {
-        true: "cursor-wait",
+        true: "cursor-wait pointer-events-none !opacity-100",
       },
     },
     defaultVariants: {
@@ -58,7 +60,7 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
     | "destructive"
     | "ghost"
     | "link";
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   shape?: "full" | "minimal" | "sharp";
   isLoading?: boolean;
 }
@@ -68,7 +70,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     {
       className,
       variant = "primary",
-      size,
+      size = "md",
       shape,
       children,
       disabled,
@@ -83,8 +85,8 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
 
     const rippleColor =
       variant === "primary" || variant === "destructive"
-        ? "var(--color-ripple-dark)"
-        : "var(--color-ripple-light)";
+        ? "var(--color-ripple-light)"
+        : "var(--color-ripple-dark)";
 
     const [, event] = useRipple({
       ref: rippleRef,
@@ -98,6 +100,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       sm: "h-5 w-5",
       md: "h-6 w-6",
       lg: "h-8 w-8",
+      xl: "h-12 w-12",
     };
 
     const [isPressed, setIsPressed] = useState(false);
@@ -122,7 +125,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         disabled={disabled || isLoading}
         {...props}
       >
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="sync" initial={false}>
           {isLoading ? (
             <motion.div
               key="spinner"
@@ -130,9 +133,17 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5 }}
               transition={{ duration: 0.2 }}
+              className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
             >
-              <Loader2
-                className={`animate-spin ${loaderSizeMap[size || "md"]}`}
+              <LoadingIndicator
+                variant="material-morph"
+                className={clsx(
+                  "p-1",
+                  loaderSizeMap[size],
+                  variant === "primary" || variant === "destructive"
+                    ? "text-on-primary"
+                    : "text-primary",
+                )}
               />
             </motion.div>
           ) : (

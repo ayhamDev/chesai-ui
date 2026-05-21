@@ -1,7 +1,7 @@
 // src/lib/components/elastic-scroll-area/elastic-scroll-area.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Compass, Home, Library, Menu, Search } from "lucide-react";
+import { Compass, Home, Library, Menu, Search, Send } from "lucide-react";
 import React, { useRef, useState } from "react";
 import { AppBar } from "../appbar";
 import { BottomTabs } from "../bottom-tabs";
@@ -29,6 +29,7 @@ const meta: Meta<typeof ElasticScrollArea> = {
       options: ["auto", "always", "scroll", "hidden", "visible"],
     },
     pullToRefresh: { control: "boolean" },
+    dimmingEdges: { control: "boolean" },
   },
 };
 
@@ -60,7 +61,7 @@ const RenderWithAppBarAndBottomTabs = ({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="w-96 h-[600px] rounded-2xl border border-outline-variant shadow-lg overflow-hidden relative bg-graphite-background">
+    <div className="w-96 h-[600px] rounded-2xl border border-outline-variant shadow-lg overflow-hidden relative bg-graphite-background text-white">
       <AppBar
         variant="medium"
         title="Explore"
@@ -90,7 +91,6 @@ const RenderWithAppBarAndBottomTabs = ({
         onScrollDown={() => setIsTabsVisible(false)}
         onScrollUp={() => setIsTabsVisible(true)}
       >
-        {/* pt-[112px] (medium AppBar height) + ~70px (bottomContent height) = pt-[182px] */}
         <div className="pt-[182px]">
           <DummyContent />
         </div>
@@ -140,6 +140,7 @@ export const WithAppBarAndBottomTabs: Story = {
     orientation: "vertical",
     elasticity: true,
     pullToRefresh: true,
+    dimmingEdges: true,
     onRefresh: simulateRefresh,
   },
   render: (args) => (
@@ -147,4 +148,148 @@ export const WithAppBarAndBottomTabs: Story = {
       <RenderWithAppBarAndBottomTabs elasticScrollArgs={args} />
     </ShallowRouter>
   ),
+};
+
+// --- ADDITIONAL EXAMPLES ---
+
+export const HorizontalTags: Story = {
+  name: "2. Horizontal Dimming Tags",
+  args: {
+    orientation: "horizontal",
+    elasticity: true,
+    dimmingEdges: true,
+    scrollbarVisibility: "hidden",
+  },
+  render: (args) => {
+    const categories = [
+      "All Topics",
+      "Design Systems",
+      "React Hooks",
+      "Animations",
+      "Tailwind CSS",
+      "Framer Motion",
+      "TypeScript",
+      "Web Accessibility",
+      "Next.js",
+      "State Management",
+    ];
+
+    return (
+      <div className="w-96 p-4 rounded-xl border border-outline-variant bg-graphite-background shadow-md">
+        <Typography variant="title-small" className="mb-3 text-white">
+          Browse Categories
+        </Typography>
+        <ElasticScrollArea {...args} className="w-full h-12">
+          <div className="flex gap-2 pr-6">
+            {categories.map((category) => (
+              <button
+                key={category}
+                className="whitespace-nowrap rounded-full bg-graphite-secondary px-4 py-2 text-xs font-medium text-white hover:bg-opacity-80 transition"
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </ElasticScrollArea>
+      </div>
+    );
+  },
+};
+
+export const ChatLayout: Story = {
+  name: "3. Chat Window (Dimming Edges)",
+  args: {
+    orientation: "vertical",
+    elasticity: true,
+    dimmingEdges: true,
+    scrollbarVisibility: "scroll",
+  },
+  render: (args) => {
+    const initialMessages = [
+      {
+        id: 1,
+        text: "Hey! How is the new elastic scroll area working?",
+        sender: "other",
+      },
+      {
+        id: 2,
+        text: "It's working nicely, the bounce feedback is smooth.",
+        sender: "me",
+      },
+      {
+        id: 3,
+        text: "Did you manage to add the custom dimming edges?",
+        sender: "other",
+      },
+      {
+        id: 4,
+        text: "Yes, they automatically fade out near the boundaries using dynamic CSS masks.",
+        sender: "me",
+      },
+      {
+        id: 5,
+        text: "Awesome! That makes it look highly polished.",
+        sender: "other",
+      },
+      {
+        id: 6,
+        text: "Check out this simulated chat feed to test the scrolling transitions.",
+        sender: "other",
+      },
+      {
+        id: 7,
+        text: "Adding custom indicators is fully supported too.",
+        sender: "me",
+      },
+    ];
+
+    return (
+      <div className="w-80 h-[450px] rounded-2xl border border-outline-variant bg-graphite-background shadow-lg overflow-hidden flex flex-col">
+        <div className="p-4 border-b border-outline-variant bg-graphite-secondary flex items-center justify-between">
+          <div>
+            <Typography variant="body-medium" className="font-bold text-white">
+              Jane Doe
+            </Typography>
+            <Typography variant="body-small" className="text-gray-400">
+              Online
+            </Typography>
+          </div>
+        </div>
+
+        <div className="flex-1 min-h-0 relative">
+          <ElasticScrollArea {...args}>
+            <div className="p-4 space-y-4">
+              {initialMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[75%] p-3 rounded-2xl text-xs leading-relaxed ${
+                      msg.sender === "me"
+                        ? "bg-blue-600 text-white rounded-br-none"
+                        : "bg-graphite-secondary text-white rounded-bl-none"
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ElasticScrollArea>
+        </div>
+
+        <div className="p-3 bg-graphite-secondary border-t border-outline-variant flex gap-2">
+          <input
+            type="text"
+            placeholder="Type a message..."
+            className="flex-1 bg-graphite-background text-xs rounded-full px-4 outline-none border border-outline-variant text-white"
+          />
+          <button className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 transition">
+            <Send size={14} />
+          </button>
+        </div>
+      </div>
+    );
+  },
 };

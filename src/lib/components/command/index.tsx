@@ -7,14 +7,23 @@ import React from "react";
 import { clsx } from "clsx";
 import { Dialog, DialogContent } from "../dialog";
 
+export interface CommandProps extends React.ComponentPropsWithoutRef<
+  typeof CommandPrimitive
+> {
+  glass?: boolean;
+}
+
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive>
->(({ className, ...props }, ref) => (
+  CommandProps
+>(({ className, glass = false, ...props }, ref) => (
   <CommandPrimitive
     ref={ref}
     className={clsx(
-      "flex h-full w-full flex-col overflow-hidden rounded-2xl bg-surface-container text-on-surface",
+      "flex h-full w-full flex-col overflow-hidden rounded-2xl text-on-surface transition-all duration-300",
+      glass
+        ? "bg-surface-container/60 backdrop-blur-xl border border-outline-variant/30"
+        : "bg-surface-container",
       className,
     )}
     {...props}
@@ -26,11 +35,16 @@ interface CommandDialogProps extends React.ComponentPropsWithoutRef<
   typeof Dialog
 > {
   children: React.ReactNode;
+  glass?: boolean;
 }
 
-const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
+const CommandDialog = ({
+  children,
+  glass = false,
+  ...props
+}: CommandDialogProps) => {
   return (
-    <Dialog {...props} variant="basic" animation="material3">
+    <Dialog {...props} glass={glass} variant="basic" animation="material3">
       {/* 
         We use padding="none" and shape="minimal" so the Command palette 
         fills the dialog entirely without double-padding.
@@ -40,7 +54,7 @@ const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
         shape="minimal"
         padding="none"
       >
-        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-on-surface-variant [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-14 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 bg-transparent">
+        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-on-surface-variant [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-14 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 bg-transparent border-none">
           {children}
         </Command>
       </DialogContent>
@@ -157,7 +171,6 @@ const CommandShortcut = ({
 };
 CommandShortcut.displayName = "CommandShortcut";
 
-// --- NEW: CommandFooter ---
 const CommandFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>

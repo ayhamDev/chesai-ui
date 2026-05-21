@@ -5,7 +5,7 @@ export const lexicalTheme: EditorThemeClasses = {
   ltr: 'text-left',
   rtl: 'text-right',
   paragraph: 'body-large mb-4 text-on-surface',
-  quote: 'blockquote',
+  quote: 'body-large border-l-4 border-primary pl-4 italic my-4 opacity-80',
   heading: {
     h1: 'display-small mb-4 mt-6 text-on-surface',
     h2: 'headline-large mb-4 mt-5 text-on-surface',
@@ -34,7 +34,8 @@ export const lexicalTheme: EditorThemeClasses = {
     underline: 'underline',
     strikethrough: 'line-through',
     underlineStrikethrough: 'underline line-through',
-    code: 'bg-surface-container-highest px-1.5 py-0.5 rounded-md font-mono text-sm text-on-surface',
+    // Removed inline-block and fixed size to fix selection bug and text scaling
+    code: 'bg-secondary-container text-on-secondary-container rounded-md  px-1.5 py-0.5 mx-0.5',
   },
-  code: 'bg-surface-container-highest p-4 rounded-xl font-mono text-sm block my-4 overflow-x-auto text-on-surface shadow-inner',
+  code: 'hidden',
 }

@@ -10,23 +10,20 @@ import { Typography } from "../typography";
 
 // --- CVA Variants ---
 export const navigationMenuTriggerStyle = cva(
-  // Added z-0 and bloom effect
   "group inline-flex h-10 w-max items-center justify-center rounded-lg bg-transparent px-4 py-2 text-sm font-semibold transition-colors focus:bg-graphite-secondary focus:outline-none focus:ring-2 focus:ring-graphite-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-graphite-secondary/50 data-[state=open]:bg-graphite-secondary/50 relative z-0 overflow-hidden " +
     "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out " +
     "hover:after:opacity-100 hover:after:scale-100",
 );
 
-// --- NEW: CVA for ContentItem ---
 const contentItemVariants = cva([
   "relative block w-full select-none space-y-1 rounded-lg p-3 text-left leading-none no-underline outline-none transition-colors duration-150 ease-in-out overflow-hidden z-0",
   "focus:bg-graphite-secondary",
   "focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-card",
-  // Bloom effect
   "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
   "hover:after:opacity-100 hover:after:scale-100",
 ]);
 
-// --- Core Components (Unchanged) ---
+// --- Core Components ---
 const NavigationMenuRoot = React.forwardRef<
   React.ElementRef<typeof RadixNavigationMenu.Root>,
   React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Root>
@@ -83,7 +80,7 @@ const NavigationMenuTrigger = React.forwardRef<
 ));
 NavigationMenuTrigger.displayName = RadixNavigationMenu.Trigger.displayName;
 
-// --- Content (Unchanged) ---
+// --- Content ---
 const NavigationMenuContent = React.forwardRef<
   React.ElementRef<typeof RadixNavigationMenu.Content>,
   React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Content>
@@ -163,6 +160,8 @@ const NavigationMenuContentItem = React.forwardRef<
       duration: 400,
     });
 
+    const hasDescription = !!children;
+
     return (
       <li>
         <NavigationMenuLink
@@ -174,13 +173,23 @@ const NavigationMenuContentItem = React.forwardRef<
           className={contentItemVariants({ className })}
           {...props}
         >
-          <div className="flex items-start gap-4 relative z-10">
+          <div
+            className={clsx(
+              "flex gap-4 relative z-10 w-full",
+              hasDescription ? "items-start" : "items-center",
+            )}
+          >
             {startIcon && (
-              <div className="mt-0.5 text-graphite-primary flex-shrink-0">
+              <div
+                className={clsx(
+                  "text-graphite-primary flex-shrink-0 flex items-center justify-center",
+                  hasDescription && "mt-0.5",
+                )}
+              >
                 {startIcon}
               </div>
             )}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center">
                 <Typography
                   variant="body-small"
@@ -194,7 +203,7 @@ const NavigationMenuContentItem = React.forwardRef<
                 <Typography
                   variant="body-small"
                   muted={true}
-                  className="!text-sm !leading-snug line-clamp-2"
+                  className="!text-sm !leading-snug line-clamp-2 mt-1"
                 >
                   {children}
                 </Typography>
@@ -208,7 +217,7 @@ const NavigationMenuContentItem = React.forwardRef<
 );
 NavigationMenuContentItem.displayName = "NavigationMenu.ContentItem";
 
-// --- Viewport & Indicator (Unchanged) ---
+// --- Viewport & Indicator ---
 const NavigationMenuViewport = React.forwardRef<
   React.ElementRef<typeof RadixNavigationMenu.Viewport>,
   React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Viewport>
@@ -216,7 +225,7 @@ const NavigationMenuViewport = React.forwardRef<
   <div className={clsx("absolute left-0 top-full flex justify-center")}>
     <RadixNavigationMenu.Viewport
       className={clsx(
-        "origin-top-center relative mt-2 h-(--radix-navigation-menu-viewport-height) w-full overflow-hidden rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-lg data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out md:w-(--radix-navigation-menu-viewport-width)",
+        "origin-top-center relative mt-2 h-(--radix-navigation-menu-viewport-height) w-full overflow-hidden  rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-lg data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out md:w-(--radix-navigation-menu-viewport-width)",
         className,
       )}
       ref={ref}

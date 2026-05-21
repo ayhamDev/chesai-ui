@@ -32,7 +32,7 @@ export const LoadingIndicator = React.forwardRef<
           return (
             <div
               ref={ref}
-              className={clsx(baseClasses, "w-12 h-12 text-graphite-primary")}
+              className={clsx("w-12 h-12 text-graphite-primary", baseClasses)}
               role="progressbar"
               {...props}
             >
@@ -48,7 +48,7 @@ export const LoadingIndicator = React.forwardRef<
           return (
             <div
               ref={ref}
-              className={clsx(baseClasses, "w-12 h-12 text-graphite-primary")}
+              className={clsx("w-12 h-12 text-graphite-primary", baseClasses)}
               role="progressbar"
               {...props}
             >

@@ -14,11 +14,13 @@ type ContextMenuSize = "sm" | "md" | "lg";
 interface ContextMenuContextProps {
   shape: ContextMenuShape;
   size: ContextMenuSize;
+  glass: boolean;
 }
 
 const ContextMenuContext = createContext<ContextMenuContextProps>({
   shape: "minimal",
   size: "md",
+  glass: false,
 });
 
 const useContextMenuContext = () => useContext(ContextMenuContext);
@@ -26,7 +28,7 @@ const useContextMenuContext = () => useContext(ContextMenuContext);
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-outline-variant bg-surface-container text-on-surface p-1.5",
+    "border border-outline-variant text-on-surface p-1.5",
     "shadow-md",
   ],
   {
@@ -36,9 +38,14 @@ const contentVariants = cva(
         minimal: "rounded-xl",
         sharp: "rounded-none",
       },
+      glass: {
+        true: "bg-surface-container/60 backdrop-blur-xl border-outline-variant/30",
+        false: "bg-surface-container",
+      },
     },
     defaultVariants: {
       shape: "minimal",
+      glass: false,
     },
   },
 );
@@ -76,15 +83,17 @@ const itemVariants = cva(
 interface ContextMenuProps extends RadixContextMenu.ContextMenuProps {
   shape?: ContextMenuShape;
   size?: ContextMenuSize;
+  glass?: boolean;
 }
 
 const ContextMenuRoot: React.FC<ContextMenuProps> = ({
   shape = "minimal",
   size = "md",
+  glass = false,
   ...props
 }) => {
   return (
-    <ContextMenuContext.Provider value={{ shape, size }}>
+    <ContextMenuContext.Provider value={{ shape, size, glass }}>
       <RadixContextMenu.Root {...props} />
     </ContextMenuContext.Provider>
   );
@@ -100,13 +109,13 @@ const ContextMenuContent = React.forwardRef<
   React.ElementRef<typeof RadixContextMenu.Content>,
   React.ComponentPropsWithoutRef<typeof RadixContextMenu.Content>
 >(({ className, ...props }, ref) => {
-  const { shape } = useContextMenuContext();
+  const { shape, glass } = useContextMenuContext();
   return (
     <RadixContextMenu.Portal>
       <RadixContextMenu.Content
         ref={ref}
         className={clsx(
-          contentVariants({ shape }),
+          contentVariants({ shape, glass }),
           "data-[state=open]:animate-menu-enter",
           "data-[state=closed]:animate-menu-exit",
           "data-[side=top]:origin-bottom",
@@ -257,12 +266,12 @@ const ContextMenuSubContent = React.forwardRef<
   React.ElementRef<typeof RadixContextMenu.SubContent>,
   React.ComponentPropsWithoutRef<typeof RadixContextMenu.SubContent>
 >(({ className, ...props }, ref) => {
-  const { shape } = useContextMenuContext();
+  const { shape, glass } = useContextMenuContext();
   return (
     <RadixContextMenu.SubContent
       ref={ref}
       className={clsx(
-        contentVariants({ shape }),
+        contentVariants({ shape, glass }),
         "data-[state=open]:data-[side=right]:animate-submenu-enter-right",
         "data-[state=closed]:data-[side=right]:animate-submenu-exit-right",
         "data-[state=open]:data-[side=left]:animate-submenu-enter-left",

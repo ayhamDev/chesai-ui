@@ -351,7 +351,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   }
                   className={clsx(
                     "absolute inset-0",
-                    isMD3 && !isFullscreen ? "bg-black/30" : "bg-black/50",
+                    isMD3 && !isFullscreen ? "bg-black/30" : "bg-black/30",
                   )}
                   onClick={() => !isLocked && onOpenChange(false)}
                   style={{ willChange: "opacity" }}
@@ -400,7 +400,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                             smShapeStyles[shape as keyof typeof smShapeStyles],
                             "overflow-hidden",
                             glass
-                              ? "bg-surface-container-high/60 backdrop-blur-xl border border-white/20 dark:border-white/10"
+                              ? "bg-surface-container-high/6 backdrop-blur-xl border border-white/20 dark:border-white/10"
                               : "bg-surface-container-high",
                           ]
                         : [

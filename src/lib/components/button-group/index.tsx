@@ -1,8 +1,6 @@
 import { clsx } from "clsx";
 import React from "react";
 
-export * from "./expressive-button-group";
-
 // Explicitly define the shape type for clarity and type safety
 type ButtonShape = "full" | "minimal" | "sharp";
 

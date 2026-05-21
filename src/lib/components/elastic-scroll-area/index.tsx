@@ -3,14 +3,12 @@
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import { clsx } from "clsx";
 import {
-  AnimatePresence,
   type MotionValue,
   animate,
   motion,
   useMotionValue,
   useTransform,
 } from "framer-motion";
-import { ArrowDown, Loader2 } from "lucide-react";
 import {
   type ComponentPropsWithoutRef,
   type ComponentType,
@@ -53,6 +51,7 @@ export interface ElasticScrollAreaProps extends ComponentPropsWithoutRef<
   onScrollUp?: () => void;
   onScrollDown?: () => void;
   viewportClassName?: string;
+  dimmingEdges?: boolean;
 }
 
 // --- DEFAULT REFRESH INDICATOR ---
@@ -109,7 +108,6 @@ const useElasticAndRefresh = (
   const isOverscrolling = useRef(false);
   const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // New refs to track recovery state and explicitly stop animations
   const isRecovering = useRef(false);
   const recoveryAnimation = useRef<any>(null);
 
@@ -172,7 +170,7 @@ const useElasticAndRefresh = (
       const delta = isVertical ? event.deltaY : event.deltaX;
 
       const isAtStart = scrollPos <= 0;
-      const isAtEnd = scrollPos >= scrollDim - clientDim - 1; // Tolerance
+      const isAtEnd = scrollPos >= scrollDim - clientDim - 1;
       const isScrollingTowardsStart = delta < 0;
       const isScrollingTowardsEnd = delta > 0;
 
@@ -180,17 +178,13 @@ const useElasticAndRefresh = (
         (isAtStart && isScrollingTowardsStart) ||
         (isAtEnd && isScrollingTowardsEnd)
       ) {
-        // 1. Ignore small sub-pixel events (momentum tail) so the 50ms timeout can fire.
         if (Math.abs(delta) < 4) {
-          // Keep preventing default if we are visually displaced, avoiding native page jump
           if (Math.abs(motionValue.get()) > 0 && event.cancelable) {
             event.preventDefault();
           }
           return;
         }
 
-        // 2. If we receive a solid swipe (delta >= 4) while bouncing back,
-        // it means the user took control again. Interrupt the recovery animation!
         if (isRecovering.current) {
           isRecovering.current = false;
           if (recoveryAnimation.current) recoveryAnimation.current.stop();
@@ -223,7 +217,6 @@ const useElasticAndRefresh = (
     const handleTouchStart = (event: TouchEvent) => {
       if (isRefreshing || event.touches.length !== 1) return;
 
-      // Interrupt bounce-back if screen is physically touched
       if (isRecovering.current) {
         isRecovering.current = false;
         if (recoveryAnimation.current) recoveryAnimation.current.stop();
@@ -261,12 +254,10 @@ const useElasticAndRefresh = (
       const isPullingTowardsEnd = delta < 0;
       const isPullingTowardsStart = delta > 0;
 
-      // Only engage elastic if we are at boundary AND pulling away from it
       if (
         (isAtStart && isPullingTowardsStart) ||
         (isAtEnd && isPullingTowardsEnd)
       ) {
-        // Allow slight deadzone before engaging touch (delta is absolute distance here)
         if (Math.abs(delta) > 5 || isOverscrolling.current) {
           isOverscrolling.current = true;
           const dampedDelta = delta * 0.5;
@@ -349,6 +340,7 @@ const ElasticScrollAreaRoot = forwardRef<
       onScrollUp,
       onScrollDown,
       viewportClassName,
+      dimmingEdges = false,
       ...props
     },
     ref,
@@ -376,6 +368,51 @@ const ElasticScrollAreaRoot = forwardRef<
       },
     );
 
+    // Dynamic Edge Dimming State
+    const [edges, setEdges] = useState({
+      top: false,
+      bottom: false,
+      left: false,
+      right: false,
+    });
+
+    const updateEdgeStates = useCallback(() => {
+      const viewport = localViewportRef.current;
+      if (!viewport || !dimmingEdges) return;
+
+      const {
+        scrollTop,
+        scrollHeight,
+        clientHeight,
+        scrollLeft,
+        scrollWidth,
+        clientWidth,
+      } = viewport;
+
+      const hasScrollY = scrollHeight > clientHeight;
+      const hasScrollX = scrollWidth > clientWidth;
+
+      setEdges({
+        top: hasScrollY && scrollTop > 4,
+        bottom: hasScrollY && scrollTop < scrollHeight - clientHeight - 4,
+        left: hasScrollX && scrollLeft > 4,
+        right: hasScrollX && scrollLeft < scrollWidth - clientWidth - 4,
+      });
+    }, [dimmingEdges]);
+
+    useEffect(() => {
+      const viewport = localViewportRef.current;
+      if (!viewport || !dimmingEdges) return;
+
+      updateEdgeStates();
+      const observer = new ResizeObserver(updateEdgeStates);
+      observer.observe(viewport);
+      if (viewport.firstElementChild) {
+        observer.observe(viewport.firstElementChild);
+      }
+      return () => observer.disconnect();
+    }, [dimmingEdges, updateEdgeStates]);
+
     const pullProgress = useTransform(motionValue, (v) => (v > 0 ? v : 0));
     const indicatorOpacity = useTransform(
       pullProgress,
@@ -386,6 +423,7 @@ const ElasticScrollAreaRoot = forwardRef<
     const lastScrollTop = useRef(0);
     const handleScroll = useCallback(
       (event: React.UIEvent<HTMLDivElement>) => {
+        updateEdgeStates();
         const currentScrollTop = event.currentTarget.scrollTop;
         const scrollDelta = currentScrollTop - lastScrollTop.current;
 
@@ -399,8 +437,34 @@ const ElasticScrollAreaRoot = forwardRef<
 
         lastScrollTop.current = Math.max(0, currentScrollTop);
       },
-      [onScrollDown, onScrollUp],
+      [onScrollDown, onScrollUp, updateEdgeStates],
     );
+
+    // Generate dynamic gradients for dynamic edge dimming using CSS mask-image
+    const getMaskStyle = () => {
+      if (!dimmingEdges) return undefined;
+      const direction = isVertical ? "to bottom" : "to right";
+      const startGradient = isVertical
+        ? edges.top
+          ? "transparent, rgba(0,0,0,1) 24px"
+          : "rgba(0,0,0,1)"
+        : edges.left
+          ? "transparent, rgba(0,0,0,1) 24px"
+          : "rgba(0,0,0,1)";
+      const endGradient = isVertical
+        ? edges.bottom
+          ? "rgba(0,0,0,1) calc(100% - 24px), transparent"
+          : "rgba(0,0,0,1)"
+        : edges.right
+          ? "rgba(0,0,0,1) calc(100% - 24px), transparent"
+          : "rgba(0,0,0,1)";
+
+      const mask = `linear-gradient(${direction}, ${startGradient}, ${endGradient})`;
+      return {
+        WebkitMaskImage: mask,
+        maskImage: mask,
+      };
+    };
 
     return (
       <ScrollAreaPrimitive.Root
@@ -427,7 +491,10 @@ const ElasticScrollAreaRoot = forwardRef<
         )}
 
         <motion.div
-          style={{ [isVertical ? "y" : "x"]: motionValue }}
+          style={{
+            [isVertical ? "y" : "x"]: motionValue,
+            ...getMaskStyle(),
+          }}
           className="h-full w-full"
         >
           <ScrollAreaPrimitive.Viewport
@@ -437,7 +504,7 @@ const ElasticScrollAreaRoot = forwardRef<
               viewportClassName,
             )}
             style={{ touchAction: isVertical ? "pan-y" : "pan-x" }}
-            onScroll={onScrollUp || onScrollDown ? handleScroll : undefined}
+            onScroll={handleScroll}
           >
             {children}
           </ScrollAreaPrimitive.Viewport>

@@ -6,6 +6,7 @@ import { TooltipProvider } from "../components/tooltip";
 import { ActionSheetProvider } from "./ActionSheetProvider";
 import { ThemeProvider } from "./ThemeProvider";
 import { LayoutProvider, type Direction } from "./layout-context";
+import { DialogProvider } from "./DialogProvider";
 
 type Theme = "dark" | "light" | "system";
 type Contrast = "standard" | "medium" | "high";
@@ -52,9 +53,11 @@ export function ChesaiProvider({
       >
         <TooltipProvider>
           <ActionSheetProvider>
-            {/* Added DialogProvider inside ActionSheetProvider */}
-            {children}
-            <Toaster {...toasterProps} />
+            <DialogProvider>
+              {/* Added DialogProvider inside ActionSheetProvider */}
+              {children}
+              <Toaster {...toasterProps} />
+            </DialogProvider>
           </ActionSheetProvider>
         </TooltipProvider>
       </LayoutProvider>

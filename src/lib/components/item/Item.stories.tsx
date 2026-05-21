@@ -4,16 +4,23 @@ import {
   ChevronRight,
   File,
   Lock,
+  Menu,
   MoreVertical,
   Palette,
+  Pen,
+  Pin,
   Star,
+  Trash2,
 } from "lucide-react";
 import React, { useState } from "react";
 import { Avatar } from "../avatar";
 import { Badge } from "../badge";
 import { Checkbox } from "../checkbox";
+import { ElasticScrollArea } from "../elastic-scroll-area";
+import { FAB } from "../fab";
 import { IconButton } from "../icon-button";
 import { Switch } from "../switch";
+import { toast, Toaster } from "../toast";
 import { Typography } from "../typography";
 import {
   Item,
@@ -48,7 +55,7 @@ const meta: Meta<typeof Item> = {
     docs: {
       description: {
         component:
-          "A versatile compound component for building list items, profiles, notifications, and more complex layouts. Items now have a subtle, fast ripple effect on click.",
+          "A versatile compound component for building list items, profiles, notifications, and more complex layouts. Items now have a subtle, fast ripple effect on click and natively support Framer Motion swipe-to-reveal physics.",
       },
     },
   },
@@ -318,111 +325,337 @@ export const WithLongPress: Story = {
   ),
 };
 
-export const TeamMembersList: Story = {
-  name: "8. Use Case: Interactive Team List",
+export const SwipeToReveal: Story = {
+  name: "8. Swipe to Reveal (Inbox)",
   parameters: {
     docs: {
       description: {
         story:
-          "Clicking anywhere on the Item toggles the checkbox. Clicking the checkbox itself is handled separately to prevent the event from firing twice.",
+          "Wrap your item content with `swipeRightContent` or `swipeLeftContent` to enable beautiful mobile-style swipe-to-reveal actions. Uses Framer Motion's drag physics natively.",
       },
     },
   },
   render: () => {
-    const members = [
-      {
-        id: "1",
-        name: "Alisa Hester",
-        role: "Frontend Developer",
-        avatar: "https://i.pravatar.cc/150?img=1",
-        badge: "Admin",
-        active: null,
-      },
-      {
-        id: "2",
-        name: "Barry Cuda",
-        role: "Backend Developer",
-        avatar: "https://i.pravatar.cc/150?img=2",
-        badge: null,
-        active: null,
-      },
-      {
-        id: "3",
-        name: "Charlie Enderson",
-        role: "Product Designer",
-        avatar: "https://i.pravatar.cc/150?img=3",
-        badge: null,
-        active: "Last active: 2 hours ago",
-      },
-    ];
+    return (
+      <div className="relative w-full max-w-[420px] h-[750px] bg-white rounded-[40px] shadow-2xl border-[10px] border-[#eff1f5] overflow-hidden flex flex-col">
+        <Toaster />
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-12 pb-4 bg-[#f8f9fc]">
+          <Menu className="text-black" />
+          <Typography
+            variant="title-medium"
+            className="text-black font-normal text-xl"
+          >
+            Inbox
+          </Typography>
+          <Avatar src="https://i.pravatar.cc/150?u=user" size="sm" />
+        </div>
 
-    const [selected, setSelected] = useState(new Set(["1"]));
+        {/* List */}
+        <ElasticScrollArea className="flex-1 bg-[#f8f9fc]">
+          <ItemGroup gap="none" shape="sharp" direction="vertical">
+            {/* Item 1 - Showing Swipe */}
+            <Item
+              variant="surface"
+              padding="lg"
+              className="cursor-pointer bg-white border-b border-gray-100 last:border-b-0"
+              swipeRightContent={
+                <div className="flex w-full h-full items-center justify-start bg-[#fdbaf0] px-8">
+                  <Star className="text-[#8e256b] h-8 w-8" strokeWidth={1.5} />
+                </div>
+              }
+              onSwipeRight={() => toast("Conversation starred!")}
+              swipeThreshold={100}
+            >
+              <ItemMedia variant="avatar" className="self-start mt-1">
+                <Avatar src="https://i.pravatar.cc/150?u=karimi" size="md" />
+              </ItemMedia>
+              <ItemContent>
+                <div className="flex justify-between items-baseline mb-1">
+                  <ItemTitle className="text-black font-semibold text-base">
+                    Karimi, Mohammad
+                  </ItemTitle>
+                  <Typography
+                    variant="body-small"
+                    className="text-xs font-semibold text-[#8e256b]"
+                  >
+                    2 min
+                  </Typography>
+                </div>
+                <Typography
+                  variant="body-medium"
+                  className="text-black font-semibold leading-tight"
+                >
+                  Bonjour de Paris
+                </Typography>
+                <ItemDescription className="text-gray-500 mt-1 line-clamp-1">
+                  I got my film developed from your visit...
+                </ItemDescription>
+              </ItemContent>
+            </Item>
 
-    const toggleSelection = (id: string) => {
-      setSelected((prev) => {
-        const newSet = new Set(prev);
-        if (newSet.has(id)) {
-          newSet.delete(id);
-        } else {
-          newSet.add(id);
+            {/* Item 2 */}
+            <Item
+              variant="surface"
+              padding="lg"
+              className="cursor-pointer bg-[#fdf2fc] border-b border-gray-100 last:border-b-0"
+              swipeRightContent={
+                <div className="flex w-full h-full items-center justify-start bg-[#fdbaf0] px-8">
+                  <Star className="text-[#8e256b] h-8 w-8" strokeWidth={1.5} />
+                </div>
+              }
+              onSwipeRight={() => toast("Conversation starred!")}
+              swipeThreshold={100}
+            >
+              <ItemMedia variant="avatar" className="self-start mt-1">
+                <Avatar src="https://i.pravatar.cc/150?u=ziad" size="md" />
+              </ItemMedia>
+              <ItemContent>
+                <div className="flex justify-between items-baseline mb-1">
+                  <ItemTitle className="text-black font-semibold text-base">
+                    Ziad
+                  </ItemTitle>
+                  <Typography
+                    variant="body-small"
+                    className="text-xs font-semibold text-black"
+                  >
+                    5 min
+                  </Typography>
+                </div>
+                <Typography
+                  variant="body-medium"
+                  className="text-black font-semibold leading-tight"
+                >
+                  Volunteer EMT with me?
+                </Typography>
+                <ItemDescription className="text-gray-500 mt-1 line-clamp-1">
+                  What do you think about training to be volunteer...
+                </ItemDescription>
+              </ItemContent>
+            </Item>
+
+            {/* Item 3 */}
+            <Item
+              variant="surface"
+              padding="lg"
+              className="cursor-pointer bg-white border-b border-gray-100 last:border-b-0"
+              swipeRightContent={
+                <div className="flex w-full h-full items-center justify-start bg-[#fdbaf0] px-8">
+                  <Star className="text-[#8e256b] h-8 w-8" strokeWidth={1.5} />
+                </div>
+              }
+              onSwipeRight={() => toast("Conversation starred!")}
+              swipeThreshold={100}
+            >
+              <ItemMedia variant="avatar" className="self-start mt-1">
+                <Avatar src="https://i.pravatar.cc/150?u=reza" size="md" />
+              </ItemMedia>
+              <ItemContent>
+                <div className="flex justify-between items-baseline mb-1">
+                  <ItemTitle className="text-black font-semibold text-base">
+                    Reza, Fabian
+                  </ItemTitle>
+                  <Typography
+                    variant="body-small"
+                    className="text-xs font-semibold text-black"
+                  >
+                    10:32 AM
+                  </Typography>
+                </div>
+                <Typography
+                  variant="body-medium"
+                  className="text-black font-semibold leading-tight"
+                >
+                  Package shipped
+                </Typography>
+                <ItemDescription className="text-gray-500 mt-1 line-clamp-1">
+                  Hi Ping! Just wanted to let you know that your...
+                </ItemDescription>
+              </ItemContent>
+            </Item>
+
+            {/* Additional items to ensure scrolling */}
+            <Item
+              variant="surface"
+              padding="lg"
+              className="cursor-pointer bg-white border-b border-gray-100 last:border-b-0"
+              swipeRightContent={
+                <div className="flex w-full h-full items-center justify-start bg-[#fdbaf0] px-8">
+                  <Star className="text-[#8e256b] h-8 w-8" strokeWidth={1.5} />
+                </div>
+              }
+              onSwipeRight={() => toast("Conversation starred!")}
+              swipeThreshold={100}
+            >
+              <ItemMedia variant="avatar" className="self-start mt-1">
+                <Avatar src="https://i.pravatar.cc/150?u=lilly" size="md" />
+              </ItemMedia>
+              <ItemContent>
+                <div className="flex justify-between items-baseline mb-1">
+                  <ItemTitle className="text-black font-semibold text-base">
+                    MacDonald, Lilly
+                  </ItemTitle>
+                  <Typography
+                    variant="body-small"
+                    className="text-xs font-semibold text-black"
+                  >
+                    8:15 AM
+                  </Typography>
+                </div>
+                <Typography
+                  variant="body-medium"
+                  className="text-black font-semibold leading-tight"
+                >
+                  This new food show is made for you
+                </Typography>
+                <ItemDescription className="text-gray-500 mt-1 line-clamp-1">
+                  Ping - you'd love this new food show!
+                </ItemDescription>
+              </ItemContent>
+            </Item>
+          </ItemGroup>
+        </ElasticScrollArea>
+
+        {/* FAB */}
+        <div className="absolute bottom-6 right-6 z-50">
+          <FAB
+            icon={<Pen className="text-[#3b1248] h-6 w-6" />}
+            variant="secondary"
+            shape="minimal"
+            size="xl"
+            className="bg-[#cba6ff] hover:bg-[#b98df0] rounded-[24px] shadow-lg border border-transparent"
+          />
+        </div>
+      </div>
+    );
+  },
+};
+
+// Mock Dataset for interactive lists
+const initialMails = [
+  {
+    id: "1",
+    author: "Karimi, Mohammad",
+    time: "2 min",
+    subject: "Bonjour de Paris",
+    preview: "I got my film developed from your visit...",
+    avatar: "https://i.pravatar.cc/150?u=karimi",
+  },
+  {
+    id: "2",
+    author: "Ziad",
+    time: "5 min",
+    subject: "Volunteer EMT with me?",
+    preview: "What do you think about training to be volunteer...",
+    avatar: "https://i.pravatar.cc/150?u=ziad",
+  },
+  {
+    id: "3",
+    author: "Reza, Fabian",
+    time: "10:32 AM",
+    subject: "Package shipped",
+    preview: "Hi Ping! Just wanted to let you know that your...",
+    avatar: "https://i.pravatar.cc/150?u=reza",
+  },
+];
+
+// --- 1. TYPE 1: TRIGGER ACTION & SPRING BACK ---
+export const SwipeTriggerAction: Story = {
+  name: "8. Swipe to Trigger (Gmail Style)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Type 1: Swiping triggers an immediate action and springs back fully to center without persisting open.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-[400px] border border-outline-variant bg-surface-container rounded-2xl overflow-hidden shadow-md">
+      <Toaster />
+      <div className="p-4 bg-white border-b border-gray-100">
+        <Typography variant="title-small" className="text-black">
+          Starred items
+        </Typography>
+      </div>
+      <Item
+        swipeType="trigger"
+        swipeRightContent={
+          <div className="flex w-full h-full items-center justify-start bg-[#fdbaf0] px-8">
+            <Star className="text-[#8e256b] h-6 w-6" strokeWidth={2} />
+          </div>
         }
-        return newSet;
-      });
+        onSwipeRight={() => toast("Conversation starred!")}
+        className="cursor-pointer bg-white"
+      >
+        <ItemMedia variant="avatar">
+          <Avatar src="https://i.pravatar.cc/150?u=karimi" />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle className="text-black font-semibold">
+            Karimi, Mohammad
+          </ItemTitle>
+          <ItemDescription className="text-gray-500">
+            Swipe right on me to star instantly.
+          </ItemDescription>
+        </ItemContent>
+      </Item>
+    </div>
+  ),
+};
+
+// --- 2. TYPE 2: DISMISS & ANIMATE HEIGHT TO 0 ---
+export const SwipeToDismiss: Story = {
+  name: "9. Swipe to Dismiss (Delete Style)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Type 2: Swiping past the threshold triggers an off-screen exit animation followed by a layout collapse (height to 0).",
+      },
+    },
+  },
+  render: () => {
+    const [mails, setMails] = useState(initialMails);
+
+    const handleDismiss = (id: string) => {
+      toast.error("Conversation archived");
+      setTimeout(() => {
+        setMails((prev) => prev.filter((m) => m.id !== id));
+      }, 300);
     };
 
     return (
-      <div className="max-w-4xl w-full">
-        <Typography variant="title-small" className="mb-4">
-          Team Members
-        </Typography>
-        <ItemGroup>
-          {members.map((member, index) => (
-            <React.Fragment key={member.id}>
-              <Item
-                size="lg"
-                shape="minimal"
-                variant={member.badge ? "primary" : "secondary"}
-                className="cursor-pointer"
-                onClick={() => toggleSelection(member.id)}
-              >
-                <ItemMedia variant="avatar">
-                  <Avatar
-                    src={member.avatar}
-                    fallback={member.name.slice(0, 2)}
-                  />
-                </ItemMedia>
-                <ItemContent>
-                  <ItemHeader>
-                    <ItemTitle>{member.name}</ItemTitle>
-                    {member.badge && (
-                      <Badge shape="full" variant="secondary">
-                        {member.badge}
-                      </Badge>
-                    )}
-                  </ItemHeader>
-                  <ItemDescription>{member.role}</ItemDescription>
-                  {member.active && (
-                    <ItemFooter>
-                      <Typography
-                        variant="body-small"
-                        muted={true}
-                        className="!text-xs"
-                      >
-                        {member.active}
-                      </Typography>
-                    </ItemFooter>
-                  )}
-                </ItemContent>
-                <ItemActions onClick={(e) => e.stopPropagation()}>
-                  <Checkbox
-                    checked={selected.has(member.id)}
-                    onChange={() => toggleSelection(member.id)}
-                    aria-label={`Select ${member.name}`}
-                  />
-                </ItemActions>
-              </Item>
-              {index < members.length - 1 && <ItemSeparator />}
-            </React.Fragment>
+      <div className="w-[400px] border border-outline-variant bg-[#f8f9fc] rounded-2xl overflow-hidden shadow-md">
+        <Toaster />
+        <div className="p-4 bg-white border-b border-gray-100">
+          <Typography variant="title-small" className="text-black">
+            Archivable Inbox
+          </Typography>
+        </div>
+        <ItemGroup gap="none" shape="sharp">
+          {mails.map((mail) => (
+            <Item
+              key={mail.id}
+              swipeType="dismiss"
+              swipeRightContent={
+                <div className="flex w-full h-full items-center justify-start bg-red-500 px-8 text-white">
+                  <Trash2 className="h-6 w-6" />
+                </div>
+              }
+              onSwipeRight={() => handleDismiss(mail.id)}
+              className="bg-white border-b border-gray-100 last:border-0 cursor-pointer"
+            >
+              <ItemMedia variant="avatar">
+                <Avatar src={mail.avatar} />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle className="text-black">{mail.author}</ItemTitle>
+                <ItemDescription className="text-gray-500 truncate">
+                  {mail.subject}
+                </ItemDescription>
+              </ItemContent>
+            </Item>
           ))}
         </ItemGroup>
       </div>
@@ -430,149 +663,74 @@ export const TeamMembersList: Story = {
   },
 };
 
-export const SettingsList: Story = {
-  name: "9. Use Case: Interactive Settings List",
+// --- 3. TYPE 3: PARTIAL SWIPE TO REVEAL DRAWER ---
+export const SwipeToRevealActions: Story = {
+  name: "10. Swipe to Reveal (iOS Actions Style)",
   parameters: {
     docs: {
       description: {
         story:
-          "A common pattern for settings pages. Clicking the entire item toggles the switch, providing a larger touch target.",
+          "Type 3: Swiping partially reveals persistent click targets underneath. Closes automatically when an option is clicked or on tap.",
       },
     },
   },
   render: () => {
-    const [notifications, setNotifications] = useState(true);
-    const [darkMode, setDarkMode] = useState(false);
+    const [isPinned, setIsPinned] = useState(false);
+
     return (
-      <div className="w-96">
-        <Typography variant="title-small" className="mb-4">
-          Settings
-        </Typography>
-        <ItemGroup>
-          <Item
-            variant="ghost"
-            size="md"
-            className="cursor-pointer"
-            onClick={() => setNotifications((prev) => !prev)}
-          >
-            <ItemMedia variant="icon" shape="full">
-              <Bell />
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>Push Notifications</ItemTitle>
-              <ItemDescription>
-                Receive updates on new messages.
-              </ItemDescription>
-            </ItemContent>
-            <ItemActions onClick={(e) => e.stopPropagation()}>
-              <Switch
-                checked={notifications}
-                onChange={(e) => setNotifications(e.target.checked)}
-                aria-label="Toggle push notifications"
-              />
-            </ItemActions>
-          </Item>
-          <Item
-            variant="ghost"
-            size="md"
-            className="cursor-pointer"
-            onClick={() => setDarkMode((prev) => !prev)}
-          >
-            <ItemMedia variant="icon" shape="full">
-              <Palette />
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>Dark Mode</ItemTitle>
-              <ItemDescription>
-                Toggle between light and dark themes.
-              </ItemDescription>
-            </ItemContent>
-            <ItemActions onClick={(e) => e.stopPropagation()}>
-              <Switch
-                checked={darkMode}
-                onChange={(e) => setDarkMode(e.target.checked)}
-                aria-label="Toggle dark mode"
-              />
-            </ItemActions>
-          </Item>
-          <Item asChild variant="ghost" size="md" className="cursor-pointer">
-            <a href="#" onClick={(e) => e.preventDefault()}>
-              <ItemMedia variant="icon" shape="full">
-                <Lock />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Account & Security</ItemTitle>
-              </ItemContent>
-              <ItemActions>
-                <ChevronRight
-                  size={20}
-                  className="text-graphite-foreground/50"
-                />
-              </ItemActions>
-            </a>
-          </Item>
-        </ItemGroup>
+      <div className="w-[420px] border border-outline-variant bg-[#f8f9fc] rounded-2xl overflow-hidden shadow-md">
+        <Toaster />
+        <div className="p-4 bg-white border-b border-gray-100">
+          <Typography variant="title-small" className="text-black">
+            Actionable List
+          </Typography>
+        </div>
+        <Item
+          swipeType="reveal"
+          swipeLeftOffset={140} // Custom open offset width
+          swipeLeftContent={
+            <div className="flex h-full items-center justify-end z-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPinned(!isPinned);
+                  toast(isPinned ? "Unpinned item" : "Pinned item");
+                }}
+                className="w-[70px] h-full flex flex-col gap-1 items-center justify-center bg-blue-500 text-white text-xs font-semibold"
+              >
+                <Pin className="h-4 w-4" />
+                <span>{isPinned ? "Unpin" : "Pin"}</span>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toast.error("Item Deleted");
+                }}
+                className="w-[70px] h-full flex flex-col gap-1 items-center justify-center bg-red-500 text-white text-xs font-semibold"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete</span>
+              </button>
+            </div>
+          }
+          className="bg-white cursor-pointer"
+        >
+          <ItemMedia variant="avatar">
+            <Avatar src="https://i.pravatar.cc/150?u=ziad" />
+          </ItemMedia>
+          <ItemContent>
+            <div className="flex items-center gap-2">
+              <ItemTitle className="text-black">Swipe Left On Me</ItemTitle>
+              {isPinned && (
+                <Pin className="h-3.5 w-3.5 text-blue-500 rotate-45" />
+              )}
+            </div>
+            <ItemDescription className="text-gray-500">
+              Drag left to reveal custom action buttons.
+            </ItemDescription>
+          </ItemContent>
+        </Item>
       </div>
     );
   },
-};
-
-export const NotificationList: Story = {
-  name: "10. Use Case: Notification List",
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Displaying a feed of notifications with avatars and timestamps.",
-      },
-    },
-  },
-  render: () => (
-    <div className="w-[450px]">
-      <ItemGroup>
-        <Item variant="secondary" shape="minimal">
-          <ItemMedia variant="avatar">
-            <Avatar src="https://i.pravatar.cc/150?img=4" />
-          </ItemMedia>
-          <ItemContent>
-            <ItemDescription>
-              <b>Diana Prince</b> mentioned you in the <b>Q4 Planning</b>{" "}
-              document.
-            </ItemDescription>
-            <ItemFooter>
-              <Typography
-                variant="body-small"
-                muted={true}
-                className="!text-xs"
-              >
-                2 minutes ago
-              </Typography>
-            </ItemFooter>
-          </ItemContent>
-          <ItemActions>
-            <div className="size-2.5 rounded-full bg-blue-500" />
-          </ItemActions>
-        </Item>
-        <Item variant="secondary" shape="minimal">
-          <ItemMedia variant="avatar">
-            <Avatar src="https://i.pravatar.cc/150?img=5" />
-          </ItemMedia>
-          <ItemContent>
-            <ItemDescription>
-              <b>Clark Kent</b> completed the task "Deploy to production".
-            </ItemDescription>
-            <ItemFooter>
-              <Typography
-                variant="body-small"
-                muted={true}
-                className="!text-xs"
-              >
-                1 hour ago
-              </Typography>
-            </ItemFooter>
-          </ItemContent>
-        </Item>
-      </ItemGroup>
-    </div>
-  ),
 };

@@ -55,6 +55,7 @@ export const Default: Story = {
   name: "1. Basic Usage",
   args: {
     shape: "minimal",
+    glass: true
   },
   render: (args) => (
     <DropdownMenu {...args}>

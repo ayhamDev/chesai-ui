@@ -60,11 +60,6 @@ export const AllShapes: Story = {
         <Button variant="secondary">Sharp</Button>
         <Button variant="secondary">Sharp</Button>
       </ButtonGroup>
-      <ExpressiveButtonGroup>
-        <Button variant="primary">Expressive</Button>
-        <Button variant="primary">Expressive</Button>
-        <Button variant="primary">Expressive</Button>
-      </ExpressiveButtonGroup>
     </div>
   ),
 };

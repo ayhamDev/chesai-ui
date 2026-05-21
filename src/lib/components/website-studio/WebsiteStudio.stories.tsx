@@ -1,19 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { clsx } from "clsx";
 import React from "react";
 import { WebsiteStudio } from "./index";
 import type { ComponentRegistry, WebsiteSchema } from "./types";
 
 // --- Chesai UI Component Imports ---
-import { ThemeProvider } from "../../context/ThemeProvider";
-import { AppBar } from "../appbar";
-import { Button } from "../button";
-import { Card } from "../card";
-import { CodeEditor } from "../code-editor";
-import { Flex } from "../layout/flex";
-import { Grid, GridItem } from "../layout/grid";
-import { Typography } from "../typography";
-import { InstallCommand } from "../install-command";
 import {
   Accessibility,
   ArrowRight,
@@ -22,6 +12,16 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
+import { ThemeProvider } from "../../context/ThemeProvider";
+import { AppBar } from "../appbar";
+import { Button } from "../button";
+import { Card } from "../card";
+import { CodeEditor } from "../code-editor";
+import { InstallCommand } from "../install-command";
+import { Flex } from "../layout/flex";
+import { Grid, GridItem } from "../layout/grid";
+import { toast, Toaster } from "../toast";
+import { Typography } from "../typography";
 
 const meta: Meta<typeof WebsiteStudio.Renderer> = {
   title: "Website Studio/Chesai UI Landing Page",
@@ -35,11 +35,9 @@ export default meta;
 type Story = StoryObj<typeof WebsiteStudio.Renderer>;
 
 // ============================================================================
-// THE COMPONENT REGISTRY
+// THE COMPONENT REGISTRY (Developer's UI Library)
 // ============================================================================
 const chesaiRegistry: ComponentRegistry = {
-  // ... Keep Section, FlexBox, GridBox, GridItemBox, Text, CodeBlock, Button, AnnouncementBadge, NavigationBlock, FeatureCard exactly the same as before
-
   InstallCommand: {
     name: "Install Command",
     category: "Elements",
@@ -85,8 +83,6 @@ const chesaiRegistry: ComponentRegistry = {
       },
     },
   },
-
-  // (I am omitting the other components here for brevity, keep them exactly as you had them)
   Section: {
     name: "Section",
     category: "Layout",
@@ -213,7 +209,7 @@ const chesaiRegistry: ComponentRegistry = {
   Button: {
     name: "Button",
     category: "Elements",
-    render: ({ text, variant, size, shape, startIcon }) => {
+    render: ({ text, variant, size, shape, startIcon, ...props }) => {
       const IconMap: any = { ArrowRight, Github };
       const IconComponent =
         startIcon && IconMap[startIcon] ? IconMap[startIcon] : null;
@@ -223,6 +219,7 @@ const chesaiRegistry: ComponentRegistry = {
           size={size}
           shape={shape}
           startIcon={IconComponent ? <IconComponent size={18} /> : undefined}
+          {...props}
         >
           {text}
         </Button>
@@ -255,14 +252,19 @@ const chesaiRegistry: ComponentRegistry = {
   NavigationBlock: {
     name: "Navigation Bar",
     category: "Blocks",
-    render: ({ title }) => (
+    render: ({ title, ...props }) => (
       <AppBar
         className="container mx-auto"
         variant="small"
         color="transparent"
         title={<span className="font-bold tracking-tight">{title}</span>}
         trailingIcons={
-          <Button variant="ghost" size="sm" startIcon={<Github size={18} />}>
+          <Button
+            variant="ghost"
+            size="sm"
+            startIcon={<Github size={18} />}
+            {...props}
+          >
             Repository
           </Button>
         }
@@ -305,11 +307,40 @@ const chesaiRegistry: ComponentRegistry = {
 };
 
 // ============================================================================
+// MOCK EXTERNAL DATA & API (For Event Bindings & Interpolation)
+// ============================================================================
+
+const mockCMSData = {
+  hero: {
+    badge: "New: Render Engine v2 with CMS Bindings",
+    headline: "Build beautiful interfaces, instantly.",
+    subheading:
+      "A modern, accessible, and highly customizable React component library featuring 100% agnostic data injection.",
+    ctaPrimary: "Start Building",
+    ctaSecondary: "Read Docs",
+  },
+  features: {
+    label: "Features",
+    title: "Everything you need to ship faster.",
+  },
+};
+
+const mockCustomActions = {
+  logToConsole: (msg: string) => {
+    console.log(`[Studio Action Fired]: ${msg}`);
+  },
+};
+
+const mockCustomAPI = {
+  toast, // Pass the Sonner toast instance directly into the isolated sandbox
+};
+
+// ============================================================================
 // THE JSON SCHEMA (Database Payload)
 // ============================================================================
 const landingPageJSON: WebsiteSchema = {
   projectSettings: { name: "Chesai UI" },
-  designSystem: {}, // Keeping your interfaces happy
+  designSystem: { tokens: {} },
   pages: [
     {
       id: "page_home",
@@ -321,6 +352,14 @@ const landingPageJSON: WebsiteSchema = {
           id: "nav",
           type: "NavigationBlock",
           props: { title: "chesai-ui" },
+          events: {
+            onClick: [
+              {
+                actionId: "openLink", // from defaultActions
+                args: ["https://github.com/ayhamdev/chesai-ui", "_blank"],
+              },
+            ],
+          },
         },
 
         // --- 2. HERO SECTION ---
@@ -343,7 +382,8 @@ const landingPageJSON: WebsiteSchema = {
                   id: "badge",
                   type: "AnnouncementBadge",
                   props: {
-                    text: "This landing page was created dynamically with Website Studio.",
+                    // CMS Interpolation binding!
+                    text: "{{hero.badge}}",
                   },
                 },
                 {
@@ -352,8 +392,9 @@ const landingPageJSON: WebsiteSchema = {
                   props: {
                     variant: "display-large",
                     className:
-                      "font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-on-background to-on-background/50",
-                    children: "Build beautiful interfaces, incredibly fast.",
+                      "font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-on-background to-on-background/50 custom-underline",
+                    // CMS Interpolation binding!
+                    children: "{{hero.headline}}",
                   },
                 },
                 {
@@ -363,8 +404,8 @@ const landingPageJSON: WebsiteSchema = {
                     variant: "body-large",
                     muted: true,
                     className: "text-lg md:text-xl leading-relaxed",
-                    children:
-                      "A modern, accessible, and highly customizable React component library. Built on Radix UI and Framer Motion, styled with MD3 principles.",
+                    // CMS Interpolation binding!
+                    children: "{{hero.subheading}}",
                   },
                 },
                 {
@@ -380,21 +421,47 @@ const landingPageJSON: WebsiteSchema = {
                       id: "btn_start",
                       type: "Button",
                       props: {
-                        text: "Get Started",
+                        text: "{{hero.ctaPrimary}}",
                         variant: "primary",
                         size: "lg",
                         shape: "full",
                         startIcon: "ArrowRight",
+                      },
+                      events: {
+                        onClick: [
+                          {
+                            actionId: "logToConsole",
+                            args: ["Primary CTA Clicked!"],
+                          },
+                          {
+                            // Advanced Sandbox Execution Example
+                            actionId: "$customCode",
+                            code: `
+                              event.preventDefault();
+                              api.toast.success("Sandbox Executed Successfully!", {
+                                description: "Read CMS data: " + cms.hero.headline
+                              });
+                            `,
+                          },
+                        ],
                       },
                     },
                     {
                       id: "btn_docs",
                       type: "Button",
                       props: {
-                        text: "Read Documentation",
+                        text: "{{hero.ctaSecondary}}",
                         variant: "secondary",
                         size: "lg",
                         shape: "full",
+                      },
+                      events: {
+                        onClick: [
+                          {
+                            actionId: "openLink",
+                            args: ["https://chesai-ui.pages.dev/", "_blank"],
+                          },
+                        ],
                       },
                     },
                   ],
@@ -425,7 +492,7 @@ const landingPageJSON: WebsiteSchema = {
                     variant: "label-large",
                     className:
                       "text-primary uppercase tracking-widest font-bold",
-                    children: "Features",
+                    children: "{{features.label}}",
                   },
                 },
                 {
@@ -434,7 +501,7 @@ const landingPageJSON: WebsiteSchema = {
                   props: {
                     variant: "headline-medium",
                     className: "font-bold",
-                    children: "Everything you need to ship faster.",
+                    children: "{{features.title}}",
                   },
                 },
               ],
@@ -523,7 +590,7 @@ const landingPageJSON: WebsiteSchema = {
                   type: "InstallCommand",
                   props: {
                     packageName: "chesai-ui",
-                    variant: "secondary", // Using secondary for a subtle offset from the surface background
+                    variant: "secondary",
                     shadow: "lg",
                   },
                 },
@@ -556,19 +623,37 @@ const landingPageJSON: WebsiteSchema = {
 };
 
 // ============================================================================
+// MOCK GLOBAL HEAD INJECTION (To show styling bridge capabilities)
+// ============================================================================
+const injectedStyles = `
+  <style>
+    /* Injected via globalHeadCode */
+    .custom-underline {
+      text-decoration: underline;
+      text-decoration-color: var(--md-sys-color-primary);
+      text-decoration-thickness: 4px;
+      text-underline-offset: 6px;
+    }
+  </style>
+`;
+
+// ============================================================================
 // STORY RENDERER
 // ============================================================================
 
-export const LandingPageSimulation: Story = {
-  name: "Chesai UI Landing Page",
+export const AdvancedEngineSimulation: Story = {
+  name: "Chesai UI Landing Page (with CMS & Interactivity)",
   render: () => (
-    <ThemeProvider>
-      <div className="w-full bg-background text-on-background min-h-screen">
-        <WebsiteStudio.Renderer
-          components={chesaiRegistry}
-          data={landingPageJSON.pages[0]}
-        />
-      </div>
-    </ThemeProvider>
+    <div className="w-full bg-background text-on-background min-h-screen">
+      <Toaster />
+      <WebsiteStudio.Renderer
+        components={chesaiRegistry}
+        data={landingPageJSON.pages[0]}
+        cms={mockCMSData}
+        actions={mockCustomActions}
+        customApi={mockCustomAPI}
+        globalHeadCode={injectedStyles}
+      />
+    </div>
   ),
 };

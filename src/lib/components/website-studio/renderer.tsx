@@ -6,6 +6,8 @@ import type {
   StudioNode,
   StudioEventAction,
 } from "./types";
+import { defaultActions } from "./defaultActions";
+import { ScriptAndStyleInjector } from "./ScriptAndStyleInjector";
 
 // ============================================================================
 // 1. HELPERS: CMS Interpolation & Event Binding
@@ -43,10 +45,8 @@ function compileProps(
         return val !== undefined ? String(val) : "";
       });
     } else if (Array.isArray(value)) {
-      // Optional: recursively compile arrays if needed
       compiled[key] = value;
     } else if (typeof value === "object" && value !== null) {
-      // Recursively compile nested objects (e.g. responsive prop objects)
       compiled[key] = compileProps(value, cmsData);
     } else {
       compiled[key] = value;
@@ -54,6 +54,42 @@ function compileProps(
   }
 
   return compiled;
+}
+
+/**
+ * Safely executes dynamic user actions inside a localized, wrapped evaluation environment.
+ * Prevents dynamic exceptions from interrupting the core browser execution paths.
+ */
+async function executeCustomCodeSafely(
+  code: string,
+  event: React.SyntheticEvent,
+  cmsData: any,
+  customApi: any,
+): Promise<void> {
+  try {
+    const userSandboxFunction = new Function(
+      "event",
+      "cms",
+      "api",
+      `
+        "use strict";
+        try {
+          ${code}
+        } catch (innerError) {
+          throw innerError;
+        }
+      `,
+    );
+
+    await userSandboxFunction(event, cmsData, customApi);
+  } catch (error: any) {
+    console.error(
+      `[WebsiteStudio] Dynamic event execution failed.\n` +
+        `Reason: ${error?.message || error}\n` +
+        `Context Data Reference:`,
+      { cmsData, eventType: event.type },
+    );
+  }
 }
 
 /**
@@ -71,21 +107,26 @@ function bindEvents(
   const boundEvents: Record<string, Function> = {};
 
   for (const [eventName, actionsToRun] of Object.entries(nodeEvents)) {
-    // Wrap the actions in an async event handler
     boundEvents[eventName] = async (e: React.SyntheticEvent) => {
+      if (e && typeof e.preventDefault === "function") {
+        const componentType = (
+          e.currentTarget as HTMLElement
+        )?.tagName?.toLowerCase();
+        if (componentType === "a" || componentType === "form") {
+          e.preventDefault();
+        }
+      }
+
       for (const actionDef of actionsToRun) {
         try {
           if (actionDef.actionId === "$customCode" && actionDef.code) {
-            // Execution Sandbox: Injects event, cms data, and developer API into scope
-            const userFunction = new Function(
-              "event",
-              "cms",
-              "api",
+            await executeCustomCodeSafely(
               actionDef.code,
+              e,
+              cmsData,
+              customApi,
             );
-            await userFunction(e, cmsData, customApi);
           } else {
-            // Standard Registered Action
             const actionFn = actionRegistry[actionDef.actionId];
             if (actionFn) {
               await actionFn(...(actionDef.args || []));
@@ -97,7 +138,7 @@ function bindEvents(
           }
         } catch (error) {
           console.error(
-            `[WebsiteStudio] Error executing action "${actionDef.actionId}":`,
+            `[WebsiteStudio] Exception encountered executing action "${actionDef.actionId}":`,
             error,
           );
         }
@@ -109,7 +150,100 @@ function bindEvents(
 }
 
 // ============================================================================
-// 2. ERROR BOUNDARY
+// 2. HELPERS: Responsive Breakpoint Parsing
+// ============================================================================
+
+export interface ResponsiveValue {
+  mobile?: string | number;
+  tablet?: string | number;
+  desktop?: string | number;
+  default?: string | number;
+}
+
+/**
+ * Checks if a prop value matches the structured responsive definition.
+ */
+export function isResponsiveValue(value: any): value is ResponsiveValue {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    ("mobile" in value ||
+      "tablet" in value ||
+      "desktop" in value ||
+      "default" in value)
+  );
+}
+
+interface ProcessedStyles {
+  cleanProps: Record<string, any>;
+  styleTagContent: string | null;
+}
+
+/**
+ * Extracts responsive values from props and generates corresponding breakpoint-specific style rules.
+ */
+export function processResponsiveStyles(
+  nodeId: string,
+  props: Record<string, any>,
+  responsiveCssProps: string[] = [
+    "fontSize",
+    "padding",
+    "margin",
+    "gap",
+    "width",
+    "height",
+  ],
+): ProcessedStyles {
+  const cleanProps = { ...props };
+  const styles: { mobile: string[]; tablet: string[]; desktop: string[] } = {
+    mobile: [],
+    tablet: [],
+    desktop: [],
+  };
+
+  let hasResponsiveRules = false;
+
+  for (const [key, value] of Object.entries(props)) {
+    if (responsiveCssProps.includes(key) && isResponsiveValue(value)) {
+      hasResponsiveRules = true;
+      const cssProperty = key.replace(/([A-Z])/g, "-$1").toLowerCase();
+
+      if (value.default !== undefined || value.mobile !== undefined) {
+        styles.mobile.push(`${cssProperty}: ${value.mobile ?? value.default};`);
+      }
+      if (value.tablet !== undefined) {
+        styles.tablet.push(`${cssProperty}: ${value.tablet};`);
+      }
+      if (value.desktop !== undefined) {
+        styles.desktop.push(`${cssProperty}: ${value.desktop};`);
+      }
+
+      delete cleanProps[key];
+    }
+  }
+
+  if (!hasResponsiveRules) {
+    return { cleanProps, styleTagContent: null };
+  }
+
+  const selector = `.ws-node-${nodeId}`;
+  let cssRules = ``;
+
+  if (styles.mobile.length > 0) {
+    cssRules += `${selector} { ${styles.mobile.join(" ")} }\n`;
+  }
+  if (styles.tablet.length > 0) {
+    cssRules += `@media (min-width: 768px) { ${selector} { ${styles.tablet.join(" ")} } }\n`;
+  }
+  if (styles.desktop.length > 0) {
+    cssRules += `@media (min-width: 1200px) { ${selector} { ${styles.desktop.join(" ")} } }\n`;
+  }
+
+  return { cleanProps, styleTagContent: cssRules };
+}
+
+// ============================================================================
+// 3. ERROR BOUNDARY
 // ============================================================================
 
 class NodeErrorBoundary extends React.Component<
@@ -149,7 +283,7 @@ class NodeErrorBoundary extends React.Component<
 }
 
 // ============================================================================
-// 3. INTERNAL NODE RENDERER (Recursive)
+// 4. INTERNAL NODE RENDERER (Recursive)
 // ============================================================================
 
 interface RenderNodeProps {
@@ -180,7 +314,6 @@ const RenderNode: React.FC<RenderNodeProps> = ({
     );
   }
 
-  // 1. Process nested children recursively
   const renderedChildren = node.children?.map((childNode) => (
     <RenderNode
       key={childNode.id}
@@ -192,10 +325,20 @@ const RenderNode: React.FC<RenderNodeProps> = ({
     />
   ));
 
-  // 2. Interpolate dynamic CMS data into props
   const compiledProps = compileProps(node.props, cmsData);
 
-  // 3. Bind interactive events
+  // Parse responsive definitions on stylistic layout fields
+  const { cleanProps, styleTagContent } = processResponsiveStyles(
+    node.id,
+    compiledProps,
+  );
+
+  const scopeClass = styleTagContent ? `ws-node-${node.id}` : "";
+  const finalProps = {
+    ...cleanProps,
+    className: [cleanProps.className, scopeClass].filter(Boolean).join(" "),
+  };
+
   const boundEvents = bindEvents(
     node.events,
     actionRegistry,
@@ -205,22 +348,24 @@ const RenderNode: React.FC<RenderNodeProps> = ({
 
   return (
     <NodeErrorBoundary nodeType={node.type}>
-      <ComponentDef.render {...compiledProps} {...boundEvents}>
-        {renderedChildren?.length ? renderedChildren : compiledProps.children}
+      {styleTagContent && (
+        <style dangerouslySetInnerHTML={{ __html: styleTagContent }} />
+      )}
+      <ComponentDef.render {...finalProps} {...boundEvents}>
+        {renderedChildren?.length ? renderedChildren : finalProps.children}
       </ComponentDef.render>
     </NodeErrorBoundary>
   );
 };
 
 // ============================================================================
-// 4. THEME INJECTOR
+// 5. THEME INJECTOR
 // ============================================================================
 
 export const ThemeInjector: React.FC<{
   designSystem: DesignSystemSchema;
   children: React.ReactNode;
 }> = ({ designSystem, children }) => {
-  // Map the generic token object to standard CSS variables
   const cssVariables = Object.entries(designSystem.tokens).reduce(
     (acc, [key, value]) => {
       const varName = key.startsWith("--") ? key : `--${key}`;
@@ -242,7 +387,7 @@ export const ThemeInjector: React.FC<{
 };
 
 // ============================================================================
-// 5. MAIN EXPORT: THE RENDERER ENGINE
+// 6. MAIN EXPORT: THE RENDERER ENGINE
 // ============================================================================
 
 export interface RendererProps {
@@ -258,6 +403,12 @@ export interface RendererProps {
   actions?: Record<string, Function>;
   /** Optional custom API object injected into $customCode scripts */
   customApi?: any;
+  /** Optional head code (global script or stylesheets) injected at site load */
+  globalHeadCode?: string;
+  /** Optional body code (global tracking pixels or scripts) injected at body end */
+  globalBodyCode?: string;
+  /** Optional specific custom script configurations assigned only on dynamic pages */
+  pageHeadCode?: string;
 }
 
 export const Renderer: React.FC<RendererProps> = ({
@@ -267,20 +418,40 @@ export const Renderer: React.FC<RendererProps> = ({
   cms = {},
   actions = {},
   customApi = {},
+  globalHeadCode,
+  globalBodyCode,
+  pageHeadCode,
 }) => {
   const nodes = Array.isArray(data) ? data : data.content;
 
   if (!nodes || nodes.length === 0) return null;
 
+  // Layer built-in action helper maps beneath user-defined override maps
+  const consolidatedActions = {
+    ...defaultActions,
+    ...actions,
+  };
+
   const content = (
     <>
+      {/* Dynamic Script Injection Managers */}
+      {globalHeadCode && (
+        <ScriptAndStyleInjector html={globalHeadCode} target="head" />
+      )}
+      {pageHeadCode && (
+        <ScriptAndStyleInjector html={pageHeadCode} target="head" />
+      )}
+      {globalBodyCode && (
+        <ScriptAndStyleInjector html={globalBodyCode} target="body" />
+      )}
+
       {nodes.map((node) => (
         <RenderNode
           key={node.id}
           node={node}
           components={components}
           cmsData={cms}
-          actionRegistry={actions}
+          actionRegistry={consolidatedActions}
           customApi={customApi}
         />
       ))}

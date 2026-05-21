@@ -12,39 +12,37 @@ type DropdownMenuShape = "full" | "minimal" | "sharp";
 
 interface DropdownMenuContextProps {
   shape: DropdownMenuShape;
+  glass: boolean;
 }
 
 const DropdownMenuContext = createContext<DropdownMenuContextProps>({
   shape: "minimal",
+  glass: false,
 });
 
 const useDropdownMenuContext = () => useContext(DropdownMenuContext);
 
 interface DropdownMenuProps extends RadixDropdownMenu.DropdownMenuProps {
   shape?: DropdownMenuShape;
+  glass?: boolean;
 }
 
 const DropdownMenu: React.FC<DropdownMenuProps> = ({
   shape = "minimal",
+  glass = false,
   ...props
 }) => {
   return (
-    <DropdownMenuContext.Provider value={{ shape }}>
+    <DropdownMenuContext.Provider value={{ shape, glass }}>
       <RadixDropdownMenu.Root {...props} />
     </DropdownMenuContext.Provider>
   );
 };
 
-const DropdownMenuTrigger = RadixDropdownMenu.Trigger;
-const DropdownMenuGroup = RadixDropdownMenu.Group;
-const DropdownMenuPortal = RadixDropdownMenu.Portal;
-const DropdownMenuSub = RadixDropdownMenu.Sub;
-const DropdownMenuRadioGroup = RadixDropdownMenu.RadioGroup;
-
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-outline-variant bg-surface-container text-on-surface p-1.5",
+    "border border-outline-variant text-on-surface p-1.5",
     "shadow-md",
   ],
   {
@@ -54,25 +52,36 @@ const contentVariants = cva(
         minimal: "rounded-xl",
         sharp: "rounded-none",
       },
+      glass: {
+        true: "bg-surface-container/60 backdrop-blur-xl border-outline-variant/30",
+        false: "bg-surface-container",
+      },
     },
     defaultVariants: {
       shape: "minimal",
+      glass: false,
     },
   },
 );
+
+const DropdownMenuTrigger = RadixDropdownMenu.Trigger;
+const DropdownMenuGroup = RadixDropdownMenu.Group;
+const DropdownMenuPortal = RadixDropdownMenu.Portal;
+const DropdownMenuSub = RadixDropdownMenu.Sub;
+const DropdownMenuRadioGroup = RadixDropdownMenu.RadioGroup;
 
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.Content>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.Content>
 >(({ className, sideOffset = 8, ...props }, ref) => {
-  const { shape } = useDropdownMenuContext();
+  const { shape, glass } = useDropdownMenuContext();
   return (
     <RadixDropdownMenu.Portal>
       <RadixDropdownMenu.Content
         ref={ref}
         sideOffset={sideOffset}
         className={clsx(
-          contentVariants({ shape }),
+          contentVariants({ shape, glass }),
           "data-[state=open]:animate-menu-enter",
           "data-[state=closed]:animate-menu-exit",
           "data-[side=top]:origin-bottom",
@@ -245,12 +254,12 @@ const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.SubContent>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.SubContent>
 >(({ className, ...props }, ref) => {
-  const { shape } = useDropdownMenuContext();
+  const { shape, glass } = useDropdownMenuContext();
   return (
     <RadixDropdownMenu.SubContent
       ref={ref}
       className={clsx(
-        contentVariants({ shape }),
+        contentVariants({ shape, glass }),
         "data-[state=open]:data-[side=right]:animate-submenu-enter-right",
         "data-[state=closed]:data-[side=right]:animate-submenu-exit-right",
         "data-[state=open]:data-[side=left]:animate-submenu-enter-left",

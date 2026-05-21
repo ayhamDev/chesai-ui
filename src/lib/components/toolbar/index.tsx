@@ -142,6 +142,9 @@ interface ToolbarItemTooltipProps {
   shortcut?: string;
 }
 
+// Inside src/lib/components/toolbar/index.tsx
+// Find the ToolbarItemTooltip definition and update it:
+
 const ToolbarItemTooltip = ({
   children,
   content,
@@ -149,14 +152,9 @@ const ToolbarItemTooltip = ({
 }: ToolbarItemTooltipProps) => {
   const { orientation } = useToolbarContext();
   return (
-    <TooltipProvider>
+    <TooltipProvider placement={orientation === "vertical" ? "right" : "top"}>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <Tooltip
-        variant="primary"
-        // @ts-ignore
-        side={orientation === "vertical" ? "right" : "top"}
-        className="flex items-center gap-3"
-      >
+      <Tooltip variant="primary" className="flex items-center gap-3">
         <span>{content}</span>
         {shortcut && (
           <Typography
@@ -171,6 +169,7 @@ const ToolbarItemTooltip = ({
   );
 };
 
+// ... (Rest of toolbar/index.tsx remains identical)
 // @ts-ignore
 export interface ToolbarProps extends React.ComponentPropsWithoutRef<
   typeof ToolbarPrimitive.Root

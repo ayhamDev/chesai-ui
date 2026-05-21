@@ -2,9 +2,9 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva } from "class-variance-authority";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import React from "react";
 import useRipple from "use-ripple-hook";
+import { LoadingIndicator } from "../loadingIndicator";
 
 export const buttonVariants = cva(
   "font-button select-none font-semibold cursor-pointer active:scale-95 min-w-max focus-visible:outline-none transition-all duration-300 ease-emphasized flex items-center justify-center relative overflow-hidden z-0",
@@ -33,6 +33,7 @@ export const buttonVariants = cva(
         sm: "h-10 px-4 text-sm",
         md: "h-12 px-6 text-base",
         lg: "h-14 px-8 text-lg",
+        xl: "h-20 px-10 text-xl [&_svg]:size-8",
       },
       shape: {
         full: "rounded-full",
@@ -40,7 +41,7 @@ export const buttonVariants = cva(
         sharp: "rounded-none",
       },
       isLoading: {
-        true: "cursor-wait",
+        true: "cursor-wait !px-0 !min-w-0 !pointer-events-none !opacity-100",
       },
     },
     defaultVariants: {
@@ -60,7 +61,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
     | "destructive"
     | "ghost"
     | "link";
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   shape?: "full" | "minimal" | "sharp";
   isLoading?: boolean;
   startIcon?: React.ReactNode;
@@ -68,19 +69,36 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   asChild?: boolean;
 }
 
+const spinnerSizeMap = {
+  xs: "w-8",
+  sm: "w-10",
+  md: "w-12",
+  lg: "w-14",
+  xl: "w-20",
+};
+
+const loadingRadiusMap: Record<NonNullable<ButtonProps["size"]>, string> = {
+  xs: "16px",
+  sm: "20px",
+  md: "24px",
+  lg: "28px",
+  xl: "40px",
+};
+
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       className,
       variant = "primary",
-      size,
-      shape,
+      size = "md",
+      shape = "full",
       children,
       disabled,
       startIcon,
       endIcon,
       isLoading,
       asChild = false,
+      style,
       ...props
     },
     ref,
@@ -88,13 +106,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const localRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
 
-    // MD3 State Layer Logic:
-    // Dark backgrounds (Primary, Destructive) -> White ripple (approx 10-12%)
-    // Light/Transparent backgrounds (Secondary, Tertiary, Outline, Ghost) -> Black/Primary ripple (approx 10-12%)
     const rippleColor =
       variant === "primary" || variant === "destructive"
-        ? "var(--color-ripple-dark)" // Defined in theme.css as rgba(255,255,255, 0.1)
-        : "var(--color-ripple-light)"; // Defined in theme.css as rgba(0,0,0, 0.1)
+        ? "var(--color-ripple-light)"
+        : "var(--color-ripple-dark)";
 
     const rippleRef = localRef as React.RefObject<HTMLElement>;
     const [, event] = useRipple({
@@ -104,26 +119,21 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       disabled: disabled || isLoading,
     });
 
-    const loaderSizeMap = {
-      xs: "h-4 w-4",
-      sm: "h-4 w-4",
-      md: "h-5 w-5",
-      lg: "h-6 w-6",
+    const dynamicStyle = {
+      ...style,
+      ...(isLoading && shape !== "full"
+        ? { borderRadius: loadingRadiusMap[size] }
+        : {}),
     };
 
     if (asChild) {
       return (
         <Slot
           className={clsx(
-            buttonVariants({
-              variant,
-              size,
-              shape,
-              className,
-              isLoading,
-            }),
+            buttonVariants({ variant, size, shape, className, isLoading }),
             disabled || isLoading ? "opacity-70 pointer-events-none" : "",
           )}
+          style={dynamicStyle}
           ref={localRef}
           onPointerDown={(e: React.PointerEvent<HTMLButtonElement>) => {
             e.stopPropagation();
@@ -145,6 +155,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           className,
           isLoading,
         })}
+        style={dynamicStyle}
         ref={localRef}
         onPointerDown={(e: React.PointerEvent<HTMLButtonElement>) => {
           e.stopPropagation();
@@ -153,40 +164,54 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         {...props}
       >
-        <AnimatePresence mode="wait" initial={false}>
-          {isLoading ? (
+        <AnimatePresence>
+          {isLoading && (
             <motion.div
               key="spinner"
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5 }}
               transition={{ duration: 0.2 }}
+              className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
             >
-              <Loader2
-                className={`animate-spin ease-[cubic-bezier(0.95,0.05,0.795,0.035)] ${
-                  loaderSizeMap[size || "md"]
+              <LoadingIndicator
+                variant="material-morph"
+                className={`p-1 ${
+                  variant === "primary" || variant === "destructive"
+                    ? "text-on-primary"
+                    : "text-primary"
                 }`}
               />
             </motion.div>
-          ) : (
-            <motion.span
-              key="content"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.2 }}
-              className="relative z-10 flex items-center justify-center"
-            >
-              {startIcon && (
-                <span className="mr-2 flex items-center">{startIcon}</span>
-              )}
-              {children}
-              {endIcon && (
-                <span className="ml-2 flex items-center">{endIcon}</span>
-              )}
-            </motion.span>
           )}
         </AnimatePresence>
+
+        <div
+          className={clsx(
+            "pointer-events-none transition-all duration-300 ease-emphasized",
+            isLoading ? spinnerSizeMap[size] : "w-0",
+          )}
+        />
+
+        <motion.div
+          initial={false}
+          animate={{
+            width: isLoading ? 0 : "auto",
+            opacity: isLoading ? 0 : 1,
+          }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="flex items-center justify-center overflow-hidden whitespace-nowrap"
+        >
+          <div className="flex items-center justify-center">
+            {startIcon && (
+              <span className="mr-2 flex items-center">{startIcon}</span>
+            )}
+            {children}
+            {endIcon && (
+              <span className="ml-2 flex items-center">{endIcon}</span>
+            )}
+          </div>
+        </motion.div>
       </button>
     );
   },

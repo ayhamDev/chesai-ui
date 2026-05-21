@@ -155,7 +155,7 @@ export const WithIconsAndAdornments: Story = {
             <NavigationMenu.Trigger>Account</NavigationMenu.Trigger>
             <NavigationMenu.Content>
               {/* A single-column list */}
-              <NavigationMenu.ContentList grid="cols-1" className="w-[300px]">
+              <NavigationMenu.ContentList grid="cols-1" className="w-[100px]">
                 <NavigationMenu.ContentItem
                   title="Profile"
                   startIcon={<User size={16} />}

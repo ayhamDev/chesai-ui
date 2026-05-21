@@ -22,7 +22,7 @@ const meta: Meta<typeof Button> = {
     },
     size: {
       control: "select",
-      options: ["xs", "sm", "md", "lg"],
+      options: ["xs", "sm", "md", "lg", "xl"],
     },
     shape: {
       control: "select",
@@ -124,7 +124,12 @@ export const WithIcons: Story = {
 };
 
 export const Loading: Story = {
+  args: {
+    size: "xl"
+  },
+
   name: "Loading State",
+
   render: () => (
     <div className="flex flex-wrap items-center gap-4">
       <Button variant="primary" isLoading>
@@ -140,12 +145,17 @@ export const Loading: Story = {
         Processing...
       </Button>
     </div>
-  ),
+  )
 };
 
 export const InteractiveLoading: Story = {
+  args: {
+    variant: "secondary",
+    size: "md",
+    shape: "minimal",
+  },
   name: "Interactive Loading",
-  render: () => {
+  render: (args) => {
     const [isLoading, setIsLoading] = useState(false);
     const handleClick = () => {
       setIsLoading(true);
@@ -154,8 +164,14 @@ export const InteractiveLoading: Story = {
       }, 2000);
     };
     return (
-      <Button variant="primary" isLoading={isLoading} onClick={handleClick}>
-        {isLoading ? "Submitting..." : "Click to Submit"}
+      <Button
+        variant={args.variant}
+        size={args.size}
+        shape={args.shape}
+        isLoading={isLoading}
+        onClick={handleClick}
+      >
+        Click to Submit
       </Button>
     );
   },

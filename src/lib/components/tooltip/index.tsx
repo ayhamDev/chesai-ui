@@ -1,3 +1,4 @@
+// src/lib/components/tooltip/index.tsx
 import {
   arrow,
   autoUpdate,
@@ -11,6 +12,7 @@ import {
   useHover,
   useInteractions,
   useRole,
+  type Placement,
 } from "@floating-ui/react";
 import { useLongPress, useMediaQuery } from "@uidotdev/usehooks";
 import { cva } from "class-variance-authority";
@@ -29,7 +31,6 @@ import React, {
 const tooltipVariants = cva("font-semibold relative z-50", {
   variants: {
     variant: {
-      // MD3 Tooltips use Inverse Surface
       primary: "bg-inverse-surface text-inverse-on-surface",
       secondary: "bg-surface-container-highest text-on-surface",
     },
@@ -90,8 +91,10 @@ export const useTooltip = (): TooltipContextType => {
 
 export const TooltipProvider = ({
   children,
+  placement = "top",
 }: {
   children: React.ReactNode;
+  placement?: Placement;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const arrowRef = useRef<HTMLDivElement>(null);
@@ -108,13 +111,15 @@ export const TooltipProvider = ({
     ],
     whileElementsMounted: autoUpdate,
     strategy: "fixed",
-    placement: "top",
+    placement,
   });
 
   const context = data.context;
-  const hover = useHover(context, { enabled: !isTouchDevice, move: false });
-  const focus = useFocus(context, { enabled: !isTouchDevice });
-  const dismiss = useDismiss(context, { referencePress: !isTouchDevice });
+
+  // Floating UI natively handles touch inputs nicely, so we don't force-disable them
+  const hover = useHover(context, { move: false });
+  const focus = useFocus(context);
+  const dismiss = useDismiss(context);
   const role = useRole(context, { role: "tooltip" });
 
   const longPressEvents = useLongPress(
@@ -215,6 +220,7 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
       () => mergeRefs([ref, context.refs.setFloating]),
       [ref, context.refs.setFloating],
     );
+
     useEffect(() => {
       if (context.isOpen) {
         const timer = setTimeout(() => setIsMounted(true), 10);
@@ -223,6 +229,7 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
         setIsMounted(false);
       }
     }, [context.isOpen]);
+
     if (!context.isOpen) return null;
 
     const staticSide = {
@@ -232,7 +239,6 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
       left: "right",
     }[context.placement.split("-")[0]] as string;
 
-    // Invert arrow color
     const arrowColorClass = {
       primary: "bg-inverse-surface",
       secondary: "bg-surface-container-highest",

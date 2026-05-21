@@ -9,7 +9,6 @@ import React, { useState } from "react";
 // --- VARIANTS ---
 
 const switchTrackVariants = cva(
-  // REMOVED: overflow-hidden to allow the bloom/halo to expand beyond track boundaries
   "relative border-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 outline-none rounded-full transition-colors duration-300",
   {
     variants: {
@@ -29,21 +28,18 @@ const switchTrackVariants = cva(
   },
 );
 
-// FIX: Typed as Transition
 const springTransition: Transition = {
   type: "spring",
   stiffness: 700,
   damping: 30,
 };
 
-// FIX: Typed as Transition
 const iconTransition: Transition = {
   type: "spring",
   stiffness: 500,
   damping: 25,
 };
 
-// FIX: Removed 'onChange' from Omit to allow standard HTML attributes
 export interface SwitchProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "size"
@@ -163,7 +159,6 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
             )}
           >
             <motion.div
-              layout
               transition={springTransition}
               initial={false}
               animate={{
@@ -184,11 +179,9 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
                 <div
                   className={clsx(
                     "absolute rounded-full transition-all duration-200 ease-out opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 pointer-events-none",
-                    // FIX: Use white/on-primary overlay when checked so it's visible against the primary track
                     isChecked ? "bg-white/20" : "bg-on-surface/15",
                   )}
                   style={{
-                    // Halo size logic
                     inset: isChecked ? "-10px" : "-12px",
                   }}
                 />

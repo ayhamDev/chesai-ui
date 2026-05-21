@@ -22,7 +22,7 @@ const meta: Meta<typeof IconButton> = {
     },
     size: {
       control: "select",
-      options: ["xs", "sm", "md", "lg"],
+      options: ["xs", "sm", "md", "lg", "xl"],
     },
     shape: {
       control: "select",

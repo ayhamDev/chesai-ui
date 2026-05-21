@@ -1,4 +1,4 @@
-// src/lib/components/command/Command.stories.tsx
+// src/lib/components/command/command.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   Calculator,
@@ -39,8 +39,14 @@ const meta: Meta<typeof Command> = {
     docs: {
       description: {
         component:
-          "Fast, composable, unstyled command menu for React. Built on `cmdk` and styled with the Chesai MD3 theme system.",
+          "Fast, composable, unstyled command menu for React. Built on `cmdk` and styled with the Chesai MD3 theme system, now featuring custom glassmorphism options.",
       },
+    },
+  },
+  argTypes: {
+    glass: {
+      control: "boolean",
+      description: "Enables frosted glassmorphism behind the container.",
     },
   },
 };
@@ -48,7 +54,6 @@ const meta: Meta<typeof Command> = {
 export default meta;
 type Story = StoryObj<typeof Command>;
 
-// --- Common Footer Component for Reusability ---
 const NavigationHints = () => (
   <CommandFooter>
     <div className="flex items-center gap-1.5 font-medium">
@@ -71,12 +76,14 @@ const NavigationHints = () => (
   </CommandFooter>
 );
 
-// --- 1. Standalone Command Palette ---
 export const Standalone: Story = {
   name: "1. Standalone / Inline",
-  render: () => (
+  args: {
+    glass: false,
+  },
+  render: (args) => (
     <div className="w-[450px] shadow-lg rounded-2xl border border-outline-variant/30">
-      <Command>
+      <Command {...args}>
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
@@ -119,29 +126,58 @@ export const Standalone: Story = {
             </CommandItem>
           </CommandGroup>
         </CommandList>
-        {/* Added Navigation Hints Footer */}
         <NavigationHints />
       </Command>
     </div>
   ),
 };
 
-// --- 2. Dialog Command Palette (Spotlight) ---
-export const DialogMode: Story = {
-  name: "2. Dialog Mode (Spotlight)",
+export const StandaloneGlass: Story = {
+  name: "2. Glassmorphic Standalone",
+  args: {
+    glass: true,
+  },
   parameters: {
     docs: {
       description: {
         story:
-          "Wraps the Command component in a `Dialog` to act as an application-wide quick actions menu (like MacOS Spotlight or Raycast). Try pressing `Cmd+J` or `Ctrl+J`.",
+          "Standalone panel rendered with translucent glass on top of a vibrant gradient.",
       },
     },
   },
-  render: () => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+  render: (args) => (
+    <div className="p-8 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 rounded-3xl shadow-xl w-[500px] flex justify-center">
+      <div className="w-full shadow-2xl">
+        <Command {...args}>
+          <CommandInput placeholder="Search on the glass..." />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup heading="Recent Actions">
+              <CommandItem>
+                <User className="mr-3 h-5 w-5 opacity-70" />
+                <span>My Profile</span>
+              </CommandItem>
+              <CommandItem>
+                <Settings className="mr-3 h-5 w-5 opacity-70" />
+                <span>Preferences</span>
+              </CommandItem>
+            </CommandGroup>
+          </CommandList>
+          <NavigationHints />
+        </Command>
+      </div>
+    </div>
+  ),
+};
+
+export const DialogMode: Story = {
+  name: "3. Dialog Mode (Spotlight)",
+  args: {
+    glass: true,
+  },
+  render: function Render(args) {
     const [open, setOpen] = useState(false);
 
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
       const down = (e: KeyboardEvent) => {
         if (e.key === "j" && (e.metaKey || e.ctrlKey)) {
@@ -172,7 +208,7 @@ export const DialogMode: Story = {
           Search Documentation...
         </Button>
 
-        <CommandDialog open={open} onOpenChange={setOpen}>
+        <CommandDialog open={open} onOpenChange={setOpen} glass={args.glass}>
           <CommandInput placeholder="Type a command or search..." />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
@@ -199,7 +235,6 @@ export const DialogMode: Story = {
               </CommandItem>
             </CommandGroup>
           </CommandList>
-          {/* Added Navigation Hints Footer */}
           <NavigationHints />
         </CommandDialog>
       </div>

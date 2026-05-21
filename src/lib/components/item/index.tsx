@@ -4,12 +4,12 @@ import { Slot } from "@radix-ui/react-slot";
 import { useLongPress } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
+import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import * as React from "react";
 import useRipple from "use-ripple-hook";
 
 // --- Types ---
 
-// Expanded to match Card variants
 type ItemVariant =
   | "primary"
   | "secondary"
@@ -25,6 +25,7 @@ type ItemVariant =
 
 type ItemSize = "sm" | "md" | "lg";
 type ItemDirection = "horizontal" | "vertical";
+type SwipeType = "trigger" | "dismiss" | "reveal";
 
 interface ItemContextProps {
   variant: ItemVariant;
@@ -159,8 +160,6 @@ const gapMap: Record<ItemGroupGap, string> = {
   lg: "gap-4",
 };
 
-// Explicit static class mapping to ensure Tailwind compiles them correctly
-// and using [30px] to prevent the browser from clamping the inner curves.
 const getShapeClasses = (
   index: number,
   total: number,
@@ -246,7 +245,7 @@ const ItemGroup = React.forwardRef<HTMLDivElement, ItemGroupProps>(
             className: clsx(
               (child as React.ReactElement<any>).props.className,
               shapeClass,
-              "focus-visible:z-10", // Ensures focus rings sit above sibling elements
+              "focus-visible:z-10",
             ),
           });
         })}
@@ -269,22 +268,13 @@ const ItemSeparator = React.forwardRef<
 ));
 ItemSeparator.displayName = "ItemSeparator";
 
+// --- Item Component ---
+
 export interface ItemProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?:
-    | "primary"
-    | "secondary"
-    | "tertiary"
-    | "high-contrast"
-    | "ghost"
-    | "surface"
-    | "surface-container-lowest"
-    | "surface-container-low"
-    | "surface-container"
-    | "surface-container-high"
-    | "surface-container-highest";
-  size?: "sm" | "md" | "lg";
+  variant?: ItemVariant;
+  size?: ItemSize;
   shape?: "full" | "minimal" | "sharp";
-  direction?: "horizontal" | "vertical";
+  direction?: ItemDirection;
   padding?: "none" | "sm" | "md" | "lg";
   bordered?: boolean;
   elevation?: "none" | 1 | 2 | 3 | 4 | 5;
@@ -292,7 +282,20 @@ export interface ItemProps extends React.HTMLAttributes<HTMLDivElement> {
   disabled?: boolean;
   disableRipple?: boolean;
   onLongPress?: (e: any) => void;
+
+  // Swipe Configurations
+  swipeType?: SwipeType;
+  swipeRightContent?: React.ReactNode;
+  swipeLeftContent?: React.ReactNode;
+  onSwipeRight?: () => void;
+  onSwipeLeft?: () => void;
+  swipeThreshold?: number;
+  /** Settle position (px) when swiped open right (sits on left) in 'reveal' mode */
+  swipeRightOffset?: number;
+  /** Settle position (px) when swiped open left (sits on right) in 'reveal' mode */
+  swipeLeftOffset?: number;
 }
+
 const Item = React.forwardRef<HTMLDivElement, ItemProps>(
   (
     {
@@ -309,6 +312,15 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
       disableRipple = false,
       onLongPress,
       onPointerDown,
+
+      swipeType = "trigger",
+      swipeRightContent,
+      swipeLeftContent,
+      onSwipeRight,
+      onSwipeLeft,
+      swipeThreshold = 100,
+      swipeRightOffset = 80,
+      swipeLeftOffset = 80,
       ...props
     },
     ref,
@@ -318,12 +330,10 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
     const localRef = React.useRef<HTMLDivElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
-    // Fix TS error: Ensure variants are never null for Context/Styles
     const effectiveVariant = (variant || "primary") as ItemVariant;
     const effectiveSize = (size || "md") as ItemSize;
     const effectiveDirection = (direction || "horizontal") as ItemDirection;
 
-    // Dynamic ripple color based on variant contrast
     const rippleColor = "var(--color-ripple-dark)";
 
     const [, event] = useRipple({
@@ -333,26 +343,124 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
       disabled: disabled || disableRipple,
     });
 
-    // Provide a no-op function if onLongPress is undefined to satisfy useLongPress types
     const longPressBindings = useLongPress(onLongPress ?? (() => {}), {
       threshold: 500,
     });
 
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-      // We do not call longPressBindings handlers here manually.
-      // They are spread onto the element below.
       event(e);
       onPointerDown?.(e);
     };
 
+    const isSwipeable = !!swipeRightContent || !!swipeLeftContent;
+    const x = useMotionValue(0);
+    const [isDismissed, setIsDismissed] = React.useState(false);
+
+    const handleDragEnd = (e: any, info: any) => {
+      if (disabled) return;
+      const currentX = x.get();
+      const velocity = info.velocity.x;
+      let targetX = 0;
+
+      if (swipeType === "dismiss") {
+        if (info.offset.x > swipeThreshold && swipeRightContent) {
+          targetX = 600; // Slide off right
+          animate(x, targetX, { type: "tween", duration: 0.2 }).then(() => {
+            setIsDismissed(true);
+            onSwipeRight?.();
+          });
+          return;
+        } else if (info.offset.x < -swipeThreshold && swipeLeftContent) {
+          targetX = -600; // Slide off left
+          animate(x, targetX, { type: "tween", duration: 0.2 }).then(() => {
+            setIsDismissed(true);
+            onSwipeLeft?.();
+          });
+          return;
+        }
+      } else if (swipeType === "reveal") {
+        const thresholdRight = swipeRightOffset / 2;
+        const thresholdLeft = swipeLeftOffset / 2;
+
+        if (currentX > thresholdRight && swipeRightContent && velocity > -100) {
+          targetX = swipeRightOffset;
+        } else if (
+          currentX < -thresholdLeft &&
+          swipeLeftContent &&
+          velocity < 100
+        ) {
+          targetX = -swipeLeftOffset;
+        }
+      } else {
+        // "trigger" type
+        if (info.offset.x > swipeThreshold && onSwipeRight) {
+          onSwipeRight();
+        } else if (info.offset.x < -swipeThreshold && onSwipeLeft) {
+          onSwipeLeft();
+        }
+      }
+
+      animate(x, targetX, { type: "spring", stiffness: 400, damping: 30 });
+    };
+
+    const handleItemClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      // Settle back to center on click if swiped open
+      if (swipeType === "reveal" && Math.abs(x.get()) > 10) {
+        e.stopPropagation();
+        e.preventDefault();
+        animate(x, 0, { type: "spring", stiffness: 400, damping: 30 });
+        return;
+      }
+      props.onClick?.(e);
+    };
+
+    const rightOpacity = useTransform(x, (v) => (v > 0 ? 1 : 0));
+    const leftOpacity = useTransform(x, (v) => (v < 0 ? 1 : 0));
+
     const finalProps = {
       ...props,
-      // Apply aria-disabled for accessibility
       "aria-disabled": disabled,
-      // Spread the long press bindings (onMouseDown, onTouchStart, etc.) if handler exists
       ...(onLongPress ? longPressBindings : {}),
       onPointerDown: handlePointerDown,
+      onClick: handleItemClick,
     };
+
+    const innerContent = (
+      <Comp
+        ref={isSwipeable ? undefined : localRef}
+        data-slot="item"
+        className={clsx(
+          itemVariants({
+            variant: effectiveVariant,
+            size: effectiveSize,
+            shape,
+            direction: effectiveDirection,
+            padding,
+            bordered,
+            elevation,
+          }),
+          isSwipeable
+            ? "w-full h-full rounded-[inherit] shadow-none"
+            : className,
+          disabled && "opacity-50 cursor-not-allowed pointer-events-none",
+        )}
+        {...finalProps}
+      />
+    );
+
+    if (!isSwipeable) {
+      return (
+        <ItemContext.Provider
+          value={{
+            variant: effectiveVariant,
+            size: effectiveSize,
+            direction: effectiveDirection,
+          }}
+        >
+          {innerContent}
+        </ItemContext.Provider>
+      );
+    }
 
     return (
       <ItemContext.Provider
@@ -362,24 +470,66 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
           direction: effectiveDirection,
         }}
       >
-        <Comp
+        {/* Outer Wrapper handles list collapse layout on dismiss */}
+        {/* @ts-ignore */}
+        <motion.div
           ref={localRef}
-          data-slot="item"
-          className={clsx(
-            itemVariants({
-              variant: effectiveVariant,
-              size: effectiveSize,
-              shape,
-              direction: effectiveDirection,
-              padding,
-              bordered,
-              elevation,
-              className,
-            }),
-            disabled && "opacity-50 cursor-not-allowed pointer-events-none",
+          className={clsx("relative w-full overflow-hidden z-0", className)}
+          animate={
+            isDismissed
+              ? {
+                  height: 0,
+                  opacity: 0,
+                  marginTop: 0,
+                  marginBottom: 0,
+                  paddingY: 0,
+                  border: "none",
+                }
+              : {}
+          }
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+        >
+          {/* Slipped Content Left Actions */}
+          {swipeRightContent && (
+            <motion.div
+              style={{ opacity: rightOpacity }}
+              className="absolute inset-y-0 left-0 right-0 flex items-center justify-start z-0"
+            >
+              {swipeRightContent}
+            </motion.div>
           )}
-          {...finalProps}
-        />
+
+          {/* Slipped Content Right Actions */}
+          {swipeLeftContent && (
+            <motion.div
+              style={{ opacity: leftOpacity }}
+              className="absolute inset-y-0 left-0 right-0 flex items-center justify-end z-0"
+            >
+              {swipeLeftContent}
+            </motion.div>
+          )}
+
+          <motion.div
+            style={{ x }}
+            drag={disabled ? false : "x"}
+            dragDirectionLock
+            dragConstraints={{
+              left:
+                swipeLeftContent && swipeType === "reveal"
+                  ? -swipeLeftOffset
+                  : 0,
+              right:
+                swipeRightContent && swipeType === "reveal"
+                  ? swipeRightOffset
+                  : 0,
+            }}
+            dragElastic={swipeType === "reveal" ? 0.25 : 0.4}
+            onDragEnd={handleDragEnd}
+            className="relative z-10 w-full rounded-[inherit]"
+          >
+            {innerContent}
+          </motion.div>
+        </motion.div>
       </ItemContext.Provider>
     );
   },
@@ -442,7 +592,6 @@ const ItemTitle = React.forwardRef<
     <div
       ref={ref}
       data-slot="item-title"
-      // MD3 standard for list titles is title-medium
       className={clsx(
         "flex w-fit items-center gap-2 text-title-medium font-semibold leading-snug text-inherit",
         direction === "vertical" && "justify-center",
