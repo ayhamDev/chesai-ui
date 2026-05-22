@@ -48,7 +48,7 @@ interface TabsProps {
   defaultValue: string;
   variant?: TabVariant;
   pageTransition?: PageTransition;
-  routingMode?: "search" | "pathname";
+  routingMode?: "search" | "pathname" | "memory";
   routingParamName?: string;
   initialTab?: string;
 }
@@ -58,7 +58,7 @@ const TabsRoot: React.FC<TabsProps> = ({
   defaultValue,
   variant = "primary",
   pageTransition = "fade",
-  routingMode = "search",
+  routingMode = "memory",
   routingParamName = "tab",
   initialTab,
 }) => {

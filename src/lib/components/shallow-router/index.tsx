@@ -9,7 +9,7 @@ import useShallowRouter from "../../hooks/useShallowRouter";
 
 // --- TYPE DEFINITIONS ---
 
-type RouterMode = "search" | "pathname";
+type RouterMode = "search" | "pathname" | "memory"; // <--- ADDED MEMORY MODE
 
 interface RouterOptions {
   mode: RouterMode;
@@ -25,7 +25,7 @@ interface ShallowRouterContextType {
 // --- CONTEXT CREATION & HOOKS ---
 
 const ShallowRouterContext = createContext<ShallowRouterContextType | null>(
-  null
+  null,
 );
 
 /**
@@ -54,7 +54,7 @@ export const useRouterOptions = (): RouterOptions => {
   const context = useContext(ShallowRouterContext);
   if (!context) {
     throw new Error(
-      "useRouterOptions must be used within a <ShallowRouter> provider"
+      "useRouterOptions must be used within a <ShallowRouter> provider",
     );
   }
   return context.options;
@@ -82,7 +82,7 @@ export const ShallowRouter: React.FC<ShallowRouterProps> = ({
   const router = useShallowRouter({ mode, paramName, basePath });
   const options = useMemo(
     () => ({ mode, paramName, basePath }),
-    [mode, paramName, basePath]
+    [mode, paramName, basePath],
   );
 
   const contextValue = useMemo(() => ({ router, options }), [router, options]);
@@ -138,7 +138,7 @@ export const ShallowPage = React.forwardRef<HTMLDivElement, ShallowPageProps>(
         {children}
       </div>
     );
-  }
+  },
 );
 ShallowPage.displayName = "ShallowPage";
 
@@ -158,7 +158,7 @@ export const ShallowSwitch: React.FC<ShallowSwitchProps> = ({ children }) => {
 
   const pages = React.Children.toArray(children).filter(
     (child): child is React.ReactElement<ShallowPageProps> =>
-      React.isValidElement(child) && child.type === ShallowPage
+      React.isValidElement(child) && child.type === ShallowPage,
   );
 
   const activePage = pages.find((page) => page.props.path === path) || null;

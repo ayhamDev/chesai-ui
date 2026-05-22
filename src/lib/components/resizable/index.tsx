@@ -292,7 +292,7 @@ Pane.displayName = "Resizable.Pane";
 // --- HANDLE COMPONENT ---
 
 const handleVariants = cva(
-  "relative z-10 flex w-4 -ml-2 h-full cursor-col-resize items-center justify-center outline-none group select-none touch-none",
+  "relative z-10 flex w-1 h-full cursor-col-resize items-center justify-center outline-none group select-none touch-none",
   {
     variants: {
       isDragging: {

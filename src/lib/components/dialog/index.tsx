@@ -351,7 +351,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   }
                   className={clsx(
                     "absolute inset-0",
-                    isMD3 && !isFullscreen ? "bg-black/30" : "bg-black/30",
+                    isMD3 && !isFullscreen ? "bg-black/30" : "bg-black/50",
                   )}
                   onClick={() => !isLocked && onOpenChange(false)}
                   style={{ willChange: "opacity" }}

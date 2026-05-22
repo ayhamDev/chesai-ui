@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { flushSync } from 'react-dom' // <-- ADD THIS IMPORT
+import { flushSync } from 'react-dom'
 
 // --- TYPE DEFINITIONS ---
-type HistoryMode = 'search' | 'pathname'
+type HistoryMode = 'search' | 'pathname' | 'memory'
 
 interface UseHistoryOptions {
   mode?: HistoryMode
   paramName?: string
   basePath?: string
   /**
-   * NEW: Enable View Transitions automatically on browser back/forward buttons
+   * Enable View Transitions automatically on browser back/forward buttons
    * Defaults to true to make it universal
    */
   enableViewTransitions?: boolean
@@ -19,20 +19,22 @@ type Params = Record<string, string | number | boolean | null | undefined>
 
 // --- HOOK IMPLEMENTATION ---
 const useShallowRouter = (options: UseHistoryOptions = {}) => {
-  const {
-    mode = 'search',
-    paramName = 'path',
-    basePath = '/',
-    enableViewTransitions = true, // <-- NEW DEFAULT
-  } = options
+  const { mode = 'search', paramName = 'path', basePath = '/', enableViewTransitions = true } = options
 
   const [searchParams, setSearchParams] = useState(
     () => new URLSearchParams(typeof window !== 'undefined' ? window.location.search : ''),
   )
   const [pathname, setPathname] = useState(() => (typeof window !== 'undefined' ? window.location.pathname : ''))
 
+  // Internal isolated state for memory mode
+  const [memoryStack, setMemoryStack] = useState<string[]>(['/'])
+  const [memoryIndex, setMemoryIndex] = useState(0)
+
   // Get current path based on mode
   const currentPath = useMemo(() => {
+    if (mode === 'memory') {
+      return memoryStack[memoryIndex]
+    }
     if (mode === 'pathname') {
       if (pathname === basePath || pathname === `${basePath}/`) {
         return '/'
@@ -43,16 +45,20 @@ const useShallowRouter = (options: UseHistoryOptions = {}) => {
       return '/'
     }
     return searchParams.get(paramName) || '/'
-  }, [mode, pathname, searchParams, paramName, basePath])
+  }, [mode, pathname, searchParams, paramName, basePath, memoryStack, memoryIndex])
 
   const otherParams = useMemo(() => {
     const params = new URLSearchParams(searchParams)
-    params.delete(paramName)
+    if (mode !== 'memory') {
+      params.delete(paramName)
+    }
     return params
-  }, [searchParams, paramName])
+  }, [searchParams, paramName, mode])
 
-  // --- THE FIX: Wrap popstate in a View Transition ---
+  // --- Wrap popstate in a View Transition ---
   useEffect(() => {
+    if (mode === 'memory') return // Do not attach browser listeners in memory mode
+
     const handlePopState = () => {
       const updateState = () => {
         setSearchParams(new URLSearchParams(window.location.search))
@@ -73,11 +79,17 @@ const useShallowRouter = (options: UseHistoryOptions = {}) => {
 
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [enableViewTransitions])
+  }, [enableViewTransitions, mode])
 
   // Push new path to history
   const push = useCallback(
     (path: string, additionalParams: Params = {}, state: any = null) => {
+      if (mode === 'memory') {
+        setMemoryStack(prev => [...prev.slice(0, memoryIndex + 1), path || '/'])
+        setMemoryIndex(prev => prev + 1)
+        return
+      }
+
       if (mode === 'pathname') {
         const newPathname = path === '/' || !path ? basePath : `${basePath}${path}`
         const newParams = new URLSearchParams()
@@ -111,12 +123,17 @@ const useShallowRouter = (options: UseHistoryOptions = {}) => {
         setSearchParams(newParams)
       }
     },
-    [mode, basePath, paramName],
+    [mode, basePath, paramName, memoryIndex],
   )
 
   // Replace current path in history
   const replace = useCallback(
     (path: string, additionalParams: Params = {}, state: any = null) => {
+      if (mode === 'memory') {
+        setMemoryStack(prev => [...prev.slice(0, memoryIndex), path || '/'])
+        return
+      }
+
       if (mode === 'pathname') {
         const newPathname = path === '/' || !path ? basePath : `${basePath}${path}`
         const newParams = new URLSearchParams()
@@ -150,13 +167,14 @@ const useShallowRouter = (options: UseHistoryOptions = {}) => {
         setSearchParams(newParams)
       }
     },
-    [mode, basePath, paramName],
+    [mode, basePath, paramName, memoryIndex],
   )
 
   const updateParams = useCallback(
     (params: Params, replaceHistory = false) => {
-      const newParams = new URLSearchParams(window.location.search)
+      if (mode === 'memory') return
 
+      const newParams = new URLSearchParams(window.location.search)
       Object.entries(params).forEach(([key, value]) => {
         if (key !== paramName) {
           if (value !== null && value !== undefined) {
@@ -176,11 +194,13 @@ const useShallowRouter = (options: UseHistoryOptions = {}) => {
       }
       setSearchParams(newParams)
     },
-    [paramName],
+    [paramName, mode],
   )
 
   const clearParams = useCallback(
     (keepPath = true) => {
+      if (mode === 'memory') return
+
       const newParams = new URLSearchParams()
       let newUrl = window.location.pathname
 
@@ -199,13 +219,48 @@ const useShallowRouter = (options: UseHistoryOptions = {}) => {
     [currentPath, paramName, mode],
   )
 
-  const getParam = useCallback((key: string) => searchParams.get(key), [searchParams])
+  const getParam = useCallback(
+    (key: string) => {
+      if (mode === 'memory') return null
+      return searchParams.get(key)
+    },
+    [searchParams, mode],
+  )
 
-  const hasParam = useCallback((key: string) => searchParams.has(key), [searchParams])
+  const hasParam = useCallback(
+    (key: string) => {
+      if (mode === 'memory') return false
+      return searchParams.has(key)
+    },
+    [searchParams, mode],
+  )
 
-  const goBack = useCallback(() => window.history.back(), [])
-  const goForward = useCallback(() => window.history.forward(), [])
-  const go = useCallback((n: number) => window.history.go(n), [])
+  const goBack = useCallback(() => {
+    if (mode === 'memory') {
+      setMemoryIndex(prev => Math.max(0, prev - 1))
+      return
+    }
+    window.history.back()
+  }, [mode])
+
+  const goForward = useCallback(() => {
+    if (mode === 'memory') {
+      setMemoryIndex(prev => Math.min(memoryStack.length - 1, prev + 1))
+      return
+    }
+    window.history.forward()
+  }, [mode, memoryStack.length])
+
+  const go = useCallback(
+    (n: number) => {
+      if (mode === 'memory') {
+        setMemoryIndex(prev => Math.max(0, Math.min(memoryStack.length - 1, prev + n)))
+        return
+      }
+      window.history.go(n)
+    },
+    [mode, memoryStack.length],
+  )
 
   return {
     path: currentPath,
@@ -220,7 +275,7 @@ const useShallowRouter = (options: UseHistoryOptions = {}) => {
     clearParams,
     getParam,
     hasParam,
-    length: typeof window !== 'undefined' ? window.history.length : 0,
+    length: mode === 'memory' ? memoryStack.length : typeof window !== 'undefined' ? window.history.length : 0,
     href: typeof window !== 'undefined' ? window.location.href : '',
     basename: typeof window !== 'undefined' ? window.location.pathname : '',
   }

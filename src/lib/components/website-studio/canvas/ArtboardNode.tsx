@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Handle, Position, NodeProps } from "@xyflow/react";
@@ -135,7 +137,7 @@ export const ArtboardNode = ({ data, selected }: NodeProps<any>) => {
     <div
       className={`relative rounded-xl shadow-2xl flex flex-col overflow-hidden transition-[box-shadow,border] duration-200 ${
         selected
-          ? "ring-2 ring-primary ring-offset-4 ring-offset-graphite-background"
+          ? "ring-2 ring-primary ring-offset-4 ring-offset-background"
           : "ring-1 ring-outline-variant/30"
       }`}
       // Removed fixed height; minHeight ensures it doesn't collapse
@@ -155,14 +157,14 @@ export const ArtboardNode = ({ data, selected }: NodeProps<any>) => {
                 components={components}
                 data={activePage.content}
                 designSystem={website?.designSystem}
-                cms={cms || {}} // <-- Passed down to compile {{ variables }}
+                cms={cms || {}}
                 actions={{}}
               />
             </ArtboardIframe>
           </div>
         ) : (
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40 gap-4"
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40 gap-4 mx-4"
             style={{ height: height - 32 }}
           >
             <Typography variant="display-small" className="opacity-50">

@@ -660,7 +660,7 @@ export const VisualBuilderMode: Story = {
     docs: {
       description: {
         story:
-          "Phase 1 & 2: React Flow infinite canvas implementation with Artboards, Iframe scaling, and CMS data bindings.",
+          "Phase 1, 2 & 3: React Flow infinite canvas implementation with Artboards, Iframe scaling, CMS data bindings, and Dynamic UI overrides.",
       },
     },
   },
@@ -675,14 +675,14 @@ export const VisualBuilderMode: Story = {
           initialState={landingPageJSON}
           cms={mockCMSData}
           onExit={() => setIsEditing(false)}
-          // --- CUSTOM DEVELOPER HEADER PROPS ---
+          // --- CUSTOM DEVELOPER HEADER PROPS (Styled with standard tokens) ---
           topBarLeft={
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
                 startIcon={<Plus size={16} />}
-                className="text-on-surface-variant hover:text-on-surface h-8 font-medium"
+                className="font-medium"
               >
                 Insert
               </Button>
@@ -690,7 +690,7 @@ export const VisualBuilderMode: Story = {
                 variant="ghost"
                 size="sm"
                 startIcon={<LayoutGrid size={16} />}
-                className="text-on-surface-variant hover:text-on-surface h-8 font-medium"
+                className="font-medium"
               >
                 Layout
               </Button>
@@ -698,7 +698,7 @@ export const VisualBuilderMode: Story = {
                 variant="ghost"
                 size="sm"
                 startIcon={<Type size={16} />}
-                className="text-on-surface-variant hover:text-on-surface h-8 font-medium"
+                className="font-medium"
               >
                 Text
               </Button>
@@ -706,7 +706,7 @@ export const VisualBuilderMode: Story = {
                 variant="ghost"
                 size="sm"
                 startIcon={<PenTool size={16} />}
-                className="text-on-surface-variant hover:text-on-surface h-8 font-medium"
+                className="font-medium"
               >
                 Vector
               </Button>
@@ -714,7 +714,7 @@ export const VisualBuilderMode: Story = {
                 variant="ghost"
                 size="sm"
                 startIcon={<Database size={16} />}
-                className="text-on-surface-variant hover:text-on-surface h-8 font-medium"
+                className="font-medium"
               >
                 CMS
               </Button>
@@ -774,7 +774,7 @@ export const VisualBuilderMode: Story = {
               <Button
                 size="sm"
                 variant="primary"
-                className="h-8 px-5 font-bold shadow-none bg-orange-200 text-orange-900 hover:bg-orange-300"
+                className="h-8 px-5 font-bold shadow-none"
               >
                 Publish
               </Button>
@@ -799,7 +799,7 @@ export const VisualBuilderMode: Story = {
           <Button
             size="lg"
             variant="primary"
-            className="shadow-2xl font-bold bg-orange-200 text-orange-900 hover:bg-orange-300"
+            className="shadow-2xl font-bold"
             startIcon={<Edit3 size={18} />}
             onClick={() => setIsEditing(true)}
           >

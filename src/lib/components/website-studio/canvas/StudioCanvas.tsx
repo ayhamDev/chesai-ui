@@ -23,9 +23,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
   DropdownMenuLabel,
+  DropdownMenuShortcut,
 } from "../../dropdown-menu";
 import { Button } from "../../button";
 import { IconButton } from "../../icon-button";
@@ -53,10 +53,9 @@ import {
   Image as ImageIcon,
   File,
   UploadCloud,
-  Settings2,
+  Check,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Resizable } from "../../resizable";
+import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 
 // --- DEVELOPER API CONFIGURATION ---
 export interface StudioAIConfig {
@@ -135,6 +134,28 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logsPanelRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // --- INSTANT SPOTLIGHT OVERLAY ---
+  // Pure MotionValues mapped directly without spring damping/inertia
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent) => {
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      // Offsetting by half of the overlay's size (125px for 250px container)
+      mouseX.set(x - 125);
+      mouseY.set(y - 125);
+    },
+    [mouseX, mouseY],
+  );
 
   // Hook into React Flow's selection engine
   useOnSelectionChange({
@@ -249,11 +270,15 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
   return (
     <div
       className={clsx(
-        "w-full h-full bg-graphite-background transition-cursor",
+        "w-full h-full bg-surface-container-lowest transition-cursor z-100 relative overflow-hidden",
         activeTool === "pointer"
-          ? "[&_.react-flow__pane]:cursor-default"
+          ? "[&_.react-flow__pane]:cursor-crosshair"
           : "[&_.react-flow__pane]:cursor-grab active:[&_.react-flow__pane]:cursor-grabbing",
       )}
+      onPointerMove={handlePointerMove}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
+      ref={containerRef}
     >
       <ReactFlow
         nodes={nodes}
@@ -265,6 +290,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
         maxZoom={2}
+        zoomOnPinch={true}
         proOptions={{ hideAttribution: true }}
         // --- GESTURE & SELECTION CONFIGURATION ---
         panOnScroll={true}
@@ -275,22 +301,40 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
         nodesDraggable={activeTool === "pointer"}
         elementsSelectable={activeTool === "pointer"}
       >
+        {/* Instant, Small Spotlight Effect Overlay */}
+        <motion.div
+          className="pointer-events-none absolute w-[300px] h-[300px] blur-3xl rounded-full"
+          style={{
+            x: mouseX,
+            y: mouseY,
+            background: `radial-gradient(circle, 
+              color-mix(in srgb, var(--md-sys-color-primary) 30%, transparent) 0%, 
+              color-mix(in srgb, var(--md-sys-color-tertiary) 2%, transparent) 50%, 
+              transparent 85%)`,
+            zIndex: -1,
+            willChange: "transform, opacity",
+          }}
+          animate={{ opacity: isHovered ? 1 : 0 }}
+          transition={{ duration: 0 }} // Instantly toggles visibility
+        />
+
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}
-          size={2}
+          size={3}
           color="var(--md-sys-color-on-surface-variant)"
-          className="opacity-40"
+          className="opacity-30"
+          bgColor="var(--md-sys-color-surface-container-high)"
         />
 
         {/* --- RIGHT TOOLBAR (Center Right) --- */}
-        <Panel position="center-right" className="m-4 z-50">
+        <Panel position="center-right" className="m-4 z-50 pointer-events-none">
           <Toolbar
             orientation="vertical"
             variant="secondary"
             shape="minimal"
             shadow="lg"
-            className="border border-outline-variant/30 bg-surface-container-high/95 backdrop-blur-sm items-center py-2"
+            className="pointer-events-auto border border-outline-variant/30 bg-surface-container-high/95 backdrop-blur-sm items-center py-2"
           >
             <Toolbar.ToggleGroup
               type="single"
@@ -377,11 +421,11 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
             {/* --- TOP LEFT (LLM Logs Panel) --- */}
             <Panel
               position="top-left"
-              className="m-4 z-50 pointer-events-none sm:h-[calc(100%-2rem)] flex flex-col"
+              className="m-4 z-50 pointer-events-none h-[calc(100%-10rem)] flex flex-col"
             >
               <div
                 ref={logsPanelRef}
-                className="w-[360px] pointer-events-auto flex flex-col items-start gap-2 h-full"
+                className="w-[360px] pointer-events-none flex flex-col items-start gap-2 h-full"
               >
                 <TooltipProvider>
                   <TooltipTrigger asChild>
@@ -390,7 +434,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                         setIsLogsPanelOpen(!isLogsPanelOpen);
                         aiConfig.onPanelCollapseToggle?.(!isLogsPanelOpen);
                       }}
-                      className="bg-surface-container-high/90 hover:bg-surface-container-highest backdrop-blur-2xl border border-outline-variant/30 rounded-full w-12 h-6 flex items-center justify-center shadow-md transition-colors shrink-0"
+                      className="pointer-events-auto bg-surface-container-high/90 hover:bg-surface-container-highest backdrop-blur-2xl border border-outline-variant/30 rounded-full w-12 h-6 flex items-center justify-center shadow-md transition-colors shrink-0"
                     >
                       <MoreHorizontal size={14} className="text-on-surface" />
                     </button>
@@ -405,7 +449,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                       animate={{ opacity: 1, x: 0, scale: 1 }}
                       exit={{ opacity: 0, x: -10, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="h-[75%] w-full flex flex-col"
+                      className="h-full w-full flex flex-col min-h-0 pointer-events-auto"
                     >
                       <Card
                         glass
@@ -610,12 +654,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                       {aiConfig.models && aiConfig.models.length > 0 && (
                         <DropdownMenu shape="minimal">
                           <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              shape="full"
-                              className="h-7 px-3 bg-surface-container-highest/50 hover:bg-surface-container-highest border border-outline-variant/30 gap-1.5 text-xs font-semibold shadow-sm"
-                            >
+                            <Button variant="ghost" size="sm" shape="full">
                               {activeModel}
                               <ChevronDown size={12} className="opacity-50" />
                             </Button>
@@ -626,6 +665,8 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                                 key={model}
                                 onClick={() => setActiveModel(model)}
                               >
+                                {activeModel === model && <Check />}
+
                                 {model}
                               </DropdownMenuItem>
                             ))}
@@ -633,11 +674,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                         </DropdownMenu>
                       )}
 
-                      <IconButton
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest cursor-default"
-                      >
+                      <IconButton variant="ghost" size="sm">
                         <Wand2 size={14} />
                       </IconButton>
 
@@ -646,12 +683,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                         variant="ghost"
                         size="sm"
                         onClick={handlePromptSubmit}
-                        className={clsx(
-                          "h-7 w-7 transition-colors",
-                          promptText.length > 0 || attachedFiles.length > 0
-                            ? "bg-primary text-on-primary hover:bg-primary/90 shadow-md"
-                            : "bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-highest/80",
-                        )}
                       >
                         <ArrowUp size={14} />
                       </IconButton>
@@ -662,8 +693,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
             </Panel>
           </>
         )}
-
-        {/* RIGHT PANEL (Inspector) */}
       </ReactFlow>
     </div>
   );
