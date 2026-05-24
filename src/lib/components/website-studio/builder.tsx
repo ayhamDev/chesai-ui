@@ -1,5 +1,6 @@
-// src/lib/components/website-studio/builder.tsx
 "use client";
+
+import { ContextMenu } from "../context-menu";
 
 import {
   Box,
@@ -15,8 +16,16 @@ import {
   Type,
   Image as ImageIcon,
   Plus,
+  Folder,
+  FolderOpen,
+  MoreHorizontal,
+  Copy,
+  Edit3,
+  Trash2,
+  Undo2,
+  Redo2,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { clsx } from "clsx";
 
 import { Resizable } from "../resizable";
@@ -35,6 +44,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../dropdown-menu";
 import { TreeView } from "../tree-view";
 
 import { StudioCanvas } from "./canvas/StudioCanvas";
@@ -47,20 +63,25 @@ import type {
   PageSchema,
 } from "./types";
 
+export interface PageAction {
+  id: string;
+  label: string;
+  icon?: React.ReactNode;
+  destructive?: boolean;
+  run: (pageId: string, page: PageSchema) => void;
+}
+
 export interface BuilderProps {
   components: ComponentRegistry;
   initialState: WebsiteSchema;
   cms?: any;
-  /** Custom UI for the left side of the top toolbar */
   topBarLeft?: React.ReactNode;
-  /** Custom UI for the center of the top toolbar */
   topBarCenter?: React.ReactNode;
-  /** Custom UI for the right side of the top toolbar */
   topBarRight?: React.ReactNode;
+  customPageActions?: PageAction[];
   onExit?: () => void;
 }
 
-// --- HELPER: Map Node Type to Icon ---
 const getNodeIcon = (type: string) => {
   const t = type.toLowerCase();
   if (t.includes("text") || t.includes("heading") || t.includes("paragraph"))
@@ -76,7 +97,6 @@ const getNodeIcon = (type: string) => {
   return <Box className="w-4 h-4 opacity-70" />;
 };
 
-// --- HELPER: Filter Tree Nodes ---
 const filterTree = (nodes: StudioNode[], query: string): StudioNode[] => {
   if (!query) return nodes;
   const lowerQuery = query.toLowerCase();
@@ -109,7 +129,13 @@ interface PageNode {
   pageId: string;
 }
 
-// --- MAIN BUILDER COMPONENT ---
+interface ComponentTreeNode {
+  id: string;
+  name: string;
+  isCategory: boolean;
+  children?: ComponentTreeNode[];
+}
+
 export const Builder: React.FC<BuilderProps> = ({
   components,
   initialState,
@@ -117,24 +143,41 @@ export const Builder: React.FC<BuilderProps> = ({
   topBarLeft,
   topBarCenter,
   topBarRight,
+  customPageActions,
 }) => {
   const {
     initStudio,
     website,
     activePageId,
-    selectedNodeId,
+    selectedNodeIds,
+    viewContext,
+    setViewContext,
     setActivePage,
-    selectNode,
-    moveNode,
+    setSelectedNodes,
+    moveNodes,
+    undo,
+    redo,
+    past,
+    future,
+    addPage,
+    updatePage,
+    duplicatePage,
+    removePage,
   } = useStudioStore();
 
   const [pageSearch, setPageSearch] = useState("");
   const [layerSearch, setLayerSearch] = useState("");
+  const [assetSearch, setAssetSearch] = useState("");
   const [expandedLayerIds, setExpandedLayerIds] = useState<string[]>([]);
   const [expandedPageIds, setExpandedPageIds] = useState<string[]>([]);
+
   const [isAddPageOpen, setIsAddPageOpen] = useState(false);
   const [newPageSlug, setNewPageSlug] = useState("");
   const [newPageTitle, setNewPageTitle] = useState("");
+
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [editPageSlug, setEditPageSlug] = useState("");
+  const [editPageTitle, setEditPageTitle] = useState("");
 
   useEffect(() => {
     initStudio(initialState);
@@ -142,30 +185,92 @@ export const Builder: React.FC<BuilderProps> = ({
 
   const activePage = website?.pages.find((p) => p.id === activePageId);
 
-  // Filtered Layers (Memoized to prevent infinite loops)
   const displayedLayers = React.useMemo(
     () => filterTree(activePage?.content || [], layerSearch),
     [activePage?.content, layerSearch],
   );
 
-  // Auto-expand layers tree when searching
   useEffect(() => {
+    const getFolderIds = (nodes: StudioNode[]): string[] => {
+      let ids: string[] = [];
+      for (const node of nodes) {
+        if (node.children && node.children.length > 0) {
+          ids.push(node.id);
+          ids = ids.concat(getFolderIds(node.children));
+        }
+      }
+      return ids;
+    };
+
     if (layerSearch.trim().length > 0) {
-      const getAllFolderIds = (nodes: StudioNode[]): string[] => {
-        let ids: string[] = [];
+      setExpandedLayerIds(getFolderIds(displayedLayers));
+    } else {
+      setExpandedLayerIds(getFolderIds(activePage?.content || []));
+    }
+  }, [layerSearch, activePageId]);
+
+  useEffect(() => {
+    if (!activePage?.content || selectedNodeIds.length === 0) return;
+
+    setExpandedLayerIds((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+
+      const findAncestors = (nodes: StudioNode[], path: string[]) => {
         for (const node of nodes) {
+          if (selectedNodeIds.includes(node.id)) {
+            path.forEach((id) => {
+              if (!next.has(id)) {
+                next.add(id);
+                changed = true;
+              }
+            });
+          }
           if (node.children && node.children.length > 0) {
-            ids.push(node.id);
-            ids = ids.concat(getAllFolderIds(node.children));
+            findAncestors(node.children, [...path, node.id]);
           }
         }
-        return ids;
       };
-      setExpandedLayerIds(getAllFolderIds(displayedLayers));
-    }
-  }, [layerSearch, displayedLayers]);
 
-  // Nested Pages Tree Construction
+      findAncestors(activePage.content, []);
+      return changed ? Array.from(next) : prev;
+    });
+
+    const scrollTimer = setTimeout(() => {
+      const targetId = selectedNodeIds[0];
+      const el = document.querySelector(`[data-tree-node-id="${targetId}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }, 250);
+
+    return () => clearTimeout(scrollTimer);
+  }, [selectedNodeIds, activePage?.content]);
+
+  // Global Keyboard Shortcuts (Undo / Redo)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isInput =
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement).isContentEditable;
+
+      if (isInput) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [undo, redo]);
+
   const displayedPagesTree = React.useMemo(() => {
     const filtered = (website?.pages || []).filter((p) => {
       const slugName = p.slug === "/" ? "home" : p.slug;
@@ -187,7 +292,6 @@ export const Builder: React.FC<BuilderProps> = ({
       pageId: p.id,
     }));
 
-    // Sort by slug length so parents are processed before children
     allNodes.sort((a, b) => a.slug.length - b.slug.length);
     allNodes.forEach((node) => nodeMap.set(node.slug, node));
 
@@ -205,13 +309,11 @@ export const Builder: React.FC<BuilderProps> = ({
         const parentSlug = "/" + parts.join("/");
         const parentNode = nodeMap.get(parentSlug);
 
-        // Display just the final chunk in the folder tree
         node.name = "/" + (node.slug.split("/").filter(Boolean).pop() || "");
 
         if (parentNode) {
           parentNode.children.push(node);
         } else {
-          // Parent omitted by search, push to root with full path to prevent hiding
           node.name = node.slug;
           rootNodes.push(node);
         }
@@ -221,7 +323,6 @@ export const Builder: React.FC<BuilderProps> = ({
     return rootNodes;
   }, [website?.pages, pageSearch]);
 
-  // Auto-expand pages tree when searching
   useEffect(() => {
     if (pageSearch.trim().length > 0) {
       const getAllPageIds = (nodes: PageNode[]): string[] => {
@@ -238,47 +339,94 @@ export const Builder: React.FC<BuilderProps> = ({
     }
   }, [pageSearch, displayedPagesTree]);
 
-  // Helper to append a new page to the Zustand store
+  const componentTreeData = useMemo(() => {
+    const categories = Array.from(
+      new Set(Object.values(components).map((c) => c.category)),
+    );
+
+    const tree = categories
+      .map((cat) => ({
+        id: `cat-${cat}`,
+        name: cat,
+        isCategory: true,
+        children: Object.entries(components)
+          .filter(
+            ([_, comp]) =>
+              comp.category === cat &&
+              comp.name.toLowerCase().includes(assetSearch.toLowerCase()),
+          )
+          .map(([key, comp]) => ({
+            id: key,
+            name: comp.name,
+            isCategory: false,
+          })),
+      }))
+      .filter((cat) => cat.children.length > 0);
+
+    return tree;
+  }, [components, assetSearch]);
+
+  const [expandedAssetIds, setExpandedAssetIds] = useState<string[]>(
+    componentTreeData.map((c) => c.id),
+  );
+
   const handleCreatePage = () => {
     if (!newPageSlug) return;
-
-    useStudioStore.setState((state) => {
-      if (!state.website) return state;
-      const newPage = {
-        id: `page_${Date.now()}`,
-        slug: newPageSlug.startsWith("/") ? newPageSlug : `/${newPageSlug}`,
-        title: newPageTitle || "New Page",
-        content: [],
-      };
-      return {
-        ...state,
-        website: {
-          ...state.website,
-          pages: [...state.website.pages, newPage],
-        },
-      };
-    });
-
+    addPage(newPageSlug, newPageTitle);
     setIsAddPageOpen(false);
     setNewPageSlug("");
     setNewPageTitle("");
   };
 
+  const openEditPage = (id: string) => {
+    const page = website?.pages.find((p) => p.id === id);
+    if (page) {
+      setEditPageSlug(page.slug);
+      setEditPageTitle(page.title);
+      setEditingPageId(id);
+    }
+  };
+
+  const handleEditPage = () => {
+    if (!editingPageId || !editPageSlug) return;
+    updatePage(editingPageId, editPageSlug, editPageTitle);
+    setEditingPageId(null);
+  };
+
   return (
     <BuilderContextProvider components={components} cms={cms}>
       <div className="flex flex-col w-full h-screen bg-background text-on-background overflow-hidden font-manrope">
-        {/* --- TOP NAVBAR (Provided by Developer) --- */}
         <header className="h-14 bg-surface border-b border-outline-variant/30 flex items-center justify-between px-4 shrink-0 z-50 shadow-sm">
-          <div className="flex items-center gap-3">{topBarLeft}</div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 border-r border-outline-variant/30 pr-3 mr-1">
+              <IconButton
+                variant="ghost"
+                size="sm"
+                onClick={undo}
+                disabled={past.length === 0}
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo2 size={16} className="opacity-70" />
+              </IconButton>
+              <IconButton
+                variant="ghost"
+                size="sm"
+                onClick={redo}
+                disabled={future.length === 0}
+                title="Redo (Ctrl+Y)"
+              >
+                <Redo2 size={16} className="opacity-70" />
+              </IconButton>
+            </div>
+            {topBarLeft}
+          </div>
           <div className="flex items-center gap-2 hidden lg:flex">
             {topBarCenter}
           </div>
           <div className="flex items-center gap-4">{topBarRight}</div>
         </header>
 
-        {/* --- MAIN WORKSPACE (RESIZABLE) --- */}
         <Resizable className="flex-1 overflow-hidden z-0 bg-surface-container-lowest">
-          {/* LEFT PANEL (Tabs + Navigator) */}
           <Resizable.Pane
             id="left-navigator"
             defaultWidth={300}
@@ -290,7 +438,6 @@ export const Builder: React.FC<BuilderProps> = ({
               pageTransition="fade"
               routingMode="memory"
             >
-              {/* Tab Triggers */}
               <div className="shrink-0 pt-2 px-2 border-b border-outline-variant/30">
                 <Tabs.List className="w-full !border-none">
                   <Tabs.Trigger value="pages">Pages</Tabs.Trigger>
@@ -299,9 +446,7 @@ export const Builder: React.FC<BuilderProps> = ({
                 </Tabs.List>
               </div>
 
-              {/* Tab Contents */}
               <Tabs.Content className="flex-1 overflow-hidden flex flex-col">
-                {/* 1. PAGES TAB */}
                 <Tabs.Panel
                   value="pages"
                   className="p-0 flex flex-col h-full overflow-hidden"
@@ -342,36 +487,155 @@ export const Builder: React.FC<BuilderProps> = ({
                       onSelect={(id, node) => setActivePage(node.pageId)}
                       expandedIds={expandedPageIds}
                       onExpandedChange={setExpandedPageIds}
-                      variant="secondary"
+                      variant="ghost"
                       size="xl"
                       shape="minimal"
                       renderItem={(node, { isSelected }) => (
-                        <div className="flex items-center justify-start gap-3 w-full pr-2 text-left min-w-0 group">
-                          <div className="shrink-0 opacity-70">
-                            {node.slug === "/" ? (
-                              <Home size={18} />
-                            ) : (
-                              <File size={18} />
-                            )}
-                          </div>
-                          <div className="flex flex-col flex-1 min-w-0 py-1">
-                            <span
-                              className={clsx(
-                                "truncate",
-                                isSelected ? "font-bold" : "font-medium",
-                              )}
+                        <ContextMenu shape="minimal">
+                          <ContextMenu.Trigger asChild>
+                            <div className="flex items-center justify-between gap-3 w-full pr-2 text-left min-w-0 pointer-events-auto">
+                              <div className="flex items-center gap-3 w-full min-w-0">
+                                <div className="shrink-0 opacity-70">
+                                  {node.slug === "/" ? (
+                                    <Home size={18} />
+                                  ) : (
+                                    <File size={18} />
+                                  )}
+                                </div>
+                                <div className="flex flex-col flex-1 min-w-0 py-1">
+                                  <span
+                                    className={clsx(
+                                      "truncate",
+                                      isSelected ? "font-bold" : "font-medium",
+                                    )}
+                                  >
+                                    {node.name}
+                                  </span>
+                                  {node.title && (
+                                    <span className="truncate text-[11px] opacity-60 font-normal">
+                                      {node.title}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <DropdownMenu shape="minimal">
+                                <DropdownMenuTrigger asChild>
+                                  <IconButton
+                                    variant="ghost"
+                                    size="xs"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity focus-visible:opacity-100 shrink-0"
+                                  >
+                                    <MoreHorizontal size={14} />
+                                  </IconButton>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openEditPage(node.pageId);
+                                    }}
+                                  >
+                                    <Edit3 className="w-4 h-4 mr-2" /> Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      duplicatePage(node.pageId);
+                                    }}
+                                  >
+                                    <Copy className="w-4 h-4 mr-2" /> Duplicate
+                                  </DropdownMenuItem>
+
+                                  {customPageActions?.map((action) => (
+                                    <DropdownMenuItem
+                                      key={action.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const pageObj = website?.pages.find(
+                                          (p) => p.id === node.pageId,
+                                        );
+                                        if (pageObj)
+                                          action.run(node.pageId, pageObj);
+                                      }}
+                                      className={
+                                        action.destructive
+                                          ? "text-error hover:!bg-error/10 hover:!text-error"
+                                          : ""
+                                      }
+                                    >
+                                      {action.icon && (
+                                        <span className="mr-2">
+                                          {action.icon}
+                                        </span>
+                                      )}
+                                      {action.label}
+                                    </DropdownMenuItem>
+                                  ))}
+
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-error hover:!bg-error/10 hover:!text-error"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removePage(node.pageId);
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </ContextMenu.Trigger>
+
+                          <ContextMenu.Content>
+                            <ContextMenu.Item
+                              onClick={() => openEditPage(node.pageId)}
                             >
-                              {node.name}
-                            </span>
-                            {node.title && (
-                              <span className="truncate text-[11px] opacity-60 font-normal">
-                                {node.title}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                              <Edit3 className="w-4 h-4 mr-2" /> Edit
+                            </ContextMenu.Item>
+                            <ContextMenu.Item
+                              onClick={() => duplicatePage(node.pageId)}
+                            >
+                              <Copy className="w-4 h-4 mr-2" /> Duplicate
+                            </ContextMenu.Item>
+
+                            {customPageActions?.map((action) => (
+                              <ContextMenu.Item
+                                key={action.id}
+                                onClick={() => {
+                                  const pageObj = website?.pages.find(
+                                    (p) => p.id === node.pageId,
+                                  );
+                                  if (pageObj) action.run(node.pageId, pageObj);
+                                }}
+                                className={
+                                  action.destructive
+                                    ? "text-error hover:!bg-error/10 hover:!text-error"
+                                    : ""
+                                }
+                              >
+                                {action.icon && (
+                                  <span className="mr-2">{action.icon}</span>
+                                )}
+                                {action.label}
+                              </ContextMenu.Item>
+                            ))}
+
+                            <ContextMenu.Separator />
+                            <ContextMenu.Item
+                              className="text-error hover:!bg-error/10 hover:!text-error"
+                              onClick={() => removePage(node.pageId)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </ContextMenu.Item>
+                          </ContextMenu.Content>
+                        </ContextMenu>
                       )}
                     />
+
                     {displayedPagesTree.length === 0 && (
                       <div className="p-4 text-center opacity-50 text-xs">
                         No pages match your search.
@@ -380,7 +644,6 @@ export const Builder: React.FC<BuilderProps> = ({
                   </div>
                 </Tabs.Panel>
 
-                {/* 2. LAYERS TAB (TreeView + Controls) */}
                 <Tabs.Panel
                   value="layers"
                   className="p-0 flex flex-col h-full overflow-hidden"
@@ -418,19 +681,34 @@ export const Builder: React.FC<BuilderProps> = ({
                         data={displayedLayers}
                         getId={(node) => node.id}
                         getChildren={(node) => node.children}
-                        selectedId={selectedNodeId}
-                        onSelect={(id) => selectNode(id)}
+                        canHaveChildren={(node) => {
+                          const compDef = components[node.type];
+                          return compDef?.acceptsChildren ?? false;
+                        }}
+                        multiSelect
+                        selectedIds={selectedNodeIds}
+                        onSelectChange={(ids) => {
+                          setSelectedNodes(ids);
+                          if (viewContext.type !== "PAGE") {
+                            setViewContext("PAGE", activePageId);
+                          }
+                        }}
                         expandedIds={expandedLayerIds}
                         onExpandedChange={setExpandedLayerIds}
                         variant="ghost"
                         size="sm"
                         shape="minimal"
                         enableDragAndDrop={true}
-                        onMoveNode={({ activeId, parentId, index }) => {
-                          moveNode(activeId, parentId, index);
+                        onMoveNode={({ activeIds, parentId, index }) => {
+                          moveNodes(activeIds, parentId, index);
                         }}
-                        renderItem={(node, { isSelected }) => (
-                          <div className="flex items-center justify-start gap-2 w-full pr-2 text-left min-w-0 group">
+                        renderItem={(node, { isSelected, isDragging }) => (
+                          <div
+                            className={clsx(
+                              "flex items-center justify-start gap-2 w-full pr-2 group/item text-left",
+                              isDragging && "opacity-80",
+                            )}
+                          >
                             <div className="shrink-0">
                               {getNodeIcon(node.type)}
                             </div>
@@ -443,15 +721,6 @@ export const Builder: React.FC<BuilderProps> = ({
                             >
                               {node.id}
                             </Typography>
-                            <div
-                              className={clsx(
-                                "flex items-center gap-1.5 opacity-0 group-hover:opacity-50 transition-opacity shrink-0",
-                                isSelected && "opacity-50",
-                              )}
-                            >
-                              <Eye className="w-3.5 h-3.5 hover:opacity-100" />
-                              <Lock className="w-3.5 h-3.5 hover:opacity-100" />
-                            </div>
                           </div>
                         )}
                       />
@@ -463,34 +732,71 @@ export const Builder: React.FC<BuilderProps> = ({
                   </div>
                 </Tabs.Panel>
 
-                {/* 3. ASSETS TAB */}
                 <Tabs.Panel
                   value="assets"
                   className="p-0 flex flex-col h-full overflow-hidden"
                 >
                   <div className="p-3 border-b border-outline-variant/30 shrink-0">
                     <Input
-                      placeholder="Search assets..."
+                      placeholder="Search components..."
                       size="sm"
                       startContent={<Search size={16} className="opacity-50" />}
                       variant="filled"
+                      value={assetSearch}
+                      onChange={(e) => setAssetSearch(e.target.value)}
                     />
                   </div>
-                  <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 gap-3 content-start scrollbar-thin">
-                    {Object.entries(components).map(([key, comp]) => (
-                      <div
-                        key={key}
-                        className="flex flex-col items-center justify-center p-4 gap-3 bg-surface-container-low hover:bg-surface-container-high rounded-xl cursor-pointer transition-colors border border-outline-variant/30 shadow-sm"
-                      >
-                        {getNodeIcon(key)}
-                        <Typography
-                          variant="label-small"
-                          className="text-center truncate w-full font-medium"
-                        >
-                          {comp.name}
-                        </Typography>
-                      </div>
-                    ))}
+                  <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
+                    <TreeView<ComponentTreeNode>
+                      multiSelect
+                      data={componentTreeData}
+                      getId={(n) => n.id}
+                      getChildren={(n) => n.children}
+                      selectedId={
+                        viewContext.type === "COMPONENT"
+                          ? viewContext.id
+                          : undefined
+                      }
+                      onSelect={(id, node) => {
+                        if (!node.isCategory) {
+                          setViewContext("COMPONENT", id);
+                        }
+                      }}
+                      expandedIds={expandedAssetIds}
+                      onExpandedChange={setExpandedAssetIds}
+                      variant="ghost"
+                      size="md"
+                      shape="minimal"
+                      renderItem={(node, { isSelected, isExpanded }) => (
+                        <div className="flex items-center justify-start gap-2 w-full pr-2 text-left min-w-0">
+                          <div className="shrink-0 opacity-70">
+                            {node.isCategory ? (
+                              isExpanded ? (
+                                <FolderOpen
+                                  size={16}
+                                  className="text-primary"
+                                />
+                              ) : (
+                                <Folder size={16} className="text-primary" />
+                              )
+                            ) : (
+                              getNodeIcon(node.id)
+                            )}
+                          </div>
+                          <Typography
+                            variant="label-small"
+                            className={clsx(
+                              "truncate flex-1 text-left",
+                              isSelected
+                                ? "font-bold text-primary"
+                                : "font-medium",
+                            )}
+                          >
+                            {node.name}
+                          </Typography>
+                        </div>
+                      )}
+                    />
                   </div>
                 </Tabs.Panel>
               </Tabs.Content>
@@ -503,7 +809,6 @@ export const Builder: React.FC<BuilderProps> = ({
             className="z-50"
           />
 
-          {/* CENTER CANVAS (React Flow) */}
           <Resizable.Pane
             id="center-canvas"
             flex
@@ -521,8 +826,7 @@ export const Builder: React.FC<BuilderProps> = ({
             />
           </Resizable.Pane>
 
-          {/* RIGHT PANEL (Inspector) - ONLY VISIBLE IF A NODE IS SELECTED */}
-          {selectedNodeId && (
+          {selectedNodeIds.length > 0 && viewContext.type === "PAGE" && (
             <>
               <Resizable.Handle
                 target="right-inspector"
@@ -542,12 +846,31 @@ export const Builder: React.FC<BuilderProps> = ({
                   </Typography>
                 </div>
                 <div className="flex-1 p-4 flex flex-col items-center justify-center opacity-50">
-                  <Typography variant="body-small">
-                    Properties for Node:
-                  </Typography>
-                  <Typography variant="label-medium" className="font-mono mt-2">
-                    {selectedNodeId}
-                  </Typography>
+                  {selectedNodeIds.length === 1 ? (
+                    <>
+                      <Typography variant="body-small">
+                        Properties for Node:
+                      </Typography>
+                      <Typography
+                        variant="label-medium"
+                        className="font-mono mt-2 break-all text-center"
+                      >
+                        {selectedNodeIds[0]}
+                      </Typography>
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="body-small">
+                        Multiple Items Selected
+                      </Typography>
+                      <Typography
+                        variant="label-medium"
+                        className="font-mono mt-2 text-center"
+                      >
+                        {selectedNodeIds.length} items
+                      </Typography>
+                    </>
+                  )}
                 </div>
               </Resizable.Pane>
             </>
@@ -592,6 +915,48 @@ export const Builder: React.FC<BuilderProps> = ({
               disabled={!newPageSlug}
             >
               Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* EDIT PAGE DIALOG */}
+      <Dialog
+        open={editingPageId !== null}
+        onOpenChange={(open) => !open && setEditingPageId(null)}
+        variant="basic"
+        animation="material3"
+        glass={false}
+      >
+        <DialogContent className="max-w-md" shape="full">
+          <DialogHeader>
+            <DialogTitle>Edit Page</DialogTitle>
+          </DialogHeader>
+          <DialogBody className="flex flex-col gap-4 py-4">
+            <Input
+              label="Page Slug"
+              placeholder="/about"
+              value={editPageSlug}
+              onChange={(e) => setEditPageSlug(e.target.value)}
+              autoFocus
+            />
+            <Input
+              label="Page Title"
+              placeholder="About Us"
+              value={editPageTitle}
+              onChange={(e) => setEditPageTitle(e.target.value)}
+            />
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="ghost">Cancel</Button>
+            </DialogClose>
+            <Button
+              variant="secondary"
+              onClick={handleEditPage}
+              disabled={!editPageSlug}
+            >
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,4 +1,3 @@
-// src/lib/components/tree-view/index.tsx
 "use client";
 
 import {
@@ -22,7 +21,6 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
@@ -80,8 +78,13 @@ interface TreeContextValue<T> {
       isDragging: boolean;
     },
   ) => React.ReactNode;
-  selectedId?: string | null;
-  onSelect?: (id: string, item: T) => void;
+  selectedIds: string[];
+  multiSelect: boolean;
+  handleSelect: (
+    e: React.MouseEvent | React.KeyboardEvent,
+    id: string,
+    item: T,
+  ) => void;
   isExpanded: (id: string) => boolean;
   toggleExpanded: (id: string) => void;
   variant?: "primary" | "secondary" | "ghost";
@@ -90,6 +93,7 @@ interface TreeContextValue<T> {
   indentSize: number;
   enableDragAndDrop: boolean;
   activeId: string | null;
+  dragSelectedIds: string[];
   currentDropTarget: string | null;
 }
 
@@ -193,50 +197,6 @@ function findNodeInTree<T>(
   return null;
 }
 
-function getProjection<T>(
-  items: FlattenedNode<T>[],
-  activeId: string,
-  overId: string,
-  dragOffset: number,
-  indentSize: number,
-) {
-  const overItemIndex = items.findIndex((x) => x.id === overId);
-  const activeItemIndex = items.findIndex((x) => x.id === activeId);
-  const activeItem = items[activeItemIndex];
-
-  const newItems = arrayMove(items, activeItemIndex, overItemIndex);
-  const previousItem = newItems[overItemIndex - 1];
-  const nextItem = newItems[overItemIndex + 1];
-
-  const dragDepth = Math.round(dragOffset / indentSize);
-  const projectedDepth = activeItem.depth + dragDepth;
-
-  const maxDepth = previousItem ? previousItem.depth + 1 : 0;
-  const minDepth = nextItem ? nextItem.depth : 0;
-
-  let depth = projectedDepth;
-  if (projectedDepth >= maxDepth) {
-    depth = maxDepth;
-  } else if (projectedDepth < minDepth) {
-    depth = minDepth;
-  }
-
-  let parentId: string | null = null;
-  if (previousItem) {
-    if (depth === previousItem.depth + 1) {
-      parentId = previousItem.id;
-    } else {
-      let current: FlattenedNode<T> | undefined = previousItem;
-      while (current && current.depth >= depth) {
-        parentId = current.parentId;
-        current = items.find((i) => i.id === current?.parentId);
-      }
-    }
-  }
-
-  return { depth, maxDepth, minDepth, parentId };
-}
-
 // --- DROPPABLE ZONE COMPONENT ---
 const DropZone = ({
   id,
@@ -269,13 +229,13 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
   const id = context.getId(item);
   const children = context.getChildren(item);
   const hasChildren = children && children.length > 0;
-  const selected = context.selectedId === id;
+  const selected = context.selectedIds.includes(id);
   const expanded = context.isExpanded(id);
   const canHaveChildren = context.canHaveChildren
     ? context.canHaveChildren(item)
     : true;
 
-  const isDragging = context.activeId === id;
+  const isDragging = context.dragSelectedIds.includes(id);
   const ancestorDragging = isDraggingAncestor || isDragging;
 
   const {
@@ -300,11 +260,12 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
       : context.size === "lg" || context.size === "xl"
         ? 14
         : 12;
-  const basePadding = 4; // 0.25rem = 4px
+  const basePadding = 4;
 
   return (
     <div className="flex flex-col w-full justify-start text-left relative">
       <button
+        data-tree-node-id={id} // <-- ADDED: Lets us locate this node in the DOM to scroll to it
         ref={context.enableDragAndDrop ? setDraggableRef : undefined}
         type="button"
         className={clsx(
@@ -324,7 +285,8 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
         data-selected={selected}
         onClick={(e) => {
           e.stopPropagation();
-          context.onSelect?.(id, item);
+          context.handleSelect(e, id, item);
+
           if (hasChildren) {
             context.toggleExpanded(id);
           }
@@ -405,12 +367,6 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
           onClick={(e) => {
             if (hasChildren) {
               e.stopPropagation();
-              context.toggleExpanded(id);
-            }
-          }}
-          onKeyDown={(e) => {
-            if (hasChildren && (e.key === "Enter" || e.key === " ")) {
-              e.stopPropagation();
               e.preventDefault();
               context.toggleExpanded(id);
             }
@@ -487,8 +443,16 @@ export interface TreeViewProps<T>
       isDragging: boolean;
     },
   ) => React.ReactNode;
+
+  // Single Selection (Legacy)
   selectedId?: string | null;
   onSelect?: (id: string, item: T) => void;
+
+  // Multi Selection (New)
+  multiSelect?: boolean;
+  selectedIds?: string[];
+  onSelectChange?: (ids: string[], items: T[]) => void;
+
   expandedIds?: string[];
   onExpandedChange?: (expandedIds: string[]) => void;
   indentSize?: number;
@@ -496,6 +460,7 @@ export interface TreeViewProps<T>
   enableDragAndDrop?: boolean;
   onMoveNode?: (args: {
     activeId: string;
+    activeIds: string[];
     parentId: string | null;
     index: number;
   }) => void;
@@ -507,8 +472,14 @@ export function TreeView<T>({
   getChildren,
   canHaveChildren,
   renderItem,
+
+  // Selection Props
   selectedId,
   onSelect,
+  multiSelect = false,
+  selectedIds,
+  onSelectChange,
+
   expandedIds: controlledExpandedIds,
   onExpandedChange,
   variant = "secondary",
@@ -529,13 +500,13 @@ export function TreeView<T>({
   const [currentDropTarget, setCurrentDropTarget] = useState<string | null>(
     null,
   );
-  const [offsetLeft, setOffsetLeft] = useState(0);
+
+  // Shift+Click state tracker
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
+      activationConstraint: { distance: 5 },
     }),
   );
 
@@ -577,6 +548,84 @@ export function TreeView<T>({
     return flattened.filter((item) => !activeDescendants.has(item.id));
   }, [flattened, activeDescendants]);
 
+  // Compute normalized active selected IDs (Combines single and multi-select props gracefully)
+  const activeSelectedIds = useMemo(() => {
+    if (selectedIds) return selectedIds;
+    if (selectedId) return [selectedId];
+    return [];
+  }, [selectedIds, selectedId]);
+
+  // Derive which nodes are currently being dragged (All selected items if the grabbed item is one of them)
+  const dragSelectedIds = useMemo(() => {
+    if (!activeId) return [];
+    if (activeSelectedIds.includes(activeId)) {
+      return activeSelectedIds;
+    }
+    return [activeId];
+  }, [activeId, activeSelectedIds]);
+
+  // Master Selection Handler
+  const handleSelect = useCallback(
+    (e: React.MouseEvent | React.KeyboardEvent, id: string, item: T) => {
+      // 1. Single Select Fallback
+      if (!multiSelect) {
+        onSelect?.(id, item);
+        onSelectChange?.([id], [item]);
+        return;
+      }
+
+      // 2. Multi-Select Logic
+      let newSelectedIds = [...activeSelectedIds];
+      const visibleIds = renderedItems.map((i) => i.id);
+
+      if (e.shiftKey && lastSelectedId) {
+        const startIndex = visibleIds.indexOf(lastSelectedId);
+        const endIndex = visibleIds.indexOf(id);
+
+        if (startIndex !== -1 && endIndex !== -1) {
+          const min = Math.min(startIndex, endIndex);
+          const max = Math.max(startIndex, endIndex);
+          const rangeIds = visibleIds.slice(min, max + 1);
+
+          if (e.metaKey || e.ctrlKey) {
+            newSelectedIds = Array.from(
+              new Set([...newSelectedIds, ...rangeIds]),
+            );
+          } else {
+            newSelectedIds = rangeIds;
+          }
+        }
+      } else if (e.metaKey || e.ctrlKey) {
+        if (newSelectedIds.includes(id)) {
+          newSelectedIds = newSelectedIds.filter((i) => i !== id);
+        } else {
+          newSelectedIds.push(id);
+        }
+        setLastSelectedId(id);
+      } else {
+        newSelectedIds = [id];
+        setLastSelectedId(id);
+      }
+
+      // Resolve items for newSelectedIds
+      const selectedItems = flattened
+        .filter((f) => newSelectedIds.includes(f.id))
+        .map((f) => f.item);
+
+      onSelectChange?.(newSelectedIds, selectedItems);
+      onSelect?.(id, item);
+    },
+    [
+      multiSelect,
+      activeSelectedIds,
+      lastSelectedId,
+      renderedItems,
+      flattened,
+      onSelect,
+      onSelectChange,
+    ],
+  );
+
   // DnD Handlers
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -586,10 +635,6 @@ export function TreeView<T>({
 
   const handleDragOver = (event: DragOverEvent) => {
     setCurrentDropTarget((event.over?.id as string) || null);
-  };
-
-  const handleDragMove = (event: DragMoveEvent) => {
-    setOffsetLeft(event.delta.x);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -606,7 +651,15 @@ export function TreeView<T>({
     if (!targetData) return;
 
     const { id: targetId, type } = targetData;
-    if (active.id === targetId) return;
+
+    // Prevent dropping any dragged item into itself or its own descendants
+    const isInvalidDrop = dragSelectedIds.some((dragId) => {
+      if (targetId === dragId) return true;
+      const descendants = getDescendantIds(flattened, dragId);
+      return descendants.has(targetId);
+    });
+
+    if (isInvalidDrop) return;
 
     const targetInfo = findNodeInTree(data, targetId, getId, getChildren);
     if (!targetInfo) return;
@@ -624,6 +677,7 @@ export function TreeView<T>({
 
     onMoveNode?.({
       activeId: active.id as string,
+      activeIds: dragSelectedIds,
       parentId: newParentId,
       index: newIndex,
     });
@@ -640,8 +694,9 @@ export function TreeView<T>({
     getChildren,
     canHaveChildren,
     renderItem,
-    selectedId,
-    onSelect,
+    selectedIds: activeSelectedIds,
+    multiSelect,
+    handleSelect,
     isExpanded,
     toggleExpanded,
     variant: variant ?? undefined,
@@ -650,6 +705,7 @@ export function TreeView<T>({
     indentSize,
     enableDragAndDrop,
     activeId,
+    dragSelectedIds,
     currentDropTarget,
   };
 
@@ -677,7 +733,6 @@ export function TreeView<T>({
             sensors={sensors}
             collisionDetection={pointerWithin}
             onDragStart={handleDragStart}
-            onDragMove={handleDragMove}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
@@ -691,39 +746,9 @@ export function TreeView<T>({
               })}
             >
               {activeId && activeItem ? (
-                <div className="opacity-95 shadow-xl bg-surface-container-highest rounded-md ring-1 ring-primary !w-max min-w-[200px] overflow-hidden pointer-events-none">
-                  <div
-                    className={clsx(
-                      treeItemVariants({
-                        variant: variant ?? undefined,
-                        shape: shape ?? undefined,
-                        size: size ?? undefined,
-                      }),
-                      "pr-4 pl-2 justify-start text-left m-0 border-none",
-                    )}
-                  >
-                    <div
-                      className={clsx(
-                        "flex items-center justify-center shrink-0 opacity-50",
-                        size === "sm"
-                          ? "w-5 h-5"
-                          : size === "lg" || size === "xl"
-                            ? "w-7 h-7"
-                            : "w-6 h-6",
-                      )}
-                    >
-                      <ChevronRight
-                        className={clsx(
-                          "transition-transform duration-200 ease-in-out",
-                          size === "sm"
-                            ? "w-3 h-3"
-                            : size === "lg" || size === "xl"
-                              ? "w-5 h-5"
-                              : "w-4 h-4",
-                        )}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0 flex items-center justify-start text-left h-full">
+                <div className="relative inline-flex items-center pointer-events-none">
+                  <div className="opacity-95 shadow-md bg-surface-container-highest/95 backdrop-blur-md rounded-md border border-outline-variant/50 px-3 py-1.5 flex items-center gap-2 max-w-[300px] w-max ring-1 ring-black/5">
+                    <div className="flex-1 min-w-0 flex items-center justify-start text-left text-sm font-medium text-on-surface">
                       {renderItem(activeItem, {
                         isExpanded: false,
                         isSelected: true,
@@ -732,6 +757,13 @@ export function TreeView<T>({
                       })}
                     </div>
                   </div>
+
+                  {/* Badge for multiple selections being dragged */}
+                  {dragSelectedIds.length > 1 && (
+                    <div className="absolute -top-2.5 -right-2.5 bg-primary text-on-primary text-[11px] font-bold min-w-[22px] h-[22px] px-1.5 flex items-center justify-center rounded-full shadow-sm ring-2 ring-surface-container-lowest z-50">
+                      {dragSelectedIds.length}
+                    </div>
+                  )}
                 </div>
               ) : null}
             </DragOverlay>
@@ -742,4 +774,55 @@ export function TreeView<T>({
       </div>
     </TreeContext.Provider>
   );
+}
+
+// ============================================================================
+// GENERIC HISTORY HOOK FOR STANDALONE TREE VIEW
+// ============================================================================
+
+export function useTreeHistory<T>(initialData: T[]) {
+  const [data, setData] = useState<T[]>(initialData);
+  const [past, setPast] = useState<T[][]>([]);
+  const [future, setFuture] = useState<T[][]>([]);
+
+  const updateData = useCallback((newData: T[] | ((prev: T[]) => T[])) => {
+    setData((current) => {
+      const next =
+        typeof newData === "function" ? (newData as any)(current) : newData;
+      setPast((p) => [...p, current].slice(-50)); // Keep last 50 states max
+      setFuture([]);
+      return next;
+    });
+  }, []);
+
+  const undo = useCallback(() => {
+    if (past.length === 0) return;
+    setPast((p) => {
+      const previous = p[p.length - 1];
+      const newPast = p.slice(0, -1);
+      setFuture((f) => [data, ...f]);
+      setData(previous);
+      return newPast;
+    });
+  }, [data, past]);
+
+  const redo = useCallback(() => {
+    if (future.length === 0) return;
+    setFuture((f) => {
+      const next = f[0];
+      const newFuture = f.slice(1);
+      setPast((p) => [...p, data]);
+      setData(next);
+      return newFuture;
+    });
+  }, [data, future]);
+
+  return {
+    data,
+    updateData,
+    undo,
+    redo,
+    canUndo: past.length > 0,
+    canRedo: future.length > 0,
+  };
 }

@@ -29,6 +29,7 @@ export interface RegistryComponent {
   thumbnail?: string
   render: React.FC<any>
   controls: Record<string, ComponentControl>
+  acceptsChildren?: boolean // Determines if elements can be dropped inside this component
 }
 
 export type ComponentRegistry = Record<string, RegistryComponent>

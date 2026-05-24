@@ -1,3 +1,4 @@
+// src/lib/components/website-studio/canvas/StudioCanvas.tsx
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
@@ -56,8 +57,8 @@ import {
   Check,
 } from "lucide-react";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
+import { useStudioStore } from "../store";
 
-// --- DEVELOPER API CONFIGURATION ---
 export interface StudioAIConfig {
   enabled: boolean;
   suggestions?: string[];
@@ -78,7 +79,7 @@ const nodeTypes = {
   artboard: ArtboardNode,
 };
 
-const initialNodes = [
+const initialPageNodes = [
   {
     id: "desktop",
     type: "artboard",
@@ -103,10 +104,12 @@ const initialNodes = [
 ];
 
 const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialPageNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  // React Flow Control Hooks
+  const { viewContext, setSelectedNodes: setStudioSelectedNodes } =
+    useStudioStore();
+
   const {
     zoomIn,
     zoomOut,
@@ -115,11 +118,8 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
     setNodes: setReactFlowNodes,
   } = useReactFlow();
   const { zoom } = useViewport();
-
-  // Custom Theme Hook
   const { resolvedTheme, setTheme } = useTheme();
 
-  // Interactive States
   const [activeTool, setActiveTool] = useState<"pointer" | "hand">("pointer");
   const [promptText, setPromptText] = useState("");
   const [selectedNodes, setSelectedNodes] = useState<any[]>([]);
@@ -130,17 +130,38 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
   );
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
-  // Refs
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logsPanelRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // --- INSTANT SPOTLIGHT OVERLAY ---
-  // Pure MotionValues mapped directly without spring damping/inertia
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (viewContext.type === "COMPONENT" && viewContext.id) {
+      setNodes([
+        {
+          id: "component-isolation",
+          type: "artboard",
+          position: { x: 0, y: 0 },
+          data: {
+            label: `Component Sandbox`,
+            width: 1400,
+            height: 1000,
+            isIsolationMode: true,
+            componentId: viewContext.id,
+          },
+          deletable: false,
+        },
+      ]);
+      setTimeout(() => fitView({ duration: 500, padding: 0.1 }), 50);
+    } else {
+      setNodes(initialPageNodes);
+      setTimeout(() => fitView({ duration: 500, padding: 0.1 }), 50);
+    }
+  }, [viewContext, setNodes, fitView]);
 
   const handlePointerMove = useCallback(
     (event: React.PointerEvent) => {
@@ -150,14 +171,12 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
-      // Offsetting by half of the overlay's size (125px for 250px container)
       mouseX.set(x - 125);
       mouseY.set(y - 125);
     },
     [mouseX, mouseY],
   );
 
-  // Hook into React Flow's selection engine
   useOnSelectionChange({
     onChange: ({ nodes }) => {
       setSelectedNodes(nodes);
@@ -166,7 +185,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
 
   const zoomPercentage = Math.round(zoom * 100);
 
-  // --- KEYBOARD SHORTCUTS (V for Pointer, H for Hand) ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -178,13 +196,14 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
       }
       if (e.key.toLowerCase() === "v") setActiveTool("pointer");
       if (e.key.toLowerCase() === "h") setActiveTool("hand");
+      // Deselect Studio Nodes on Escape
+      if (e.key === "Escape") setStudioSelectedNodes([]);
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [setStudioSelectedNodes]);
 
-  // --- CLICK OUTSIDE TO CLOSE LOGS ---
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -201,7 +220,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isLogsPanelOpen, aiConfig]);
 
-  // --- TEXTAREA AUTO-EXPAND LOGIC ---
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPromptText(e.target.value);
     if (textareaRef.current) {
@@ -211,7 +229,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
     }
   };
 
-  // --- DRAG & DROP FILE HANDLING ---
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -248,7 +265,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
   };
 
   const handleDeselectNode = (nodeId: string) => {
-    // Update React Flow's internal state to remove the selection
     setReactFlowNodes((nds) =>
       nds.map((n) => (n.id === nodeId ? { ...n, selected: false } : n)),
     );
@@ -269,11 +285,12 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
 
   return (
     <div
+      data-tool={activeTool}
       className={clsx(
-        "w-full h-full bg-surface-container-lowest transition-cursor z-100 relative overflow-hidden",
+        "group/canvas w-full h-full bg-surface-container-lowest transition-cursor z-100 relative overflow-hidden",
         activeTool === "pointer"
-          ? "[&_.react-flow__pane]:cursor-crosshair"
-          : "[&_.react-flow__pane]:cursor-grab active:[&_.react-flow__pane]:cursor-grabbing",
+          ? "[&_.react-flow__pane]:!cursor-default [&_.react-flow__node]:!cursor-default"
+          : "[&_.react-flow__pane]:!cursor-grab active:[&_.react-flow__pane]:!cursor-grabbing",
       )}
       onPointerMove={handlePointerMove}
       onPointerEnter={() => setIsHovered(true)}
@@ -292,7 +309,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
         maxZoom={2}
         zoomOnPinch={true}
         proOptions={{ hideAttribution: true }}
-        // --- GESTURE & SELECTION CONFIGURATION ---
         panOnScroll={true}
         zoomOnScroll={false}
         panOnDrag={activeTool === "hand"}
@@ -300,8 +316,9 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
         selectionMode={SelectionMode.Partial}
         nodesDraggable={activeTool === "pointer"}
         elementsSelectable={activeTool === "pointer"}
+        // Clear Studio Selection when clicking empty canvas
+        onPaneClick={() => setStudioSelectedNodes([])}
       >
-        {/* Instant, Small Spotlight Effect Overlay */}
         <motion.div
           className="pointer-events-none absolute w-[300px] h-[300px] blur-3xl rounded-full"
           style={{
@@ -315,7 +332,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
             willChange: "transform, opacity",
           }}
           animate={{ opacity: isHovered ? 1 : 0 }}
-          transition={{ duration: 0 }} // Instantly toggles visibility
+          transition={{ duration: 0 }}
         />
 
         <Background
@@ -327,7 +344,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
           bgColor="var(--md-sys-color-surface-container-high)"
         />
 
-        {/* --- RIGHT TOOLBAR (Center Right) --- */}
         <Panel position="center-right" className="m-4 z-50 pointer-events-none">
           <Toolbar
             orientation="vertical"
@@ -415,10 +431,8 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
           </Toolbar>
         </Panel>
 
-        {/* --- CONDITIONAL AI FEATURES --- */}
         {aiConfig?.enabled && (
           <>
-            {/* --- TOP LEFT (LLM Logs Panel) --- */}
             <Panel
               position="top-left"
               className="m-4 z-50 pointer-events-none h-[calc(100%-10rem)] flex flex-col"
@@ -460,7 +474,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                       >
                         <ElasticScrollArea className="flex-1 w-full h-full pr-2">
                           <div className="flex flex-col gap-4 pb-4">
-                            {/* Developer provided logs content goes here */}
                             {aiConfig.logsContent || (
                               <div className="text-sm text-on-surface-variant italic opacity-70 p-4 text-center">
                                 Awaiting interaction logs...
@@ -475,13 +488,11 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
               </div>
             </Panel>
 
-            {/* --- BOTTOM CENTER (LLM Prompt Interface) --- */}
             <Panel
               position="bottom-center"
               className="mb-6 w-full max-w-[600px] z-50 pointer-events-none"
             >
               <div className="flex flex-col gap-2 w-full pointer-events-auto px-4">
-                {/* Suggestions Row */}
                 {aiConfig.suggestions && aiConfig.suggestions.length > 0 && (
                   <ElasticScrollArea
                     orientation="horizontal"
@@ -515,7 +526,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                   padding="none"
                   className="w-full flex flex-col shadow-2xl border border-outline-variant/50 p-2"
                 >
-                  {/* Context Area (Nodes & Files) */}
                   {(selectedNodes.length > 0 || attachedFiles.length > 0) && (
                     <div className="flex px-2 pt-2 gap-2 flex-wrap max-h-[80px] overflow-y-auto no-scrollbar">
                       {selectedNodes.map((node) => (
@@ -562,7 +572,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                     </div>
                   )}
 
-                  {/* Hidden File Input */}
                   <input
                     type="file"
                     multiple
@@ -571,7 +580,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                     className="hidden"
                   />
 
-                  {/* Textarea Wrapper for Dropzone */}
                   <div
                     className="relative w-full mt-1 rounded-lg overflow-hidden"
                     onDragOver={handleDragOver}
@@ -599,7 +607,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                       }}
                     />
 
-                    {/* Drag & Drop Visual Overlay */}
                     <AnimatePresence>
                       {isDraggingFile && (
                         <motion.div
@@ -619,9 +626,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                     </AnimatePresence>
                   </div>
 
-                  {/* Bottom Actions Row */}
                   <div className="flex items-center justify-between px-1 pb-1 pt-1">
-                    {/* Left Utilities (Upload Menu) */}
                     <div className="flex items-center gap-0.5">
                       <DropdownMenu shape="minimal">
                         <DropdownMenuTrigger asChild>
@@ -648,9 +653,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                       </DropdownMenu>
                     </div>
 
-                    {/* Right Utilities */}
                     <div className="flex items-center gap-1.5">
-                      {/* Dynamic Model Selector */}
                       {aiConfig.models && aiConfig.models.length > 0 && (
                         <DropdownMenu shape="minimal">
                           <DropdownMenuTrigger asChild>
@@ -666,7 +669,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                                 onClick={() => setActiveModel(model)}
                               >
                                 {activeModel === model && <Check />}
-
                                 {model}
                               </DropdownMenuItem>
                             ))}
@@ -678,7 +680,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                         <Wand2 size={14} />
                       </IconButton>
 
-                      {/* Submit Button */}
                       <IconButton
                         variant="ghost"
                         size="sm"

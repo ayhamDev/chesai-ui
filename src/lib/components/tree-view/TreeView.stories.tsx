@@ -21,7 +21,7 @@ const meta: Meta<typeof TreeView> = {
     docs: {
       description: {
         component:
-          "A highly generic tree view component. Features VS Code-style `dnd-kit` drag-and-drop. You can drop before, after, or directly inside folders without modifying real-time state until release.",
+          "A highly generic tree view component. Features VS Code-style `dnd-kit` drag-and-drop, and advanced multi-selection features.",
       },
     },
   },
@@ -39,6 +39,9 @@ const meta: Meta<typeof TreeView> = {
       options: ["sm", "md", "lg"],
     },
     enableDragAndDrop: {
+      control: "boolean",
+    },
+    multiSelect: {
       control: "boolean",
     },
   },
@@ -102,46 +105,73 @@ const getIconForType = (type: FileNode["type"], isExpanded: boolean) => {
   }
 };
 
-// Recursive helper to move a node within the tree state
-function moveNodeInTree(
+// Advanced helper to move MULTIPLE nodes within the tree state flawlessly
+function moveNodesInTree(
   tree: FileNode[],
-  activeId: string,
+  activeIds: string[],
   parentId: string | null,
   index: number,
 ): FileNode[] {
-  let activeNode: FileNode | null = null;
+  // Identify only top-level selected nodes so we don't accidentally duplicate children
+  const topLevelActiveIds = new Set<string>();
 
-  // 1. Remove the active node from its old location
-  function remove(nodes: FileNode[]): FileNode[] {
-    return nodes.filter((node) => {
-      if (node.id === activeId) {
-        activeNode = node;
-        return false;
+  function findTopLevelActive(nodes: FileNode[], hasActiveAncestor: boolean) {
+    for (const node of nodes) {
+      const isActive = activeIds.includes(node.id);
+      if (isActive && !hasActiveAncestor) {
+        topLevelActiveIds.add(node.id);
       }
       if (node.children) {
-        node.children = remove(node.children);
+        findTopLevelActive(node.children, hasActiveAncestor || isActive);
       }
-      return true;
-    });
+    }
   }
 
-  const treeWithoutActive = remove(tree);
-  if (!activeNode) return tree;
+  findTopLevelActive(tree, false);
 
-  // 2. Insert the node into its new location
+  const nodesToMove: FileNode[] = [];
+  let targetIndex = index;
+
+  // Extract nodes and adjust target index if removing from the same parent BEFORE the target index
+  function extract(
+    nodes: FileNode[],
+    currentParentId: string | null,
+  ): FileNode[] {
+    const remaining: FileNode[] = [];
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      if (topLevelActiveIds.has(node.id)) {
+        nodesToMove.push(node);
+        // Ensure index adjustment if we remove earlier nodes in the same target parent list
+        if (currentParentId === parentId && i < targetIndex) {
+          targetIndex--;
+        }
+      } else {
+        const newNode = { ...node };
+        if (newNode.children) {
+          newNode.children = extract(newNode.children, newNode.id);
+        }
+        remaining.push(newNode);
+      }
+    }
+    return remaining;
+  }
+
+  const treeWithoutActive = extract(tree, null);
+
   function insert(
     nodes: FileNode[],
     currentParentId: string | null,
   ): FileNode[] {
     if (currentParentId === parentId) {
       const newNodes = [...nodes];
-      newNodes.splice(index, 0, activeNode!);
+      newNodes.splice(targetIndex, 0, ...nodesToMove);
       return newNodes;
     }
     return nodes.map((node) => {
       if (node.id === parentId) {
         const newChildren = [...(node.children || [])];
-        newChildren.splice(index, 0, activeNode!);
+        newChildren.splice(targetIndex, 0, ...nodesToMove);
         return { ...node, children: newChildren };
       }
       if (node.children) {
@@ -155,64 +185,61 @@ function moveNodeInTree(
 }
 
 export const FileExplorerWithDnD: StoryObj = {
-  name: "1. File Explorer (Drag & Drop)",
+  name: "1. File Explorer (Multi-Drag & Drop)",
   args: {
     variant: "ghost",
     size: "sm",
     shape: "minimal",
     enableDragAndDrop: true,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "This example enables `enableDragAndDrop`. Nodes at the same hierarchical level can be re-ordered. Dragging over the top/bottom edges of an item places it as a sibling. Dragging over the center of a folder places it inside.",
-      },
-    },
+    multiSelect: true, // Switched on for testing multi-drag!
   },
   render: (args) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [selected, setSelected] = useState<string | null>(null);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [files, setFiles] = useState<FileNode[]>(INITIAL_FILE_SYSTEM);
 
     const handleMoveNode = ({
-      activeId,
+      activeIds,
       parentId,
       index,
     }: {
       activeId: string;
+      activeIds: string[];
       parentId: string | null;
       index: number;
     }) => {
-      setFiles((prev) => moveNodeInTree(prev, activeId, parentId, index));
+      setFiles((prev) => moveNodesInTree(prev, activeIds, parentId, index));
     };
 
     return (
-      <Card className="w-96 min-h-[400px] p-2 bg-surface-container-lowest">
-        <Typography
-          variant="label-small"
-          className="px-4 py-2 font-bold opacity-50 uppercase tracking-widest"
-        >
-          Explorer
-        </Typography>
-        <TreeView<FileNode>
-          {...args}
-          data={files}
-          getId={(node) => node.id}
-          getChildren={(node) => node.children}
-          canHaveChildren={(node) => node.type === "folder"}
-          selectedId={selected}
-          onSelect={(id) => setSelected(id)}
-          onMoveNode={handleMoveNode}
-          renderItem={(node, { isExpanded }) => (
-            <div className="flex items-center justify-start gap-2 w-full pr-2 text-left">
-              {getIconForType(node.type, isExpanded)}
-              <span className="truncate flex-1 text-left">{node.name}</span>
-            </div>
-          )}
-        />
-      </Card>
+      <div className="flex flex-col gap-4">
+        <Card className="w-96 min-h-[400px] p-2 bg-surface-container-lowest">
+          <Typography
+            variant="label-small"
+            className="px-4 py-2 font-bold opacity-50 uppercase tracking-widest flex items-center justify-between"
+          >
+            <span>Explorer</span>
+            <span className="normal-case opacity-70 font-normal">
+              Use Cmd/Ctrl to Multi-select
+            </span>
+          </Typography>
+          <TreeView<FileNode>
+            {...args}
+            data={files}
+            getId={(node) => node.id}
+            getChildren={(node) => node.children}
+            canHaveChildren={(node) => node.type === "folder"}
+            selectedIds={selectedIds}
+            onSelectChange={(ids) => setSelectedIds(ids)}
+            onMoveNode={handleMoveNode}
+            renderItem={(node, { isExpanded }) => (
+              <div className="flex items-center justify-start gap-2 w-full pr-2 text-left">
+                {getIconForType(node.type, isExpanded)}
+                <span className="truncate flex-1 text-left">{node.name}</span>
+              </div>
+            )}
+          />
+        </Card>
+      </div>
     );
   },
 };
@@ -261,9 +288,7 @@ export const StudioLayers: StoryObj = {
     shape: "minimal",
   },
   render: (args) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [selected, setSelected] = useState<string | null>("hero-content");
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [expanded, setExpanded] = useState<string[]>([
       "hero-section",
       "hero-content",
@@ -307,6 +332,68 @@ export const StudioLayers: StoryObj = {
           )}
         />
       </Card>
+    );
+  },
+};
+
+export const MultiSelectMode: StoryObj = {
+  name: "3. Multi-Select List",
+  args: {
+    variant: "ghost",
+    size: "md",
+    shape: "minimal",
+    multiSelect: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Enable `multiSelect={true}` and pass `selectedIds` to allow range selection via Shift + Click and toggling via Ctrl/Cmd + Click.",
+      },
+    },
+  },
+  render: (args) => {
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+    return (
+      <div className="flex flex-col gap-4">
+        <Card className="w-[400px] p-2 bg-surface">
+          <Typography
+            variant="label-small"
+            className="px-4 py-2 font-bold opacity-50 uppercase tracking-widest"
+          >
+            Multi-Select Demo
+          </Typography>
+          <Typography variant="body-small" className="px-4 pb-2 opacity-60">
+            Use Shift+Click for ranges, or Ctrl/Cmd+Click to toggle items.
+          </Typography>
+
+          <TreeView<FileNode>
+            {...args}
+            data={INITIAL_FILE_SYSTEM}
+            getId={(node) => node.id}
+            getChildren={(node) => node.children}
+            canHaveChildren={(node) => node.type === "folder"}
+            selectedIds={selectedIds}
+            onSelectChange={(ids) => setSelectedIds(ids)}
+            renderItem={(node, { isExpanded }) => (
+              <div className="flex items-center justify-start gap-2 w-full pr-2 text-left">
+                {getIconForType(node.type, isExpanded)}
+                <span className="truncate flex-1 text-left">{node.name}</span>
+              </div>
+            )}
+          />
+        </Card>
+
+        <Card className="w-[400px] p-4 bg-surface-container-high border border-outline-variant/30">
+          <Typography variant="label-medium" className="font-bold">
+            Selected Items ({selectedIds.length})
+          </Typography>
+          <div className="mt-2 text-xs font-mono break-all opacity-80">
+            {selectedIds.length > 0 ? selectedIds.join(", ") : "None"}
+          </div>
+        </Card>
+      </div>
     );
   },
 };

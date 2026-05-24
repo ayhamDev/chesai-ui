@@ -312,9 +312,13 @@ const RenderNode: React.FC<RenderNodeProps> = ({
   );
 
   const scopeClass = styleTagContent ? `ws-node-${node.id}` : "";
+
+  // Package up the props to pass to the user's component
   const finalProps = {
     ...cleanProps,
     className: [cleanProps.className, scopeClass].filter(Boolean).join(" "),
+    // ---> INJECT THE NODE ID FOR THE BUILDER SELECTION OVERLAY <---
+    "data-studio-node-id": node.id,
   };
 
   const boundEvents = bindEvents(
@@ -329,6 +333,7 @@ const RenderNode: React.FC<RenderNodeProps> = ({
       {styleTagContent && (
         <style dangerouslySetInnerHTML={{ __html: styleTagContent }} />
       )}
+      {/* NO MORE WRAPPER DIV! Renders the exact component provided in the registry */}
       <ComponentDef.render {...finalProps} {...boundEvents}>
         {renderedChildren?.length ? renderedChildren : finalProps.children}
       </ComponentDef.render>
@@ -355,7 +360,6 @@ export const ThemeInjector: React.FC<{
 
   return (
     <div
-      // ADDED: bg-background text-on-background and min-h-screen to ensure the canvas acts like a real web body
       className="website-studio-theme-root w-full min-h-screen flex flex-col bg-background text-on-background"
       style={cssVariables}
       data-theme-mode={designSystem.mode}

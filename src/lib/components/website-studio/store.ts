@@ -4,9 +4,6 @@ import type { StudioNode, WebsiteSchema } from './types'
 
 // --- RECURSIVE HIERARCHY HELPERS ---
 
-/**
- * Searches a node tree to locate a specific node, its parent array, and its current index.
- */
 function findNodeAndParent(
   nodes: StudioNode[],
   targetId: string,
@@ -23,9 +20,6 @@ function findNodeAndParent(
   return null
 }
 
-/**
- * Simple recursive lookup to find a specific node by ID.
- */
 function findNodeById(nodes: StudioNode[], targetId: string): StudioNode | null {
   for (const node of nodes) {
     if (node.id === targetId) return node
@@ -37,10 +31,6 @@ function findNodeById(nodes: StudioNode[], targetId: string): StudioNode | null 
   return null
 }
 
-/**
- * Failsafe to verify if a node is an ancestor of a targeted parent candidate.
- * Prevents circular node structures.
- */
 function isDescendant(node: StudioNode, possibleDescendantId: string): boolean {
   if (!node.children) return false
   for (const child of node.children) {
@@ -57,69 +47,148 @@ interface StudioState {
   website: WebsiteSchema | null
   activePageId: string | null
 
+  // History State
+  past: WebsiteSchema[]
+  future: WebsiteSchema[]
+  undo: () => void
+  redo: () => void
+
   // Interactive UI State
-  selectedNodeId: string | null
+  selectedNodeIds: string[]
   hoveredNodeId: string | null
 
-  // Initialization & Context Actions
+  // Context tracking
+  viewContext: {
+    type: 'PAGE' | 'COMPONENT'
+    id: string | null
+  }
+
+  // Initialization
   initStudio: (schema: WebsiteSchema) => void
   setActivePage: (pageId: string) => void
-  selectNode: (id: string | null) => void
+  setViewContext: (type: 'PAGE' | 'COMPONENT', id: string | null) => void
+
+  // Selection
+  setSelectedNodes: (ids: string[]) => void
+  toggleNodeSelection: (id: string, multi: boolean) => void
   setHoveredNode: (id: string | null) => void
 
-  // Data Manipulation Actions
+  // Data Manipulation Actions (Canvas)
   addNode: (node: StudioNode, parentId?: string | null, index?: number) => void
-  removeNode: (nodeId: string) => void
+  removeNodes: (nodeIds: string[]) => void
   moveNode: (nodeId: string, targetParentId: string | null, index?: number) => void
+  moveNodes: (nodeIds: string[], targetParentId: string | null, index?: number) => void
   updateNodeProps: (nodeId: string, props: Record<string, any>) => void
   updateDesignSystemTokens: (tokens: Record<string, string | number>) => void
+
+  // Page Management Actions
+  addPage: (slug: string, title: string) => void
+  updatePage: (id: string, slug: string, title: string) => void
+  duplicatePage: (id: string) => void
+  removePage: (id: string) => void
+}
+
+// Snapshot Helper
+const saveSnapshot = (state: StudioState, draft: StudioState) => {
+  if (state.website) {
+    // We deep clone to prevent proxy mutation conflicts in history
+    draft.past.push(JSON.parse(JSON.stringify(state.website)))
+    if (draft.past.length > 50) draft.past.shift() // Max 50 states
+    draft.future = []
+  }
 }
 
 export const useStudioStore = create<StudioState>(set => ({
   website: null,
   activePageId: null,
-  selectedNodeId: null,
+  selectedNodeIds: [],
   hoveredNodeId: null,
+  viewContext: { type: 'PAGE', id: null },
+
+  past: [],
+  future: [],
+
+  undo: () =>
+    set(state => {
+      if (state.past.length === 0 || !state.website) return state
+      const previous = state.past[state.past.length - 1]
+      const newPast = state.past.slice(0, -1)
+      return {
+        ...state,
+        website: previous,
+        past: newPast,
+        future: [state.website, ...state.future],
+      }
+    }),
+
+  redo: () =>
+    set(state => {
+      if (state.future.length === 0 || !state.website) return state
+      const next = state.future[0]
+      const newFuture = state.future.slice(1)
+      return {
+        ...state,
+        website: next,
+        past: [...state.past, state.website],
+        future: newFuture,
+      }
+    }),
 
   initStudio: schema =>
     set({
       website: schema,
       activePageId: schema.pages[0]?.id || null,
-      selectedNodeId: null,
+      viewContext: { type: 'PAGE', id: schema.pages[0]?.id || null },
+      selectedNodeIds: [],
       hoveredNodeId: null,
+      past: [],
+      future: [],
     }),
 
   setActivePage: pageId =>
     set({
       activePageId: pageId,
-      selectedNodeId: null,
+      viewContext: { type: 'PAGE', id: pageId },
+      selectedNodeIds: [],
       hoveredNodeId: null,
     }),
 
-  selectNode: id => set({ selectedNodeId: id }),
+  setViewContext: (type, id) =>
+    set({
+      viewContext: { type, id },
+      selectedNodeIds: [],
+      hoveredNodeId: null,
+    }),
+
+  setSelectedNodes: ids => set({ selectedNodeIds: ids }),
+
+  toggleNodeSelection: (id, multi) =>
+    set(state => {
+      if (!multi) return { selectedNodeIds: [id] }
+      if (state.selectedNodeIds.includes(id)) {
+        return { selectedNodeIds: state.selectedNodeIds.filter(i => i !== id) }
+      }
+      return { selectedNodeIds: [...state.selectedNodeIds, id] }
+    }),
+
   setHoveredNode: id => set({ hoveredNodeId: id }),
 
-  /**
-   * Adds a node into the active page layout tree.
-   * If parentId is null/undefined, it is appended to the root level.
-   */
   addNode: (node, parentId = null, index) =>
-    set(
-      produce((state: StudioState) => {
-        if (!state.website || !state.activePageId) return
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website || !draft.activePageId) return
 
-        const page = state.website.pages.find(p => p.id === state.activePageId)
+        const page = draft.website.pages.find(p => p.id === draft.activePageId)
         if (!page) return
 
         if (!parentId) {
-          // Add to page root
           if (typeof index === 'number') {
             page.content.splice(index, 0, node)
           } else {
             page.content.push(node)
           }
         } else {
-          // Add inside another node's children list
           const parentNode = findNodeById(page.content, parentId)
           if (!parentNode) return
 
@@ -136,67 +205,55 @@ export const useStudioStore = create<StudioState>(set => ({
       }),
     ),
 
-  /**
-   * Removes a node recursively by ID from the active page layout tree.
-   */
-  removeNode: nodeId =>
-    set(
-      produce((state: StudioState) => {
-        if (!state.website || !state.activePageId) return
+  removeNodes: nodeIds =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website || !draft.activePageId) return
 
-        const page = state.website.pages.find(p => p.id === state.activePageId)
+        const page = draft.website.pages.find(p => p.id === draft.activePageId)
         if (!page) return
 
-        const lookup = findNodeAndParent(page.content, nodeId)
-        if (!lookup) return
-
-        const { parentArray, index } = lookup
-        parentArray.splice(index, 1)
-
-        // Clear selection if the active selection was deleted
-        if (state.selectedNodeId === nodeId) {
-          state.selectedNodeId = null
+        for (const nodeId of nodeIds) {
+          const lookup = findNodeAndParent(page.content, nodeId)
+          if (lookup) {
+            const { parentArray, index } = lookup
+            parentArray.splice(index, 1)
+          }
         }
-        if (state.hoveredNodeId === nodeId) {
-          state.hoveredNodeId = null
+
+        draft.selectedNodeIds = draft.selectedNodeIds.filter(id => !nodeIds.includes(id))
+        if (draft.hoveredNodeId && nodeIds.includes(draft.hoveredNodeId)) {
+          draft.hoveredNodeId = null
         }
       }),
     ),
 
-  /**
-   * Moves an existing node to a new parent and index in the active page layout tree.
-   */
   moveNode: (nodeId, targetParentId, index) =>
-    set(
-      produce((state: StudioState) => {
-        if (!state.website || !state.activePageId) return
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website || !draft.activePageId) return
 
-        const page = state.website.pages.find(p => p.id === state.activePageId)
+        const page = draft.website.pages.find(p => p.id === draft.activePageId)
         if (!page) return
 
-        // 1. Locate the source node and its reference parent array
         const sourceLookup = findNodeAndParent(page.content, nodeId)
         if (!sourceLookup) return
 
         const { node: sourceNode, parentArray: sourceParentArray, index: sourceIndex } = sourceLookup
 
-        // 2. Prevent structural loops (cannot drop parent inside itself or its children)
         if (targetParentId === nodeId) return
         if (targetParentId && isDescendant(sourceNode, targetParentId)) return
 
-        // 3. Remove node from original location
         sourceParentArray.splice(sourceIndex, 1)
 
-        // 4. Insert node into the target destination
         if (!targetParentId) {
-          // Insert at page root level
           const targetIndex = typeof index === 'number' ? index : page.content.length
           page.content.splice(targetIndex, 0, sourceNode)
         } else {
-          // Insert inside another node
           const targetParentNode = findNodeById(page.content, targetParentId)
           if (!targetParentNode) {
-            // Rollback delete if target parent is invalid
             sourceParentArray.splice(sourceIndex, 0, sourceNode)
             return
           }
@@ -211,15 +268,71 @@ export const useStudioStore = create<StudioState>(set => ({
       }),
     ),
 
-  /**
-   * Merges custom properties into the selected node.
-   */
-  updateNodeProps: (nodeId, props) =>
-    set(
-      produce((state: StudioState) => {
-        if (!state.website || !state.activePageId) return
+  moveNodes: (nodeIds, targetParentId, index) =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website || !draft.activePageId || nodeIds.length === 0) return
 
-        const page = state.website.pages.find(p => p.id === state.activePageId)
+        const page = draft.website.pages.find(p => p.id === draft.activePageId)
+        if (!page) return
+
+        const topLevelActiveIds = new Set<string>()
+        function findTopLevel(nodes: StudioNode[], hasActiveAncestor: boolean) {
+          for (const node of nodes) {
+            const isActive = nodeIds.includes(node.id)
+            if (isActive && !hasActiveAncestor) {
+              topLevelActiveIds.add(node.id)
+            }
+            if (node.children) {
+              findTopLevel(node.children, hasActiveAncestor || isActive)
+            }
+          }
+        }
+        findTopLevel(page.content, false)
+
+        const nodesToMove: StudioNode[] = []
+        let targetIndex = typeof index === 'number' ? index : -1
+
+        function extract(nodes: StudioNode[], currentParentId: string | null) {
+          for (let i = nodes.length - 1; i >= 0; i--) {
+            const node = nodes[i]
+            if (topLevelActiveIds.has(node.id)) {
+              const [removed] = nodes.splice(i, 1)
+              nodesToMove.unshift(removed)
+              if (currentParentId === targetParentId && targetIndex !== -1 && i < targetIndex) {
+                targetIndex--
+              }
+            } else if (node.children) {
+              extract(node.children, node.id)
+            }
+          }
+        }
+        extract(page.content, null)
+
+        if (targetParentId === null) {
+          const insertIndex = targetIndex === -1 ? page.content.length : targetIndex
+          page.content.splice(insertIndex, 0, ...nodesToMove)
+        } else {
+          const targetNode = findNodeById(page.content, targetParentId)
+          if (targetNode) {
+            if (!targetNode.children) targetNode.children = []
+            const insertIndex = targetIndex === -1 ? targetNode.children.length : targetIndex
+            targetNode.children.splice(insertIndex, 0, ...nodesToMove)
+          } else {
+            page.content.push(...nodesToMove)
+          }
+        }
+      }),
+    ),
+
+  updateNodeProps: (nodeId, props) =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website || !draft.activePageId) return
+
+        const page = draft.website.pages.find(p => p.id === draft.activePageId)
         if (!page) return
 
         const node = findNodeById(page.content, nodeId)
@@ -232,16 +345,73 @@ export const useStudioStore = create<StudioState>(set => ({
       }),
     ),
 
-  /**
-   * Updates style tokens globally in the active design system configuration.
-   */
   updateDesignSystemTokens: tokens =>
-    set(
-      produce((state: StudioState) => {
-        if (!state.website) return
-        state.website.designSystem.tokens = {
-          ...state.website.designSystem.tokens,
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website) return
+        draft.website.designSystem.tokens = {
+          ...draft.website.designSystem.tokens,
           ...tokens,
+        }
+      }),
+    ),
+
+  addPage: (slug, title) =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website) return
+        draft.website.pages.push({
+          id: `page_${Date.now()}`,
+          slug: slug.startsWith('/') ? slug : `/${slug}`,
+          title: title || 'New Page',
+          content: [],
+        })
+      }),
+    ),
+
+  updatePage: (id, slug, title) =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website) return
+        const page = draft.website.pages.find(p => p.id === id)
+        if (page) {
+          page.slug = slug
+          page.title = title
+        }
+      }),
+    ),
+
+  duplicatePage: id =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website) return
+        const pageToDup = draft.website.pages.find(p => p.id === id)
+        if (pageToDup) {
+          draft.website.pages.push({
+            ...JSON.parse(JSON.stringify(pageToDup)),
+            id: `page_${Date.now()}`,
+            slug: `${pageToDup.slug}-copy`,
+            title: `${pageToDup.title} (Copy)`,
+          })
+        }
+      }),
+    ),
+
+  removePage: id =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website) return
+        draft.website.pages = draft.website.pages.filter(p => p.id !== id)
+        if (draft.activePageId === id) {
+          draft.activePageId = draft.website.pages[0]?.id || null
+          if (draft.viewContext.id === id) {
+            draft.viewContext = { type: 'PAGE', id: draft.activePageId }
+          }
         }
       }),
     ),

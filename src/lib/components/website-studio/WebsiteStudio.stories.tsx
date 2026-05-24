@@ -13,6 +13,7 @@ import {
   Type,
 } from "lucide-react";
 import { useState } from "react";
+import { clsx } from "clsx"; // Added to safely merge injected classes with your custom ones
 import { WebsiteStudio } from "./index";
 import type { ComponentRegistry, WebsiteSchema } from "./types";
 
@@ -49,14 +50,24 @@ type Story = StoryObj<typeof WebsiteStudio.Renderer>;
 
 // ============================================================================
 // THE COMPONENT REGISTRY (Developer's UI Library)
+// Notice how every render function takes `className` and `...props` and
+// forwards them to the outermost element.
 // ============================================================================
 const chesaiRegistry: ComponentRegistry = {
   InstallCommand: {
     name: "Install Command",
     category: "Elements",
-    render: (props) => (
-      <div className="w-full max-w-2xl mx-auto mt-8">
-        <InstallCommand {...props} />
+    render: ({ packageName, variant, shape, shadow, className, ...props }) => (
+      <div
+        className={clsx("w-full max-w-2xl mx-auto mt-8", className)}
+        {...props}
+      >
+        <InstallCommand
+          packageName={packageName}
+          variant={variant}
+          shape={shape}
+          shadow={shadow}
+        />
       </div>
     ),
     controls: {
@@ -99,10 +110,19 @@ const chesaiRegistry: ComponentRegistry = {
   Section: {
     name: "Section",
     category: "Layout",
-    render: ({ children, bg, padding = "80px 24px", align = "center" }) => (
+    acceptsChildren: true,
+    render: ({
+      children,
+      bg,
+      padding = "80px 24px",
+      align = "center",
+      className,
+      ...props
+    }) => (
       <section
         style={{ backgroundColor: bg, padding }}
-        className={`w-full flex flex-col items-${align}`}
+        className={clsx(`w-full flex flex-col items-${align}`, className)}
+        {...props}
       >
         <div className="w-full max-w-6xl mx-auto flex flex-col gap-8">
           {children}
@@ -117,7 +137,8 @@ const chesaiRegistry: ComponentRegistry = {
   FlexBox: {
     name: "Flex Box",
     category: "Layout",
-    render: (props) => <Flex {...props} />,
+    acceptsChildren: true,
+    render: (props) => <Flex {...props} />, // Flex natively handles spreading ...props
     controls: {
       direction: {
         type: "select",
@@ -158,7 +179,8 @@ const chesaiRegistry: ComponentRegistry = {
   GridBox: {
     name: "Grid Box",
     category: "Layout",
-    render: (props) => <Grid {...props} />,
+    acceptsChildren: true,
+    render: (props) => <Grid {...props} />, // Natively spreads
     controls: {
       gap: {
         type: "select",
@@ -173,13 +195,14 @@ const chesaiRegistry: ComponentRegistry = {
   GridItemBox: {
     name: "Grid Item",
     category: "Layout",
-    render: (props) => <GridItem {...props} />,
+    acceptsChildren: true,
+    render: (props) => <GridItem {...props} />, // Natively spreads
     controls: {},
   },
   Text: {
     name: "Text",
     category: "Typography",
-    render: (props) => <Typography {...props} />,
+    render: (props) => <Typography {...props} />, // Natively spreads
     controls: {
       children: { type: "textarea", label: "Content" },
       variant: {
@@ -197,8 +220,14 @@ const chesaiRegistry: ComponentRegistry = {
   CodeBlock: {
     name: "Code Block",
     category: "Elements",
-    render: ({ code, language, fileName }) => (
-      <div className="w-full max-w-2xl mx-auto mt-2 text-left shadow-lg rounded-xl overflow-hidden">
+    render: ({ code, language, fileName, className, ...props }) => (
+      <div
+        className={clsx(
+          "w-full max-w-2xl mx-auto mt-2 text-left shadow-lg rounded-xl overflow-hidden",
+          className,
+        )}
+        {...props}
+      >
         <CodeEditor
           value={code}
           language={language || "typescript"}
@@ -254,8 +283,14 @@ const chesaiRegistry: ComponentRegistry = {
   AnnouncementBadge: {
     name: "Announcement Badge",
     category: "Elements",
-    render: ({ text }) => (
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary-container/50 border border-secondary-container text-on-secondary-container text-sm font-medium w-fit mx-auto shadow-sm backdrop-blur-md">
+    render: ({ text, className, ...props }) => (
+      <div
+        className={clsx(
+          "inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary-container/50 border border-secondary-container text-on-secondary-container text-sm font-medium w-fit mx-auto shadow-sm backdrop-blur-md",
+          className,
+        )}
+        {...props}
+      >
         <Sparkles size={14} className="text-primary" />
         {text}
       </div>
@@ -265,22 +300,18 @@ const chesaiRegistry: ComponentRegistry = {
   NavigationBlock: {
     name: "Navigation Bar",
     category: "Blocks",
-    render: ({ title, ...props }) => (
+    render: ({ title, className, ...props }) => (
       <AppBar
-        className="container mx-auto"
+        className={clsx("container mx-auto", className)}
         variant="small"
         color="transparent"
         title={<span className="font-bold tracking-tight">{title}</span>}
         trailingIcons={
-          <Button
-            variant="ghost"
-            size="sm"
-            startIcon={<Github size={18} />}
-            {...props}
-          >
+          <Button variant="ghost" size="sm" startIcon={<Github size={18} />}>
             Repository
           </Button>
         }
+        {...props}
       />
     ),
     controls: { title: { type: "text", label: "Brand Name" } },
@@ -288,7 +319,7 @@ const chesaiRegistry: ComponentRegistry = {
   FeatureCard: {
     name: "Feature Card",
     category: "Blocks",
-    render: ({ title, description, icon }) => {
+    render: ({ title, description, icon, className, ...props }) => {
       const IconMap: any = { Zap, Accessibility, Palette };
       const IconComponent = IconMap[icon] || Zap;
       return (
@@ -297,7 +328,11 @@ const chesaiRegistry: ComponentRegistry = {
           shape="minimal"
           padding="lg"
           hoverEffect
-          className="h-full flex flex-col gap-4 border border-outline-variant/30"
+          className={clsx(
+            "h-full flex flex-col gap-4 border border-outline-variant/30",
+            className,
+          )}
+          {...props}
         >
           <div className="w-12 h-12 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center">
             <IconComponent size={24} />
