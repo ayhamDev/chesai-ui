@@ -1,3 +1,5 @@
+// src/lib/components/website-studio/store.ts
+
 import { produce } from 'immer'
 import { create } from 'zustand'
 import type { StudioNode, WebsiteSchema } from './types'
@@ -40,6 +42,15 @@ function isDescendant(node: StudioNode, possibleDescendantId: string): boolean {
   return false
 }
 
+function cloneNodeWithNewIds(node: StudioNode): StudioNode {
+  const newId = `${node.type.toLowerCase()}_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 6)}`
+  return {
+    ...node,
+    id: newId,
+    children: node.children ? node.children.map(cloneNodeWithNewIds) : undefined,
+  }
+}
+
 // --- STORE DEFINITION ---
 
 interface StudioState {
@@ -62,6 +73,12 @@ interface StudioState {
     type: 'PAGE' | 'COMPONENT'
     id: string | null
   }
+
+  // Clipboard & Node Actions
+  clipboard: StudioNode[]
+  copyNodes: (nodeIds: string[]) => void
+  pasteNodes: (targetId: string | null, position?: 'inside' | 'after') => void
+  duplicateNodes: (nodeIds: string[]) => void
 
   // Initialization
   initStudio: (schema: WebsiteSchema) => void
@@ -107,6 +124,7 @@ export const useStudioStore = create<StudioState>(set => ({
 
   past: [],
   future: [],
+  clipboard: [],
 
   undo: () =>
     set(state => {
@@ -133,6 +151,104 @@ export const useStudioStore = create<StudioState>(set => ({
         future: newFuture,
       }
     }),
+
+  copyNodes: nodeIds =>
+    set(state => {
+      if (!state.website || !state.activePageId || nodeIds.length === 0) return state
+      const page = state.website.pages.find(p => p.id === state.activePageId)
+      if (!page) return state
+
+      // FIX: Filter out descendants so we don't copy a parent AND its child separately
+      const topLevelIds = new Set<string>()
+      function findTopLevel(nodes: StudioNode[], hasActiveAncestor: boolean) {
+        for (const node of nodes) {
+          const isActive = nodeIds.includes(node.id)
+          if (isActive && !hasActiveAncestor) {
+            topLevelIds.add(node.id)
+          }
+          if (node.children) {
+            findTopLevel(node.children, hasActiveAncestor || isActive)
+          }
+        }
+      }
+      findTopLevel(page.content, false)
+
+      const copied: StudioNode[] = []
+      for (const id of Array.from(topLevelIds)) {
+        const node = findNodeById(page.content, id)
+        if (node) copied.push(JSON.parse(JSON.stringify(node)))
+      }
+      return { clipboard: copied }
+    }),
+
+  pasteNodes: (targetId, position = 'inside') =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website || !draft.activePageId || draft.clipboard.length === 0) return
+        const page = draft.website.pages.find(p => p.id === draft.activePageId)
+        if (!page) return
+
+        const newNodes = draft.clipboard.map(cloneNodeWithNewIds)
+
+        // Paste at root level
+        if (!targetId) {
+          page.content.push(...newNodes)
+          return
+        }
+
+        if (position === 'inside') {
+          const targetNode = findNodeById(page.content, targetId)
+          if (targetNode) {
+            if (!targetNode.children) targetNode.children = []
+            targetNode.children.push(...newNodes)
+          } else {
+            page.content.push(...newNodes)
+          }
+        } else if (position === 'after') {
+          const lookup = findNodeAndParent(page.content, targetId)
+          if (lookup) {
+            const { parentArray, index } = lookup
+            parentArray.splice(index + 1, 0, ...newNodes)
+          } else {
+            page.content.push(...newNodes)
+          }
+        }
+      }),
+    ),
+
+  duplicateNodes: nodeIds =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website || !draft.activePageId || nodeIds.length === 0) return
+        const page = draft.website.pages.find(p => p.id === draft.activePageId)
+        if (!page) return
+
+        const topLevelIds = new Set<string>()
+        function findTopLevel(nodes: StudioNode[], hasActiveAncestor: boolean) {
+          for (const node of nodes) {
+            const isActive = nodeIds.includes(node.id)
+            if (isActive && !hasActiveAncestor) {
+              topLevelIds.add(node.id)
+            }
+            if (node.children) {
+              findTopLevel(node.children, hasActiveAncestor || isActive)
+            }
+          }
+        }
+        findTopLevel(page.content, false)
+
+        for (const id of Array.from(topLevelIds)) {
+          const lookup = findNodeAndParent(page.content, id)
+          if (lookup) {
+            const { node, parentArray, index } = lookup
+            const cloned = cloneNodeWithNewIds(node)
+            parentArray.splice(index + 1, 0, cloned)
+          }
+        }
+      }),
+    ),
 
   initStudio: schema =>
     set({
@@ -409,7 +525,7 @@ export const useStudioStore = create<StudioState>(set => ({
         draft.website.pages = draft.website.pages.filter(p => p.id !== id)
         if (draft.activePageId === id) {
           draft.activePageId = draft.website.pages[0]?.id || null
-          if (draft.viewContext.id === id) {
+          if (draft.activePageId) {
             draft.viewContext = { type: 'PAGE', id: draft.activePageId }
           }
         }

@@ -1,4 +1,3 @@
-// src/lib/components/website-studio/canvas/ArtboardNode.tsx
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
@@ -19,20 +18,46 @@ const IframeContentObserver: React.FC<{
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    const observer = new ResizeObserver((entries) => {
-      const height =
-        entries[0].borderBoxSize?.[0]?.blockSize ??
-        entries[0].target.getBoundingClientRect().height;
-      onHeightChange(height);
+    const el = containerRef.current;
+    if (!el) return;
+
+    let rafId: number;
+
+    const updateHeight = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (!el) return;
+        const rectHeight = el.getBoundingClientRect().height;
+        const scrollHeight = el.scrollHeight;
+        onHeightChange(Math.max(rectHeight, scrollHeight));
+      });
+    };
+
+    const resizeObserver = new ResizeObserver(() => updateHeight());
+    resizeObserver.observe(el);
+
+    const mutationObserver = new MutationObserver(() => updateHeight());
+    mutationObserver.observe(el, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true,
     });
 
-    observer.observe(containerRef.current);
-    return () => observer.disconnect();
+    updateHeight();
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
   }, [onHeightChange]);
 
   return (
-    <div ref={containerRef} className="w-full flex flex-col relative">
+    <div
+      ref={containerRef}
+      className="w-full flex flex-col relative overflow-hidden"
+    >
       {children}
     </div>
   );
@@ -136,7 +161,6 @@ const CanvasOverlay = ({ iframeWindow }: { iframeWindow: Window }) => {
           className="absolute border-2 border-primary bg-primary/10 transition-none"
           style={{
             top: hoveredRect.top,
-            // -11 for corrections
             left: hoveredRect.left - 11,
             width: hoveredRect.width,
             height: hoveredRect.height,
@@ -149,7 +173,6 @@ const CanvasOverlay = ({ iframeWindow }: { iframeWindow: Window }) => {
           className="absolute border-2 border-primary transition-none"
           style={{
             top: rect.top,
-            // -11 for corrections
             left: rect.left - 11,
             width: rect.width,
             height: rect.height,
@@ -185,6 +208,15 @@ const ArtboardIframe = ({
   const [iframeWindow, setIframeWindow] = useState<Window | null>(null);
   const [contentHeight, setContentHeight] = useState<number>(defaultHeight);
 
+  // Custom inner Drag-to-Select State
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+  const [dragCurrent, setDragCurrent] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const { resolvedTheme } = useTheme();
@@ -214,9 +246,7 @@ const ArtboardIframe = ({
     const styleTags = document.querySelectorAll(
       'style, link[rel="stylesheet"]',
     );
-    styleTags.forEach((tag) => {
-      iframeHead.appendChild(tag.cloneNode(true));
-    });
+    styleTags.forEach((tag) => iframeHead.appendChild(tag.cloneNode(true)));
 
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -240,21 +270,117 @@ const ArtboardIframe = ({
     return { x, y };
   };
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+
+    // FIX 1: Stop propagation so React Flow doesn't select the whole artboard
+    // when interacting with the canvas content.
+    e.stopPropagation();
+
+    const canvasEl = e.currentTarget.closest("[data-tool]");
+    if (canvasEl?.getAttribute("data-tool") === "hand") return;
+
+    const coords = getIframeCoordinates(e);
+    if (!coords) return;
+
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragStart(coords);
+    setDragCurrent(coords);
+  };
+
   const handlePointerMove = (e: React.PointerEvent) => {
     const coords = getIframeCoordinates(e);
     if (!coords || !iframeWindow) return;
 
+    // REAL-TIME SELECTION LOGIC
+    if (dragStart) {
+      setDragCurrent(coords);
+
+      const width = Math.abs(coords.x - dragStart.x);
+      const height = Math.abs(coords.y - dragStart.y);
+
+      // Only select if dragged more than 5px to avoid capturing simple clicks
+      if (width > 5 || height > 5) {
+        const rect = {
+          left: Math.min(dragStart.x, coords.x),
+          top: Math.min(dragStart.y, coords.y),
+          right: Math.max(dragStart.x, coords.x),
+          bottom: Math.max(dragStart.y, coords.y),
+        };
+
+        const nodes = Array.from(
+          iframeWindow.document.querySelectorAll("[data-studio-node-id]"),
+        );
+
+        const selectedIds = nodes
+          .filter((n) => {
+            const nRect = n.getBoundingClientRect();
+
+            // Standard bounding box intersection
+            const intersects = !(
+              nRect.right < rect.left ||
+              nRect.left > rect.right ||
+              nRect.bottom < rect.top ||
+              nRect.top > rect.bottom
+            );
+
+            // FIX 2: Check if the drag box is COMPLETELY inside the node bounds.
+            // If it is, the user is dragging inside a parent container and we
+            // shouldn't select the parent container itself.
+            const boxCompletelyInsideNode =
+              rect.left >= nRect.left &&
+              rect.right <= nRect.right &&
+              rect.top >= nRect.top &&
+              rect.bottom <= nRect.bottom;
+
+            return intersects && !boxCompletelyInsideNode;
+          })
+          .map((n) => n.getAttribute("data-studio-node-id")!);
+
+        useStudioStore.getState().setSelectedNodes(selectedIds);
+      }
+      return;
+    }
+
+    // Standard hover logic
     const el = iframeWindow.document.elementFromPoint(coords.x, coords.y);
     const node = el?.closest("[data-studio-node-id]");
     if (node) {
-      const id = node.getAttribute("data-studio-node-id");
-      setHoveredNode(id);
+      setHoveredNode(node.getAttribute("data-studio-node-id"));
     } else {
       setHoveredNode(null);
     }
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+
+    if (dragStart && dragCurrent) {
+      const width = Math.abs(dragCurrent.x - dragStart.x);
+      const height = Math.abs(dragCurrent.y - dragStart.y);
+
+      // If it was just a tiny movement, treat it as a normal click
+      if (width <= 5 && height <= 5) {
+        handleClick(e);
+      }
+    }
+
+    setDragStart(null);
+    setDragCurrent(null);
+  };
+
+  // FIX 3: Clean up drag state if pointer is cancelled or leaves boundary
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setDragStart(null);
+    setDragCurrent(null);
+  };
+
+  const handleClick = (e: React.MouseEvent | React.PointerEvent) => {
     e.stopPropagation();
     const coords = getIframeCoordinates(e);
     if (!coords || !iframeWindow) return;
@@ -273,6 +399,8 @@ const ArtboardIframe = ({
   };
 
   const finalHeight = Math.max(contentHeight, defaultHeight);
+  const isDraggingBox =
+    dragStart && dragCurrent && Math.abs(dragCurrent.x - dragStart.x) > 5;
 
   return (
     <div
@@ -288,19 +416,53 @@ const ArtboardIframe = ({
       >
         {iframeBody &&
           createPortal(
-            <IframeContentObserver onHeightChange={setContentHeight}>
-              {children}
-            </IframeContentObserver>,
+            <>
+              <style>{`
+                .website-studio-theme-root {
+                  min-height: ${defaultHeight}px !important;
+                  height: fit-content !important;
+                }
+                .min-h-screen {
+                  min-height: ${defaultHeight}px !important;
+                }
+                .h-screen {
+                  height: ${defaultHeight}px !important;
+                }
+              `}</style>
+              <IframeContentObserver onHeightChange={setContentHeight}>
+                {children}
+              </IframeContentObserver>
+            </>,
             iframeBody,
           )}
       </iframe>
 
       <div
         className="absolute inset-0 z-[9999] group-data-[tool=pointer]/canvas:cursor-default group-data-[tool=hand]/canvas:cursor-grab active:group-data-[tool=hand]/canvas:cursor-grabbing"
+        onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerLeave={() => setHoveredNode(null)}
-        onClick={handleClick}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onPointerLeave={(e) => {
+          if (!dragStart) {
+            setHoveredNode(null);
+          } else {
+            handlePointerCancel(e);
+          }
+        }}
       />
+
+      {isDraggingBox && (
+        <div
+          className="absolute border border-primary bg-primary/20 pointer-events-none z-[100000]"
+          style={{
+            left: Math.min(dragStart.x, dragCurrent.x),
+            top: Math.min(dragStart.y, dragCurrent.y),
+            width: Math.abs(dragCurrent.x - dragStart.x),
+            height: Math.abs(dragCurrent.y - dragStart.y),
+          }}
+        />
+      )}
 
       {iframeWindow &&
         iframeBody &&

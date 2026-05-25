@@ -1,7 +1,6 @@
 "use client";
 
 import { ContextMenu } from "../context-menu";
-
 import {
   Box,
   Eye,
@@ -24,8 +23,9 @@ import {
   Trash2,
   Undo2,
   Redo2,
+  Clipboard,
 } from "lucide-react";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { clsx } from "clsx";
 
 import { Resizable } from "../resizable";
@@ -155,6 +155,7 @@ export const Builder: React.FC<BuilderProps> = ({
     setActivePage,
     setSelectedNodes,
     moveNodes,
+    removeNodes,
     undo,
     redo,
     past,
@@ -163,6 +164,10 @@ export const Builder: React.FC<BuilderProps> = ({
     updatePage,
     duplicatePage,
     removePage,
+    clipboard,
+    copyNodes,
+    pasteNodes,
+    duplicateNodes,
   } = useStudioStore();
 
   const [pageSearch, setPageSearch] = useState("");
@@ -178,6 +183,10 @@ export const Builder: React.FC<BuilderProps> = ({
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editPageSlug, setEditPageSlug] = useState("");
   const [editPageTitle, setEditPageTitle] = useState("");
+
+  // Keep a ref of the components registry so global event listeners can read properties (like acceptsChildren)
+  const componentsRef = useRef(components);
+  componentsRef.current = components;
 
   useEffect(() => {
     initStudio(initialState);
@@ -247,7 +256,7 @@ export const Builder: React.FC<BuilderProps> = ({
     return () => clearTimeout(scrollTimer);
   }, [selectedNodeIds, activePage?.content]);
 
-  // Global Keyboard Shortcuts (Undo / Redo)
+  // Global Keyboard Shortcuts (Undo, Redo, Copy, Paste, Duplicate, Delete)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isInput =
@@ -257,19 +266,77 @@ export const Builder: React.FC<BuilderProps> = ({
 
       if (isInput) return;
 
+      const state = useStudioStore.getState();
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
         e.preventDefault();
-        if (e.shiftKey) redo();
-        else undo();
+        if (e.shiftKey) state.redo();
+        else state.undo();
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
         e.preventDefault();
-        redo();
+        state.redo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+        if (
+          state.selectedNodeIds.length > 0 &&
+          state.viewContext.type === "PAGE"
+        ) {
+          e.preventDefault();
+          state.copyNodes(state.selectedNodeIds);
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
+        if (state.clipboard.length > 0 && state.viewContext.type === "PAGE") {
+          e.preventDefault();
+          const targetId =
+            state.selectedNodeIds.length > 0 ? state.selectedNodeIds[0] : null;
+
+          // Search for the target node type to determine if it accepts children
+          let canAcceptChildren = false;
+          if (targetId) {
+            const page = state.website?.pages.find(
+              (p) => p.id === state.activePageId,
+            );
+            if (page) {
+              const findType = (nodes: StudioNode[]): string | null => {
+                for (const n of nodes) {
+                  if (n.id === targetId) return n.type;
+                  if (n.children) {
+                    const res = findType(n.children);
+                    if (res) return res;
+                  }
+                }
+                return null;
+              };
+              const type = findType(page.content);
+              canAcceptChildren = type
+                ? (componentsRef.current[type]?.acceptsChildren ?? false)
+                : false;
+            }
+          }
+
+          state.pasteNodes(targetId, canAcceptChildren ? "inside" : "after");
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+        if (
+          state.selectedNodeIds.length > 0 &&
+          state.viewContext.type === "PAGE"
+        ) {
+          e.preventDefault();
+          state.duplicateNodes(state.selectedNodeIds);
+        }
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        if (
+          state.selectedNodeIds.length > 0 &&
+          state.viewContext.type === "PAGE"
+        ) {
+          e.preventDefault();
+          state.removeNodes(state.selectedNodeIds);
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undo, redo]);
+  }, []);
 
   const displayedPagesTree = React.useMemo(() => {
     const filtered = (website?.pages || []).filter((p) => {
@@ -429,7 +496,7 @@ export const Builder: React.FC<BuilderProps> = ({
         <Resizable className="flex-1 overflow-hidden z-0 bg-surface-container-lowest">
           <Resizable.Pane
             id="left-navigator"
-            defaultWidth={300}
+            defaultWidth={350}
             className="bg-surface flex flex-col z-40 border-r border-outline-variant/30"
           >
             <Tabs
@@ -442,7 +509,7 @@ export const Builder: React.FC<BuilderProps> = ({
                 <Tabs.List className="w-full !border-none">
                   <Tabs.Trigger value="pages">Pages</Tabs.Trigger>
                   <Tabs.Trigger value="layers">Layers</Tabs.Trigger>
-                  <Tabs.Trigger value="assets">Assets</Tabs.Trigger>
+                  <Tabs.Trigger value="assets">Components</Tabs.Trigger>
                 </Tabs.List>
               </div>
 
@@ -451,22 +518,7 @@ export const Builder: React.FC<BuilderProps> = ({
                   value="pages"
                   className="p-0 flex flex-col h-full overflow-hidden"
                 >
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant/30 ">
-                    <Typography
-                      variant="label-small"
-                      className="font-bold uppercase tracking-wider opacity-70"
-                    >
-                      Pages
-                    </Typography>
-                    <IconButton
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => setIsAddPageOpen(true)}
-                    >
-                      <Plus size={16} />
-                    </IconButton>
-                  </div>
-                  <div className="p-3 border-b border-outline-variant/30 shrink-0">
+                  <div className="flex gap-2 p-3 border-b border-outline-variant/30 shrink-0">
                     <Input
                       variant="filled"
                       size="sm"
@@ -477,6 +529,14 @@ export const Builder: React.FC<BuilderProps> = ({
                       value={pageSearch}
                       onChange={(e) => setPageSearch(e.target.value)}
                     />
+                    <IconButton
+                      size="md"
+                      shape="minimal"
+                      variant="ghost"
+                      onClick={() => setIsAddPageOpen(true)}
+                    >
+                      <Plus size={16} />
+                    </IconButton>
                   </div>
                   <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
                     <TreeView<PageNode>
@@ -675,61 +735,244 @@ export const Builder: React.FC<BuilderProps> = ({
                     />
                   </div>
 
-                  <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
-                    {activePage ? (
-                      <TreeView<StudioNode>
-                        data={displayedLayers}
-                        getId={(node) => node.id}
-                        getChildren={(node) => node.children}
-                        canHaveChildren={(node) => {
-                          const compDef = components[node.type];
-                          return compDef?.acceptsChildren ?? false;
-                        }}
-                        multiSelect
-                        selectedIds={selectedNodeIds}
-                        onSelectChange={(ids) => {
-                          setSelectedNodes(ids);
-                          if (viewContext.type !== "PAGE") {
-                            setViewContext("PAGE", activePageId);
-                          }
-                        }}
-                        expandedIds={expandedLayerIds}
-                        onExpandedChange={setExpandedLayerIds}
-                        variant="ghost"
-                        size="sm"
-                        shape="minimal"
-                        enableDragAndDrop={true}
-                        onMoveNode={({ activeIds, parentId, index }) => {
-                          moveNodes(activeIds, parentId, index);
-                        }}
-                        renderItem={(node, { isSelected, isDragging }) => (
-                          <div
-                            className={clsx(
-                              "flex items-center justify-start gap-2 w-full pr-2 group/item text-left",
-                              isDragging && "opacity-80",
-                            )}
-                          >
-                            <div className="shrink-0">
-                              {getNodeIcon(node.type)}
-                            </div>
-                            <Typography
-                              variant="label-small"
-                              className={clsx(
-                                "truncate flex-1 text-left",
-                                isSelected ? "font-bold" : "font-medium",
-                              )}
-                            >
-                              {node.id}
-                            </Typography>
+                  {/* Context Menu Wrap around the entire TreeView area so empty space right clicks work */}
+                  <ContextMenu shape="minimal">
+                    <ContextMenu.Trigger asChild>
+                      <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
+                        {activePage ? (
+                          <TreeView<StudioNode>
+                            data={displayedLayers}
+                            getId={(node) => node.id}
+                            getChildren={(node) => node.children}
+                            canHaveChildren={(node) => {
+                              const compDef = components[node.type];
+                              return compDef?.acceptsChildren ?? false;
+                            }}
+                            multiSelect
+                            selectedIds={selectedNodeIds}
+                            onSelectChange={(ids) => {
+                              setSelectedNodes(ids);
+                              if (viewContext.type !== "PAGE") {
+                                setViewContext("PAGE", activePageId);
+                              }
+                            }}
+                            expandedIds={expandedLayerIds}
+                            onExpandedChange={setExpandedLayerIds}
+                            variant="ghost"
+                            size="sm"
+                            shape="minimal"
+                            enableDragAndDrop={true}
+                            onMoveNode={({ activeIds, parentId, index }) => {
+                              moveNodes(activeIds, parentId, index);
+                            }}
+                            renderItem={(node, { isSelected, isDragging }) => {
+                              // Identify targets if this row is interacted with
+                              const targetIds = selectedNodeIds.includes(
+                                node.id,
+                              )
+                                ? selectedNodeIds
+                                : [node.id];
+
+                              // Detect if this specific component allows children to determine pasting logic
+                              const acceptsChildren =
+                                components[node.type]?.acceptsChildren ?? false;
+                              const pastePosition = acceptsChildren
+                                ? "inside"
+                                : "after";
+
+                              return (
+                                <ContextMenu shape="minimal">
+                                  <ContextMenu.Trigger asChild>
+                                    <div
+                                      className={clsx(
+                                        "flex items-center justify-between gap-2 w-full pr-2 group/item text-left pointer-events-auto",
+                                        isDragging && "opacity-80",
+                                      )}
+                                    >
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <div className="shrink-0">
+                                          {getNodeIcon(node.type)}
+                                        </div>
+                                        <Typography
+                                          variant="label-small"
+                                          className={clsx(
+                                            "truncate flex-1 text-left",
+                                            isSelected
+                                              ? "font-bold"
+                                              : "font-medium",
+                                          )}
+                                        >
+                                          {node.id}
+                                        </Typography>
+                                      </div>
+
+                                      <DropdownMenu shape="minimal">
+                                        <DropdownMenuTrigger asChild>
+                                          <IconButton
+                                            variant="ghost"
+                                            size="xs"
+                                            onPointerDown={(e) =>
+                                              e.stopPropagation()
+                                            }
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="opacity-0 group-hover/item:opacity-100 transition-opacity focus-visible:opacity-100 shrink-0 h-6 w-6"
+                                          >
+                                            <MoreHorizontal size={14} />
+                                          </IconButton>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              copyNodes(targetIds);
+                                            }}
+                                          >
+                                            <Copy className="w-4 h-4 mr-2" />{" "}
+                                            Copy
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            disabled={clipboard.length === 0}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              pasteNodes(
+                                                node.id,
+                                                pastePosition,
+                                              );
+                                            }}
+                                          >
+                                            <Clipboard className="w-4 h-4 mr-2" />{" "}
+                                            Paste
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              duplicateNodes(targetIds);
+                                            }}
+                                          >
+                                            <Copy className="w-4 h-4 mr-2" />{" "}
+                                            Duplicate
+                                          </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            className="text-error hover:!bg-error/10 hover:!text-error"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              removeNodes(targetIds);
+                                            }}
+                                          >
+                                            <Trash2 className="w-4 h-4 mr-2" />{" "}
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </ContextMenu.Trigger>
+
+                                  <ContextMenu.Content>
+                                    <ContextMenu.Item
+                                      onClick={() => copyNodes(targetIds)}
+                                    >
+                                      <Copy className="w-4 h-4 mr-2" /> Copy
+                                    </ContextMenu.Item>
+                                    <ContextMenu.Item
+                                      disabled={clipboard.length === 0}
+                                      onClick={() =>
+                                        pasteNodes(node.id, pastePosition)
+                                      }
+                                    >
+                                      <Clipboard className="w-4 h-4 mr-2" />{" "}
+                                      Paste
+                                    </ContextMenu.Item>
+                                    <ContextMenu.Item
+                                      onClick={() => duplicateNodes(targetIds)}
+                                    >
+                                      <Copy className="w-4 h-4 mr-2" />{" "}
+                                      Duplicate
+                                    </ContextMenu.Item>
+                                    <ContextMenu.Separator />
+                                    <ContextMenu.Item
+                                      className="text-error hover:!bg-error/10 hover:!text-error"
+                                      onClick={() => removeNodes(targetIds)}
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                    </ContextMenu.Item>
+                                  </ContextMenu.Content>
+                                </ContextMenu>
+                              );
+                            }}
+                          />
+                        ) : (
+                          <div className="p-4 text-center opacity-50 text-xs">
+                            No active page to display layers for.
                           </div>
                         )}
-                      />
-                    ) : (
-                      <div className="p-4 text-center opacity-50 text-xs">
-                        No active page to display layers for.
                       </div>
-                    )}
-                  </div>
+                    </ContextMenu.Trigger>
+
+                    {/* Fallback context menu for the empty space in the container */}
+                    <ContextMenu.Content>
+                      <ContextMenu.Item
+                        disabled={selectedNodeIds.length === 0}
+                        onClick={() => copyNodes(selectedNodeIds)}
+                      >
+                        <Copy className="w-4 h-4 mr-2" /> Copy
+                      </ContextMenu.Item>
+                      <ContextMenu.Item
+                        disabled={clipboard.length === 0}
+                        onClick={() => {
+                          const targetId =
+                            selectedNodeIds.length > 0
+                              ? selectedNodeIds[0]
+                              : null;
+                          let canAcceptChildren = false;
+                          if (targetId) {
+                            const page = website?.pages.find(
+                              (p) => p.id === activePageId,
+                            );
+                            if (page) {
+                              const findType = (
+                                nodes: StudioNode[],
+                              ): string | null => {
+                                for (const n of nodes) {
+                                  if (n.id === targetId) return n.type;
+                                  if (n.children) {
+                                    const res = findType(n.children);
+                                    if (res) return res;
+                                  }
+                                }
+                                return null;
+                              };
+                              const type = findType(page.content);
+                              canAcceptChildren = type
+                                ? (componentsRef.current[type]
+                                    ?.acceptsChildren ?? false)
+                                : false;
+                            }
+                          }
+                          pasteNodes(
+                            targetId,
+                            canAcceptChildren ? "inside" : "after",
+                          );
+                        }}
+                      >
+                        <Clipboard className="w-4 h-4 mr-2" /> Paste
+                      </ContextMenu.Item>
+                      <ContextMenu.Item
+                        disabled={selectedNodeIds.length === 0}
+                        onClick={() => duplicateNodes(selectedNodeIds)}
+                      >
+                        <Copy className="w-4 h-4 mr-2" /> Duplicate
+                      </ContextMenu.Item>
+                      <ContextMenu.Separator />
+                      <ContextMenu.Item
+                        disabled={selectedNodeIds.length === 0}
+                        className="text-error hover:!bg-error/10 hover:!text-error"
+                        onClick={() => removeNodes(selectedNodeIds)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                      </ContextMenu.Item>
+                    </ContextMenu.Content>
+                  </ContextMenu>
                 </Tabs.Panel>
 
                 <Tabs.Panel

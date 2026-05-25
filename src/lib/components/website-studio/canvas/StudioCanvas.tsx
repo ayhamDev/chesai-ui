@@ -12,8 +12,6 @@ import {
   ReactFlowProvider,
   useReactFlow,
   useViewport,
-  useOnSelectionChange,
-  SelectionMode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { clsx } from "clsx";
@@ -32,13 +30,11 @@ import { Button } from "../../button";
 import { IconButton } from "../../icon-button";
 import { Card } from "../../card";
 import { Chip } from "../../chip";
-import { Typography } from "../../typography";
 import { Tooltip, TooltipProvider, TooltipTrigger } from "../../tooltip";
 import { useTheme } from "../../../context/ThemeProvider";
 import { ElasticScrollArea } from "../../elastic-scroll-area";
 import {
   Plus,
-  Minus,
   Maximize,
   MousePointer2,
   Hand,
@@ -49,7 +45,6 @@ import {
   Wand2,
   ArrowUp,
   MoreHorizontal,
-  Sparkles,
   Paperclip,
   Image as ImageIcon,
   File,
@@ -107,22 +102,20 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialPageNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  const { viewContext, setSelectedNodes: setStudioSelectedNodes } =
-    useStudioStore();
-
   const {
-    zoomIn,
-    zoomOut,
-    fitView,
-    zoomTo,
-    setNodes: setReactFlowNodes,
-  } = useReactFlow();
+    viewContext,
+    setSelectedNodes: setStudioSelectedNodes,
+    selectedNodeIds,
+    website,
+    activePageId,
+  } = useStudioStore();
+
+  const { zoomIn, zoomOut, fitView, zoomTo } = useReactFlow();
   const { zoom } = useViewport();
   const { resolvedTheme, setTheme } = useTheme();
 
   const [activeTool, setActiveTool] = useState<"pointer" | "hand">("pointer");
   const [promptText, setPromptText] = useState("");
-  const [selectedNodes, setSelectedNodes] = useState<any[]>([]);
   const [isLogsPanelOpen, setIsLogsPanelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [activeModel, setActiveModel] = useState(
@@ -177,12 +170,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
     [mouseX, mouseY],
   );
 
-  useOnSelectionChange({
-    onChange: ({ nodes }) => {
-      setSelectedNodes(nodes);
-    },
-  });
-
   const zoomPercentage = Math.round(zoom * 100);
 
   useEffect(() => {
@@ -196,7 +183,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
       }
       if (e.key.toLowerCase() === "v") setActiveTool("pointer");
       if (e.key.toLowerCase() === "h") setActiveTool("hand");
-      // Deselect Studio Nodes on Escape
       if (e.key === "Escape") setStudioSelectedNodes([]);
     };
 
@@ -264,17 +250,39 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
     setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleDeselectNode = (nodeId: string) => {
-    setReactFlowNodes((nds) =>
-      nds.map((n) => (n.id === nodeId ? { ...n, selected: false } : n)),
-    );
+  const handleDeselectStudioNode = (id: string) => {
+    setStudioSelectedNodes(selectedNodeIds.filter((nId) => nId !== id));
   };
+
+  const getStudioNodeDetails = useCallback(
+    (id: string) => {
+      const activePage = website?.pages.find((p) => p.id === activePageId);
+      if (!activePage) return null;
+      let foundNode: any = null;
+      const search = (nodes: any[]) => {
+        for (const n of nodes) {
+          if (n.id === id) {
+            foundNode = n;
+            return;
+          }
+          if (n.children) search(n.children);
+        }
+      };
+      search(activePage.content);
+      return foundNode;
+    },
+    [website, activePageId],
+  );
 
   const handlePromptSubmit = () => {
     if (!promptText.trim() && attachedFiles.length === 0) return;
 
+    const studioNodesToSubmit = selectedNodeIds
+      .map((id) => getStudioNodeDetails(id))
+      .filter(Boolean);
+
     aiConfig?.onPromptSubmit?.(promptText, {
-      nodes: selectedNodes,
+      nodes: studioNodesToSubmit,
       files: attachedFiles,
     });
 
@@ -312,11 +320,9 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
         panOnScroll={true}
         zoomOnScroll={false}
         panOnDrag={activeTool === "hand"}
-        selectionOnDrag={activeTool === "pointer"}
-        selectionMode={SelectionMode.Partial}
+        selectionOnDrag={false}
         nodesDraggable={activeTool === "pointer"}
         elementsSelectable={activeTool === "pointer"}
-        // Clear Studio Selection when clicking empty canvas
         onPaneClick={() => setStudioSelectedNodes([])}
       >
         <motion.div
@@ -435,11 +441,11 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
           <>
             <Panel
               position="top-left"
-              className="m-4 z-50 pointer-events-none h-[calc(100%-10rem)] flex flex-col"
+              className="m-4 z-50 pointer-events-none h-[calc(100%-17rem)] flex flex-col"
             >
               <div
                 ref={logsPanelRef}
-                className="w-[360px] pointer-events-none flex flex-col items-start gap-2 h-full"
+                className="w-[400px] pointer-events-none flex flex-col items-start gap-2 h-full"
               >
                 <TooltipProvider>
                   <TooltipTrigger asChild>
@@ -489,7 +495,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
             </Panel>
 
             <Panel
-              position="bottom-center"
+              position="bottom-left"
               className="mb-6 w-full max-w-[600px] z-50 pointer-events-none"
             >
               <div className="flex flex-col gap-2 w-full pointer-events-auto px-4">
@@ -526,52 +532,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                   padding="none"
                   className="w-full flex flex-col shadow-2xl border border-outline-variant/50 p-2"
                 >
-                  {(selectedNodes.length > 0 || attachedFiles.length > 0) && (
-                    <div className="flex px-2 pt-2 gap-2 flex-wrap max-h-[80px] overflow-y-auto no-scrollbar">
-                      {selectedNodes.map((node) => (
-                        <Chip
-                          key={node.id}
-                          startIcon={
-                            <div className="w-2 h-2 rounded-full bg-primary" />
-                          }
-                          endIcon={
-                            <X
-                              size={12}
-                              className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-1"
-                              onClick={() => handleDeselectNode(node.id)}
-                            />
-                          }
-                          className="bg-surface-container-highest hover:bg-surface-container-highest/80 border border-outline-variant/30 text-[11px] h-6 px-2 font-medium shadow-sm"
-                        >
-                          {node.data?.label || node.id}
-                        </Chip>
-                      ))}
-
-                      {attachedFiles.map((file, idx) => (
-                        <Chip
-                          key={idx}
-                          startIcon={
-                            file.type.startsWith("image/") ? (
-                              <ImageIcon size={12} className="text-primary" />
-                            ) : (
-                              <Paperclip size={12} className="text-primary" />
-                            )
-                          }
-                          endIcon={
-                            <X
-                              size={12}
-                              className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-1"
-                              onClick={() => removeFile(idx)}
-                            />
-                          }
-                          className="bg-surface-container-highest hover:bg-surface-container-highest/80 border border-outline-variant/30 text-[11px] h-6 px-2 font-medium shadow-sm"
-                        >
-                          {file.name}
-                        </Chip>
-                      ))}
-                    </div>
-                  )}
-
                   <input
                     type="file"
                     multiple
@@ -580,15 +540,89 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                     className="hidden"
                   />
 
+                  {/* Faux Textarea Wrapper: Combines the selections and the actual textarea to look like one entity */}
                   <div
-                    className="relative w-full mt-1 rounded-lg overflow-hidden"
+                    className="relative w-full rounded-lg overflow-hidden bg-surface-container-highest/30 border border-outline-variant/30 focus-within:border-primary/50 transition-colors"
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                   >
+                    {/* Render Studio Node chips INSIDE the textarea wrapper */}
+                    {(selectedNodeIds.length > 0 ||
+                      attachedFiles.length > 0) && (
+                      // FIX: Horizontal scroll applied to selection chips, removed flex-wrap
+                      <ElasticScrollArea
+                        orientation="horizontal"
+                        dimmingEdges
+                        scrollbarVisibility="hidden"
+                        className="w-full p-2"
+                      >
+                        <div className="flex gap-2 w-max px-1 pb-1">
+                          {selectedNodeIds.map((id) => {
+                            const node = getStudioNodeDetails(id);
+
+                            const label = node
+                              ? node?.id ||
+                                node.props?.title ||
+                                node.props?.name ||
+                                node.type
+                              : id;
+
+                            return (
+                              <Chip
+                                key={id}
+                                startIcon={
+                                  <div className="w-2 h-2 rounded-full bg-primary" />
+                                }
+                                endIcon={
+                                  <X
+                                    size={12}
+                                    className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-1"
+                                    onClick={() => handleDeselectStudioNode(id)}
+                                  />
+                                }
+                                className="bg-surface hover:bg-surface-container-highest border border-outline-variant/30 text-[11px] h-6 px-2 font-medium shadow-sm shrink-0"
+                              >
+                                {label}
+                              </Chip>
+                            );
+                          })}
+
+                          {attachedFiles.map((file, idx) => (
+                            <Chip
+                              key={idx}
+                              startIcon={
+                                file.type.startsWith("image/") ? (
+                                  <ImageIcon
+                                    size={12}
+                                    className="text-primary"
+                                  />
+                                ) : (
+                                  <Paperclip
+                                    size={12}
+                                    className="text-primary"
+                                  />
+                                )
+                              }
+                              endIcon={
+                                <X
+                                  size={12}
+                                  className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-1"
+                                  onClick={() => removeFile(idx)}
+                                />
+                              }
+                              className="bg-surface hover:bg-surface-container-highest border border-outline-variant/30 text-[11px] h-6 px-2 font-medium shadow-sm shrink-0"
+                            >
+                              {file.name}
+                            </Chip>
+                          ))}
+                        </div>
+                      </ElasticScrollArea>
+                    )}
+
                     <textarea
                       ref={textareaRef}
-                      className="w-full bg-transparent border-none outline-none resize-none text-on-surface placeholder:text-on-surface-variant/50 px-3 py-2 text-sm min-h-[40px] max-h-[120px] overflow-y-auto scrollbar-thin"
+                      className="w-full bg-transparent border-none outline-none resize-none text-on-surface placeholder:text-on-surface-variant/50 px-3 py-2 pt-3 text-sm min-h-[40px] max-h-[120px] overflow-y-auto scrollbar-thin"
                       placeholder="What would you like to change or create?"
                       rows={1}
                       value={promptText}
@@ -626,7 +660,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                     </AnimatePresence>
                   </div>
 
-                  <div className="flex items-center justify-between px-1 pb-1 pt-1">
+                  <div className="flex items-center justify-between px-1 pb-1 pt-2">
                     <div className="flex items-center gap-0.5">
                       <DropdownMenu shape="minimal">
                         <DropdownMenuTrigger asChild>
@@ -643,11 +677,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                             onClick={() => fileInputRef.current?.click()}
                           >
                             <File className="w-4 h-4 mr-2" /> Upload File
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => fileInputRef.current?.click()}
-                          >
-                            <ImageIcon className="w-4 h-4 mr-2" /> From Images
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
