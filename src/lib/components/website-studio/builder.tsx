@@ -1,75 +1,27 @@
+// src/lib/components/website-studio/builder.tsx
 "use client";
 
-import { ContextMenu } from "../context-menu";
-import {
-  Box,
-  Eye,
-  File,
-  Home,
-  LayoutTemplate,
-  Lock,
-  MousePointerClick,
-  Search,
-  Settings2,
-  Square,
-  Type,
-  Image as ImageIcon,
-  Plus,
-  Folder,
-  FolderOpen,
-  MoreHorizontal,
-  Copy,
-  Edit3,
-  Trash2,
-  Undo2,
-  Redo2,
-  Clipboard,
-} from "lucide-react";
+import { Undo2, Redo2 } from "lucide-react";
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { clsx } from "clsx";
 
 import { Resizable } from "../resizable";
 import { Typography } from "../typography";
 import { Tabs } from "../tabs";
-import { Input } from "../input";
 import { IconButton } from "../icon-button";
-import { Select } from "../select";
-import { Button } from "../button";
-import {
-  Dialog,
-  DialogBody,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../dropdown-menu";
-import { TreeView } from "../tree-view";
 
 import { StudioCanvas } from "./canvas/StudioCanvas";
 import { useStudioStore } from "./store";
 import { BuilderContextProvider } from "./BuilderContext";
-import type {
-  ComponentRegistry,
-  StudioNode,
-  WebsiteSchema,
-  PageSchema,
-} from "./types";
+import type { ComponentRegistry, WebsiteSchema, StudioNode } from "./types";
 
-export interface PageAction {
-  id: string;
-  label: string;
-  icon?: React.ReactNode;
-  destructive?: boolean;
-  run: (pageId: string, page: PageSchema) => void;
-}
+// Import Refactored Sub-components
+import { PagesTab } from "./builder/PagesTab";
+import { LayersTab } from "./builder/LayersTab";
+import { ComponentsTab } from "./builder/ComponentsTab";
+import { InspectorPanel } from "./builder/InspectorPanel";
+import { PageDialogs } from "./builder/PageDialogs";
+import { filterTree } from "./builder/helpers";
+import type { PageNode, ComponentTreeNode, PageAction } from "./builder/types";
 
 export interface BuilderProps {
   components: ComponentRegistry;
@@ -80,60 +32,6 @@ export interface BuilderProps {
   topBarRight?: React.ReactNode;
   customPageActions?: PageAction[];
   onExit?: () => void;
-}
-
-const getNodeIcon = (type: string) => {
-  const t = type.toLowerCase();
-  if (t.includes("text") || t.includes("heading") || t.includes("paragraph"))
-    return <Type className="w-4 h-4 opacity-70" />;
-  if (t.includes("image") || t.includes("picture"))
-    return <ImageIcon className="w-4 h-4 opacity-70" />;
-  if (t.includes("button") || t.includes("link"))
-    return <MousePointerClick className="w-4 h-4 opacity-70" />;
-  if (t.includes("section") || t.includes("container"))
-    return <LayoutTemplate className="w-4 h-4 opacity-70" />;
-  if (t.includes("flex") || t.includes("grid"))
-    return <Square className="w-4 h-4 opacity-70" />;
-  return <Box className="w-4 h-4 opacity-70" />;
-};
-
-const filterTree = (nodes: StudioNode[], query: string): StudioNode[] => {
-  if (!query) return nodes;
-  const lowerQuery = query.toLowerCase();
-  return nodes
-    .map((node) => {
-      const matches =
-        node.type.toLowerCase().includes(lowerQuery) ||
-        node.id.toLowerCase().includes(lowerQuery);
-      const filteredChildren = node.children
-        ? filterTree(node.children, query)
-        : [];
-      if (matches || filteredChildren.length > 0) {
-        return {
-          ...node,
-          children:
-            filteredChildren.length > 0 ? filteredChildren : node.children,
-        };
-      }
-      return null;
-    })
-    .filter(Boolean) as StudioNode[];
-};
-
-interface PageNode {
-  id: string;
-  slug: string;
-  name: string;
-  title: string;
-  children: PageNode[];
-  pageId: string;
-}
-
-interface ComponentTreeNode {
-  id: string;
-  name: string;
-  isCategory: boolean;
-  children?: ComponentTreeNode[];
 }
 
 export const Builder: React.FC<BuilderProps> = ({
@@ -184,7 +82,6 @@ export const Builder: React.FC<BuilderProps> = ({
   const [editPageSlug, setEditPageSlug] = useState("");
   const [editPageTitle, setEditPageTitle] = useState("");
 
-  // Keep a ref of the components registry so global event listeners can read properties (like acceptsChildren)
   const componentsRef = useRef(components);
   componentsRef.current = components;
 
@@ -216,7 +113,7 @@ export const Builder: React.FC<BuilderProps> = ({
     } else {
       setExpandedLayerIds(getFolderIds(activePage?.content || []));
     }
-  }, [layerSearch, activePageId]);
+  }, [layerSearch, activePageId, activePage?.content, displayedLayers]);
 
   useEffect(() => {
     if (!activePage?.content || selectedNodeIds.length === 0) return;
@@ -256,7 +153,7 @@ export const Builder: React.FC<BuilderProps> = ({
     return () => clearTimeout(scrollTimer);
   }, [selectedNodeIds, activePage?.content]);
 
-  // Global Keyboard Shortcuts (Undo, Redo, Copy, Paste, Duplicate, Delete)
+  // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isInput =
@@ -289,7 +186,6 @@ export const Builder: React.FC<BuilderProps> = ({
           const targetId =
             state.selectedNodeIds.length > 0 ? state.selectedNodeIds[0] : null;
 
-          // Search for the target node type to determine if it accepts children
           let canAcceptChildren = false;
           if (targetId) {
             const page = state.website?.pages.find(
@@ -518,529 +414,43 @@ export const Builder: React.FC<BuilderProps> = ({
                   value="pages"
                   className="p-0 flex flex-col h-full overflow-hidden"
                 >
-                  <div className="flex gap-2 p-3 border-b border-outline-variant/30 shrink-0">
-                    <Input
-                      variant="filled"
-                      size="sm"
-                      placeholder="Search pages..."
-                      startContent={
-                        <Search className="w-4 h-4 text-on-surface-variant" />
-                      }
-                      value={pageSearch}
-                      onChange={(e) => setPageSearch(e.target.value)}
-                    />
-                    <IconButton
-                      size="md"
-                      shape="minimal"
-                      variant="ghost"
-                      onClick={() => setIsAddPageOpen(true)}
-                    >
-                      <Plus size={16} />
-                    </IconButton>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
-                    <TreeView<PageNode>
-                      data={displayedPagesTree}
-                      getId={(node) => node.id}
-                      getChildren={(node) => node.children}
-                      selectedId={activePageId}
-                      onSelect={(id, node) => setActivePage(node.pageId)}
-                      expandedIds={expandedPageIds}
-                      onExpandedChange={setExpandedPageIds}
-                      variant="ghost"
-                      size="xl"
-                      shape="minimal"
-                      renderItem={(node, { isSelected }) => (
-                        <ContextMenu shape="minimal">
-                          <ContextMenu.Trigger asChild>
-                            <div className="flex items-center justify-between gap-3 w-full pr-2 text-left min-w-0 pointer-events-auto">
-                              <div className="flex items-center gap-3 w-full min-w-0">
-                                <div className="shrink-0 opacity-70">
-                                  {node.slug === "/" ? (
-                                    <Home size={18} />
-                                  ) : (
-                                    <File size={18} />
-                                  )}
-                                </div>
-                                <div className="flex flex-col flex-1 min-w-0 py-1">
-                                  <span
-                                    className={clsx(
-                                      "truncate",
-                                      isSelected ? "font-bold" : "font-medium",
-                                    )}
-                                  >
-                                    {node.name}
-                                  </span>
-                                  {node.title && (
-                                    <span className="truncate text-[11px] opacity-60 font-normal">
-                                      {node.title}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              <DropdownMenu shape="minimal">
-                                <DropdownMenuTrigger asChild>
-                                  <IconButton
-                                    variant="ghost"
-                                    size="xs"
-                                    onPointerDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity focus-visible:opacity-100 shrink-0"
-                                  >
-                                    <MoreHorizontal size={14} />
-                                  </IconButton>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      openEditPage(node.pageId);
-                                    }}
-                                  >
-                                    <Edit3 className="w-4 h-4 mr-2" /> Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      duplicatePage(node.pageId);
-                                    }}
-                                  >
-                                    <Copy className="w-4 h-4 mr-2" /> Duplicate
-                                  </DropdownMenuItem>
-
-                                  {customPageActions?.map((action) => (
-                                    <DropdownMenuItem
-                                      key={action.id}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const pageObj = website?.pages.find(
-                                          (p) => p.id === node.pageId,
-                                        );
-                                        if (pageObj)
-                                          action.run(node.pageId, pageObj);
-                                      }}
-                                      className={
-                                        action.destructive
-                                          ? "text-error hover:!bg-error/10 hover:!text-error"
-                                          : ""
-                                      }
-                                    >
-                                      {action.icon && (
-                                        <span className="mr-2">
-                                          {action.icon}
-                                        </span>
-                                      )}
-                                      {action.label}
-                                    </DropdownMenuItem>
-                                  ))}
-
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    className="text-error hover:!bg-error/10 hover:!text-error"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removePage(node.pageId);
-                                    }}
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-2" /> Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </ContextMenu.Trigger>
-
-                          <ContextMenu.Content>
-                            <ContextMenu.Item
-                              onClick={() => openEditPage(node.pageId)}
-                            >
-                              <Edit3 className="w-4 h-4 mr-2" /> Edit
-                            </ContextMenu.Item>
-                            <ContextMenu.Item
-                              onClick={() => duplicatePage(node.pageId)}
-                            >
-                              <Copy className="w-4 h-4 mr-2" /> Duplicate
-                            </ContextMenu.Item>
-
-                            {customPageActions?.map((action) => (
-                              <ContextMenu.Item
-                                key={action.id}
-                                onClick={() => {
-                                  const pageObj = website?.pages.find(
-                                    (p) => p.id === node.pageId,
-                                  );
-                                  if (pageObj) action.run(node.pageId, pageObj);
-                                }}
-                                className={
-                                  action.destructive
-                                    ? "text-error hover:!bg-error/10 hover:!text-error"
-                                    : ""
-                                }
-                              >
-                                {action.icon && (
-                                  <span className="mr-2">{action.icon}</span>
-                                )}
-                                {action.label}
-                              </ContextMenu.Item>
-                            ))}
-
-                            <ContextMenu.Separator />
-                            <ContextMenu.Item
-                              className="text-error hover:!bg-error/10 hover:!text-error"
-                              onClick={() => removePage(node.pageId)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" /> Delete
-                            </ContextMenu.Item>
-                          </ContextMenu.Content>
-                        </ContextMenu>
-                      )}
-                    />
-
-                    {displayedPagesTree.length === 0 && (
-                      <div className="p-4 text-center opacity-50 text-xs">
-                        No pages match your search.
-                      </div>
-                    )}
-                  </div>
+                  <PagesTab
+                    pageSearch={pageSearch}
+                    setPageSearch={setPageSearch}
+                    displayedPagesTree={displayedPagesTree}
+                    expandedPageIds={expandedPageIds}
+                    setExpandedPageIds={setExpandedPageIds}
+                    setIsAddPageOpen={setIsAddPageOpen}
+                    openEditPage={openEditPage}
+                    customPageActions={customPageActions}
+                  />
                 </Tabs.Panel>
 
                 <Tabs.Panel
                   value="layers"
                   className="p-0 flex flex-col h-full overflow-hidden"
                 >
-                  <div className="p-3 border-b border-outline-variant/30 flex flex-col gap-2 shrink-0">
-                    <Select
-                      variant="filled"
-                      size="sm"
-                      value={activePageId || ""}
-                      onValueChange={(val) => setActivePage(val)}
-                      items={
-                        website?.pages.map((p) => ({
-                          label: p.slug === "/" ? "Home" : p.slug,
-                          value: p.id,
-                        })) || []
-                      }
-                      startContent={<File className="w-4 h-4 opacity-50" />}
-                      placeholder="Select Page"
-                    />
-                    <Input
-                      variant="filled"
-                      size="sm"
-                      placeholder="Search layers..."
-                      startContent={
-                        <Search className="w-4 h-4 text-on-surface-variant" />
-                      }
-                      value={layerSearch}
-                      onChange={(e) => setLayerSearch(e.target.value)}
-                    />
-                  </div>
-
-                  {/* Context Menu Wrap around the entire TreeView area so empty space right clicks work */}
-                  <ContextMenu shape="minimal">
-                    <ContextMenu.Trigger asChild>
-                      <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
-                        {activePage ? (
-                          <TreeView<StudioNode>
-                            data={displayedLayers}
-                            getId={(node) => node.id}
-                            getChildren={(node) => node.children}
-                            canHaveChildren={(node) => {
-                              const compDef = components[node.type];
-                              return compDef?.acceptsChildren ?? false;
-                            }}
-                            multiSelect
-                            selectedIds={selectedNodeIds}
-                            onSelectChange={(ids) => {
-                              setSelectedNodes(ids);
-                              if (viewContext.type !== "PAGE") {
-                                setViewContext("PAGE", activePageId);
-                              }
-                            }}
-                            expandedIds={expandedLayerIds}
-                            onExpandedChange={setExpandedLayerIds}
-                            variant="ghost"
-                            size="sm"
-                            shape="minimal"
-                            enableDragAndDrop={true}
-                            onMoveNode={({ activeIds, parentId, index }) => {
-                              moveNodes(activeIds, parentId, index);
-                            }}
-                            renderItem={(node, { isSelected, isDragging }) => {
-                              // Identify targets if this row is interacted with
-                              const targetIds = selectedNodeIds.includes(
-                                node.id,
-                              )
-                                ? selectedNodeIds
-                                : [node.id];
-
-                              // Detect if this specific component allows children to determine pasting logic
-                              const acceptsChildren =
-                                components[node.type]?.acceptsChildren ?? false;
-                              const pastePosition = acceptsChildren
-                                ? "inside"
-                                : "after";
-
-                              return (
-                                <ContextMenu shape="minimal">
-                                  <ContextMenu.Trigger asChild>
-                                    <div
-                                      className={clsx(
-                                        "flex items-center justify-between gap-2 w-full pr-2 group/item text-left pointer-events-auto",
-                                        isDragging && "opacity-80",
-                                      )}
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <div className="shrink-0">
-                                          {getNodeIcon(node.type)}
-                                        </div>
-                                        <Typography
-                                          variant="label-small"
-                                          className={clsx(
-                                            "truncate flex-1 text-left",
-                                            isSelected
-                                              ? "font-bold"
-                                              : "font-medium",
-                                          )}
-                                        >
-                                          {node.id}
-                                        </Typography>
-                                      </div>
-
-                                      <DropdownMenu shape="minimal">
-                                        <DropdownMenuTrigger asChild>
-                                          <IconButton
-                                            variant="ghost"
-                                            size="xs"
-                                            onPointerDown={(e) =>
-                                              e.stopPropagation()
-                                            }
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="opacity-0 group-hover/item:opacity-100 transition-opacity focus-visible:opacity-100 shrink-0 h-6 w-6"
-                                          >
-                                            <MoreHorizontal size={14} />
-                                          </IconButton>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuItem
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              copyNodes(targetIds);
-                                            }}
-                                          >
-                                            <Copy className="w-4 h-4 mr-2" />{" "}
-                                            Copy
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            disabled={clipboard.length === 0}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              pasteNodes(
-                                                node.id,
-                                                pastePosition,
-                                              );
-                                            }}
-                                          >
-                                            <Clipboard className="w-4 h-4 mr-2" />{" "}
-                                            Paste
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              duplicateNodes(targetIds);
-                                            }}
-                                          >
-                                            <Copy className="w-4 h-4 mr-2" />{" "}
-                                            Duplicate
-                                          </DropdownMenuItem>
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem
-                                            className="text-error hover:!bg-error/10 hover:!text-error"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              removeNodes(targetIds);
-                                            }}
-                                          >
-                                            <Trash2 className="w-4 h-4 mr-2" />{" "}
-                                            Delete
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                    </div>
-                                  </ContextMenu.Trigger>
-
-                                  <ContextMenu.Content>
-                                    <ContextMenu.Item
-                                      onClick={() => copyNodes(targetIds)}
-                                    >
-                                      <Copy className="w-4 h-4 mr-2" /> Copy
-                                    </ContextMenu.Item>
-                                    <ContextMenu.Item
-                                      disabled={clipboard.length === 0}
-                                      onClick={() =>
-                                        pasteNodes(node.id, pastePosition)
-                                      }
-                                    >
-                                      <Clipboard className="w-4 h-4 mr-2" />{" "}
-                                      Paste
-                                    </ContextMenu.Item>
-                                    <ContextMenu.Item
-                                      onClick={() => duplicateNodes(targetIds)}
-                                    >
-                                      <Copy className="w-4 h-4 mr-2" />{" "}
-                                      Duplicate
-                                    </ContextMenu.Item>
-                                    <ContextMenu.Separator />
-                                    <ContextMenu.Item
-                                      className="text-error hover:!bg-error/10 hover:!text-error"
-                                      onClick={() => removeNodes(targetIds)}
-                                    >
-                                      <Trash2 className="w-4 h-4 mr-2" /> Delete
-                                    </ContextMenu.Item>
-                                  </ContextMenu.Content>
-                                </ContextMenu>
-                              );
-                            }}
-                          />
-                        ) : (
-                          <div className="p-4 text-center opacity-50 text-xs">
-                            No active page to display layers for.
-                          </div>
-                        )}
-                      </div>
-                    </ContextMenu.Trigger>
-
-                    {/* Fallback context menu for the empty space in the container */}
-                    <ContextMenu.Content>
-                      <ContextMenu.Item
-                        disabled={selectedNodeIds.length === 0}
-                        onClick={() => copyNodes(selectedNodeIds)}
-                      >
-                        <Copy className="w-4 h-4 mr-2" /> Copy
-                      </ContextMenu.Item>
-                      <ContextMenu.Item
-                        disabled={clipboard.length === 0}
-                        onClick={() => {
-                          const targetId =
-                            selectedNodeIds.length > 0
-                              ? selectedNodeIds[0]
-                              : null;
-                          let canAcceptChildren = false;
-                          if (targetId) {
-                            const page = website?.pages.find(
-                              (p) => p.id === activePageId,
-                            );
-                            if (page) {
-                              const findType = (
-                                nodes: StudioNode[],
-                              ): string | null => {
-                                for (const n of nodes) {
-                                  if (n.id === targetId) return n.type;
-                                  if (n.children) {
-                                    const res = findType(n.children);
-                                    if (res) return res;
-                                  }
-                                }
-                                return null;
-                              };
-                              const type = findType(page.content);
-                              canAcceptChildren = type
-                                ? (componentsRef.current[type]
-                                    ?.acceptsChildren ?? false)
-                                : false;
-                            }
-                          }
-                          pasteNodes(
-                            targetId,
-                            canAcceptChildren ? "inside" : "after",
-                          );
-                        }}
-                      >
-                        <Clipboard className="w-4 h-4 mr-2" /> Paste
-                      </ContextMenu.Item>
-                      <ContextMenu.Item
-                        disabled={selectedNodeIds.length === 0}
-                        onClick={() => duplicateNodes(selectedNodeIds)}
-                      >
-                        <Copy className="w-4 h-4 mr-2" /> Duplicate
-                      </ContextMenu.Item>
-                      <ContextMenu.Separator />
-                      <ContextMenu.Item
-                        disabled={selectedNodeIds.length === 0}
-                        className="text-error hover:!bg-error/10 hover:!text-error"
-                        onClick={() => removeNodes(selectedNodeIds)}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete
-                      </ContextMenu.Item>
-                    </ContextMenu.Content>
-                  </ContextMenu>
+                  <LayersTab
+                    layerSearch={layerSearch}
+                    setLayerSearch={setLayerSearch}
+                    displayedLayers={displayedLayers}
+                    expandedLayerIds={expandedLayerIds}
+                    setExpandedLayerIds={setExpandedLayerIds}
+                    components={components}
+                  />
                 </Tabs.Panel>
 
                 <Tabs.Panel
                   value="assets"
                   className="p-0 flex flex-col h-full overflow-hidden"
                 >
-                  <div className="p-3 border-b border-outline-variant/30 shrink-0">
-                    <Input
-                      placeholder="Search components..."
-                      size="sm"
-                      startContent={<Search size={16} className="opacity-50" />}
-                      variant="filled"
-                      value={assetSearch}
-                      onChange={(e) => setAssetSearch(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
-                    <TreeView<ComponentTreeNode>
-                      multiSelect
-                      data={componentTreeData}
-                      getId={(n) => n.id}
-                      getChildren={(n) => n.children}
-                      selectedId={
-                        viewContext.type === "COMPONENT"
-                          ? viewContext.id
-                          : undefined
-                      }
-                      onSelect={(id, node) => {
-                        if (!node.isCategory) {
-                          setViewContext("COMPONENT", id);
-                        }
-                      }}
-                      expandedIds={expandedAssetIds}
-                      onExpandedChange={setExpandedAssetIds}
-                      variant="ghost"
-                      size="md"
-                      shape="minimal"
-                      renderItem={(node, { isSelected, isExpanded }) => (
-                        <div className="flex items-center justify-start gap-2 w-full pr-2 text-left min-w-0">
-                          <div className="shrink-0 opacity-70">
-                            {node.isCategory ? (
-                              isExpanded ? (
-                                <FolderOpen
-                                  size={16}
-                                  className="text-primary"
-                                />
-                              ) : (
-                                <Folder size={16} className="text-primary" />
-                              )
-                            ) : (
-                              getNodeIcon(node.id)
-                            )}
-                          </div>
-                          <Typography
-                            variant="label-small"
-                            className={clsx(
-                              "truncate flex-1 text-left",
-                              isSelected
-                                ? "font-bold text-primary"
-                                : "font-medium",
-                            )}
-                          >
-                            {node.name}
-                          </Typography>
-                        </div>
-                      )}
-                    />
-                  </div>
+                  <ComponentsTab
+                    assetSearch={assetSearch}
+                    setAssetSearch={setAssetSearch}
+                    componentTreeData={componentTreeData}
+                    expandedAssetIds={expandedAssetIds}
+                    setExpandedAssetIds={setExpandedAssetIds}
+                  />
                 </Tabs.Panel>
               </Tabs.Content>
             </Tabs>
@@ -1082,128 +492,29 @@ export const Builder: React.FC<BuilderProps> = ({
                 defaultWidth={300}
                 className="bg-surface flex flex-col z-40 border-l border-outline-variant/30"
               >
-                <div className="h-12 border-b border-outline-variant/30 flex items-center px-4 gap-2 bg-surface-container-lowest shrink-0">
-                  <Settings2 className="w-4 h-4 opacity-70" />
-                  <Typography variant="label-medium" className="font-bold">
-                    Inspector
-                  </Typography>
-                </div>
-                <div className="flex-1 p-4 flex flex-col items-center justify-center opacity-50">
-                  {selectedNodeIds.length === 1 ? (
-                    <>
-                      <Typography variant="body-small">
-                        Properties for Node:
-                      </Typography>
-                      <Typography
-                        variant="label-medium"
-                        className="font-mono mt-2 break-all text-center"
-                      >
-                        {selectedNodeIds[0]}
-                      </Typography>
-                    </>
-                  ) : (
-                    <>
-                      <Typography variant="body-small">
-                        Multiple Items Selected
-                      </Typography>
-                      <Typography
-                        variant="label-medium"
-                        className="font-mono mt-2 text-center"
-                      >
-                        {selectedNodeIds.length} items
-                      </Typography>
-                    </>
-                  )}
-                </div>
+                <InspectorPanel selectedNodeIds={selectedNodeIds} />
               </Resizable.Pane>
             </>
           )}
         </Resizable>
       </div>
 
-      {/* CREATE PAGE DIALOG */}
-      <Dialog
-        open={isAddPageOpen}
-        onOpenChange={setIsAddPageOpen}
-        variant="basic"
-        animation="material3"
-        glass={false}
-      >
-        <DialogContent className="max-w-md" shape="full">
-          <DialogHeader>
-            <DialogTitle>Create New Page</DialogTitle>
-          </DialogHeader>
-          <DialogBody className="flex flex-col gap-4 py-4">
-            <Input
-              label="Page Slug"
-              placeholder="/about"
-              value={newPageSlug}
-              onChange={(e) => setNewPageSlug(e.target.value)}
-              autoFocus
-            />
-            <Input
-              label="Page Title"
-              placeholder="About Us"
-              value={newPageTitle}
-              onChange={(e) => setNewPageTitle(e.target.value)}
-            />
-          </DialogBody>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="ghost">Cancel</Button>
-            </DialogClose>
-            <Button
-              variant="secondary"
-              onClick={handleCreatePage}
-              disabled={!newPageSlug}
-            >
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* EDIT PAGE DIALOG */}
-      <Dialog
-        open={editingPageId !== null}
-        onOpenChange={(open) => !open && setEditingPageId(null)}
-        variant="basic"
-        animation="material3"
-        glass={false}
-      >
-        <DialogContent className="max-w-md" shape="full">
-          <DialogHeader>
-            <DialogTitle>Edit Page</DialogTitle>
-          </DialogHeader>
-          <DialogBody className="flex flex-col gap-4 py-4">
-            <Input
-              label="Page Slug"
-              placeholder="/about"
-              value={editPageSlug}
-              onChange={(e) => setEditPageSlug(e.target.value)}
-              autoFocus
-            />
-            <Input
-              label="Page Title"
-              placeholder="About Us"
-              value={editPageTitle}
-              onChange={(e) => setEditPageTitle(e.target.value)}
-            />
-          </DialogBody>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="ghost">Cancel</Button>
-            </DialogClose>
-            <Button
-              variant="secondary"
-              onClick={handleEditPage}
-              disabled={!editPageSlug}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PageDialogs
+        isAddPageOpen={isAddPageOpen}
+        setIsAddPageOpen={setIsAddPageOpen}
+        newPageSlug={newPageSlug}
+        setNewPageSlug={setNewPageSlug}
+        newPageTitle={newPageTitle}
+        setNewPageTitle={setNewPageTitle}
+        handleCreatePage={handleCreatePage}
+        editingPageId={editingPageId}
+        setEditingPageId={setEditingPageId}
+        editPageSlug={editPageSlug}
+        setEditPageSlug={setEditPageSlug}
+        editPageTitle={editPageTitle}
+        setEditPageTitle={setEditPageTitle}
+        handleEditPage={handleEditPage}
+      />
     </BuilderContextProvider>
   );
 };

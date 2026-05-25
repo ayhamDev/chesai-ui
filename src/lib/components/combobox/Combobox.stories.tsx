@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 import { Combobox } from "./index";
-import { Database } from "lucide-react";
+import { Code, Database, Palette, Zap } from "lucide-react";
 
 const meta: Meta<typeof Combobox> = {
   title: "Components/Forms & Inputs/Combobox",
@@ -11,7 +11,16 @@ const meta: Meta<typeof Combobox> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["flat", "bordered", "faded", "underlined"],
+      options: [
+        "filled",
+        "filled-inverted",
+        "outlined",
+        "outlined-inverted",
+        "underlined",
+        "underlined-inverted",
+        "ghost",
+        "ghost-inverted",
+      ],
     },
     size: {
       control: "select",
@@ -22,6 +31,11 @@ const meta: Meta<typeof Combobox> = {
       options: ["full", "minimal", "sharp"],
     },
     disabled: { control: "boolean" },
+    isClearable: { control: "boolean" },
+    mobileLayout: {
+      control: "select",
+      options: ["default", "bottom-sheet", "dialog"],
+    },
   },
 };
 
@@ -29,11 +43,15 @@ export default meta;
 type Story = StoryObj<typeof Combobox>;
 
 const frameworks = [
-  { value: "react", label: "React" },
-  { value: "vue", label: "Vue" },
-  { value: "angular", label: "Angular" },
-  { value: "svelte", label: "Svelte" },
-  { value: "solid", label: "SolidJS" },
+  { value: "react", label: "React", icon: <Code className="w-4 h-4" /> },
+  { value: "vue", label: "Vue", icon: <Palette className="w-4 h-4" /> },
+  {
+    value: "angular",
+    label: "Angular",
+    icon: <Database className="w-4 h-4" />,
+  },
+  { value: "svelte", label: "Svelte", icon: <Zap className="w-4 h-4" /> },
+  { value: "solid", label: "SolidJS", disabled: true },
   { value: "next", label: "Next.js" },
   { value: "remix", label: "Remix" },
   { value: "astro", label: "Astro" },
@@ -45,9 +63,9 @@ export const Default: Story = {
     placeholder: "Select framework...",
     searchPlaceholder: "Search frameworks...",
     options: frameworks,
+    isClearable: true,
   },
   render: (args) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [value, setValue] = useState("");
     return (
       <div className="w-80">
@@ -60,17 +78,17 @@ export const Default: Story = {
 export const Variations: StoryObj = {
   name: "Variations & States",
   render: () => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [value, setValue] = useState("");
     return (
       <div className="flex flex-col gap-6 w-80">
         <Combobox
-          label="Bordered & Icon"
+          label="Bordered & Clearable"
           variant="outlined"
           startContent={<Database className="w-4 h-4" />}
           options={frameworks}
           value={value}
-          onChange={setValue}
+          onValueChange={setValue}
+          isClearable
         />
         <Combobox
           label="Outside Label"
@@ -83,6 +101,13 @@ export const Variations: StoryObj = {
           isInvalid
           errorMessage="Please select a valid option."
           variant="filled"
+          options={frameworks}
+        />
+        <Combobox
+          label="Mobile Sheet"
+          description="Resize screen to test mobile drawer"
+          mobileLayout="bottom-sheet"
+          variant="underlined"
           options={frameworks}
         />
       </div>
