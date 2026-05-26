@@ -23,6 +23,9 @@ import { YearView } from "./year-view";
 import { EventPopover } from "./event-popover";
 import { PrintPreviewDialog } from "./print-preview-dialog";
 import type { FullCalendarProps } from "./types";
+import { getCalendarBgClasses, getCalendarStickyBgClasses } from "./utils";
+import { useMediaQuery } from "@uidotdev/usehooks";
+import { Calendar } from "../date-picker/calendar";
 
 // --- ROOT COMPONENT ---
 
@@ -60,7 +63,7 @@ const FullCalendarRootContent = ({
   children,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => {
-  const { setPrintPreviewOpen, printSettings } = useFullCalendar();
+  const { setPrintPreviewOpen, printSettings, variant } = useFullCalendar();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -108,7 +111,8 @@ const FullCalendarRootContent = ({
       <style>{printCss}</style>
       <div
         className={clsx(
-          "flex flex-col w-full h-full bg-surface text-on-surface rounded-2xl overflow-hidden font-manrope relative print:hidden",
+          "flex flex-col w-full h-full text-on-surface rounded-2xl overflow-hidden font-manrope relative print:hidden",
+          getCalendarBgClasses(variant),
           className,
         )}
         {...props}
@@ -141,6 +145,7 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
       events,
       initialDate,
       initialView,
+      variant,
       onDateClick,
       onEventClick,
       onViewChange,
@@ -159,6 +164,7 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
         events={events}
         initialDate={initialDate}
         initialView={initialView}
+        variant={variant}
         onDateClick={onDateClick}
         onEventClick={onEventClick}
         onViewChange={onViewChange}
@@ -181,6 +187,7 @@ const FullCalendarToolbar = ({ className }: { className?: string }) => {
   const {
     currentDate,
     view,
+    variant,
     setView,
     navigateNext,
     navigatePrev,
@@ -198,7 +205,8 @@ const FullCalendarToolbar = ({ className }: { className?: string }) => {
   return (
     <div
       className={clsx(
-        "flex items-center justify-between p-4 shrink-0 border-b border-outline-variant/30 bg-surface z-30 relative print:hidden",
+        "flex items-center justify-between p-4 shrink-0 border-b border-outline-variant/30 z-30 relative print:hidden",
+        getCalendarStickyBgClasses(variant),
         className,
       )}
     >
@@ -262,13 +270,37 @@ const FullCalendarToolbar = ({ className }: { className?: string }) => {
 };
 
 export const FullCalendarViewDispatcher = () => {
-  const { view } = useFullCalendar();
+  const { view, variant, currentDate, setCurrentDate } = useFullCalendar();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
+
+  const showSideCalendar = view === "day" && isDesktop;
 
   return (
-    <div className="flex-1 overflow-hidden relative flex flex-col bg-surface print:bg-white print:h-full print:overflow-visible">
-      {view === "month" && <MonthView />}
-      {(view === "week" || view === "day") && <TimelineView />}
-      {view === "year" && <YearView />}
+    <div
+      className={clsx(
+        "flex-1 overflow-hidden relative flex flex-row print:bg-white print:h-full print:overflow-visible",
+        getCalendarBgClasses(variant),
+      )}
+    >
+      {showSideCalendar && (
+        <div className="w-[350px] shrink-0 border-r border-outline-variant/30 p-2 flex flex-col bg-surface-container-low/30">
+          <Calendar
+            mode="single"
+            value={currentDate}
+            onSelect={(d) => {
+              if (d) setCurrentDate(d);
+            }}
+            variant="embedded"
+            itemShape="full"
+            shape="minimal"
+          />
+        </div>
+      )}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {view === "month" && <MonthView />}
+        {(view === "week" || view === "day") && <TimelineView />}
+        {view === "year" && <YearView />}
+      </div>
     </div>
   );
 };

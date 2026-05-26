@@ -17,7 +17,36 @@ import {
   startOfWeek,
   startOfYear,
 } from 'date-fns'
-import type { CalendarEvent } from './types'
+import type { CalendarEvent, CalendarVariant } from './types'
+
+// --- THEME UTILS ---
+export const getCalendarBgClasses = (variant?: CalendarVariant) => {
+  switch (variant) {
+    case 'primary':
+      return 'bg-surface-container-low'
+    case 'secondary':
+      return 'bg-surface-container-high'
+    case 'ghost':
+      return 'bg-transparent'
+    case 'surface':
+    default:
+      return 'bg-surface'
+  }
+}
+
+export const getCalendarStickyBgClasses = (variant?: CalendarVariant) => {
+  switch (variant) {
+    case 'primary':
+      return 'bg-surface-container-low'
+    case 'secondary':
+      return 'bg-surface-container-high'
+    case 'ghost':
+      return 'bg-surface/80 backdrop-blur-md' // Prevents text overlapping in ghost mode
+    case 'surface':
+    default:
+      return 'bg-surface'
+  }
+}
 
 // --- VIRTUAL RECURRENCE EXPANSION ---
 export const expandEvents = (events: CalendarEvent[], viewStart: Date, viewEnd: Date): CalendarEvent[] => {

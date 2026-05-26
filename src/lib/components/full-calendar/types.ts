@@ -2,6 +2,7 @@
 
 export type CalendarView = 'day' | 'week' | 'month' | 'year'
 export type EventType = 'event' | 'task' | 'appointment'
+export type CalendarVariant = 'primary' | 'secondary' | 'surface' | 'ghost'
 
 export interface RecurrenceRule {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
@@ -46,6 +47,7 @@ export interface FullCalendarProps<T = any> {
   events: CalendarEvent<T>[]
   initialDate?: Date
   initialView?: CalendarView
+  variant?: CalendarVariant
 
   onEventCreate?: (event: Omit<CalendarEvent<T>, 'id' | 'isDraft'>) => void | Promise<void>
   onEventUpdate?: (event: CalendarEvent<T>) => void | Promise<void>

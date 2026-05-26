@@ -6,7 +6,12 @@ import { addDays, format, isSameMonth, isToday, startOfDay } from "date-fns";
 import React, { useMemo } from "react";
 import { Typography } from "../typography";
 import { useFullCalendar } from "./calendar-context";
-import { expandEvents, getDaysForMonthView, getEventSegments } from "./utils";
+import {
+  expandEvents,
+  getDaysForMonthView,
+  getEventSegments,
+  getCalendarBgClasses,
+} from "./utils";
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -39,6 +44,7 @@ export const MonthView = () => {
     currentDate,
     events,
     draftEvent,
+    variant,
     setCurrentDate,
     setView,
     openPopover,
@@ -46,6 +52,7 @@ export const MonthView = () => {
   } = useFullCalendar();
 
   const days = useMemo(() => getDaysForMonthView(currentDate), [currentDate]);
+  const bgClass = getCalendarBgClasses(variant);
 
   const displayEvents = useMemo(() => {
     let baseEvents = events;
@@ -72,7 +79,12 @@ export const MonthView = () => {
   }, [days]);
 
   return (
-    <div className="flex flex-col flex-1 h-full min-h-0 bg-surface print:bg-white print:text-black print:h-full">
+    <div
+      className={clsx(
+        "flex flex-col flex-1 h-full min-h-0 print:bg-white print:text-black print:h-full",
+        bgClass,
+      )}
+    >
       <div className="grid grid-cols-7 border-b border-outline-variant/30 shrink-0 print:border-black/50">
         {WEEKDAYS.map((day) => (
           <div key={day} className="py-2 text-center">
@@ -107,8 +119,8 @@ export const MonthView = () => {
                       className={clsx(
                         "border-r border-outline-variant/30 last:border-r-0 p-1 flex flex-col print:border-black/50",
                         !isCurrentMonth &&
-                          "bg-surface-container-lowest/50 opacity-50 print:bg-transparent",
-                        "hover:bg-surface-container-highest/20 cursor-pointer transition-colors",
+                          "bg-black/5 dark:bg-white/5 opacity-50 print:bg-transparent",
+                        "hover:bg-on-surface/5 cursor-pointer transition-colors",
                       )}
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
@@ -127,7 +139,7 @@ export const MonthView = () => {
                             "flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium transition-colors z-10",
                             isDayToday
                               ? "bg-primary text-on-primary hover:bg-primary/90 print:bg-transparent print:text-black print:border print:border-black"
-                              : "text-on-surface hover:bg-surface-container-highest print:text-black",
+                              : "text-on-surface hover:bg-on-surface/10 print:text-black",
                           )}
                         >
                           {isFirstDayOfMonth
@@ -144,7 +156,7 @@ export const MonthView = () => {
                 {segments.map((segment) => {
                   const { event, colStart, colSpan, row } = segment;
                   const isAllDayOrSpanning = event.isAllDay || colSpan > 1;
-                  const variant = event.colorVariant || "tertiary";
+                  const colorVariant = event.colorVariant || "tertiary";
 
                   // Soft cap visual rows
                   if (row > 5) return null;
@@ -188,9 +200,9 @@ export const MonthView = () => {
                               "border-2 border-dashed border-current shadow-lg ring-2 ring-primary ring-offset-1",
                             event.colorHex
                               ? ""
-                              : COLOR_MAP[variant].split(" ")[0] +
+                              : COLOR_MAP[colorVariant].split(" ")[0] +
                                   " " +
-                                  COLOR_MAP[variant].split(" ")[1],
+                                  COLOR_MAP[colorVariant].split(" ")[1],
                             "print:border print:border-black/50 print:bg-transparent print:text-black",
                           )}
                           style={{ backgroundColor: event.colorHex }}
@@ -207,7 +219,7 @@ export const MonthView = () => {
                           className={clsx(
                             "h-full w-full rounded-md px-1 flex items-center gap-1.5 overflow-hidden transition-colors",
                             !isCurrentlyDraft &&
-                              "cursor-pointer hover:bg-surface-container-highest",
+                              "cursor-pointer hover:bg-on-surface/10",
                             isCurrentlyDraft &&
                               "border-2 border-dashed border-outline-variant",
                           )}
@@ -215,7 +227,7 @@ export const MonthView = () => {
                           <div
                             className={clsx(
                               "w-2 h-2 rounded-full shrink-0 print:bg-transparent print:border print:border-black/50",
-                              event.colorHex ? "" : DOT_COLOR_MAP[variant],
+                              event.colorHex ? "" : DOT_COLOR_MAP[colorVariant],
                             )}
                             style={{ backgroundColor: event.colorHex }}
                           />

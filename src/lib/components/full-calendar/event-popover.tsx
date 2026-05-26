@@ -6,7 +6,7 @@ import { clsx } from "clsx";
 import { format } from "date-fns";
 import { AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { Check, Clock, GripHorizontal, Repeat, Trash2, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { Button } from "../button";
@@ -150,10 +150,13 @@ export const EventPopover = () => {
   } = calendar;
   const isMobile = useMediaQuery("(max-width: 768px)");
 
+  const popoverRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
   const [isRecurrenceOpen, setIsRecurrenceOpen] = useState(false);
+  const [measuredHeight, setMeasuredHeight] = useState(450); // Sensible default fallback
+
   const [recurrenceDraft, setRecurrenceDraft] = useState<RecurrenceRule>({
     frequency: "weekly",
     interval: 1,
@@ -163,28 +166,69 @@ export const EventPopover = () => {
     until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   });
 
+  // --- DYNAMIC HEIGHT MEASUREMENT ---
   useEffect(() => {
-    if (popover.isOpen && !isMobile && popover.anchorRect) {
-      const padding = 16;
-      let targetX = popover.anchorRect.right + padding;
-      let targetY = popover.anchorRect.top;
+    if (
+      !popover.isOpen ||
+      isMobile ||
+      typeof window === "undefined" ||
+      !window.ResizeObserver
+    )
+      return;
 
-      if (targetX + POPOVER_WIDTH > window.innerWidth) {
-        targetX = popover.anchorRect.left - POPOVER_WIDTH - padding;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setMeasuredHeight(entry.target.getBoundingClientRect().height);
       }
+    });
 
-      const estimatedHeight = 400;
-      if (targetY + estimatedHeight > window.innerHeight) {
-        targetY = window.innerHeight - estimatedHeight - padding;
-      }
-
-      x.set(Math.max(padding, targetX));
-      y.set(Math.max(padding, targetY));
-    } else if (popover.isOpen && !isMobile && !popover.anchorRect) {
-      x.set(window.innerWidth / 2 - POPOVER_WIDTH / 2);
-      y.set(window.innerHeight / 2 - 200);
+    if (popoverRef.current) {
+      observer.observe(popoverRef.current);
     }
-  }, [popover.isOpen, popover.anchorRect, isMobile, x, y]);
+
+    return () => observer.disconnect();
+  }, [popover.isOpen, isMobile]);
+
+  // --- VIEWPORT BOUNDARY CONSTRAINED POSITIONING ---
+  useEffect(() => {
+    if (popover.isOpen && !isMobile) {
+      const padding = 16;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      if (popover.anchorRect) {
+        let targetX = popover.anchorRect.right + padding;
+        let targetY = popover.anchorRect.top;
+
+        // Boundary constraint X (Avoid right-edge clipping)
+        if (targetX + POPOVER_WIDTH > viewportWidth) {
+          targetX = popover.anchorRect.left - POPOVER_WIDTH - padding;
+        }
+
+        // Boundary constraint Y (Avoid bottom-edge clipping)
+        if (targetY + measuredHeight > viewportHeight) {
+          targetY = viewportHeight - measuredHeight - padding;
+        }
+
+        // Clamp values to guarantee popover remains strictly within viewport
+        targetX = Math.max(
+          padding,
+          Math.min(targetX, viewportWidth - POPOVER_WIDTH - padding),
+        );
+        targetY = Math.max(
+          padding,
+          Math.min(targetY, viewportHeight - measuredHeight - padding),
+        );
+
+        x.set(targetX);
+        y.set(targetY);
+      } else {
+        // Fallback: Center in viewport if no anchor is supplied
+        x.set(viewportWidth / 2 - POPOVER_WIDTH / 2);
+        y.set(viewportHeight / 2 - measuredHeight / 2);
+      }
+    }
+  }, [popover.isOpen, popover.anchorRect, isMobile, measuredHeight, x, y]);
 
   const [snap, setSnap] = useState<number | string | null>(1);
 
@@ -576,7 +620,6 @@ export const EventPopover = () => {
   const recurrenceDialog = (
     <AnimatePresence>
       {isRecurrenceOpen && (
-        // Changed z-index from 99999 to 100 to allow radix popovers (z-1000) to overlay
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 pointer-events-auto">
           <motion.div
             initial={{ opacity: 0 }}
@@ -845,6 +888,7 @@ export const EventPopover = () => {
       <AnimatePresence>
         {popover.isOpen && (
           <motion.div
+            ref={popoverRef}
             drag
             dragMomentum={false}
             dragHandle=".drag-handle"

@@ -1,13 +1,10 @@
 // src/lib/components/full-calendar/FullCalendar.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
-import { Plus } from "lucide-react";
 import React, { useState } from "react";
-import { FullCalendar, CalendarEvent } from "./index";
 import { ThemeProvider } from "../../context/ThemeProvider";
-import { FAB } from "../fab";
-import { toast, Toaster } from "../toast";
-import { Typography } from "../typography";
 import { Input } from "../input";
+import { toast, Toaster } from "../toast";
+import { CalendarEvent, FullCalendar } from "./index";
 
 const meta: Meta<typeof FullCalendar> = {
   title: "Components/Data/FullCalendar",
@@ -16,14 +13,19 @@ const meta: Meta<typeof FullCalendar> = {
   parameters: {
     layout: "fullscreen",
   },
+  argTypes: {
+    variant: {
+      control: "select",
+      options: ["primary", "secondary", "surface", "ghost"],
+      description:
+        "Controls the background and wrapper aesthetics for the calendar.",
+    },
+  },
   decorators: [
     (Story) => (
-      <ThemeProvider defaultTheme="system">
-        <div className="h-[100dvh] w-full bg-background p-0 sm:p-6 flex flex-col relative overflow-hidden">
-          <Toaster position="bottom-center" />
-          <Story />
-        </div>
-      </ThemeProvider>
+      <div className="h-[100dvh] w-full bg-background p-0 sm:p-6 flex flex-col relative overflow-hidden">
+        <Story />
+      </div>
     ),
   ],
 };
@@ -66,13 +68,14 @@ const INITIAL_EVENTS: CalendarEvent[] = [
   },
 ];
 
-const InteractiveCalendarApp = () => {
+const InteractiveCalendarApp = (args: any) => {
   const [events, setEvents] = useState<CalendarEvent[]>(INITIAL_EVENTS);
   const calendarRef = React.useRef<HTMLDivElement>(null);
 
   return (
     <>
       <FullCalendar
+        {...args} // Spread args first to prevent mock action spys from overriding custom state handlers
         ref={calendarRef}
         initialDate={today}
         initialView="week"
@@ -119,5 +122,16 @@ const InteractiveCalendarApp = () => {
 
 export const GoogleCalendarClone: Story = {
   name: "Google Calendar Clone",
-  render: () => <InteractiveCalendarApp />,
+  args: {
+    variant: "primary",
+  },
+  render: (args) => <InteractiveCalendarApp {...args} />,
+};
+
+export const Variants: Story = {
+  name: "Visual Variants",
+  args: {
+    variant: "secondary",
+  },
+  render: (args) => <InteractiveCalendarApp {...args} />,
 };

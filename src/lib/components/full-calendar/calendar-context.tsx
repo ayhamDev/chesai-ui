@@ -22,6 +22,7 @@ import React, {
 } from "react";
 import type {
   CalendarEvent,
+  CalendarVariant,
   CalendarView,
   FullCalendarProps,
   PrintSettings,
@@ -36,6 +37,7 @@ export interface PopoverState {
 interface FullCalendarContextType extends FullCalendarProps {
   currentDate: Date;
   view: CalendarView;
+  variant: CalendarVariant;
 
   navigateNext: () => void;
   navigatePrev: () => void;
@@ -107,7 +109,16 @@ export const FullCalendarProvider = ({
   children,
   initialDate = new Date(),
   initialView = "month",
+  variant = "surface",
   events = [],
+  onEventCreate,
+  onEventUpdate,
+  onEventDelete,
+  onViewChange,
+  onDateRangeChange,
+  renderPopoverCustomFields,
+  renderEventContent,
+  className,
   ...props
 }: FullCalendarProps & { children: React.ReactNode }) => {
   const [currentDate, setCurrentDate] = useState(initialDate);
@@ -135,9 +146,9 @@ export const FullCalendarProvider = ({
   const handleSetView = useCallback(
     (newView: CalendarView) => {
       setViewState(newView);
-      props.onViewChange?.(newView);
+      onViewChange?.(newView);
     },
-    [props.onViewChange],
+    [onViewChange],
   );
 
   const navigateNext = useCallback(() => {
@@ -208,6 +219,15 @@ export const FullCalendarProvider = ({
       events,
       currentDate,
       view,
+      variant,
+      onEventCreate,
+      onEventUpdate,
+      onEventDelete,
+      onViewChange,
+      onDateRangeChange,
+      renderPopoverCustomFields,
+      renderEventContent,
+      className,
       navigateNext,
       navigatePrev,
       navigateToday,
@@ -228,6 +248,15 @@ export const FullCalendarProvider = ({
       events,
       currentDate,
       view,
+      variant,
+      onEventCreate,
+      onEventUpdate,
+      onEventDelete,
+      onViewChange,
+      onDateRangeChange,
+      renderPopoverCustomFields,
+      renderEventContent,
+      className,
       navigateNext,
       navigatePrev,
       navigateToday,

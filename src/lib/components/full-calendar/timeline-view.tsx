@@ -11,6 +11,8 @@ import {
   getDaysForWeekView,
   getEventSegments,
   getTimelinePositionsForDay,
+  getCalendarBgClasses,
+  getCalendarStickyBgClasses,
 } from "./utils";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 
@@ -35,6 +37,7 @@ export const TimelineView = () => {
     currentDate,
     view,
     events,
+    variant,
     draftEvent,
     setDraftEvent,
     setCurrentDate,
@@ -47,6 +50,9 @@ export const TimelineView = () => {
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  const bgClass = getCalendarBgClasses(variant);
+  const stickyBgClass = getCalendarStickyBgClasses(variant);
 
   const days = useMemo(() => {
     if (isPrintMode) {
@@ -299,8 +305,18 @@ export const TimelineView = () => {
   }, [allDaySegments]);
 
   return (
-    <div className="flex flex-col flex-1 h-full min-h-0 bg-surface print:bg-white print:text-black">
-      <div className="flex flex-col border-b border-outline-variant/30 shrink-0 bg-surface z-20 print:bg-white print:border-b-2 print:border-black/50">
+    <div
+      className={clsx(
+        "flex flex-col flex-1 h-full min-h-0 print:bg-white print:text-black",
+        bgClass,
+      )}
+    >
+      <div
+        className={clsx(
+          "flex flex-col border-b border-outline-variant/30 shrink-0 z-20 print:bg-white print:border-b-2 print:border-black/50",
+          stickyBgClass,
+        )}
+      >
         <div className="flex">
           <div className="w-16 shrink-0 border-r border-outline-variant/30 print:border-black/50" />
           <div className="flex flex-1">
@@ -332,7 +348,7 @@ export const TimelineView = () => {
                     }}
                     className={clsx(
                       "flex items-center justify-center w-10 h-10 rounded-full text-lg transition-colors cursor-pointer",
-                      !isPrintMode && "hover:bg-surface-container-highest",
+                      !isPrintMode && "hover:bg-on-surface/10",
                       isDayToday && !isPrintMode
                         ? "bg-primary text-on-primary font-bold shadow-md hover:bg-primary/90"
                         : "text-on-surface print:text-black",
@@ -386,7 +402,7 @@ export const TimelineView = () => {
               >
                 {allDaySegments.map((segment) => {
                   const { event, colStart, colSpan, row } = segment;
-                  const variant = event.colorVariant || "tertiary";
+                  const colorVariant = event.colorVariant || "tertiary";
                   const isCurrentlyDraft = event.isDraft;
 
                   return (
@@ -423,9 +439,9 @@ export const TimelineView = () => {
                             "border-2 border-dashed border-current shadow-lg ring-2 ring-primary ring-offset-1",
                           event.colorHex
                             ? ""
-                            : COLOR_MAP[variant].split(" ")[0] +
+                            : COLOR_MAP[colorVariant].split(" ")[0] +
                                 " " +
-                                COLOR_MAP[variant].split(" ")[1],
+                                COLOR_MAP[colorVariant].split(" ")[1],
                           isPrintMode && "!shadow-none border border-black/20",
                         )}
                         style={{ backgroundColor: event.colorHex }}
@@ -449,13 +465,19 @@ export const TimelineView = () => {
       <ElasticScrollArea
         ref={scrollAreaRef}
         className={clsx(
-          "flex-1 w-full bg-surface",
+          "flex-1 w-full",
+          bgClass,
           isPrintMode && "print:bg-white overflow-hidden",
         )}
         viewportClassName={clsx(isPrintMode ? "overflow-hidden" : "")}
       >
         <div className="flex min-w-max md:min-w-full print:w-full print:min-w-full h-full">
-          <div className="w-16 shrink-0 flex flex-col border-r border-outline-variant/30 bg-surface relative z-10 print:bg-white print:border-black/50">
+          <div
+            className={clsx(
+              "w-16 shrink-0 flex flex-col border-r border-outline-variant/30 relative z-10 print:bg-white print:border-black/50",
+              stickyBgClass,
+            )}
+          >
             {displayHours.map((hour) => (
               <div
                 key={hour}
@@ -521,8 +543,10 @@ export const TimelineView = () => {
                   {positions.map((pos) => {
                     let { top, height } = pos;
                     const { event, left, width } = pos;
-                    const variant = event.colorVariant || "primary";
-                    const colorClass = event.colorHex ? "" : COLOR_MAP[variant];
+                    const colorVariant = event.colorVariant || "primary";
+                    const colorClass = event.colorHex
+                      ? ""
+                      : COLOR_MAP[colorVariant];
                     const isCurrentlyDraft = event.isDraft;
 
                     if (isPrintMode) {

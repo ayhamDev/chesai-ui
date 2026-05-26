@@ -11,6 +11,7 @@ import {
   getDaysForMonthView,
   getEventDaysMap,
   getMonthsForYear,
+  getCalendarBgClasses,
 } from "./utils";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { startOfMonth, endOfMonth } from "date-fns";
@@ -76,7 +77,7 @@ const MiniMonth = ({
                 className={clsx(
                   "relative flex items-center justify-center w-8 h-8 rounded-full text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary print:w-6 print:h-6 print:text-[10px]",
                   !isCurrentMonth && "opacity-0 pointer-events-none",
-                  isCurrentMonth && "hover:bg-surface-container-highest",
+                  isCurrentMonth && "hover:bg-on-surface/10",
                   isDayToday
                     ? "bg-primary text-on-primary font-bold shadow-sm print:bg-transparent print:text-black print:border print:border-black print:shadow-none"
                     : "text-on-surface print:text-black",
@@ -100,8 +101,10 @@ const MiniMonth = ({
 };
 
 export const YearView = () => {
-  const { currentDate, events } = useFullCalendar();
+  const { currentDate, events, variant } = useFullCalendar();
   const months = useMemo(() => getMonthsForYear(currentDate), [currentDate]);
+
+  const bgClass = getCalendarBgClasses(variant);
 
   const expandedEvents = useMemo(() => {
     const viewStart = startOfMonth(months[0]);
@@ -115,7 +118,12 @@ export const YearView = () => {
   );
 
   return (
-    <ElasticScrollArea className="flex-1 w-full h-full bg-surface print:bg-white print:overflow-hidden">
+    <ElasticScrollArea
+      className={clsx(
+        "flex-1 w-full h-full print:bg-white print:overflow-hidden",
+        bgClass,
+      )}
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 lg:p-8 print:grid-cols-4 print:grid-rows-3 print:gap-2 print:p-2 print:h-full">
         {months.map((month) => (
           <MiniMonth
