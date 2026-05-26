@@ -113,20 +113,6 @@ const InteractiveCalendarApp = () => {
         <FullCalendar.Toolbar />
         <FullCalendar.View />
       </FullCalendar>
-
-      <div className="absolute bottom-6 right-6 sm:bottom-12 sm:right-12 z-40 print:hidden">
-        <FAB
-          icon={<Plus />}
-          size="lg"
-          variant="primary"
-          isExtended
-          onClick={(e) => {
-            toast.info("Click an empty space on the grid to create an event!");
-          }}
-        >
-          Add Event
-        </FAB>
-      </div>
     </>
   );
 };

@@ -2,7 +2,18 @@
 import type React from 'react'
 
 // --- 1. Property Control Schemas ---
-export type ControlType = 'text' | 'textarea' | 'number' | 'color' | 'select' | 'boolean' | 'image' | 'link' | 'slider'
+// --- 1. Property Control Schemas ---
+export type ControlType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'color'
+  | 'select'
+  | 'boolean'
+  | 'image'
+  | 'link'
+  | 'slider'
+  | 'custom'
 
 export interface ComponentControl {
   type: ControlType
@@ -13,6 +24,23 @@ export interface ComponentControl {
   max?: number
   step?: number
   description?: string
+
+  // --- NEW: Advanced Panel Features ---
+  group?: string // Groups controls together in an Accordion (e.g., "Layout", "Links")
+  supportsCMS?: boolean // Shows the CMS binding toggle icon
+  readOnly?: boolean // Shows the value but prevents editing
+
+  // Conditional Logic (Evaluated against the node's current props)
+  hidden?: boolean | ((currentProps: Record<string, any>) => boolean)
+  disabled?: boolean | ((currentProps: Record<string, any>) => boolean)
+
+  // Escape hatch for completely custom UI in the properties panel
+  render?: (args: {
+    value: any
+    onChange: (val: any) => void
+    currentProps: Record<string, any>
+    nodeId: string
+  }) => React.ReactNode
 }
 
 // --- NEW: Agnostic Theme Registry ---

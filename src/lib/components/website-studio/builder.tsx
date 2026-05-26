@@ -392,7 +392,7 @@ export const Builder: React.FC<BuilderProps> = ({
         <Resizable className="flex-1 overflow-hidden z-0 bg-surface-container-lowest">
           <Resizable.Pane
             id="left-navigator"
-            defaultWidth={350}
+            defaultWidth={300}
             className="bg-surface flex flex-col z-40 border-r border-outline-variant/30"
           >
             <Tabs
@@ -405,7 +405,7 @@ export const Builder: React.FC<BuilderProps> = ({
                 <Tabs.List className="w-full !border-none">
                   <Tabs.Trigger value="pages">Pages</Tabs.Trigger>
                   <Tabs.Trigger value="layers">Layers</Tabs.Trigger>
-                  <Tabs.Trigger value="assets">Components</Tabs.Trigger>
+                  <Tabs.Trigger value="assets">Assets</Tabs.Trigger>
                 </Tabs.List>
               </div>
 

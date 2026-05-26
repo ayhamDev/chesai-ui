@@ -216,6 +216,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes("application/studio-component")) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDraggingFile(true);
@@ -550,7 +551,6 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                     {/* Render Studio Node chips INSIDE the textarea wrapper */}
                     {(selectedNodeIds.length > 0 ||
                       attachedFiles.length > 0) && (
-                      // FIX: Horizontal scroll applied to selection chips, removed flex-wrap
                       <ElasticScrollArea
                         orientation="horizontal"
                         dimmingEdges

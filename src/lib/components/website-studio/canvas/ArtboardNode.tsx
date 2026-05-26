@@ -1,15 +1,71 @@
+// src/lib/components/website-studio/canvas/ArtboardNode.tsx
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Handle, Position, NodeProps, useViewport } from "@xyflow/react";
 import { clsx } from "clsx";
+import { Copy, Clipboard, Trash2 } from "lucide-react";
+
 import { Typography } from "../../typography";
+import { ContextMenu } from "../../context-menu";
 import { useStudioStore } from "../store";
 import { useBuilderContext } from "../BuilderContext";
 import { Renderer } from "../renderer";
 import { useTheme } from "../../../context/ThemeProvider";
-import type { ComponentControl } from "../types";
+import type { ComponentControl, StudioNode } from "../types";
+
+// --- TYPES & HELPERS ---
+
+type InteractionState =
+  | { type: "idle" }
+  | { type: "marquee_prep"; startCoords: { x: number; y: number } }
+  | {
+      type: "marquee";
+      startCoords: { x: number; y: number };
+      currentCoords: { x: number; y: number };
+    }
+  | { type: "drag_prep"; startCoords: { x: number; y: number } }
+  | {
+      type: "drag";
+      startCoords: { x: number; y: number };
+      currentCoords: { x: number; y: number };
+    };
+
+type DropTarget = {
+  parentId: string | null;
+  index?: number;
+  type: "line" | "box";
+  rect: { top: number; left: number; width: number; height: number };
+};
+
+const findNodeById = (nodes: StudioNode[], id: string): StudioNode | null => {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) {
+      const found = findNodeById(n.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+const getParentAndIndex = (
+  nodes: StudioNode[],
+  targetId: string,
+  parentId: string | null = null,
+): { parentId: string | null; index: number } | null => {
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].id === targetId) {
+      return { parentId, index: i };
+    }
+    if (nodes[i].children) {
+      const res = getParentAndIndex(nodes[i].children, targetId, nodes[i].id);
+      if (res) return res;
+    }
+  }
+  return null;
+};
 
 const IframeContentObserver: React.FC<{
   children: React.ReactNode;
@@ -77,7 +133,17 @@ const isRectEqual = (
   );
 };
 
-const CanvasOverlay = ({ iframeWindow }: { iframeWindow: Window }) => {
+// --- CANVAS OVERLAY (Visual Indicators) ---
+
+const CanvasOverlay = ({
+  iframeWindow,
+  interaction,
+  dropTarget,
+}: {
+  iframeWindow: Window;
+  interaction: InteractionState;
+  dropTarget: DropTarget | null;
+}) => {
   const { selectedNodeIds, hoveredNodeId } = useStudioStore();
   const [selectedRects, setSelectedRects] = useState<Record<string, DOMRect>>(
     {},
@@ -87,7 +153,6 @@ const CanvasOverlay = ({ iframeWindow }: { iframeWindow: Window }) => {
   const updateRects = useCallback(() => {
     if (!iframeWindow) return;
     const doc = iframeWindow.document;
-
     const newSelectedRects: Record<string, DOMRect> = {};
 
     for (const id of selectedNodeIds) {
@@ -112,7 +177,6 @@ const CanvasOverlay = ({ iframeWindow }: { iframeWindow: Window }) => {
       const prevKeys = Object.keys(prev);
       const newKeys = Object.keys(newSelectedRects);
       if (prevKeys.length !== newKeys.length) return newSelectedRects;
-
       for (const key of newKeys) {
         if (!isRectEqual(prev[key], newSelectedRects[key]))
           return newSelectedRects;
@@ -154,9 +218,13 @@ const CanvasOverlay = ({ iframeWindow }: { iframeWindow: Window }) => {
     return () => cancelAnimationFrame(rafId);
   }, [updateRects]);
 
+  const isDraggingNodes = interaction.type === "drag";
+  const isMarquee = interaction.type === "marquee";
+
   return (
     <div className="absolute inset-0 pointer-events-none z-[99999]">
-      {hoveredRect && (
+      {/* Hover Indicator */}
+      {hoveredRect && !isDraggingNodes && (
         <div
           className="absolute border-2 border-primary bg-primary/10 transition-none"
           style={{
@@ -167,32 +235,93 @@ const CanvasOverlay = ({ iframeWindow }: { iframeWindow: Window }) => {
           }}
         />
       )}
-      {Object.entries(selectedRects).map(([id, rect]) => (
+
+      {/* Selected Indicators */}
+      {!isDraggingNodes &&
+        Object.entries(selectedRects).map(([id, rect]) => (
+          <div
+            key={id}
+            className="absolute border-2 border-primary transition-none"
+            style={{
+              top: rect.top,
+              left: rect.left - 11,
+              width: rect.width,
+              height: rect.height,
+            }}
+          >
+            <div
+              className={clsx(
+                "absolute left-[-1px] bg-primary text-on-primary text-[10px] font-bold px-2 py-1 whitespace-nowrap shadow-sm pointer-events-auto cursor-default",
+                rect.top < 24
+                  ? "top-[-2px] rounded-br-md"
+                  : "-top-[23px] rounded-t-md",
+              )}
+            >
+              {id}
+            </div>
+          </div>
+        ))}
+
+      {/* Marquee Selection Box */}
+      {isMarquee && (
         <div
-          key={id}
-          className="absolute border-2 border-primary transition-none"
+          className="absolute border border-primary bg-primary/20 transition-none"
           style={{
-            top: rect.top,
-            left: rect.left - 11,
-            width: rect.width,
-            height: rect.height,
+            left: Math.min(
+              interaction.startCoords.x,
+              interaction.currentCoords.x,
+            ),
+            top: Math.min(
+              interaction.startCoords.y,
+              interaction.currentCoords.y,
+            ),
+            width: Math.abs(
+              interaction.currentCoords.x - interaction.startCoords.x,
+            ),
+            height: Math.abs(
+              interaction.currentCoords.y - interaction.startCoords.y,
+            ),
+          }}
+        />
+      )}
+
+      {/* Drop Target Indicator */}
+      {dropTarget && (
+        <div
+          className={clsx(
+            "absolute transition-all duration-75",
+            dropTarget.type === "box"
+              ? "border-2 border-primary bg-primary/20"
+              : "bg-primary rounded-full",
+          )}
+          style={{
+            top: dropTarget.rect.top,
+            left: dropTarget.rect.left - 11,
+            width: dropTarget.rect.width,
+            height: dropTarget.rect.height,
+            zIndex: 100000,
+          }}
+        />
+      )}
+
+      {/* Dragging Ghost Payload */}
+      {isDraggingNodes && (
+        <div
+          className="absolute z-[100001] bg-surface border border-outline-variant/50 shadow-2xl rounded-lg px-3 py-2 text-xs font-bold text-on-surface flex items-center gap-2 transition-none backdrop-blur-md"
+          style={{
+            left: interaction.currentCoords.x + 15,
+            top: interaction.currentCoords.y + 15,
           }}
         >
-          <div
-            className={clsx(
-              "absolute left-[-1px] bg-primary text-on-primary text-[10px] font-bold px-2 py-1 whitespace-nowrap shadow-sm pointer-events-auto cursor-default",
-              rect.top < 24
-                ? "top-[-2px] rounded-br-md"
-                : "-top-[23px] rounded-t-md",
-            )}
-          >
-            {id}
-          </div>
+          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          {selectedNodeIds.length} item{selectedNodeIds.length > 1 ? "s" : ""}
         </div>
-      ))}
+      )}
     </div>
   );
 };
+
+// --- ARTBOARD IFRAME ---
 
 const ArtboardIframe = ({
   children,
@@ -208,20 +337,36 @@ const ArtboardIframe = ({
   const [iframeWindow, setIframeWindow] = useState<Window | null>(null);
   const [contentHeight, setContentHeight] = useState<number>(defaultHeight);
 
-  // Custom inner Drag-to-Select State
-  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(
-    null,
-  );
-  const [dragCurrent, setDragCurrent] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
+  const [interaction, setInteraction] = useState<InteractionState>({
+    type: "idle",
+  });
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
+  const [externalDropTarget, setExternalDropTarget] =
+    useState<DropTarget | null>(null);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const selectionAlteredOnPointerDown = useRef<boolean>(false);
 
-  const { resolvedTheme } = useTheme();
+  const resolvedTheme = useTheme().resolvedTheme;
+  const { components } = useBuilderContext();
+  const {
+    setHoveredNode,
+    selectedNodeIds,
+    setSelectedNodes,
+    toggleNodeSelection,
+    clipboard,
+    copyNodes,
+    pasteNodes,
+    duplicateNodes,
+    removeNodes,
+    moveNodes,
+    addNode,
+    website,
+    activePageId,
+  } = useStudioStore();
+
+  const activePage = website?.pages.find((p) => p.id === activePageId);
   const { zoom } = useViewport();
-  const { setHoveredNode } = useStudioStore();
 
   const handleLoad = () => {
     const doc = iframeRef.current?.contentDocument;
@@ -236,9 +381,7 @@ const ArtboardIframe = ({
 
   useEffect(() => {
     const doc = iframeRef.current?.contentDocument;
-    if (doc) {
-      doc.documentElement.className = document.documentElement.className;
-    }
+    if (doc) doc.documentElement.className = document.documentElement.className;
   }, [resolvedTheme]);
 
   useEffect(() => {
@@ -270,79 +413,226 @@ const ArtboardIframe = ({
     return { x, y };
   };
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0) return;
+  const calculateDropTargetInfo = (
+    coords: { x: number; y: number },
+    draggedIds: string[],
+  ): DropTarget | null => {
+    if (!iframeWindow || !iframeRef.current || !activePage) return null;
+    const doc = iframeWindow.document;
 
-    // FIX 1: Stop propagation so React Flow doesn't select the whole artboard
-    // when interacting with the canvas content.
+    const nodesToHide: HTMLElement[] = [];
+    draggedIds.forEach((id) => {
+      const el = doc.querySelector(`[data-studio-node-id="${id}"]`);
+      if (el) {
+        nodesToHide.push(el as HTMLElement);
+        (el as HTMLElement).style.pointerEvents = "none";
+      }
+    });
+
+    const targetEl = doc
+      .elementFromPoint(coords.x, coords.y)
+      ?.closest("[data-studio-node-id]");
+
+    nodesToHide.forEach((el) => {
+      el.style.pointerEvents = "";
+    });
+
+    if (!targetEl) {
+      return {
+        parentId: null,
+        index: undefined,
+        type: "box",
+        rect: {
+          top: 0,
+          left: 0,
+          width: iframeWindow.innerWidth,
+          height: iframeWindow.innerHeight,
+        },
+      };
+    }
+
+    const targetId = targetEl.getAttribute("data-studio-node-id")!;
+    const targetRect = targetEl.getBoundingClientRect();
+    const relY = coords.y - (targetRect.top + iframeWindow.scrollY);
+
+    const targetNode = findNodeById(activePage.content, targetId);
+    const acceptsChildren = targetNode
+      ? (components[targetNode.type]?.acceptsChildren ?? false)
+      : false;
+
+    const parentInfo = getParentAndIndex(activePage.content, targetId);
+    const parentId = parentInfo?.parentId ?? null;
+    const currentIndex = parentInfo?.index ?? 0;
+
+    let dropType: "line" | "box" = "line";
+    let destParentId = parentId;
+    let destIndex: number | undefined = currentIndex;
+    let indicatorRect = {
+      top: targetRect.top + iframeWindow.scrollY,
+      left: targetRect.left + iframeWindow.scrollX,
+      width: targetRect.width,
+      height: targetRect.height,
+    };
+
+    if (acceptsChildren) {
+      if (relY < targetRect.height * 0.25) {
+        dropType = "line";
+        destIndex = currentIndex;
+        indicatorRect.height = 4;
+        indicatorRect.top -= 2;
+      } else if (relY > targetRect.height * 0.75) {
+        dropType = "line";
+        destIndex = currentIndex + 1;
+        indicatorRect.top = indicatorRect.top + targetRect.height - 2;
+        indicatorRect.height = 4;
+      } else {
+        dropType = "box";
+        destParentId = targetId;
+        destIndex = undefined;
+      }
+    } else {
+      if (relY < targetRect.height / 2) {
+        dropType = "line";
+        destIndex = currentIndex;
+        indicatorRect.height = 4;
+        indicatorRect.top -= 2;
+      } else {
+        dropType = "line";
+        destIndex = currentIndex + 1;
+        indicatorRect.top = indicatorRect.top + targetRect.height - 2;
+        indicatorRect.height = 4;
+      }
+    }
+
+    return {
+      parentId: destParentId,
+      index: destIndex,
+      type: dropType,
+      rect: indicatorRect,
+    };
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return; // Only process left clicks
+
     e.stopPropagation();
+    document.body.dispatchEvent(
+      new PointerEvent("pointerdown", { bubbles: true }),
+    );
 
     const canvasEl = e.currentTarget.closest("[data-tool]");
     if (canvasEl?.getAttribute("data-tool") === "hand") return;
 
     const coords = getIframeCoordinates(e);
-    if (!coords) return;
+    if (!coords || !iframeWindow) return;
 
     e.currentTarget.setPointerCapture(e.pointerId);
-    setDragStart(coords);
-    setDragCurrent(coords);
+
+    const el = iframeWindow.document.elementFromPoint(coords.x, coords.y);
+    const nodeEl = el?.closest("[data-studio-node-id]");
+
+    selectionAlteredOnPointerDown.current = false;
+
+    if (nodeEl) {
+      const id = nodeEl.getAttribute("data-studio-node-id");
+      if (id) {
+        const isAlreadySelected = selectedNodeIds.includes(id);
+        const isMulti = e.shiftKey || e.metaKey || e.ctrlKey;
+
+        if (!isAlreadySelected) {
+          if (isMulti) {
+            toggleNodeSelection(id, true);
+          } else {
+            setSelectedNodes([id]);
+          }
+          selectionAlteredOnPointerDown.current = true;
+        }
+        setInteraction({ type: "drag_prep", startCoords: coords });
+      }
+    } else {
+      if (!(e.shiftKey || e.metaKey || e.ctrlKey)) {
+        setSelectedNodes([]);
+      }
+      setInteraction({ type: "marquee_prep", startCoords: coords });
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     const coords = getIframeCoordinates(e);
     if (!coords || !iframeWindow) return;
 
-    // REAL-TIME SELECTION LOGIC
-    if (dragStart) {
-      setDragCurrent(coords);
-
-      const width = Math.abs(coords.x - dragStart.x);
-      const height = Math.abs(coords.y - dragStart.y);
-
-      // Only select if dragged more than 5px to avoid capturing simple clicks
-      if (width > 5 || height > 5) {
-        const rect = {
-          left: Math.min(dragStart.x, coords.x),
-          top: Math.min(dragStart.y, coords.y),
-          right: Math.max(dragStart.x, coords.x),
-          bottom: Math.max(dragStart.y, coords.y),
-        };
-
-        const nodes = Array.from(
-          iframeWindow.document.querySelectorAll("[data-studio-node-id]"),
-        );
-
-        const selectedIds = nodes
-          .filter((n) => {
-            const nRect = n.getBoundingClientRect();
-
-            // Standard bounding box intersection
-            const intersects = !(
-              nRect.right < rect.left ||
-              nRect.left > rect.right ||
-              nRect.bottom < rect.top ||
-              nRect.top > rect.bottom
-            );
-
-            // FIX 2: Check if the drag box is COMPLETELY inside the node bounds.
-            // If it is, the user is dragging inside a parent container and we
-            // shouldn't select the parent container itself.
-            const boxCompletelyInsideNode =
-              rect.left >= nRect.left &&
-              rect.right <= nRect.right &&
-              rect.top >= nRect.top &&
-              rect.bottom <= nRect.bottom;
-
-            return intersects && !boxCompletelyInsideNode;
-          })
-          .map((n) => n.getAttribute("data-studio-node-id")!);
-
-        useStudioStore.getState().setSelectedNodes(selectedIds);
+    if (
+      interaction.type === "marquee_prep" ||
+      interaction.type === "drag_prep"
+    ) {
+      const dist = Math.hypot(
+        coords.x - interaction.startCoords.x,
+        coords.y - interaction.startCoords.y,
+      );
+      if (dist > 5) {
+        if (interaction.type === "marquee_prep") {
+          setInteraction({
+            type: "marquee",
+            startCoords: interaction.startCoords,
+            currentCoords: coords,
+          });
+        } else {
+          setInteraction({
+            type: "drag",
+            startCoords: interaction.startCoords,
+            currentCoords: coords,
+          });
+          const target = calculateDropTargetInfo(coords, selectedNodeIds);
+          setDropTarget(target);
+        }
       }
       return;
     }
 
-    // Standard hover logic
+    if (interaction.type === "marquee") {
+      setInteraction({ ...interaction, currentCoords: coords });
+
+      const rect = {
+        left: Math.min(interaction.startCoords.x, coords.x),
+        top: Math.min(interaction.startCoords.y, coords.y),
+        right: Math.max(interaction.startCoords.x, coords.x),
+        bottom: Math.max(interaction.startCoords.y, coords.y),
+      };
+
+      const nodes = Array.from(
+        iframeWindow.document.querySelectorAll("[data-studio-node-id]"),
+      );
+
+      const selectedIds = nodes
+        .filter((n) => {
+          const nRect = n.getBoundingClientRect();
+          const intersects = !(
+            nRect.right < rect.left ||
+            nRect.left > rect.right ||
+            nRect.bottom < rect.top ||
+            nRect.top > rect.bottom
+          );
+          const boxCompletelyInsideNode =
+            rect.left >= nRect.left &&
+            rect.right <= nRect.right &&
+            rect.top >= nRect.top &&
+            rect.bottom <= nRect.bottom;
+          return intersects && !boxCompletelyInsideNode;
+        })
+        .map((n) => n.getAttribute("data-studio-node-id")!);
+
+      setSelectedNodes(selectedIds);
+      return;
+    }
+
+    if (interaction.type === "drag") {
+      setInteraction({ ...interaction, currentCoords: coords });
+      const target = calculateDropTargetInfo(coords, selectedNodeIds);
+      setDropTarget(target);
+      return;
+    }
+
+    // Standard Hover State (Idle)
     const el = iframeWindow.document.elementFromPoint(coords.x, coords.y);
     const node = el?.closest("[data-studio-node-id]");
     if (node) {
@@ -357,27 +647,24 @@ const ArtboardIframe = ({
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
 
-    if (dragStart && dragCurrent) {
-      const width = Math.abs(dragCurrent.x - dragStart.x);
-      const height = Math.abs(dragCurrent.y - dragStart.y);
-
-      // If it was just a tiny movement, treat it as a normal click
-      if (width <= 5 && height <= 5) {
+    if (interaction.type === "drag_prep") {
+      if (!selectionAlteredOnPointerDown.current) {
         handleClick(e);
       }
+    } else if (interaction.type === "drag" && dropTarget) {
+      moveNodes(selectedNodeIds, dropTarget.parentId, dropTarget.index);
     }
 
-    setDragStart(null);
-    setDragCurrent(null);
+    setInteraction({ type: "idle" });
+    setDropTarget(null);
   };
 
-  // FIX 3: Clean up drag state if pointer is cancelled or leaves boundary
   const handlePointerCancel = (e: React.PointerEvent) => {
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
-    setDragStart(null);
-    setDragCurrent(null);
+    setInteraction({ type: "idle" });
+    setDropTarget(null);
   };
 
   const handleClick = (e: React.MouseEvent | React.PointerEvent) => {
@@ -391,16 +678,78 @@ const ArtboardIframe = ({
       const id = node.getAttribute("data-studio-node-id");
       if (id) {
         const multi = e.shiftKey || e.metaKey || e.ctrlKey;
-        useStudioStore.getState().toggleNodeSelection(id, multi);
+        if (!multi) {
+          setSelectedNodes([id]);
+        } else {
+          toggleNodeSelection(id, true);
+        }
       }
     } else {
-      useStudioStore.getState().setSelectedNodes([]);
+      setSelectedNodes([]);
     }
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    const coords = getIframeCoordinates(e);
+    if (!coords || !iframeWindow) return;
+
+    const el = iframeWindow.document.elementFromPoint(coords.x, coords.y);
+    const node = el?.closest("[data-studio-node-id]");
+
+    if (node) {
+      const id = node.getAttribute("data-studio-node-id");
+      if (id && !selectedNodeIds.includes(id)) {
+        setSelectedNodes([id]);
+      }
+    } else {
+      setSelectedNodes([]);
+    }
+  };
+
+  // --- External Drag and Drop Events ---
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("application/studio-component")) return;
+    e.preventDefault(); // Accept the drop
+    e.stopPropagation();
+
+    const coords = getIframeCoordinates(e);
+    if (!coords) return;
+
+    const target = calculateDropTargetInfo(coords, []);
+    setExternalDropTarget(target);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    setExternalDropTarget(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    const compId = e.dataTransfer.getData("application/studio-component");
+    if (!compId) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const coords = getIframeCoordinates(e);
+    let target = externalDropTarget;
+    if (!target && coords) {
+      target = calculateDropTargetInfo(coords, []);
+    }
+
+    if (target) {
+      const newNode: StudioNode = {
+        id: `${compId.toLowerCase()}_${Date.now().toString(36)}${Math.random().toString(36).substring(2, 6)}`,
+        type: compId,
+        props: {},
+        children: [],
+      };
+      addNode(newNode, target.parentId, target.index);
+    }
+
+    setExternalDropTarget(null);
+  };
+
   const finalHeight = Math.max(contentHeight, defaultHeight);
-  const isDraggingBox =
-    dragStart && dragCurrent && Math.abs(dragCurrent.x - dragStart.x) > 5;
 
   return (
     <div
@@ -437,36 +786,87 @@ const ArtboardIframe = ({
           )}
       </iframe>
 
-      <div
-        className="absolute inset-0 z-[9999] group-data-[tool=pointer]/canvas:cursor-default group-data-[tool=hand]/canvas:cursor-grab active:group-data-[tool=hand]/canvas:cursor-grabbing"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-        onPointerLeave={(e) => {
-          if (!dragStart) {
-            setHoveredNode(null);
-          } else {
-            handlePointerCancel(e);
-          }
-        }}
-      />
+      <ContextMenu shape="minimal">
+        <ContextMenu.Trigger asChild>
+          <div
+            className="absolute inset-0 z-[9999] group-data-[tool=pointer]/canvas:cursor-default group-data-[tool=hand]/canvas:cursor-grab active:group-data-[tool=hand]/canvas:cursor-grabbing"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onPointerLeave={(e) => {
+              if (
+                interaction.type === "idle" ||
+                interaction.type === "marquee_prep" ||
+                interaction.type === "drag_prep"
+              ) {
+                setHoveredNode(null);
+                setExternalDropTarget(null);
+              } else {
+                handlePointerCancel(e);
+              }
+            }}
+            onContextMenu={handleContextMenu}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          />
+        </ContextMenu.Trigger>
+        <ContextMenu.Content>
+          <ContextMenu.Item
+            disabled={selectedNodeIds.length === 0}
+            onClick={() => copyNodes(selectedNodeIds)}
+          >
+            <Copy className="w-4 h-4 mr-2" /> Copy
+          </ContextMenu.Item>
+          <ContextMenu.Item
+            disabled={clipboard.length === 0}
+            onClick={() => {
+              const targetId =
+                selectedNodeIds.length > 0 ? selectedNodeIds[0] : null;
+              let canAcceptChildren = false;
 
-      {isDraggingBox && (
-        <div
-          className="absolute border border-primary bg-primary/20 pointer-events-none z-[100000]"
-          style={{
-            left: Math.min(dragStart.x, dragCurrent.x),
-            top: Math.min(dragStart.y, dragCurrent.y),
-            width: Math.abs(dragCurrent.x - dragStart.x),
-            height: Math.abs(dragCurrent.y - dragStart.y),
-          }}
-        />
-      )}
+              if (targetId) {
+                const page = website?.pages.find((p) => p.id === activePageId);
+                if (page) {
+                  const targetNode = findNodeById(page.content, targetId);
+                  canAcceptChildren = targetNode
+                    ? (components[targetNode.type]?.acceptsChildren ?? false)
+                    : false;
+                }
+              }
+              pasteNodes(targetId, canAcceptChildren ? "inside" : "after");
+            }}
+          >
+            <Clipboard className="w-4 h-4 mr-2" /> Paste
+          </ContextMenu.Item>
+          <ContextMenu.Item
+            disabled={selectedNodeIds.length === 0}
+            onClick={() => duplicateNodes(selectedNodeIds)}
+          >
+            <Copy className="w-4 h-4 mr-2" /> Duplicate
+          </ContextMenu.Item>
+          <ContextMenu.Separator />
+          <ContextMenu.Item
+            disabled={selectedNodeIds.length === 0}
+            className="text-error hover:!bg-error/10 hover:!text-error"
+            onClick={() => removeNodes(selectedNodeIds)}
+          >
+            <Trash2 className="w-4 h-4 mr-2" /> Delete
+          </ContextMenu.Item>
+        </ContextMenu.Content>
+      </ContextMenu>
 
       {iframeWindow &&
         iframeBody &&
-        createPortal(<CanvasOverlay iframeWindow={iframeWindow} />, iframeBody)}
+        createPortal(
+          <CanvasOverlay
+            iframeWindow={iframeWindow}
+            interaction={interaction}
+            dropTarget={dropTarget || externalDropTarget}
+          />,
+          iframeBody,
+        )}
     </div>
   );
 };

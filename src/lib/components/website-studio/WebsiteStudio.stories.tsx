@@ -1,6 +1,6 @@
+// src/lib/components/website-studio/WebsiteStudio.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import {
-  Badge,
   BarChart2,
   Database,
   Edit3,
@@ -12,19 +12,31 @@ import {
   Settings,
   Type,
 } from "lucide-react";
-import { useState } from "react";
-import { clsx } from "clsx"; // Added to safely merge injected classes with your custom ones
+import { useState, useMemo, useEffect } from "react";
+import { clsx } from "clsx";
 import { WebsiteStudio } from "./index";
 import type { ComponentRegistry, WebsiteSchema } from "./types";
 
+// --- TanStack Router Imports ---
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  RouterProvider,
+  useNavigate,
+  Outlet,
+  createHashHistory,
+} from "@tanstack/react-router";
+
 // --- Chesai UI Component Imports ---
 import {
-  Accessibility,
   ArrowRight,
   Github,
-  Palette,
   Sparkles,
   Zap,
+  Accessibility,
+  Palette,
 } from "lucide-react";
 import { AppBar } from "../appbar";
 import { Button } from "../button";
@@ -36,6 +48,7 @@ import { Grid, GridItem } from "../layout/grid";
 import { toast, Toaster } from "../toast";
 import { Typography } from "../typography";
 import { IconButton } from "../icon-button";
+import { Input } from "../input";
 
 const meta: Meta<typeof WebsiteStudio.Renderer> = {
   title: "Website Studio/Chesai UI Landing Page",
@@ -49,9 +62,8 @@ export default meta;
 type Story = StoryObj<typeof WebsiteStudio.Renderer>;
 
 // ============================================================================
-// THE COMPONENT REGISTRY (Developer's UI Library)
-// Notice how every render function takes `className` and `...props` and
-// forwards them to the outermost element.
+// THE UPGRADED COMPONENT REGISTRY (Developer's UI Library)
+// Incorporates Custom Fields, Framework-Agnostic Navigation, and CMS Bindings.
 // ============================================================================
 const chesaiRegistry: ComponentRegistry = {
   InstallCommand: {
@@ -75,10 +87,13 @@ const chesaiRegistry: ComponentRegistry = {
         type: "text",
         label: "Package Name",
         defaultValue: "chesai-ui",
+        group: "Package Information",
+        supportsCMS: true,
       },
       variant: {
         type: "select",
         label: "Variant",
+        group: "Aesthetics",
         options: [
           { label: "Primary", value: "primary" },
           { label: "Secondary", value: "secondary" },
@@ -89,6 +104,7 @@ const chesaiRegistry: ComponentRegistry = {
       shape: {
         type: "select",
         label: "Shape",
+        group: "Aesthetics",
         options: [
           { label: "Full", value: "full" },
           { label: "Minimal", value: "minimal" },
@@ -98,6 +114,7 @@ const chesaiRegistry: ComponentRegistry = {
       shadow: {
         type: "select",
         label: "Shadow",
+        group: "Aesthetics",
         options: [
           { label: "None", value: "none" },
           { label: "Small", value: "sm" },
@@ -130,19 +147,119 @@ const chesaiRegistry: ComponentRegistry = {
       </section>
     ),
     controls: {
-      bg: { type: "color", label: "Background Color" },
-      padding: { type: "text", label: "Padding" },
+      bg: {
+        type: "color",
+        label: "Background Color",
+        group: "Background Settings",
+        hidden: true, // <-- Hides this control dynamically
+      },
+      padding: {
+        type: "custom",
+        label: "Spacing Padding",
+        group: "Layout Geometry",
+        // --- CUSTOM RENDER FIELD OVERRIDE ---
+        render: ({ value, onChange }) => {
+          // Parse shorthand padding to populate individual inputs
+          const vals = (value || "0px").split(" ").filter(Boolean);
+          const t = vals[0] || "0px";
+          const r = vals[1] || t;
+          const b = vals[2] || t;
+          const l = vals[3] || r;
+
+          const handleUpdate = (pos: "t" | "r" | "b" | "l", val: string) => {
+            const newT = pos === "t" ? val : t;
+            const newR = pos === "r" ? val : r;
+            const newB = pos === "b" ? val : b;
+            const newL = pos === "l" ? val : l;
+
+            // Collapse to 2-value shorthand if symmetrical to keep DOM clean
+            if (newT === newB && newR === newL) {
+              onChange(`${newT} ${newR}`);
+            } else {
+              onChange(`${newT} ${newR} ${newB} ${newL}`);
+            }
+          };
+
+          return (
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <Input
+                size="sm"
+                variant="filled"
+                shape="minimal"
+                placeholder="Top"
+                value={t}
+                onValueChange={(v) => handleUpdate("t", v)}
+                startContent={
+                  <span className="text-[10px] opacity-50 font-mono w-4">
+                    T
+                  </span>
+                }
+              />
+              <Input
+                size="sm"
+                variant="filled"
+                shape="minimal"
+                placeholder="Right"
+                value={r}
+                onValueChange={(v) => handleUpdate("r", v)}
+                startContent={
+                  <span className="text-[10px] opacity-50 font-mono w-4">
+                    R
+                  </span>
+                }
+              />
+              <Input
+                size="sm"
+                variant="filled"
+                shape="minimal"
+                placeholder="Bottom"
+                value={b}
+                onValueChange={(v) => handleUpdate("b", v)}
+                startContent={
+                  <span className="text-[10px] opacity-50 font-mono w-4">
+                    B
+                  </span>
+                }
+              />
+              <Input
+                size="sm"
+                variant="filled"
+                shape="minimal"
+                placeholder="Left"
+                value={l}
+                onValueChange={(v) => handleUpdate("l", v)}
+                startContent={
+                  <span className="text-[10px] opacity-50 font-mono w-4">
+                    L
+                  </span>
+                }
+              />
+            </div>
+          );
+        },
+      },
+      align: {
+        type: "select",
+        label: "Children Alignment",
+        group: "Layout Geometry",
+        options: [
+          { label: "Left", value: "start" },
+          { label: "Center", value: "center" },
+          { label: "Right", value: "end" },
+        ],
+      },
     },
   },
   FlexBox: {
     name: "Flex Box",
     category: "Layout",
     acceptsChildren: true,
-    render: (props) => <Flex {...props} />, // Flex natively handles spreading ...props
+    render: (props) => <Flex {...props} />,
     controls: {
       direction: {
         type: "select",
         label: "Direction",
+        group: "Flex Properties",
         options: [
           { label: "Row", value: "row" },
           { label: "Column", value: "column" },
@@ -150,7 +267,8 @@ const chesaiRegistry: ComponentRegistry = {
       },
       gap: {
         type: "select",
-        label: "Gap",
+        label: "Gap Size",
+        group: "Flex Properties",
         options: [
           { label: "SM", value: "sm" },
           { label: "MD", value: "md" },
@@ -159,7 +277,8 @@ const chesaiRegistry: ComponentRegistry = {
       },
       align: {
         type: "select",
-        label: "Align",
+        label: "Align Items",
+        group: "Flex Properties",
         options: [
           { label: "Start", value: "start" },
           { label: "Center", value: "center" },
@@ -167,7 +286,8 @@ const chesaiRegistry: ComponentRegistry = {
       },
       justify: {
         type: "select",
-        label: "Justify",
+        label: "Justify Content",
+        group: "Flex Properties",
         options: [
           { label: "Start", value: "start" },
           { label: "Center", value: "center" },
@@ -180,11 +300,12 @@ const chesaiRegistry: ComponentRegistry = {
     name: "Grid Box",
     category: "Layout",
     acceptsChildren: true,
-    render: (props) => <Grid {...props} />, // Natively spreads
+    render: (props) => <Grid {...props} />,
     controls: {
       gap: {
         type: "select",
         label: "Gap",
+        group: "Grid Settings",
         options: [
           { label: "MD", value: "md" },
           { label: "LG", value: "lg" },
@@ -196,25 +317,35 @@ const chesaiRegistry: ComponentRegistry = {
     name: "Grid Item",
     category: "Layout",
     acceptsChildren: true,
-    render: (props) => <GridItem {...props} />, // Natively spreads
+    render: (props) => <GridItem {...props} />,
     controls: {},
   },
   Text: {
     name: "Text",
     category: "Typography",
-    render: (props) => <Typography {...props} />, // Natively spreads
+    render: (props) => <Typography {...props} />,
     controls: {
-      children: { type: "textarea", label: "Content" },
+      children: {
+        type: "textarea",
+        label: "Content",
+        group: "Content Data",
+        supportsCMS: true,
+      },
       variant: {
         type: "select",
-        label: "Variant",
+        label: "Typographic Style",
+        group: "Aesthetics",
         options: [
           { label: "Display Large", value: "display-large" },
           { label: "Headline Medium", value: "headline-medium" },
           { label: "Body Large", value: "body-large" },
         ],
       },
-      muted: { type: "boolean", label: "Muted" },
+      muted: {
+        type: "boolean",
+        label: "Muted Color",
+        group: "Aesthetics",
+      },
     },
   },
   CodeBlock: {
@@ -243,24 +374,62 @@ const chesaiRegistry: ComponentRegistry = {
       </div>
     ),
     controls: {
-      code: { type: "textarea", label: "Code Content" },
-      language: { type: "text", label: "Language", defaultValue: "typescript" },
-      fileName: { type: "text", label: "File Name", defaultValue: "App.tsx" },
+      code: {
+        type: "textarea",
+        label: "Code Content",
+        group: "Code Definition",
+        supportsCMS: true,
+      },
+      language: {
+        type: "text",
+        label: "Language Mode",
+        defaultValue: "typescript",
+        group: "Code Configuration",
+      },
+      fileName: {
+        type: "text",
+        label: "Tab Filename",
+        defaultValue: "App.tsx",
+        group: "Code Configuration",
+      },
     },
   },
   Button: {
     name: "Button",
     category: "Elements",
-    render: ({ text, variant, size, shape, startIcon, ...props }) => {
+    render: ({
+      text,
+      variant,
+      size,
+      shape,
+      startIcon,
+      linkTo,
+      newTab,
+      onClick,
+      ...props
+    }) => {
       const IconMap: any = { ArrowRight, Github };
       const IconComponent =
         startIcon && IconMap[startIcon] ? IconMap[startIcon] : null;
+
+      const handleClick = (e: React.MouseEvent) => {
+        if (onClick) onClick(e);
+        if (linkTo && !e.defaultPrevented) {
+          e.preventDefault();
+          // Dispatch a framework-agnostic custom event for the router to pick up
+          window.dispatchEvent(
+            new CustomEvent("studio-navigate", { detail: { linkTo, newTab } }),
+          );
+        }
+      };
+
       return (
         <Button
           variant={variant}
           size={size}
           shape={shape}
           startIcon={IconComponent ? <IconComponent size={18} /> : undefined}
+          onClick={handleClick}
           {...props}
         >
           {text}
@@ -268,15 +437,33 @@ const chesaiRegistry: ComponentRegistry = {
       );
     },
     controls: {
-      text: { type: "text", label: "Label" },
+      text: {
+        type: "text",
+        label: "Label Text",
+        group: "General Settings",
+        supportsCMS: true,
+      },
       variant: {
         type: "select",
-        label: "Variant",
+        label: "Visual Variant",
+        group: "Aesthetics",
         options: [
           { label: "Primary", value: "primary" },
           { label: "Secondary", value: "secondary" },
           { label: "Outline", value: "outline" },
         ],
+      },
+      linkTo: {
+        type: "link",
+        label: "Link To",
+        group: "Behavior Options",
+        supportsCMS: true,
+      },
+      newTab: {
+        type: "boolean",
+        label: "Open in new tab",
+        group: "Behavior Options",
+        hidden: (props) => !props.linkTo || props.linkTo.trim() === "",
       },
     },
   },
@@ -295,7 +482,14 @@ const chesaiRegistry: ComponentRegistry = {
         {text}
       </div>
     ),
-    controls: { text: { type: "text", label: "Text" } },
+    controls: {
+      text: {
+        type: "text",
+        label: "Text",
+        group: "General Settings",
+        supportsCMS: true,
+      },
+    },
   },
   NavigationBlock: {
     name: "Navigation Bar",
@@ -314,7 +508,14 @@ const chesaiRegistry: ComponentRegistry = {
         {...props}
       />
     ),
-    controls: { title: { type: "text", label: "Brand Name" } },
+    controls: {
+      title: {
+        type: "text",
+        label: "Brand Name",
+        group: "General Settings",
+        supportsCMS: true,
+      },
+    },
   },
   FeatureCard: {
     name: "Feature Card",
@@ -347,15 +548,29 @@ const chesaiRegistry: ComponentRegistry = {
       );
     },
     controls: {
-      title: { type: "text", label: "Title" },
-      description: { type: "textarea", label: "Description" },
-      icon: { type: "text", label: "Icon Name (Lucide)" },
+      title: {
+        type: "text",
+        label: "Title",
+        group: "General Settings",
+        supportsCMS: true,
+      },
+      description: {
+        type: "textarea",
+        label: "Description text",
+        group: "General Settings",
+        supportsCMS: true,
+      },
+      icon: {
+        type: "text",
+        label: "Icon Name (Lucide)",
+        group: "Aesthetics",
+      },
     },
   },
 };
 
 // ============================================================================
-// MOCK EXTERNAL DATA & API (For Event Bindings & Interpolation)
+// MOCK EXTERNAL DATA & API
 // ============================================================================
 
 const mockCMSData = {
@@ -380,11 +595,12 @@ const mockCustomActions = {
 };
 
 const mockCustomAPI = {
-  toast, // Pass the Sonner toast instance directly into the isolated sandbox
+  toast,
 };
 
 // ============================================================================
 // THE JSON SCHEMA (Database Payload)
+// Now includes a mocked "/about" page for testing the router!
 // ============================================================================
 const landingPageJSON: WebsiteSchema = {
   projectSettings: { name: "Chesai UI" },
@@ -393,9 +609,8 @@ const landingPageJSON: WebsiteSchema = {
     {
       id: "page_home",
       slug: "/",
-      title: "Chesai UI - Modern React Components",
+      title: "Home",
       content: [
-        // --- 1. NAVBAR ---
         {
           id: "nav",
           type: "NavigationBlock",
@@ -403,14 +618,12 @@ const landingPageJSON: WebsiteSchema = {
           events: {
             onClick: [
               {
-                actionId: "openLink", // from defaultActions
+                actionId: "openLink",
                 args: ["https://github.com/ayhamdev/chesai-ui", "_blank"],
               },
             ],
           },
         },
-
-        // --- 2. HERO SECTION ---
         {
           id: "hero_section",
           type: "Section",
@@ -430,7 +643,6 @@ const landingPageJSON: WebsiteSchema = {
                   id: "badge",
                   type: "AnnouncementBadge",
                   props: {
-                    // CMS Interpolation binding!
                     text: "{{hero.badge}}",
                   },
                 },
@@ -441,7 +653,6 @@ const landingPageJSON: WebsiteSchema = {
                     variant: "display-large",
                     className:
                       "font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-on-background to-on-background/50 custom-underline",
-                    // CMS Interpolation binding!
                     children: "{{hero.headline}}",
                   },
                 },
@@ -452,7 +663,6 @@ const landingPageJSON: WebsiteSchema = {
                     variant: "body-large",
                     muted: true,
                     className: "text-lg md:text-xl leading-relaxed",
-                    // CMS Interpolation binding!
                     children: "{{hero.subheading}}",
                   },
                 },
@@ -474,6 +684,8 @@ const landingPageJSON: WebsiteSchema = {
                         size: "lg",
                         shape: "full",
                         startIcon: "ArrowRight",
+                        linkTo: "/about", // Navigates seamlessly via TanStack Router
+                        newTab: false,
                       },
                       events: {
                         onClick: [
@@ -482,10 +694,8 @@ const landingPageJSON: WebsiteSchema = {
                             args: ["Primary CTA Clicked!"],
                           },
                           {
-                            // Advanced Sandbox Execution Example
                             actionId: "$customCode",
                             code: `
-                              event.preventDefault();
                               api.toast.success("Sandbox Executed Successfully!", {
                                 description: "Read CMS data: " + cms.hero.headline
                               });
@@ -518,8 +728,6 @@ const landingPageJSON: WebsiteSchema = {
             },
           ],
         },
-
-        // --- 3. FEATURES SECTION ---
         {
           id: "features_section",
           type: "Section",
@@ -593,75 +801,56 @@ const landingPageJSON: WebsiteSchema = {
             },
           ],
         },
-
-        // --- 4. CTA / FOOTER SECTION ---
+      ],
+    },
+    // --- MOCKED INTERNAL ROUTE (/about) ---
+    {
+      id: "page_about",
+      slug: "/about",
+      title: "About Us",
+      content: [
         {
-          id: "cta_section",
+          id: "nav_about",
+          type: "NavigationBlock",
+          props: { title: "chesai-ui // about" },
+        },
+        {
+          id: "about_hero",
           type: "Section",
-          props: {
-            padding: "100px 24px",
-            align: "center",
-            bg: "var(--md-sys-color-surface-container)",
-          },
+          props: { padding: "160px 24px", align: "center" },
           children: [
             {
-              id: "cta_content",
-              type: "FlexBox",
+              id: "about_title",
+              type: "Text",
               props: {
-                direction: "column",
-                align: "center",
-                gap: "md",
-                className: "text-center w-full",
+                variant: "display-large",
+                className: "font-extrabold tracking-tight text-primary",
+                children: "Mocked Page Route",
               },
-              children: [
-                {
-                  id: "cta_title",
-                  type: "Text",
-                  props: {
-                    variant: "headline-large",
-                    className: "font-bold",
-                    children: "Ready to transform your workflow?",
-                  },
-                },
-                {
-                  id: "cta_sub",
-                  type: "Text",
-                  props: {
-                    variant: "body-large",
-                    muted: true,
-                    children:
-                      "Join developers building the next generation of web applications.",
-                  },
-                },
-                {
-                  id: "cta_terminal",
-                  type: "InstallCommand",
-                  props: {
-                    packageName: "chesai-ui",
-                    variant: "secondary",
-                    shadow: "lg",
-                  },
-                },
-                {
-                  id: "cta_instructions_title",
-                  type: "Text",
-                  props: {
-                    variant: "body-large",
-                    className: "mt-12",
-                    children:
-                      "To use the components, import the core styles and wrap your app with the ChesaiProvider:",
-                  },
-                },
-                {
-                  id: "cta_code_snippet",
-                  type: "CodeBlock",
-                  props: {
-                    code: "import 'chesai-ui/styles.css';\nimport { ChesaiProvider } from 'chesai-ui';\n\nexport default function App({ children }) {\n  return (\n    <ChesaiProvider>\n      {children}\n    </ChesaiProvider>\n  );\n}",
-                    language: "typescript",
-                    fileName: "App.tsx",
-                  },
-                },
-              ],
+            },
+            {
+              id: "about_subtitle",
+              type: "Text",
+              props: {
+                variant: "body-large",
+                muted: true,
+                className: "mt-4 max-w-xl text-center",
+                children:
+                  "Notice how the TanStack router seamlessly navigated here without a full page reload, reading the secondary page data directly from the JSON schema.",
+              },
+            },
+            {
+              id: "about_back_btn",
+              type: "Button",
+              props: {
+                text: "Go Back Home",
+                variant: "secondary",
+                size: "lg",
+                shape: "full",
+                linkTo: "/",
+                newTab: false,
+                className: "mt-8",
+              },
             },
           ],
         },
@@ -671,22 +860,7 @@ const landingPageJSON: WebsiteSchema = {
 };
 
 // ============================================================================
-// MOCK GLOBAL HEAD INJECTION (To show styling bridge capabilities)
-// ============================================================================
-const injectedStyles = `
-  <style>
-    /* Injected via globalHeadCode */
-    .custom-underline {
-      text-decoration: underline;
-      text-decoration-color: var(--md-sys-color-primary);
-      text-decoration-thickness: 4px;
-      text-underline-offset: 6px;
-    }
-  </style>
-`;
-
-// ============================================================================
-// STORY RENDERER
+// STORY RENDERER WITH TANSTACK ROUTER
 // ============================================================================
 
 export const VisualBuilderMode: Story = {
@@ -695,160 +869,214 @@ export const VisualBuilderMode: Story = {
     docs: {
       description: {
         story:
-          "Phase 1, 2 & 3: React Flow infinite canvas implementation with Artboards, Iframe scaling, CMS data bindings, and Dynamic UI overrides.",
+          "Advanced dynamic properties with CMS mappings, auto-complete Suggestion links, Custom Property Fields, and TanStack Router integration.",
       },
     },
   },
-  render: () => {
+  render: function StoryRenderer() {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [isEditing, setIsEditing] = useState(true);
+    const [isEditing, setIsEditing] = useState(false);
 
-    if (isEditing) {
-      return (
-        <WebsiteStudio.Builder
-          components={chesaiRegistry}
-          initialState={landingPageJSON}
-          cms={mockCMSData}
-          onExit={() => setIsEditing(false)}
-          // --- CUSTOM DEVELOPER HEADER PROPS (Styled with standard tokens) ---
-          topBarLeft={
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                startIcon={<Plus size={16} />}
-                className="font-medium"
-              >
-                Insert
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                startIcon={<LayoutGrid size={16} />}
-                className="font-medium"
-              >
-                Layout
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                startIcon={<Type size={16} />}
-                className="font-medium"
-              >
-                Text
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                startIcon={<PenTool size={16} />}
-                className="font-medium"
-              >
-                Vector
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                startIcon={<Database size={16} />}
-                className="font-medium"
-              >
-                CMS
-              </Button>
-            </div>
-          }
-          topBarCenter={
-            <>
-              <Typography
-                variant="label-medium"
-                className="font-bold text-on-surface tracking-wide"
-              >
-                {landingPageJSON.projectSettings.name}
-              </Typography>
-              <span className="text-on-surface-variant opacity-40 text-sm">
-                &middot;
-              </span>
-              <Typography
-                variant="body-small"
-                className="text-on-surface-variant opacity-80"
-              >
-                draft.framer.app
-              </Typography>
-            </>
-          }
-          topBarRight={
-            <>
-              <div className="flex items-center gap-1 border-l border-outline-variant/30 pl-4 pr-2">
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
-                >
-                  <Globe size={16} />
-                </IconButton>
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
-                >
-                  <Settings size={16} />
-                </IconButton>
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
-                >
-                  <BarChart2 size={16} />
-                </IconButton>
-                <IconButton
-                  variant="secondary"
-                  size="sm"
-                  className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
-                >
-                  <Play size={16} className="ml-0.5 fill-current" />
-                </IconButton>
-              </div>
-              <Button
-                size="sm"
-                variant="primary"
-                className="h-8 px-5 font-bold shadow-none"
-              >
-                Publish
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 px-4 font-bold shadow-none"
-                onClick={() => setIsEditing(false)}
-              >
-                Exit
-              </Button>
-            </>
-          }
-        />
+    // Initialize the Router inside a memo so it stays stable across renders,
+    // but pass `isEditing` down as part of the dependency array so the layout respects state.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const router = useMemo(() => {
+      const history = createHashHistory({ window: window });
+
+      // The Root Layout
+      const RootComponent = () => {
+        const navigate = useNavigate({ strict: false });
+
+        // Listen for the custom agnostic event dispatched by our Button components
+        useEffect(() => {
+          const handleNav = (e: any) => {
+            const { linkTo, newTab } = e.detail;
+            if (newTab) {
+              window.open(linkTo, "_blank");
+            } else {
+              if (isEditing) {
+                // Prevent actual routing when inside the Builder Sandbox
+                toast.info("Navigation Disabled in Builder", {
+                  description: `Would have navigated to: ${linkTo}`,
+                });
+              } else {
+                navigate({ to: linkTo });
+              }
+            }
+          };
+
+          window.addEventListener("studio-navigate", handleNav);
+          return () => window.removeEventListener("studio-navigate", handleNav);
+        }, [navigate]);
+
+        return (
+          <div className="w-full bg-background text-on-background min-h-screen relative group/site">
+            <Toaster />
+            {isEditing ? (
+              <WebsiteStudio.Builder
+                components={chesaiRegistry}
+                initialState={landingPageJSON}
+                cms={mockCMSData}
+                onExit={() => setIsEditing(false)}
+                topBarLeft={
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      startIcon={<Plus size={16} />}
+                      className="font-medium"
+                    >
+                      Insert
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      startIcon={<LayoutGrid size={16} />}
+                      className="font-medium"
+                    >
+                      Layout
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      startIcon={<Type size={16} />}
+                      className="font-medium"
+                    >
+                      Text
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      startIcon={<PenTool size={16} />}
+                      className="font-medium"
+                    >
+                      Vector
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      startIcon={<Database size={16} />}
+                      className="font-medium"
+                    >
+                      CMS
+                    </Button>
+                  </div>
+                }
+                topBarCenter={
+                  <>
+                    <Typography
+                      variant="label-medium"
+                      className="font-bold text-on-surface tracking-wide"
+                    >
+                      {landingPageJSON.projectSettings.name}
+                    </Typography>
+                    <span className="text-on-surface-variant opacity-40 text-sm">
+                      &middot;
+                    </span>
+                    <Typography
+                      variant="body-small"
+                      className="text-on-surface-variant opacity-80"
+                    >
+                      draft.framer.app
+                    </Typography>
+                  </>
+                }
+                topBarRight={
+                  <>
+                    <div className="flex items-center gap-1 border-l border-outline-variant/30 pl-4 pr-2">
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
+                      >
+                        <Globe size={16} />
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
+                      >
+                        <Settings size={16} />
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
+                      >
+                        <BarChart2 size={16} />
+                      </IconButton>
+                      <IconButton
+                        variant="secondary"
+                        size="sm"
+                        className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
+                      >
+                        <Play size={16} className="ml-0.5 fill-current" />
+                      </IconButton>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      className="h-8 px-5 font-bold shadow-none"
+                    >
+                      Publish
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-4 font-bold shadow-none"
+                      onClick={() => setIsEditing(false)}
+                    >
+                      Exit
+                    </Button>
+                  </>
+                }
+              />
+            ) : (
+              <>
+                <Outlet />
+                <div className="fixed bottom-8 right-8 z-[9999] opacity-0 group-hover/site:translate-y-0 group-hover/site:opacity-100 transition-all duration-300">
+                  <Button
+                    size="lg"
+                    variant="primary"
+                    className="shadow-2xl font-bold"
+                    startIcon={<Edit3 size={18} />}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit in Website Studio
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      };
+
+      const rootRoute = createRootRoute({ component: RootComponent });
+
+      // Map through JSON pages and create actual Router Routes
+      const routes = landingPageJSON.pages.map((page) =>
+        createRoute({
+          getParentRoute: () => rootRoute,
+          path: page.slug,
+          component: () => (
+            <WebsiteStudio.Renderer
+              components={chesaiRegistry}
+              data={page.content}
+              cms={mockCMSData}
+              actions={mockCustomActions}
+              customApi={mockCustomAPI}
+            />
+          ),
+        }),
       );
-    }
+
+      const routeTree = rootRoute.addChildren(routes);
+      return createRouter({ routeTree, history });
+    }, [isEditing]);
 
     return (
-      <div className="w-full bg-background text-on-background min-h-screen relative group/site">
-        <Toaster />
-        <div className="fixed bottom-8 right-8 z-[9999] opacity-0 group-hover/site:translate-y-0 group-hover/site:opacity-100 transition-all duration-300">
-          <Button
-            size="lg"
-            variant="primary"
-            className="shadow-2xl font-bold"
-            startIcon={<Edit3 size={18} />}
-            onClick={() => setIsEditing(true)}
-          >
-            Edit in Website Studio
-          </Button>
-        </div>
-
-        <WebsiteStudio.Renderer
-          components={chesaiRegistry}
-          data={landingPageJSON.pages[0]}
-          cms={mockCMSData}
-          actions={mockCustomActions}
-          customApi={mockCustomAPI}
-        />
+      <div className="w-full h-screen relative">
+        <RouterProvider router={router} />
       </div>
     );
   },
