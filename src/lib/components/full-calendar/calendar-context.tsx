@@ -6,6 +6,7 @@ import {
   addMonths,
   addWeeks,
   addYears,
+  differenceInDays,
   endOfWeek,
   startOfWeek,
   subDays,
@@ -77,23 +78,23 @@ export const PrintModeContext = createContext<boolean>(false);
 
 export const PrintOverrideProvider = ({
   children,
+  overrideDate,
+  overrideView,
 }: {
   children: React.ReactNode;
+  overrideDate: Date;
+  overrideView: CalendarView;
 }) => {
   const context = useFullCalendar();
-  const printView =
-    context.printSettings.view === "auto"
-      ? context.view
-      : context.printSettings.view;
 
   const printContextValue = useMemo(
     () => ({
       ...context,
-      view: printView as CalendarView,
-      // Override current date so Month/Year views center around the print range
-      currentDate: context.printSettings.rangeStart,
+      view: overrideView,
+      currentDate: overrideDate,
+      variant: "ghost" as CalendarVariant,
     }),
-    [context, printView],
+    [context, overrideDate, overrideView],
   );
 
   return (

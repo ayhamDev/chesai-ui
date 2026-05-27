@@ -5,7 +5,7 @@ import { clsx } from "clsx";
 import { format, isSameMonth, isToday } from "date-fns";
 import React, { useMemo } from "react";
 import { Typography } from "../typography";
-import { useFullCalendar } from "./calendar-context";
+import { useFullCalendar, PrintModeContext } from "./calendar-context";
 import {
   expandEvents,
   getDaysForMonthView,
@@ -26,23 +26,32 @@ const MiniMonth = ({
   eventDaysSet: Set<string>;
 }) => {
   const { setView, setCurrentDate } = useFullCalendar();
+  const isPrintMode = React.useContext(PrintModeContext);
   const days = useMemo(() => getDaysForMonthView(monthDate), [monthDate]);
 
   const handleDayClick = (day: Date) => {
+    if (isPrintMode) return;
     setCurrentDate(day);
     setView("day");
   };
 
   const handleMonthClick = () => {
+    if (isPrintMode) return;
     setCurrentDate(monthDate);
     setView("month");
   };
 
   return (
-    <div className="flex flex-col p-4 w-full print:p-1 print:h-full">
+    <div
+      className={clsx("flex flex-col p-4 w-full", isPrintMode && "p-1 h-full")}
+    >
       <Typography
         variant="label-large"
-        className="font-bold mb-3 pl-1 cursor-pointer hover:text-primary transition-colors text-on-surface print:text-black print:mb-1"
+        className={clsx(
+          "font-bold mb-3 pl-1 transition-colors",
+          !isPrintMode && "cursor-pointer hover:text-primary text-on-surface",
+          isPrintMode && "text-black mb-1",
+        )}
         onClick={handleMonthClick}
       >
         {format(monthDate, "MMMM")}
@@ -52,14 +61,19 @@ const MiniMonth = ({
         {WEEKDAYS_NARROW.map((day, i) => (
           <div
             key={i}
-            className="text-center text-[10px] font-semibold text-on-surface-variant opacity-70 print:text-black print:opacity-100"
+            className={clsx(
+              "text-center text-[10px] font-semibold",
+              isPrintMode ? "text-black" : "text-on-surface-variant opacity-70",
+            )}
           >
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-y-1 print:gap-y-0.5">
+      <div
+        className={clsx("grid grid-cols-7 gap-y-1", isPrintMode && "gap-y-0.5")}
+      >
         {days.map((day) => {
           const isCurrentMonth = isSameMonth(day, monthDate);
           const isDayToday = isToday(day);
@@ -75,21 +89,36 @@ const MiniMonth = ({
                 type="button"
                 onClick={() => handleDayClick(day)}
                 className={clsx(
-                  "relative flex items-center justify-center w-8 h-8 rounded-full text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary print:w-6 print:h-6 print:text-[10px]",
+                  "relative flex items-center justify-center w-8 h-8 rounded-full text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                   !isCurrentMonth && "opacity-0 pointer-events-none",
-                  isCurrentMonth && "hover:bg-on-surface/10",
-                  isDayToday
-                    ? "bg-primary text-on-primary font-bold shadow-sm print:bg-transparent print:text-black print:border print:border-black print:shadow-none"
-                    : "text-on-surface print:text-black",
+                  isCurrentMonth && !isPrintMode && "hover:bg-on-surface/10",
+                  isDayToday &&
+                    !isPrintMode &&
+                    "bg-primary text-on-primary font-bold shadow-sm",
+                  !isDayToday && !isPrintMode && "text-on-surface",
+                  isPrintMode && "w-6 h-6 text-[10px] text-black",
+                  isDayToday && isPrintMode && "border border-black font-bold",
                 )}
               >
                 {format(day, "d")}
 
                 {isCurrentMonth && hasEvent && !isDayToday && (
-                  <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary print:border print:border-black print:bg-transparent print:w-1 print:h-1" />
+                  <div
+                    className={clsx(
+                      "absolute bottom-1 w-1 h-1 rounded-full",
+                      isPrintMode
+                        ? "border border-black bg-transparent"
+                        : "bg-primary",
+                    )}
+                  />
                 )}
                 {isCurrentMonth && hasEvent && isDayToday && (
-                  <div className="absolute bottom-1 w-1 h-1 rounded-full bg-on-primary print:bg-black" />
+                  <div
+                    className={clsx(
+                      "absolute bottom-1 w-1 h-1 rounded-full",
+                      isPrintMode ? "bg-black" : "bg-on-primary",
+                    )}
+                  />
                 )}
               </button>
             </div>
@@ -102,9 +131,12 @@ const MiniMonth = ({
 
 export const YearView = () => {
   const { currentDate, events, variant } = useFullCalendar();
+  const isPrintMode = React.useContext(PrintModeContext);
   const months = useMemo(() => getMonthsForYear(currentDate), [currentDate]);
 
-  const bgClass = getCalendarBgClasses(variant);
+  const bgClass = isPrintMode
+    ? "bg-white text-black"
+    : getCalendarBgClasses(variant);
 
   const expandedEvents = useMemo(() => {
     const viewStart = startOfMonth(months[0]);
@@ -117,22 +149,34 @@ export const YearView = () => {
     [expandedEvents],
   );
 
-  return (
-    <ElasticScrollArea
+  const content = (
+    <div
       className={clsx(
-        "flex-1 w-full h-full print:bg-white print:overflow-hidden",
-        bgClass,
+        "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 lg:p-8",
+        isPrintMode && "grid-cols-4 grid-rows-3 gap-2 p-2 h-full",
       )}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4 lg:p-8 print:grid-cols-4 print:grid-rows-3 print:gap-2 print:p-2 print:h-full">
-        {months.map((month) => (
-          <MiniMonth
-            key={month.toISOString()}
-            monthDate={month}
-            eventDaysSet={eventDaysSet}
-          />
-        ))}
+      {months.map((month) => (
+        <MiniMonth
+          key={month.toISOString()}
+          monthDate={month}
+          eventDaysSet={eventDaysSet}
+        />
+      ))}
+    </div>
+  );
+
+  if (isPrintMode) {
+    return (
+      <div className={clsx("flex-1 w-full h-full bg-white overflow-hidden")}>
+        {content}
       </div>
+    );
+  }
+
+  return (
+    <ElasticScrollArea className={clsx("flex-1 w-full h-full", bgClass)}>
+      {content}
     </ElasticScrollArea>
   );
 };

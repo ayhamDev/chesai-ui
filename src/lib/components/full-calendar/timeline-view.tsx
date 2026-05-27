@@ -51,30 +51,19 @@ export const TimelineView = () => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const bgClass = getCalendarBgClasses(variant);
-  const stickyBgClass = getCalendarStickyBgClasses(variant);
+  const bgClass = isPrintMode
+    ? "bg-white text-black"
+    : getCalendarBgClasses(variant);
+  const stickyBgClass = isPrintMode
+    ? "bg-white text-black"
+    : getCalendarStickyBgClasses(variant);
+  const borderClass = isPrintMode
+    ? "border-black/20"
+    : "border-outline-variant/30";
 
   const days = useMemo(() => {
-    if (isPrintMode) {
-      if (
-        printSettings.view === "day" ||
-        printSettings.view === "week" ||
-        printSettings.view === "auto"
-      ) {
-        const start = startOfDay(printSettings.rangeStart);
-        const end = startOfDay(printSettings.rangeEnd);
-        const d = [];
-        let curr = start;
-        // Cap the max amount of days so it isn't rendered infinitely.
-        while (curr <= end && d.length < 14) {
-          d.push(curr);
-          curr = addDays(curr, 1);
-        }
-        return d.length > 0 ? d : [start];
-      }
-    }
     return view === "week" ? getDaysForWeekView(currentDate) : [currentDate];
-  }, [currentDate, view, isPrintMode, printSettings]);
+  }, [currentDate, view]);
 
   const displayEvents = useMemo(() => {
     let baseEvents = events;
@@ -85,47 +74,128 @@ export const TimelineView = () => {
         draftEvent,
       ];
     }
-    // Fix Empty Events in Day view: Strips time components
     const viewStart = startOfDay(days[0]);
     const viewEnd = addDays(startOfDay(days[days.length - 1]), 1);
 
     return expandEvents(baseEvents, viewStart, viewEnd);
   }, [events, draftEvent, days]);
 
+  // SMART NON-LINEAR PRINT MAP: Identifies hours being used & creates timeline blocks
   const printRange = useMemo(() => {
-    if (!isPrintMode) return { start: 0, end: 24, hours: HOURS };
-    let minMins = 24 * 60;
-    let maxMins = 0;
+    if (!isPrintMode) return { hours: HOURS, blocks: [HOURS] };
+
+    const occupiedHours = new Set<number>();
+
     displayEvents.forEach((e) => {
       if (e.isAllDay) return;
-      const sMins = e.start.getHours() * 60 + e.start.getMinutes();
-      const eMins = e.end.getHours() * 60 + e.end.getMinutes();
-      if (sMins < minMins) minMins = sMins;
-      if (eMins > maxMins) maxMins = eMins;
+      days.forEach((day) => {
+        const dayStart = startOfDay(day);
+        const dayEnd = addDays(dayStart, 1);
+
+        if (e.start < dayEnd && e.end > dayStart) {
+          const clampStart = e.start < dayStart ? dayStart : e.start;
+          const clampEnd = e.end > dayEnd ? dayEnd : e.end;
+
+          const sHour = clampStart.getHours();
+          let eHour = clampEnd.getHours();
+
+          if (
+            clampEnd.getMinutes() === 0 &&
+            eHour > sHour &&
+            clampEnd < dayEnd
+          ) {
+            eHour -= 1;
+          }
+          if (
+            clampEnd.getHours() === 0 &&
+            clampEnd.getMinutes() === 0 &&
+            clampEnd.getDate() !== clampStart.getDate()
+          ) {
+            eHour = 23;
+          }
+
+          for (let h = sHour; h <= eHour; h++) {
+            occupiedHours.add(h);
+          }
+        }
+      });
     });
 
-    if (minMins >= maxMins) {
-      return {
-        start: 8,
-        end: 18,
-        hours: Array.from({ length: 11 }, (_, i) => i + 8),
-      };
+    if (occupiedHours.size === 0) {
+      // Safe defaults 8am - 6pm if there are absolutely no events
+      const defaultHours = Array.from({ length: 11 }, (_, i) => i + 8);
+      return { hours: defaultHours, blocks: [defaultHours] };
     }
 
-    let s = Math.max(0, Math.floor(minMins / 60) - 1);
-    let e = Math.min(24, Math.ceil(maxMins / 60) + 1);
-    if (e - s < 6) e = Math.min(24, s + 6);
+    // Add 1 hour padding around each occupied hour for readability
+    const paddedHours = new Set<number>();
+    occupiedHours.forEach((h) => {
+      if (h > 0) paddedHours.add(h - 1);
+      paddedHours.add(h);
+      if (h < 23) paddedHours.add(h + 1);
+    });
 
-    return {
-      start: s,
-      end: e,
-      hours: Array.from({ length: e - s }, (_, i) => i + s),
-    };
-  }, [isPrintMode, displayEvents]);
+    const sortedHours = Array.from(paddedHours).sort((a, b) => a - b);
 
-  const displayHours = printRange.hours;
-  const startMinsOffset = printRange.start * 60;
-  const totalDisplayMins = displayHours.length * 60;
+    // Group the hours into contiguous visual blocks
+    const blocks: number[][] = [];
+    let currentBlock = [sortedHours[0]];
+    for (let i = 1; i < sortedHours.length; i++) {
+      if (sortedHours[i] === sortedHours[i - 1] + 1) {
+        currentBlock.push(sortedHours[i]);
+      } else {
+        blocks.push(currentBlock);
+        currentBlock = [sortedHours[i]];
+      }
+    }
+    blocks.push(currentBlock);
+
+    return { hours: sortedHours, blocks };
+  }, [isPrintMode, displayEvents, days]);
+
+  const blocksToRender = isPrintMode ? printRange.blocks : [HOURS];
+  // Gap size visually represents 0.5 hours in terms of flex units
+  const GAP_VIRTUAL_HOURS = 0.5;
+  const totalVirtualHours = isPrintMode
+    ? printRange.hours.length +
+      (printRange.blocks.length - 1) * GAP_VIRTUAL_HOURS
+    : 24;
+  const totalDisplayMins = totalVirtualHours * 60;
+
+  // Calculates Virtual Minutes for Non-linear grids mapping
+  const getVirtualMinutes = (absoluteMins: number) => {
+    if (!isPrintMode) return absoluteMins;
+
+    const clampedMins = Math.min(Math.max(absoluteMins, 0), 1440);
+    const h = Math.floor(clampedMins / 60);
+    const m = clampedMins % 60;
+
+    let virtualH = 0;
+
+    for (let i = 0; i < printRange.blocks.length; i++) {
+      const block = printRange.blocks[i];
+      const blockStart = block[0];
+      const blockEnd = block[block.length - 1];
+
+      // Event falls into the gap preceding this block
+      if (h < blockStart) {
+        return (virtualH - GAP_VIRTUAL_HOURS / 2) * 60;
+      }
+
+      // Event is inside this block
+      if (h >= blockStart && h <= blockEnd) {
+        return (virtualH + (h - blockStart)) * 60 + m;
+      }
+
+      // Move past this block
+      virtualH += block.length;
+      if (i < printRange.blocks.length - 1) {
+        virtualH += GAP_VIRTUAL_HOURS;
+      }
+    }
+
+    return virtualH * 60;
+  };
 
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -150,8 +220,8 @@ export const TimelineView = () => {
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top;
 
-    const totalHours = isPrintMode ? displayHours.length : 24;
-    const baseHour = isPrintMode ? printRange.start : 0;
+    const totalHours = 24;
+    const baseHour = 0;
     const hour = baseHour + Math.floor((y / rect.height) * totalHours);
 
     const clickDate = new Date(day);
@@ -304,28 +374,262 @@ export const TimelineView = () => {
     return Math.max(...allDaySegments.map((s) => s.row));
   }, [allDaySegments]);
 
-  return (
-    <div
-      className={clsx(
-        "flex flex-col flex-1 h-full min-h-0 print:bg-white print:text-black",
-        bgClass,
-      )}
-    >
+  const GridContent = (
+    <div className="flex min-w-max md:min-w-full h-full">
       <div
         className={clsx(
-          "flex flex-col border-b border-outline-variant/30 shrink-0 z-20 print:bg-white print:border-b-2 print:border-black/50",
+          "w-16 shrink-0 flex flex-col border-r relative z-10",
+          stickyBgClass,
+          borderClass,
+        )}
+      >
+        {blocksToRender.map((block, bIndex) => (
+          <React.Fragment key={bIndex}>
+            {block.map((hour) => (
+              <div
+                key={hour}
+                className={clsx(
+                  "relative flex justify-end pr-2 min-h-0", // min-h-0 prevents flex overflow bounds
+                  isPrintMode ? "flex-1" : "h-[60px]",
+                )}
+              >
+                {(hour !== 0 || isPrintMode) && (
+                  <Typography
+                    variant="label-small"
+                    className={clsx(
+                      "text-[10px] -mt-[6px] leading-none bg-inherit z-10",
+                      isPrintMode
+                        ? "text-black opacity-100"
+                        : "text-on-surface-variant opacity-80",
+                    )}
+                  >
+                    {hour === 12
+                      ? "12 PM"
+                      : hour > 12
+                        ? `${hour - 12} PM`
+                        : `${hour === 0 ? 12 : hour} AM`}
+                  </Typography>
+                )}
+              </div>
+            ))}
+            {bIndex < blocksToRender.length - 1 && (
+              <div
+                style={
+                  isPrintMode ? { flex: GAP_VIRTUAL_HOURS } : { height: "30px" }
+                }
+                className={clsx(
+                  "relative flex flex-col items-center justify-center bg-black/5 opacity-50 border-b border-black/20 box-border min-h-0",
+                )}
+              >
+                <div className="w-1 h-1 rounded-full bg-black/40 mb-1" />
+                <div className="w-1 h-1 rounded-full bg-black/40 mb-1" />
+                <div className="w-1 h-1 rounded-full bg-black/40" />
+              </div>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+
+      <div className="flex-1 flex relative" ref={gridRef}>
+        <div className="absolute inset-0 pointer-events-none flex flex-col">
+          {blocksToRender.map((block, bIndex) => (
+            <React.Fragment key={bIndex}>
+              {block.map((hour) => (
+                <div
+                  key={hour}
+                  className={clsx(
+                    "border-b w-full box-border min-h-0", // min-h-0 prevents flex overflow bounds
+                    isPrintMode
+                      ? "flex-1 border-black/20 border-dashed"
+                      : "h-[60px] border-outline-variant/20",
+                  )}
+                />
+              ))}
+              {bIndex < blocksToRender.length - 1 && (
+                <div
+                  style={
+                    isPrintMode
+                      ? { flex: GAP_VIRTUAL_HOURS }
+                      : { height: "30px" }
+                  }
+                  className="w-full bg-black/5 border-b border-black/20 box-border min-h-0"
+                />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {!isPrintMode && days.some((d) => isSameDay(d, now)) && (
+          <div
+            className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+            style={{
+              top: `${currentTimeTopPercentage}%`,
+              marginLeft: "-6px",
+            }}
+          >
+            <div className="w-3 h-3 rounded-full bg-error shrink-0" />
+            <div className="h-[2px] w-full bg-error shadow-sm" />
+          </div>
+        )}
+
+        {days.map((day) => {
+          const positions = getTimelinePositionsForDay(day, displayEvents);
+
+          return (
+            <div
+              key={day.toISOString()}
+              className={clsx(
+                "flex-1 relative border-r last:border-r-0 cursor-pointer min-h-0",
+                borderClass,
+              )}
+              style={isPrintMode ? undefined : { height: "1440px" }}
+              onClick={(e) => handleGridClick(e, day)}
+            >
+              {positions.map((pos) => {
+                let { top, height } = pos;
+                const { event, left, width } = pos;
+                const colorVariant = event.colorVariant || "primary";
+                const colorClass = event.colorHex
+                  ? ""
+                  : COLOR_MAP[colorVariant];
+                const isCurrentlyDraft = event.isDraft;
+
+                if (isPrintMode) {
+                  // Derive exact absolute minutes straight from standard percentage bounds
+                  const absoluteStartMins = (top / 100) * 1440;
+                  const absoluteEndMins = ((top + height) / 100) * 1440;
+
+                  const startVirtual = getVirtualMinutes(absoluteStartMins);
+                  const endVirtual = getVirtualMinutes(absoluteEndMins);
+
+                  top = (startVirtual / totalDisplayMins) * 100;
+                  height =
+                    ((endVirtual - startVirtual) / totalDisplayMins) * 100;
+
+                  // Absolute Clamping to prevent ANY overflow outside the grid bounds
+                  if (top < 0) {
+                    height += top;
+                    top = 0;
+                  }
+                  if (top + height > 100) {
+                    height = 100 - top;
+                  }
+                  if (height <= 0) return null;
+                }
+
+                return (
+                  <div
+                    key={event.id}
+                    className={clsx(
+                      "absolute p-[1px] transition-all",
+                      isCurrentlyDraft ? "z-40 opacity-90" : "z-10 hover:z-30",
+                    )}
+                    style={{
+                      top: `${top}%`,
+                      height: `${height}%`,
+                      left: `${left}%`,
+                      width: `${width}%`,
+                    }}
+                  >
+                    <div
+                      className={clsx(
+                        "w-full h-full rounded-md border-l-4 p-1.5 overflow-hidden shadow-sm flex flex-col relative group",
+                        !isCurrentlyDraft &&
+                          !isPrintMode &&
+                          "cursor-pointer hover:shadow-md transition-shadow",
+                        isCurrentlyDraft &&
+                          "border-dashed shadow-lg ring-2 ring-primary ring-offset-1",
+                        colorClass,
+                        isPrintMode && "!shadow-none border border-black/30",
+                      )}
+                      style={{
+                        backgroundColor: event.colorHex
+                          ? `${event.colorHex}20`
+                          : undefined,
+                        borderColor: event.colorHex,
+                        color: event.colorHex,
+                      }}
+                      onPointerDown={(e) =>
+                        handlePointerDown(e, event, "move", day)
+                      }
+                      onClick={(e) => {
+                        if (isCurrentlyDraft || isPrintMode) return;
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const originalId = String(event.id).split("-occ-")[0];
+                        const baseEventObj =
+                          events.find(
+                            (base) => String(base.id) === originalId,
+                          ) || event;
+                        openPopover("edit", rect, undefined, baseEventObj);
+                      }}
+                    >
+                      {renderEventContent ? (
+                        renderEventContent(event, view)
+                      ) : (
+                        <>
+                          <Typography
+                            variant="label-small"
+                            className="font-bold text-inherit leading-tight truncate"
+                          >
+                            {event.title || "(No title)"}
+                          </Typography>
+                          {height > (30 / totalDisplayMins) * 100 && (
+                            <Typography
+                              variant="body-small"
+                              className="text-[10px] text-inherit opacity-80 truncate mt-0.5 pointer-events-none"
+                            >
+                              {format(event.start, "h:mm a")} -{" "}
+                              {format(event.end, "h:mm a")}
+                            </Typography>
+                          )}
+                        </>
+                      )}
+
+                      {event.editable !== false &&
+                        !isCurrentlyDraft &&
+                        !isPrintMode && (
+                          <div
+                            className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 flex justify-center items-center"
+                            onPointerDown={(e) =>
+                              handlePointerDown(e, event, "resize", day)
+                            }
+                          >
+                            <div className="w-4 h-1 bg-current opacity-50 rounded-full" />
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={clsx("flex flex-col flex-1 h-full min-h-0", bgClass)}>
+      <div
+        className={clsx(
+          "flex flex-col border-b shrink-0 z-20",
+          borderClass,
           stickyBgClass,
         )}
       >
         <div className="flex">
-          <div className="w-16 shrink-0 border-r border-outline-variant/30 print:border-black/50" />
+          <div className={clsx("w-16 shrink-0 border-r", borderClass)} />
           <div className="flex flex-1">
             {days.map((day) => {
               const isDayToday = isToday(day);
               return (
                 <div
                   key={day.toISOString()}
-                  className="flex-1 flex flex-col items-center justify-center py-3 border-r border-outline-variant/30 last:border-r-0 print:border-black/50"
+                  className={clsx(
+                    "flex-1 flex flex-col items-center justify-center py-3 border-r last:border-r-0",
+                    borderClass,
+                  )}
                 >
                   <Typography
                     variant="label-small"
@@ -333,7 +637,9 @@ export const TimelineView = () => {
                       "font-semibold mb-1",
                       isDayToday && !isPrintMode
                         ? "text-primary"
-                        : "text-on-surface-variant print:text-black",
+                        : isPrintMode
+                          ? "text-black"
+                          : "text-on-surface-variant",
                     )}
                   >
                     {format(day, "EEE").toUpperCase()}
@@ -351,7 +657,9 @@ export const TimelineView = () => {
                       !isPrintMode && "hover:bg-on-surface/10",
                       isDayToday && !isPrintMode
                         ? "bg-primary text-on-primary font-bold shadow-md hover:bg-primary/90"
-                        : "text-on-surface print:text-black",
+                        : isPrintMode
+                          ? "text-black"
+                          : "text-on-surface",
                       isDayToday &&
                         isPrintMode &&
                         "font-bold border-2 border-black rounded-full",
@@ -366,11 +674,19 @@ export const TimelineView = () => {
         </div>
 
         {allDayMaxRows > 0 && (
-          <div className="flex border-t border-outline-variant/30 print:border-black/50">
-            <div className="w-16 shrink-0 border-r border-outline-variant/30 flex items-center justify-center py-2 print:border-black/50">
+          <div className={clsx("flex border-t", borderClass)}>
+            <div
+              className={clsx(
+                "w-16 shrink-0 border-r flex items-center justify-center py-2",
+                borderClass,
+              )}
+            >
               <Typography
                 variant="label-small"
-                className="text-[10px] text-on-surface-variant opacity-70 print:text-black"
+                className={clsx(
+                  "text-[10px] opacity-70",
+                  isPrintMode ? "text-black" : "text-on-surface-variant",
+                )}
               >
                 All day
               </Typography>
@@ -388,7 +704,10 @@ export const TimelineView = () => {
                 {days.map((day, i) => (
                   <div
                     key={i}
-                    className="flex-1 border-r border-outline-variant/30 last:border-r-0 print:border-black/50"
+                    className={clsx(
+                      "flex-1 border-r last:border-r-0",
+                      borderClass,
+                    )}
                   />
                 ))}
               </div>
@@ -442,13 +761,13 @@ export const TimelineView = () => {
                             : COLOR_MAP[colorVariant].split(" ")[0] +
                                 " " +
                                 COLOR_MAP[colorVariant].split(" ")[1],
-                          isPrintMode && "!shadow-none border border-black/20",
+                          isPrintMode && "!shadow-none border border-black/30",
                         )}
                         style={{ backgroundColor: event.colorHex }}
                       >
                         <Typography
                           variant="label-small"
-                          className="truncate font-semibold text-inherit print:text-black"
+                          className="truncate font-semibold text-inherit"
                         >
                           {event.title || "(No title)"}
                         </Typography>
@@ -462,209 +781,18 @@ export const TimelineView = () => {
         )}
       </div>
 
-      <ElasticScrollArea
-        ref={scrollAreaRef}
-        className={clsx(
-          "flex-1 w-full",
-          bgClass,
-          isPrintMode && "print:bg-white overflow-hidden",
-        )}
-        viewportClassName={clsx(isPrintMode ? "overflow-hidden" : "")}
-      >
-        <div className="flex min-w-max md:min-w-full print:w-full print:min-w-full h-full">
-          <div
-            className={clsx(
-              "w-16 shrink-0 flex flex-col border-r border-outline-variant/30 relative z-10 print:bg-white print:border-black/50",
-              stickyBgClass,
-            )}
-          >
-            {displayHours.map((hour) => (
-              <div
-                key={hour}
-                className={clsx(
-                  "relative flex justify-end pr-2",
-                  isPrintMode ? "flex-1" : "h-[60px]",
-                )}
-              >
-                {(hour !== 0 || isPrintMode) && (
-                  <Typography
-                    variant="label-small"
-                    className="text-on-surface-variant text-[10px] -mt-2 opacity-80 print:text-black print:opacity-100"
-                  >
-                    {hour === 12
-                      ? "12 PM"
-                      : hour > 12
-                        ? `${hour - 12} PM`
-                        : `${hour} AM`}
-                  </Typography>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="flex-1 flex relative" ref={gridRef}>
-            <div className="absolute inset-0 pointer-events-none flex flex-col">
-              {displayHours.map((hour) => (
-                <div
-                  key={hour}
-                  className={clsx(
-                    "border-b w-full",
-                    isPrintMode
-                      ? "flex-1 border-black/30 border-dashed"
-                      : "h-[60px] border-outline-variant/20",
-                  )}
-                />
-              ))}
-            </div>
-
-            {!isPrintMode && days.some((d) => isSameDay(d, now)) && (
-              <div
-                className="absolute left-0 right-0 z-20 pointer-events-none flex items-center print:hidden"
-                style={{
-                  top: `${currentTimeTopPercentage}%`,
-                  marginLeft: "-6px",
-                }}
-              >
-                <div className="w-3 h-3 rounded-full bg-error shrink-0" />
-                <div className="h-[2px] w-full bg-error shadow-sm" />
-              </div>
-            )}
-
-            {days.map((day) => {
-              const positions = getTimelinePositionsForDay(day, displayEvents);
-
-              return (
-                <div
-                  key={day.toISOString()}
-                  className="flex-1 relative border-r border-outline-variant/30 last:border-r-0 cursor-pointer print:border-black/50"
-                  style={isPrintMode ? undefined : { height: "1440px" }}
-                  onClick={(e) => handleGridClick(e, day)}
-                >
-                  {positions.map((pos) => {
-                    let { top, height } = pos;
-                    const { event, left, width } = pos;
-                    const colorVariant = event.colorVariant || "primary";
-                    const colorClass = event.colorHex
-                      ? ""
-                      : COLOR_MAP[colorVariant];
-                    const isCurrentlyDraft = event.isDraft;
-
-                    if (isPrintMode) {
-                      const absoluteStartMins = (top / 100) * 1440;
-                      const durationMins = (height / 100) * 1440;
-                      top =
-                        ((absoluteStartMins - startMinsOffset) /
-                          totalDisplayMins) *
-                        100;
-                      height = (durationMins / totalDisplayMins) * 100;
-
-                      if (top < 0) {
-                        height += top;
-                        top = 0;
-                      }
-                      if (top + height > 100) {
-                        height = 100 - top;
-                      }
-                      if (height <= 0) return null;
-                    }
-
-                    return (
-                      <div
-                        key={event.id}
-                        className={clsx(
-                          "absolute p-[1px] transition-all",
-                          isCurrentlyDraft
-                            ? "z-40 opacity-90"
-                            : "z-10 hover:z-30",
-                        )}
-                        style={{
-                          top: `${top}%`,
-                          height: `${height}%`,
-                          left: `${left}%`,
-                          width: `${width}%`,
-                        }}
-                      >
-                        <div
-                          className={clsx(
-                            "w-full h-full rounded-md border-l-4 p-1.5 overflow-hidden shadow-sm flex flex-col relative group",
-                            !isCurrentlyDraft &&
-                              !isPrintMode &&
-                              "cursor-pointer hover:shadow-md transition-shadow",
-                            isCurrentlyDraft &&
-                              "border-dashed shadow-lg ring-2 ring-primary ring-offset-1",
-                            colorClass,
-                            isPrintMode &&
-                              "!shadow-none border border-black/20",
-                          )}
-                          style={{
-                            backgroundColor: event.colorHex
-                              ? `${event.colorHex}20`
-                              : undefined,
-                            borderColor: event.colorHex,
-                            color: event.colorHex,
-                          }}
-                          onPointerDown={(e) =>
-                            handlePointerDown(e, event, "move", day)
-                          }
-                          onClick={(e) => {
-                            if (isCurrentlyDraft || isPrintMode) return;
-                            e.stopPropagation();
-                            const rect =
-                              e.currentTarget.getBoundingClientRect();
-                            const originalId = String(event.id).split(
-                              "-occ-",
-                            )[0];
-                            const baseEventObj =
-                              events.find(
-                                (base) => String(base.id) === originalId,
-                              ) || event;
-                            openPopover("edit", rect, undefined, baseEventObj);
-                          }}
-                        >
-                          {renderEventContent ? (
-                            renderEventContent(event, view)
-                          ) : (
-                            <>
-                              <Typography
-                                variant="label-small"
-                                className="font-bold text-inherit leading-tight truncate print:text-black"
-                              >
-                                {event.title || "(No title)"}
-                              </Typography>
-                              {height > (30 / totalDisplayMins) * 100 && (
-                                <Typography
-                                  variant="body-small"
-                                  className="text-[10px] text-inherit opacity-80 truncate mt-0.5 pointer-events-none print:text-black"
-                                >
-                                  {format(event.start, "h:mm a")} -{" "}
-                                  {format(event.end, "h:mm a")}
-                                </Typography>
-                              )}
-                            </>
-                          )}
-
-                          {event.editable !== false &&
-                            !isCurrentlyDraft &&
-                            !isPrintMode && (
-                              <div
-                                className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 flex justify-center items-center"
-                                onPointerDown={(e) =>
-                                  handlePointerDown(e, event, "resize", day)
-                                }
-                              >
-                                <div className="w-4 h-1 bg-current opacity-50 rounded-full" />
-                              </div>
-                            )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
+      {isPrintMode ? (
+        <div className="flex-1 w-full h-full relative overflow-hidden">
+          {GridContent}
         </div>
-      </ElasticScrollArea>
+      ) : (
+        <ElasticScrollArea
+          ref={scrollAreaRef}
+          className={clsx("flex-1 w-full", bgClass)}
+        >
+          {GridContent}
+        </ElasticScrollArea>
+      )}
     </div>
   );
 };

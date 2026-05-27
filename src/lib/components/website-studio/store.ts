@@ -68,6 +68,15 @@ interface StudioState {
   selectedNodeIds: string[]
   hoveredNodeId: string | null
 
+  // Component Picker State (Insert / Replace)
+  componentPicker: {
+    isOpen: boolean
+    action: 'before' | 'after' | 'inside' | 'replace' | null
+    targetId: string | null
+  }
+  openComponentPicker: (action: 'before' | 'after' | 'inside' | 'replace', targetId: string) => void
+  closeComponentPicker: () => void
+
   // Context tracking
   viewContext: {
     type: 'PAGE' | 'COMPONENT'
@@ -96,7 +105,10 @@ interface StudioState {
   moveNode: (nodeId: string, targetParentId: string | null, index?: number) => void
   moveNodes: (nodeIds: string[], targetParentId: string | null, index?: number) => void
   updateNodeProps: (nodeId: string, props: Record<string, any>) => void
+  updateNodeId: (oldId: string, newId: string) => void // <-- NEW: Update Node ID action
   updateDesignSystemTokens: (tokens: Record<string, string | number>) => void
+  insertNodeRelative: (node: StudioNode, targetId: string, position: 'before' | 'after' | 'inside') => void
+  replaceNode: (targetId: string, newNode: StudioNode) => void
 
   // Page Management Actions
   addPage: (slug: string, title: string) => void
@@ -108,9 +120,8 @@ interface StudioState {
 // Snapshot Helper
 const saveSnapshot = (state: StudioState, draft: StudioState) => {
   if (state.website) {
-    // We deep clone to prevent proxy mutation conflicts in history
     draft.past.push(JSON.parse(JSON.stringify(state.website)))
-    if (draft.past.length > 50) draft.past.shift() // Max 50 states
+    if (draft.past.length > 50) draft.past.shift()
     draft.future = []
   }
 }
@@ -121,6 +132,10 @@ export const useStudioStore = create<StudioState>(set => ({
   selectedNodeIds: [],
   hoveredNodeId: null,
   viewContext: { type: 'PAGE', id: null },
+
+  componentPicker: { isOpen: false, action: null, targetId: null },
+  openComponentPicker: (action, targetId) => set({ componentPicker: { isOpen: true, action, targetId } }),
+  closeComponentPicker: () => set({ componentPicker: { isOpen: false, action: null, targetId: null } }),
 
   past: [],
   future: [],
@@ -158,7 +173,6 @@ export const useStudioStore = create<StudioState>(set => ({
       const page = state.website.pages.find(p => p.id === state.activePageId)
       if (!page) return state
 
-      // FIX: Filter out descendants so we don't copy a parent AND its child separately
       const topLevelIds = new Set<string>()
       function findTopLevel(nodes: StudioNode[], hasActiveAncestor: boolean) {
         for (const node of nodes) {
@@ -191,8 +205,7 @@ export const useStudioStore = create<StudioState>(set => ({
 
         const newNodes = draft.clipboard.map(cloneNodeWithNewIds)
 
-        // Paste at root level
-        if (!targetId) {
+        if (!targetId || targetId === 'ROOT') {
           page.content.push(...newNodes)
           return
         }
@@ -298,7 +311,7 @@ export const useStudioStore = create<StudioState>(set => ({
         const page = draft.website.pages.find(p => p.id === draft.activePageId)
         if (!page) return
 
-        if (!parentId) {
+        if (!parentId || parentId === 'ROOT') {
           if (typeof index === 'number') {
             page.content.splice(index, 0, node)
           } else {
@@ -316,6 +329,60 @@ export const useStudioStore = create<StudioState>(set => ({
             parentNode.children.splice(index, 0, node)
           } else {
             parentNode.children.push(node)
+          }
+        }
+      }),
+    ),
+
+  insertNodeRelative: (node, targetId, position) =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website || !draft.activePageId) return
+
+        const page = draft.website.pages.find(p => p.id === draft.activePageId)
+        if (!page) return
+
+        if (targetId === 'ROOT') {
+          page.content.push(node)
+          return
+        }
+
+        if (position === 'inside') {
+          const targetNode = findNodeById(page.content, targetId)
+          if (targetNode) {
+            if (!targetNode.children) targetNode.children = []
+            targetNode.children.push(node)
+          }
+        } else {
+          const lookup = findNodeAndParent(page.content, targetId)
+          if (lookup) {
+            const { parentArray, index } = lookup
+            const insertIndex = position === 'before' ? index : index + 1
+            parentArray.splice(insertIndex, 0, node)
+          }
+        }
+      }),
+    ),
+
+  replaceNode: (targetId, newNode) =>
+    set(state =>
+      produce(state, draft => {
+        saveSnapshot(state, draft)
+        if (!draft.website || !draft.activePageId) return
+
+        const page = draft.website.pages.find(p => p.id === draft.activePageId)
+        if (!page) return
+
+        const lookup = findNodeAndParent(page.content, targetId)
+        if (lookup) {
+          const { parentArray, index } = lookup
+          parentArray[index] = newNode
+          if (draft.selectedNodeIds.includes(targetId)) {
+            draft.selectedNodeIds = [newNode.id]
+          }
+          if (draft.hoveredNodeId === targetId) {
+            draft.hoveredNodeId = null
           }
         }
       }),
@@ -364,7 +431,7 @@ export const useStudioStore = create<StudioState>(set => ({
 
         sourceParentArray.splice(sourceIndex, 1)
 
-        if (!targetParentId) {
+        if (!targetParentId || targetParentId === 'ROOT') {
           const targetIndex = typeof index === 'number' ? index : page.content.length
           page.content.splice(targetIndex, 0, sourceNode)
         } else {
@@ -426,7 +493,7 @@ export const useStudioStore = create<StudioState>(set => ({
         }
         extract(page.content, null)
 
-        if (targetParentId === null) {
+        if (targetParentId === null || targetParentId === 'ROOT') {
           const insertIndex = targetIndex === -1 ? page.content.length : targetIndex
           page.content.splice(insertIndex, 0, ...nodesToMove)
         } else {
@@ -456,6 +523,36 @@ export const useStudioStore = create<StudioState>(set => ({
           node.props = {
             ...node.props,
             ...props,
+          }
+        }
+      }),
+    ),
+
+  // --- NEW: Implement updateNodeId safely ---
+  updateNodeId: (oldId, newId) =>
+    set(state =>
+      produce(state, draft => {
+        if (!draft.website || !draft.activePageId || oldId === newId || !newId.trim()) return
+
+        const page = draft.website.pages.find(p => p.id === draft.activePageId)
+        if (!page) return
+
+        // Validate uniqueness: Abort if newId is already taken anywhere on the page
+        if (findNodeById(page.content, newId.trim())) return
+
+        // We only save snapshot if the validation passes
+        saveSnapshot(state, draft)
+
+        const lookup = findNodeAndParent(page.content, oldId)
+        if (lookup) {
+          lookup.node.id = newId.trim()
+
+          // Sync interactive selections so the user doesn't lose focus
+          if (draft.selectedNodeIds.includes(oldId)) {
+            draft.selectedNodeIds = draft.selectedNodeIds.map(id => (id === oldId ? newId.trim() : id))
+          }
+          if (draft.hoveredNodeId === oldId) {
+            draft.hoveredNodeId = newId.trim()
           }
         }
       }),

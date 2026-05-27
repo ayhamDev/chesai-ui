@@ -1,5 +1,5 @@
 // src/lib/components/website-studio/builder/LayersTab.tsx
-import React from "react";
+import React, { useState } from "react";
 import { clsx } from "clsx";
 import {
   File,
@@ -8,6 +8,12 @@ import {
   Copy,
   Clipboard,
   Trash2,
+  RefreshCw,
+  ArrowUpToLine,
+  ArrowDownToLine,
+  CornerDownRight,
+  Plus,
+  Edit2, // <-- Added Icon
 } from "lucide-react";
 import { Input } from "../../input";
 import { Select } from "../../select";
@@ -24,6 +30,7 @@ import { Typography } from "../../typography";
 import { IconButton } from "../../icon-button";
 import { useStudioStore } from "../store";
 import { getNodeIcon } from "./helpers";
+import { toast } from "../../toast";
 import type { ComponentRegistry, StudioNode } from "../types";
 
 interface LayersTabProps {
@@ -57,9 +64,41 @@ export const LayersTab: React.FC<LayersTabProps> = ({
     duplicateNodes,
     removeNodes,
     moveNodes,
+    openComponentPicker,
+    updateNodeId, // <-- Extract new action
   } = useStudioStore();
 
   const activePage = website?.pages.find((p) => p.id === activePageId);
+
+  // --- RENAME STATE ---
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+
+  const startRename = (nodeId: string) => {
+    setEditingNodeId(nodeId);
+    setEditingValue(nodeId);
+  };
+
+  const commitRename = () => {
+    if (
+      editingNodeId &&
+      editingValue.trim() &&
+      editingValue !== editingNodeId
+    ) {
+      updateNodeId(editingNodeId, editingValue.trim());
+      // Wait for store update cycle to see if it failed uniqueness validation
+      setTimeout(() => {
+        const currentSelected = useStudioStore.getState().selectedNodeIds;
+        if (currentSelected.includes(editingNodeId)) {
+          // If old ID is still selected, the update failed/aborted
+          toast.error("Rename failed", {
+            description: "Node ID must be unique across the page.",
+          });
+        }
+      }, 50);
+    }
+    setEditingNodeId(null);
+  };
 
   return (
     <div className="p-0 flex flex-col h-full overflow-hidden">
@@ -103,6 +142,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                 multiSelect
                 selectedIds={selectedNodeIds}
                 onSelectChange={(ids) => {
+                  if (editingNodeId) commitRename(); // commit if clicking away
                   setSelectedNodes(ids);
                   if (viewContext.type !== "PAGE") {
                     setViewContext("PAGE", activePageId);
@@ -122,6 +162,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                     ? selectedNodeIds
                     : [node.id];
 
+                  const isSingleSelection = targetIds.length === 1;
                   const acceptsChildren =
                     components[node.type]?.acceptsChildren ?? false;
                   const pastePosition = acceptsChildren ? "inside" : "after";
@@ -134,20 +175,45 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                             "flex items-center justify-between gap-2 w-full pr-2 group/item text-left pointer-events-auto",
                             isDragging && "opacity-80",
                           )}
+                          onDoubleClick={() => startRename(node.id)}
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <div className="shrink-0">
                               {getNodeIcon(node.type)}
                             </div>
-                            <Typography
-                              variant="label-small"
-                              className={clsx(
-                                "truncate flex-1 text-left",
-                                isSelected ? "font-bold" : "font-medium",
-                              )}
-                            >
-                              {node.id}
-                            </Typography>
+
+                            {/* --- INLINE RENAME INPUT --- */}
+                            {editingNodeId === node.id ? (
+                              <input
+                                autoFocus
+                                className="flex-1 min-w-0 bg-surface text-on-surface text-xs font-mono px-1 py-0.5 border border-primary outline-none rounded"
+                                value={editingValue}
+                                onChange={(e) =>
+                                  setEditingValue(
+                                    e.target.value.replace(/\s+/g, "-"),
+                                  )
+                                }
+                                onBlur={commitRename}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") commitRename();
+                                  if (e.key === "Escape")
+                                    setEditingNodeId(null);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              <Typography
+                                variant="label-small"
+                                className={clsx(
+                                  "truncate flex-1 text-left font-mono",
+                                  isSelected
+                                    ? "font-bold"
+                                    : "font-medium text-on-surface-variant",
+                                )}
+                              >
+                                {node.id}
+                              </Typography>
+                            )}
                           </div>
 
                           <DropdownMenu shape="minimal">
@@ -163,6 +229,16 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                               </IconButton>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startRename(node.id);
+                                }}
+                              >
+                                <Edit2 className="w-4 h-4 mr-2" /> Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -188,7 +264,54 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                               >
                                 <Copy className="w-4 h-4 mr-2" /> Duplicate
                               </DropdownMenuItem>
+
                               <DropdownMenuSeparator />
+
+                              <DropdownMenuItem
+                                disabled={!isSingleSelection}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openComponentPicker("replace", node.id);
+                                }}
+                              >
+                                <RefreshCw className="w-4 h-4 mr-2" /> Replace
+                                with...
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!isSingleSelection}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openComponentPicker("before", node.id);
+                                }}
+                              >
+                                <ArrowUpToLine className="w-4 h-4 mr-2" />{" "}
+                                Insert Before...
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={!isSingleSelection}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openComponentPicker("after", node.id);
+                                }}
+                              >
+                                <ArrowDownToLine className="w-4 h-4 mr-2" />{" "}
+                                Insert After...
+                              </DropdownMenuItem>
+                              {acceptsChildren && (
+                                <DropdownMenuItem
+                                  disabled={!isSingleSelection}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openComponentPicker("inside", node.id);
+                                  }}
+                                >
+                                  <CornerDownRight className="w-4 h-4 mr-2" />{" "}
+                                  Insert Inside...
+                                </DropdownMenuItem>
+                              )}
+
+                              <DropdownMenuSeparator />
+
                               <DropdownMenuItem
                                 className="text-error hover:!bg-error/10 hover:!text-error"
                                 onClick={(e) => {
@@ -204,6 +327,11 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                       </ContextMenu.Trigger>
 
                       <ContextMenu.Content>
+                        <ContextMenu.Item onClick={() => startRename(node.id)}>
+                          <Edit2 className="w-4 h-4 mr-2" /> Rename
+                        </ContextMenu.Item>
+                        <ContextMenu.Separator />
+
                         <ContextMenu.Item onClick={() => copyNodes(targetIds)}>
                           <Copy className="w-4 h-4 mr-2" /> Copy
                         </ContextMenu.Item>
@@ -218,6 +346,43 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                         >
                           <Copy className="w-4 h-4 mr-2" /> Duplicate
                         </ContextMenu.Item>
+
+                        <ContextMenu.Separator />
+
+                        <ContextMenu.Item
+                          disabled={!isSingleSelection}
+                          onClick={() =>
+                            openComponentPicker("replace", node.id)
+                          }
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" /> Replace with...
+                        </ContextMenu.Item>
+                        <ContextMenu.Item
+                          disabled={!isSingleSelection}
+                          onClick={() => openComponentPicker("before", node.id)}
+                        >
+                          <ArrowUpToLine className="w-4 h-4 mr-2" /> Insert
+                          Before...
+                        </ContextMenu.Item>
+                        <ContextMenu.Item
+                          disabled={!isSingleSelection}
+                          onClick={() => openComponentPicker("after", node.id)}
+                        >
+                          <ArrowDownToLine className="w-4 h-4 mr-2" /> Insert
+                          After...
+                        </ContextMenu.Item>
+                        {acceptsChildren && (
+                          <ContextMenu.Item
+                            disabled={!isSingleSelection}
+                            onClick={() =>
+                              openComponentPicker("inside", node.id)
+                            }
+                          >
+                            <CornerDownRight className="w-4 h-4 mr-2" /> Insert
+                            Inside...
+                          </ContextMenu.Item>
+                        )}
+
                         <ContextMenu.Separator />
                         <ContextMenu.Item
                           className="text-error hover:!bg-error/10 hover:!text-error"
@@ -238,7 +403,19 @@ export const LayersTab: React.FC<LayersTabProps> = ({
           </div>
         </ContextMenu.Trigger>
 
+        {/* Global Context Menu (clicking empty space) */}
         <ContextMenu.Content>
+          {selectedNodeIds.length === 0 && (
+            <>
+              <ContextMenu.Item
+                onClick={() => openComponentPicker("inside", "ROOT")}
+              >
+                <Plus className="w-4 h-4 mr-2" /> Insert Component...
+              </ContextMenu.Item>
+              <ContextMenu.Separator />
+            </>
+          )}
+
           <ContextMenu.Item
             disabled={selectedNodeIds.length === 0}
             onClick={() => copyNodes(selectedNodeIds)}
@@ -281,7 +458,64 @@ export const LayersTab: React.FC<LayersTabProps> = ({
           >
             <Copy className="w-4 h-4 mr-2" /> Duplicate
           </ContextMenu.Item>
+
           <ContextMenu.Separator />
+
+          {selectedNodeIds.length === 1 && (
+            <>
+              <ContextMenu.Item
+                onClick={() =>
+                  openComponentPicker("replace", selectedNodeIds[0])
+                }
+              >
+                <RefreshCw className="w-4 h-4 mr-2" /> Replace with...
+              </ContextMenu.Item>
+              <ContextMenu.Item
+                onClick={() =>
+                  openComponentPicker("before", selectedNodeIds[0])
+                }
+              >
+                <ArrowUpToLine className="w-4 h-4 mr-2" /> Insert Before...
+              </ContextMenu.Item>
+              <ContextMenu.Item
+                onClick={() => openComponentPicker("after", selectedNodeIds[0])}
+              >
+                <ArrowDownToLine className="w-4 h-4 mr-2" /> Insert After...
+              </ContextMenu.Item>
+              {(() => {
+                let canAcceptChildren = false;
+                const page = website?.pages.find((p) => p.id === activePageId);
+                if (page) {
+                  const findType = (nodes: StudioNode[]): string | null => {
+                    for (const n of nodes) {
+                      if (n.id === selectedNodeIds[0]) return n.type;
+                      if (n.children) {
+                        const res = findType(n.children);
+                        if (res) return res;
+                      }
+                    }
+                    return null;
+                  };
+                  const type = findType(page.content);
+                  canAcceptChildren = type
+                    ? (components[type]?.acceptsChildren ?? false)
+                    : false;
+                }
+                return canAcceptChildren ? (
+                  <ContextMenu.Item
+                    onClick={() =>
+                      openComponentPicker("inside", selectedNodeIds[0])
+                    }
+                  >
+                    <CornerDownRight className="w-4 h-4 mr-2" /> Insert
+                    Inside...
+                  </ContextMenu.Item>
+                ) : null;
+              })()}
+              <ContextMenu.Separator />
+            </>
+          )}
+
           <ContextMenu.Item
             disabled={selectedNodeIds.length === 0}
             className="text-error hover:!bg-error/10 hover:!text-error"

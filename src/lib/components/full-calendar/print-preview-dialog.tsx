@@ -8,8 +8,8 @@ import { Dialog, DialogContent } from "../dialog";
 import { Select } from "../select";
 import { Checkbox } from "../checkbox";
 import { Typography } from "../typography";
-import { useFullCalendar, PrintOverrideProvider } from "./calendar-context";
-import { FullCalendarViewDispatcher, PrintHeader } from "./index";
+import { useFullCalendar } from "./calendar-context";
+import { PrintPagesLayout } from "./index";
 
 export const PrintPreviewDialog = () => {
   const {
@@ -36,13 +36,13 @@ export const PrintPreviewDialog = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
-  // Robustly calculate the exact scale needed to fit the paper inside the dialog view
+  // Calculates exact zoom scalar to fit widths properly but let height overflow
   useEffect(() => {
     if (!isPrintPreviewOpen) return;
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
         const { width, height } = entry.contentRect;
-        // 0.95 adds a nice 5% breathing margin around the paper preview
+        // Allows 1 perfect page layout on-screen, but supports infinite scrolling
         const targetScale =
           Math.min(width / printWidth, height / printHeight) * 0.95;
         setScale(targetScale);
@@ -55,13 +55,12 @@ export const PrintPreviewDialog = () => {
   return (
     <Dialog open={isPrintPreviewOpen} onOpenChange={setPrintPreviewOpen}>
       <DialogContent
-        // Stops Radix Select portal clicks from crashing the modal
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
         className="flex flex-col md:flex-row gap-0 p-0 overflow-hidden max-w-6xl! w-[95vw] h-[85vh] bg-surface-container"
         shape="minimal"
       >
-        <div className="w-[320px] flex-shrink-0 bg-surface-container-high border-r border-outline-variant/30 flex flex-col h-full z-10 shadow-lg relative">
+        <div className="w-[400px] flex-shrink-0 bg-surface-container-high border-r border-outline-variant/30 flex flex-col h-full z-10 shadow-lg relative">
           <div className="p-6 pb-2 overflow-y-auto">
             <Typography variant="title-large" className="font-medium mb-6">
               Print preview
@@ -203,30 +202,29 @@ export const PrintPreviewDialog = () => {
 
         <div
           ref={containerRef}
-          className="flex-1 bg-surface-container-lowest flex items-center justify-center p-4 md:p-8 overflow-hidden relative"
+          className="flex-1 bg-surface-container-low flex flex-col p-4 md:p-8 overflow-y-auto overflow-x-hidden relative"
         >
+          {/* Strict Light Mode Enforcement for Previews */}
           <div
-            className="bg-white shadow-xl flex flex-col overflow-hidden pointer-events-none origin-center"
-            style={{
-              width: printWidth,
-              height: printHeight,
-              transform: `scale(${scale})`,
-              fontSize:
-                printSettings.fontSize === "small"
-                  ? "0.85rem"
-                  : printSettings.fontSize === "smallest"
-                    ? "0.7rem"
-                    : "1rem",
-              filter:
-                printSettings.colorStyle === "bw" ? "grayscale(100%)" : "none",
-            }}
+            className="w-full flex justify-center pb-12"
+            style={
+              {
+                "--md-sys-color-on-surface": "#000000",
+                "--md-sys-color-on-surface-variant": "#4b5563",
+                "--md-sys-color-surface": "#ffffff",
+                "--md-sys-color-surface-container": "#ffffff",
+                "--md-sys-color-surface-container-low": "#ffffff",
+                "--md-sys-color-surface-container-high": "#f3f4f6",
+                "--md-sys-color-outline-variant": "#e5e7eb",
+              } as React.CSSProperties
+            }
           >
-            <div className=" flex-1 w-full bg-white text-black [&_*]:!text-black overflow-hidden relative flex flex-col h-full">
-              <PrintOverrideProvider>
-                <PrintHeader />
-                <FullCalendarViewDispatcher />
-              </PrintOverrideProvider>
-            </div>
+            <PrintPagesLayout
+              isPreview={true}
+              printWidth={printWidth}
+              printHeight={printHeight}
+              scale={scale}
+            />
           </div>
         </div>
       </DialogContent>

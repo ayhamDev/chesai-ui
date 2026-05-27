@@ -1,4 +1,3 @@
-// src/lib/components/website-studio/WebsiteStudio.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   BarChart2,
@@ -16,6 +15,7 @@ import { useState, useMemo, useEffect } from "react";
 import { clsx } from "clsx";
 import { WebsiteStudio } from "./index";
 import type { ComponentRegistry, WebsiteSchema } from "./types";
+import { useStudioStore } from "./store";
 
 // --- TanStack Router Imports ---
 import {
@@ -416,9 +416,12 @@ const chesaiRegistry: ComponentRegistry = {
         if (onClick) onClick(e);
         if (linkTo && !e.defaultPrevented) {
           e.preventDefault();
-          // Dispatch a framework-agnostic custom event for the router to pick up
-          window.dispatchEvent(
-            new CustomEvent("studio-navigate", { detail: { linkTo, newTab } }),
+          // Dispatch a framework-agnostic bubbling event for interception.
+          e.currentTarget.dispatchEvent(
+            new CustomEvent("studio-navigate", {
+              detail: { linkTo, newTab },
+              bubbles: true,
+            }),
           );
         }
       };
@@ -684,7 +687,7 @@ const landingPageJSON: WebsiteSchema = {
                         size: "lg",
                         shape: "full",
                         startIcon: "ArrowRight",
-                        linkTo: "/about", // Navigates seamlessly via TanStack Router
+                        linkTo: "/about",
                         newTab: false,
                       },
                       events: {
@@ -836,7 +839,7 @@ const landingPageJSON: WebsiteSchema = {
                 muted: true,
                 className: "mt-4 max-w-xl text-center",
                 children:
-                  "Notice how the TanStack router seamlessly navigated here without a full page reload, reading the secondary page data directly from the JSON schema.",
+                  "Notice how the Studio Engine seamlessly navigates here without a full page reload, reading the secondary page data directly from the JSON schema.",
               },
             },
             {
@@ -887,26 +890,21 @@ export const VisualBuilderMode: Story = {
       const RootComponent = () => {
         const navigate = useNavigate({ strict: false });
 
-        // Listen for the custom agnostic event dispatched by our Button components
+        // Global fallback listener. The builder and preview overlays now
+        // intercept their own events via bubbling and stop them from reaching here.
         useEffect(() => {
           const handleNav = (e: any) => {
             const { linkTo, newTab } = e.detail;
             if (newTab) {
               window.open(linkTo, "_blank");
             } else {
-              if (isEditing) {
-                // Prevent actual routing when inside the Builder Sandbox
-                toast.info("Navigation Disabled in Builder", {
-                  description: `Would have navigated to: ${linkTo}`,
-                });
-              } else {
-                navigate({ to: linkTo });
-              }
+              navigate({ to: linkTo });
             }
           };
 
-          window.addEventListener("studio-navigate", handleNav);
-          return () => window.removeEventListener("studio-navigate", handleNav);
+          document.addEventListener("studio-navigate", handleNav);
+          return () =>
+            document.removeEventListener("studio-navigate", handleNav);
         }, [navigate]);
 
         return (
@@ -917,51 +915,10 @@ export const VisualBuilderMode: Story = {
                 components={chesaiRegistry}
                 initialState={landingPageJSON}
                 cms={mockCMSData}
+                actions={mockCustomActions} // <-- Fix applied: Pass to Builder!
+                customApi={mockCustomAPI} // <-- Fix applied: Pass to Builder!
                 onExit={() => setIsEditing(false)}
-                topBarLeft={
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      startIcon={<Plus size={16} />}
-                      className="font-medium"
-                    >
-                      Insert
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      startIcon={<LayoutGrid size={16} />}
-                      className="font-medium"
-                    >
-                      Layout
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      startIcon={<Type size={16} />}
-                      className="font-medium"
-                    >
-                      Text
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      startIcon={<PenTool size={16} />}
-                      className="font-medium"
-                    >
-                      Vector
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      startIcon={<Database size={16} />}
-                      className="font-medium"
-                    >
-                      CMS
-                    </Button>
-                  </div>
-                }
+                topBarLeft={<div className="flex items-center gap-1"></div>}
                 topBarCenter={
                   <>
                     <Typography
@@ -1005,13 +962,6 @@ export const VisualBuilderMode: Story = {
                       >
                         <BarChart2 size={16} />
                       </IconButton>
-                      <IconButton
-                        variant="secondary"
-                        size="sm"
-                        className="h-8 w-8 text-on-surface-variant hover:text-on-surface"
-                      >
-                        <Play size={16} className="ml-0.5 fill-current" />
-                      </IconButton>
                     </div>
                     <Button
                       size="sm"
@@ -1019,14 +969,6 @@ export const VisualBuilderMode: Story = {
                       className="h-8 px-5 font-bold shadow-none"
                     >
                       Publish
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 px-4 font-bold shadow-none"
-                      onClick={() => setIsEditing(false)}
-                    >
-                      Exit
                     </Button>
                   </>
                 }

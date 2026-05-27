@@ -2,7 +2,7 @@
 "use client";
 
 import { Command as CommandPrimitive } from "cmdk";
-import { Search } from "lucide-react";
+import { ChevronDown, ChevronUp, CornerDownLeft, Search } from "lucide-react";
 import React from "react";
 import { clsx } from "clsx";
 import { Dialog, DialogContent } from "../dialog";
@@ -51,7 +51,7 @@ const CommandDialog = ({
       */}
       <DialogContent
         className="overflow-hidden p-0 shadow-2xl max-w-2xl sm:max-w-[600px]!"
-        shape="minimal"
+        shape="full"
         padding="none"
       >
         <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-on-surface-variant [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-14 [&_[cmdk-item]]:px-3 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5 bg-transparent border-none">
@@ -174,7 +174,7 @@ CommandShortcut.displayName = "CommandShortcut";
 const CommandFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <div
     ref={ref}
     className={clsx(
@@ -182,10 +182,33 @@ const CommandFooter = React.forwardRef<
       className,
     )}
     {...props}
-  />
+  >
+    {children}
+    <NavigationHints />
+  </div>
 ));
 CommandFooter.displayName = "CommandFooter";
-
+const NavigationHints = () => (
+  <>
+    <div className="flex items-center gap-1.5 font-medium">
+      <span className="flex items-center gap-0.5">
+        <ChevronUp className="w-3.5 h-3.5" />
+        <ChevronDown className="w-3.5 h-3.5" />
+      </span>
+      <span>to navigate</span>
+    </div>
+    <div className="flex items-center gap-1.5 font-medium">
+      <CornerDownLeft className="w-3.5 h-3.5" />
+      <span>to select</span>
+    </div>
+    <div className="flex items-center gap-1.5 ml-auto font-medium">
+      <span className="text-[10px] font-mono border border-on-surface-variant/30 px-1 rounded-sm">
+        ESC
+      </span>
+      <span>to close</span>
+    </div>
+  </>
+);
 export {
   Command,
   CommandDialog,

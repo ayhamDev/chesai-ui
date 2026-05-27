@@ -327,9 +327,14 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
               active={open}
               focusTrapOptions={{
                 onDeactivate: () => !isLocked && onOpenChange(false),
-                clickOutsideDeactivates: !isLocked,
+
+                // 1. CHANGE THIS to false. We let the dark backdrop handle closing instead.
+                clickOutsideDeactivates: false,
+
                 escapeDeactivates: !isLocked,
-                allowOutsideClick: () => !isLocked,
+
+                // 2. CHANGE THIS to true. This allows clicks to register on portaled elements (Select/DatePicker).
+                allowOutsideClick: true,
               }}
             >
               <div

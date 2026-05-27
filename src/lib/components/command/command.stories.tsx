@@ -54,28 +54,6 @@ const meta: Meta<typeof Command> = {
 export default meta;
 type Story = StoryObj<typeof Command>;
 
-const NavigationHints = () => (
-  <CommandFooter>
-    <div className="flex items-center gap-1.5 font-medium">
-      <span className="flex items-center gap-0.5">
-        <ChevronUp className="w-3.5 h-3.5" />
-        <ChevronDown className="w-3.5 h-3.5" />
-      </span>
-      <span>to navigate</span>
-    </div>
-    <div className="flex items-center gap-1.5 font-medium">
-      <CornerDownLeft className="w-3.5 h-3.5" />
-      <span>to select</span>
-    </div>
-    <div className="flex items-center gap-1.5 ml-auto font-medium">
-      <span className="text-[10px] font-mono border border-on-surface-variant/30 px-1 rounded-sm">
-        ESC
-      </span>
-      <span>to close</span>
-    </div>
-  </CommandFooter>
-);
-
 export const Standalone: Story = {
   name: "1. Standalone / Inline",
   args: {
@@ -126,7 +104,7 @@ export const Standalone: Story = {
             </CommandItem>
           </CommandGroup>
         </CommandList>
-        <NavigationHints />
+        <CommandFooter />
       </Command>
     </div>
   ),
@@ -163,7 +141,7 @@ export const StandaloneGlass: Story = {
               </CommandItem>
             </CommandGroup>
           </CommandList>
-          <NavigationHints />
+          <CommandFooter />
         </Command>
       </div>
     </div>
@@ -235,7 +213,7 @@ export const DialogMode: Story = {
               </CommandItem>
             </CommandGroup>
           </CommandList>
-          <NavigationHints />
+          <CommandFooter />
         </CommandDialog>
       </div>
     );

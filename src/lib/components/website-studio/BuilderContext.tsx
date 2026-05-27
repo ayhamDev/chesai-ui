@@ -5,7 +5,9 @@ import type { ComponentRegistry } from "./types";
 
 interface BuilderContextValue {
   components: ComponentRegistry;
-  cms?: any; // <-- Added to hold dynamic data
+  cms?: any;
+  actions?: Record<string, Function>; // Added to hold global actions
+  customApi?: any; // Added to hold custom API for sandboxed code
 }
 
 const BuilderContext = createContext<BuilderContextValue | null>(null);
@@ -24,9 +26,11 @@ export const BuilderContextProvider = ({
   children,
   components,
   cms,
+  actions,
+  customApi,
 }: BuilderContextValue & { children: React.ReactNode }) => {
   return (
-    <BuilderContext.Provider value={{ components, cms }}>
+    <BuilderContext.Provider value={{ components, cms, actions, customApi }}>
       {children}
     </BuilderContext.Provider>
   );

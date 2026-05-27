@@ -1,11 +1,20 @@
-// src/lib/components/website-studio/canvas/ArtboardNode.tsx
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Handle, Position, NodeProps, useViewport } from "@xyflow/react";
 import { clsx } from "clsx";
-import { Copy, Clipboard, Trash2 } from "lucide-react";
+import {
+  Copy,
+  Clipboard,
+  Trash2,
+  RefreshCw,
+  ArrowUpToLine,
+  ArrowDownToLine,
+  CornerDownRight,
+  Plus,
+  Play,
+} from "lucide-react";
 
 import { Typography } from "../../typography";
 import { ContextMenu } from "../../context-menu";
@@ -13,6 +22,7 @@ import { useStudioStore } from "../store";
 import { useBuilderContext } from "../BuilderContext";
 import { Renderer } from "../renderer";
 import { useTheme } from "../../../context/ThemeProvider";
+import { toast } from "../../toast";
 import type { ComponentControl, StudioNode } from "../types";
 
 // --- TYPES & HELPERS ---
@@ -67,10 +77,57 @@ const getParentAndIndex = (
   return null;
 };
 
-const IframeContentObserver: React.FC<{
+// --- NAVIGATION INTERCEPTOR ---
+const NavigationInterceptor = ({
+  children,
+  onNavigate,
+}: {
+  children: React.ReactNode;
+  onNavigate: (linkTo: string) => void;
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleNav = (e: any) => {
+      e.stopPropagation();
+      onNavigate(e.detail.linkTo);
+    };
+
+    el.addEventListener("studio-navigate", handleNav);
+    return () => el.removeEventListener("studio-navigate", handleNav);
+  }, [onNavigate]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="w-full min-h-full"
+      onClickCapture={(e) => {
+        const a = (e.target as HTMLElement).closest("a");
+        if (a) {
+          const href = a.getAttribute("href");
+          if (href && href.startsWith("/")) {
+            e.preventDefault();
+            e.stopPropagation();
+            onNavigate(href);
+          }
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
+const IframeContentObserver = ({
+  children,
+  onHeightChange,
+}: {
   children: React.ReactNode;
   onHeightChange: (h: number) => void;
-}> = ({ children, onHeightChange }) => {
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -229,7 +286,7 @@ const CanvasOverlay = ({
           className="absolute border-2 border-primary bg-primary/10 transition-none"
           style={{
             top: hoveredRect.top,
-            left: hoveredRect.left - 11,
+            left: hoveredRect.left - 10,
             width: hoveredRect.width,
             height: hoveredRect.height,
           }}
@@ -244,7 +301,7 @@ const CanvasOverlay = ({
             className="absolute border-2 border-primary transition-none"
             style={{
               top: rect.top,
-              left: rect.left - 11,
+              left: rect.left - 10,
               width: rect.width,
               height: rect.height,
             }}
@@ -348,7 +405,7 @@ const ArtboardIframe = ({
   const selectionAlteredOnPointerDown = useRef<boolean>(false);
 
   const resolvedTheme = useTheme().resolvedTheme;
-  const { components } = useBuilderContext();
+  const { components, cms, actions, customApi } = useBuilderContext();
   const {
     setHoveredNode,
     selectedNodeIds,
@@ -363,6 +420,7 @@ const ArtboardIframe = ({
     addNode,
     website,
     activePageId,
+    openComponentPicker,
   } = useStudioStore();
 
   const activePage = website?.pages.find((p) => p.id === activePageId);
@@ -513,7 +571,7 @@ const ArtboardIframe = ({
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0) return; // Only process left clicks
+    if (e.button !== 0) return;
 
     e.stopPropagation();
     document.body.dispatchEvent(
@@ -632,7 +690,6 @@ const ArtboardIframe = ({
       return;
     }
 
-    // Standard Hover State (Idle)
     const el = iframeWindow.document.elementFromPoint(coords.x, coords.y);
     const node = el?.closest("[data-studio-node-id]");
     if (node) {
@@ -706,10 +763,9 @@ const ArtboardIframe = ({
     }
   };
 
-  // --- External Drag and Drop Events ---
   const handleDragOver = (e: React.DragEvent) => {
     if (!e.dataTransfer.types.includes("application/studio-component")) return;
-    e.preventDefault(); // Accept the drop
+    e.preventDefault();
     e.stopPropagation();
 
     const coords = getIframeCoordinates(e);
@@ -719,7 +775,7 @@ const ArtboardIframe = ({
     setExternalDropTarget(target);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = () => {
     setExternalDropTarget(null);
   };
 
@@ -779,7 +835,18 @@ const ArtboardIframe = ({
                 }
               `}</style>
               <IframeContentObserver onHeightChange={setContentHeight}>
-                {children}
+                <NavigationInterceptor
+                  onNavigate={(linkTo) => {
+                    const targetPage = website?.pages.find(
+                      (p) => p.slug === linkTo,
+                    );
+                    if (targetPage) {
+                      useStudioStore.getState().setActivePage(targetPage.id);
+                    }
+                  }}
+                >
+                  {children}
+                </NavigationInterceptor>
               </IframeContentObserver>
             </>,
             iframeBody,
@@ -813,6 +880,17 @@ const ArtboardIframe = ({
           />
         </ContextMenu.Trigger>
         <ContextMenu.Content>
+          {selectedNodeIds.length === 0 && (
+            <>
+              <ContextMenu.Item
+                onClick={() => openComponentPicker("inside", "ROOT")}
+              >
+                <Plus className="w-4 h-4 mr-2" /> Insert Component...
+              </ContextMenu.Item>
+              <ContextMenu.Separator />
+            </>
+          )}
+
           <ContextMenu.Item
             disabled={selectedNodeIds.length === 0}
             onClick={() => copyNodes(selectedNodeIds)}
@@ -826,14 +904,11 @@ const ArtboardIframe = ({
                 selectedNodeIds.length > 0 ? selectedNodeIds[0] : null;
               let canAcceptChildren = false;
 
-              if (targetId) {
-                const page = website?.pages.find((p) => p.id === activePageId);
-                if (page) {
-                  const targetNode = findNodeById(page.content, targetId);
-                  canAcceptChildren = targetNode
-                    ? (components[targetNode.type]?.acceptsChildren ?? false)
-                    : false;
-                }
+              if (targetId && activePage) {
+                const targetNode = findNodeById(activePage.content, targetId);
+                canAcceptChildren = targetNode
+                  ? (components[targetNode.type]?.acceptsChildren ?? false)
+                  : false;
               }
               pasteNodes(targetId, canAcceptChildren ? "inside" : "after");
             }}
@@ -846,7 +921,56 @@ const ArtboardIframe = ({
           >
             <Copy className="w-4 h-4 mr-2" /> Duplicate
           </ContextMenu.Item>
+
           <ContextMenu.Separator />
+
+          {selectedNodeIds.length === 1 && (
+            <>
+              <ContextMenu.Item
+                onClick={() =>
+                  openComponentPicker("replace", selectedNodeIds[0])
+                }
+              >
+                <RefreshCw className="w-4 h-4 mr-2" /> Replace with...
+              </ContextMenu.Item>
+              <ContextMenu.Item
+                onClick={() =>
+                  openComponentPicker("before", selectedNodeIds[0])
+                }
+              >
+                <ArrowUpToLine className="w-4 h-4 mr-2" /> Insert Before...
+              </ContextMenu.Item>
+              <ContextMenu.Item
+                onClick={() => openComponentPicker("after", selectedNodeIds[0])}
+              >
+                <ArrowDownToLine className="w-4 h-4 mr-2" /> Insert After...
+              </ContextMenu.Item>
+              {(() => {
+                let canAcceptChildren = false;
+                if (activePage) {
+                  const targetNode = findNodeById(
+                    activePage.content,
+                    selectedNodeIds[0],
+                  );
+                  canAcceptChildren = targetNode
+                    ? (components[targetNode.type]?.acceptsChildren ?? false)
+                    : false;
+                }
+                return canAcceptChildren ? (
+                  <ContextMenu.Item
+                    onClick={() =>
+                      openComponentPicker("inside", selectedNodeIds[0])
+                    }
+                  >
+                    <CornerDownRight className="w-4 h-4 mr-2" /> Insert
+                    Inside...
+                  </ContextMenu.Item>
+                ) : null;
+              })()}
+              <ContextMenu.Separator />
+            </>
+          )}
+
           <ContextMenu.Item
             disabled={selectedNodeIds.length === 0}
             className="text-error hover:!bg-error/10 hover:!text-error"
@@ -941,7 +1065,7 @@ export const ArtboardNode = ({ data, selected }: NodeProps<any>) => {
   const { label, width, height, isIsolationMode, componentId } =
     data as ArtboardData;
 
-  const { components, cms } = useBuilderContext();
+  const { components, cms, actions, customApi } = useBuilderContext();
   const { website, activePageId } = useStudioStore();
 
   const activePage = website?.pages.find((p) => p.id === activePageId);
@@ -1028,7 +1152,18 @@ export const ArtboardNode = ({ data, selected }: NodeProps<any>) => {
             data={activePage.content}
             designSystem={website?.designSystem}
             cms={cms || {}}
-            actions={{}}
+            customApi={customApi}
+            actions={{
+              ...actions,
+              openLink: (url: string, target: string) => {
+                const targetPage = website?.pages.find((p) => p.slug === url);
+                if (targetPage) {
+                  useStudioStore.getState().setActivePage(targetPage.id);
+                } else {
+                  window.open(url, target || "_blank");
+                }
+              },
+            }}
           />
         </ArtboardIframe>
       </div>
@@ -1049,17 +1184,63 @@ export const ArtboardNode = ({ data, selected }: NodeProps<any>) => {
 
   return (
     <div
-      className={`relative rounded-xl shadow-2xl flex flex-col overflow-hidden transition-[box-shadow,border] duration-200 ${
+      className={clsx(
+        "relative rounded-xl shadow-2xl flex flex-col overflow-hidden transition-[box-shadow,border] duration-200",
         selected
           ? "ring-2 ring-primary ring-offset-4 ring-offset-background"
-          : "ring-1 ring-outline-variant/30"
-      }`}
+          : "ring-1 ring-outline-variant/30",
+      )}
       style={{ width, minHeight: height }}
     >
-      <div className="h-8 bg-surface-container-high border-b border-outline-variant/30 flex items-center justify-center px-4 shrink-0">
-        <Typography variant="label-small" className="font-mono opacity-60">
-          {isIsolationMode ? `${componentId} Sandbox` : `${label} - ${width}px`}
-        </Typography>
+      {/* Framer-inspired Header Bar utilizing dynamic theme tokens */}
+      <div className="h-12 bg-surface-container-high border-b border-outline-variant/30 flex items-center justify-between px-4 shrink-0 select-none">
+        {/* Left Section: Play Button + Device details */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isIsolationMode) return;
+              window.dispatchEvent(
+                new CustomEvent("studio-preview", {
+                  detail: { pageId: activePageId },
+                }),
+              );
+            }}
+            className="w-7 h-7 bg-primary text-on-primary rounded-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+            title="Preview Page"
+          >
+            <Play size={12} className="fill-current ml-0.5" />
+          </button>
+
+          <div className="flex items-center gap-1.5 ml-1">
+            <Typography
+              variant="label-medium"
+              className="font-bold text-on-surface"
+            >
+              {isIsolationMode ? "Sandbox" : label}
+            </Typography>
+            <span className="text-on-surface-variant/50 text-xs">&middot;</span>
+            <Typography
+              variant="label-small"
+              className="font-mono text-on-surface-variant opacity-85"
+            >
+              {isIsolationMode ? componentId || "Component" : width}
+            </Typography>
+          </div>
+        </div>
+
+        {/* Right Section: Page Title */}
+        {!isIsolationMode && (
+          <div className="flex items-center gap-2">
+            <Typography
+              variant="label-large"
+              className="text-primary font-bold tracking-wide"
+            >
+              {activePage?.title || "Page"}
+            </Typography>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 w-full bg-background relative contain-paint nodrag group-data-[tool=pointer]/canvas:cursor-default group-data-[tool=hand]/canvas:cursor-grab">

@@ -2,9 +2,21 @@
 "use client";
 
 import { clsx } from "clsx";
-import { format } from "date-fns";
+import {
+  format,
+  differenceInDays,
+  startOfDay,
+  addDays,
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  startOfMonth,
+  addMonths,
+  startOfYear,
+  addYears,
+} from "date-fns";
 import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "../button";
 import { IconButton } from "../icon-button";
@@ -22,7 +34,7 @@ import { TimelineView } from "./timeline-view";
 import { YearView } from "./year-view";
 import { EventPopover } from "./event-popover";
 import { PrintPreviewDialog } from "./print-preview-dialog";
-import type { FullCalendarProps } from "./types";
+import type { CalendarView, FullCalendarProps } from "./types";
 import { getCalendarBgClasses, getCalendarStickyBgClasses } from "./utils";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { Calendar } from "../date-picker/calendar";
@@ -30,30 +42,143 @@ import { Calendar } from "../date-picker/calendar";
 // --- ROOT COMPONENT ---
 
 export const PrintHeader = () => {
-  const { currentDate, view, printSettings } = useFullCalendar();
+  const { currentDate, view } = useFullCalendar();
   const isPrintMode = React.useContext(PrintModeContext);
 
   const headerText = React.useMemo(() => {
-    if (
-      isPrintMode &&
-      (printSettings.view === "auto" ||
-        printSettings.view === "week" ||
-        printSettings.view === "day")
-    ) {
-      const start = format(printSettings.rangeStart, "MMM d, yyyy");
-      const end = format(printSettings.rangeEnd, "MMM d, yyyy");
-      if (start !== end) return `${start} - ${end}`;
-      return start;
-    }
     if (view === "day") return format(currentDate, "MMMM d, yyyy");
-    if (view === "week") return format(currentDate, "MMMM yyyy");
+    if (view === "week") {
+      const wStart = startOfWeek(currentDate);
+      const wEnd = endOfWeek(currentDate);
+      return `${format(wStart, "MMM d, yyyy")} - ${format(wEnd, "MMM d, yyyy")}`;
+    }
+    if (view === "month") return format(currentDate, "MMMM yyyy");
     if (view === "year") return format(currentDate, "yyyy");
     return format(currentDate, "MMMM yyyy");
-  }, [currentDate, view, isPrintMode, printSettings]);
+  }, [currentDate, view]);
 
   return (
-    <div className="w-full text-center py-4 font-bold text-2xl border-b border-black/20 bg-white text-black shrink-0">
+    <div
+      className={clsx(
+        "w-full text-center py-4 font-bold text-2xl shrink-0",
+        isPrintMode
+          ? "bg-white text-black border-b border-black/20"
+          : "bg-surface text-on-surface border-b border-outline-variant/30",
+      )}
+    >
       {headerText}
+    </div>
+  );
+};
+
+export const PrintPagesLayout = ({
+  isPreview = false,
+  printWidth,
+  printHeight,
+  scale = 1,
+}: {
+  isPreview?: boolean;
+  printWidth?: number;
+  printHeight?: number;
+  scale?: number;
+}) => {
+  const { printSettings } = useFullCalendar();
+
+  const printView = useMemo(() => {
+    if (printSettings.view !== "auto") return printSettings.view;
+    const days =
+      differenceInDays(printSettings.rangeEnd, printSettings.rangeStart) + 1;
+    if (days <= 1) return "day";
+    if (days <= 7) return "week";
+    return "month";
+  }, [printSettings.view, printSettings.rangeStart, printSettings.rangeEnd]);
+
+  // Break the selected range into page chunks
+  const pages = useMemo(() => {
+    const start = startOfDay(printSettings.rangeStart);
+    const end = startOfDay(printSettings.rangeEnd);
+    const pageDates: Date[] = [];
+
+    if (printView === "day") {
+      let curr = start;
+      while (curr <= end) {
+        pageDates.push(curr);
+        curr = addDays(curr, 1);
+      }
+    } else if (printView === "week") {
+      let curr = startOfWeek(start);
+      const endWeek = startOfWeek(end);
+      while (curr <= endWeek) {
+        pageDates.push(curr);
+        curr = addWeeks(curr, 1);
+      }
+    } else if (printView === "month") {
+      let curr = startOfMonth(start);
+      const endMonth = startOfMonth(end);
+      while (curr <= endMonth) {
+        pageDates.push(curr);
+        curr = addMonths(curr, 1);
+      }
+    } else if (printView === "year") {
+      let curr = startOfYear(start);
+      const endYear = startOfYear(end);
+      while (curr <= endYear) {
+        pageDates.push(curr);
+        curr = addYears(curr, 1);
+      }
+    }
+    return pageDates.length > 0 ? pageDates : [start];
+  }, [printSettings.rangeStart, printSettings.rangeEnd, printView]);
+
+  return (
+    <div
+      className={clsx(
+        "flex flex-col w-full",
+        isPreview && "items-center origin-top gap-8",
+      )}
+      style={
+        isPreview
+          ? { transform: `scale(${scale})`, transformOrigin: "top center" }
+          : {}
+      }
+    >
+      {pages.map((pageDate, i) => (
+        <div
+          key={i}
+          className={clsx(
+            "print-page-container bg-white text-black",
+            isPreview && "shadow-2xl border border-outline-variant/30 shrink-0",
+          )}
+          style={{
+            pageBreakAfter: "always",
+            breakAfter: "page",
+            width: isPreview ? printWidth : "100%",
+            height: isPreview ? printHeight : "100vh",
+            minWidth: isPreview ? printWidth : undefined,
+            minHeight: isPreview ? printHeight : undefined,
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            fontSize:
+              printSettings.fontSize === "small"
+                ? "0.85rem"
+                : printSettings.fontSize === "smallest"
+                  ? "0.7rem"
+                  : "1rem",
+            filter:
+              printSettings.colorStyle === "bw" ? "grayscale(100%)" : "none",
+          }}
+        >
+          <PrintOverrideProvider
+            overrideDate={pageDate}
+            overrideView={printView as CalendarView}
+          >
+            <PrintHeader />
+            <FullCalendarViewDispatcher />
+          </PrintOverrideProvider>
+        </div>
+      ))}
     </div>
   );
 };
@@ -96,13 +221,17 @@ const FullCalendarRootContent = ({
         left: 0 !important;
         top: 0 !important;
         width: 100% !important;
-        height: 100vh !important;
         background: white !important;
-        color: black !important;
       }
-      ${printSettings.colorStyle === "bw" ? ".chesai-calendar-print-root { filter: grayscale(100%); }" : ""}
-      ${printSettings.fontSize === "small" ? ".chesai-calendar-print-root { font-size: 0.85rem !important; }" : ""}
-      ${printSettings.fontSize === "smallest" ? ".chesai-calendar-print-root { font-size: 0.7rem !important; }" : ""}
+      .print-page-container {
+        height: 100vh !important;
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .print-page-container:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
     }
   `;
 
@@ -124,13 +253,8 @@ const FullCalendarRootContent = ({
 
       {typeof document !== "undefined" &&
         createPortal(
-          <div className="hidden print:block chesai-calendar-print-root">
-            <PrintOverrideProvider>
-              <div className="flex flex-col w-full h-[100vh] overflow-hidden bg-white text-black [&_*]:!text-black">
-                <PrintHeader />
-                <FullCalendarViewDispatcher />
-              </div>
-            </PrintOverrideProvider>
+          <div className="hidden print:block chesai-calendar-print-root w-full bg-white">
+            <PrintPagesLayout />
           </div>,
           document.body,
         )}
@@ -272,14 +396,17 @@ const FullCalendarToolbar = ({ className }: { className?: string }) => {
 export const FullCalendarViewDispatcher = () => {
   const { view, variant, currentDate, setCurrentDate } = useFullCalendar();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const isPrintMode = React.useContext(PrintModeContext);
 
-  const showSideCalendar = view === "day" && isDesktop;
+  const showSideCalendar = view === "day" && isDesktop && !isPrintMode;
 
   return (
     <div
       className={clsx(
-        "flex-1 overflow-hidden relative flex flex-row print:bg-white print:h-full print:overflow-visible",
-        getCalendarBgClasses(variant),
+        "flex-1 overflow-hidden relative flex flex-row",
+        isPrintMode
+          ? "bg-white h-full overflow-visible"
+          : getCalendarBgClasses(variant),
       )}
     >
       {showSideCalendar && (

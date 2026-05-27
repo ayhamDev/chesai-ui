@@ -5,7 +5,7 @@ import { clsx } from "clsx";
 import { addDays, format, isSameMonth, isToday, startOfDay } from "date-fns";
 import React, { useMemo } from "react";
 import { Typography } from "../typography";
-import { useFullCalendar } from "./calendar-context";
+import { useFullCalendar, PrintModeContext } from "./calendar-context";
 import {
   expandEvents,
   getDaysForMonthView,
@@ -51,8 +51,15 @@ export const MonthView = () => {
     renderEventContent,
   } = useFullCalendar();
 
+  const isPrintMode = React.useContext(PrintModeContext);
+  const bgClass = isPrintMode
+    ? "bg-white text-black"
+    : getCalendarBgClasses(variant);
+  const borderClass = isPrintMode
+    ? "border-black/20"
+    : "border-outline-variant/30";
+
   const days = useMemo(() => getDaysForMonthView(currentDate), [currentDate]);
-  const bgClass = getCalendarBgClasses(variant);
 
   const displayEvents = useMemo(() => {
     let baseEvents = events;
@@ -63,7 +70,6 @@ export const MonthView = () => {
         draftEvent,
       ];
     }
-    // Fixed Empty filtering: strips off the specific time of current day.
     const viewStart = startOfDay(days[0]);
     const viewEnd = addDays(startOfDay(days[days.length - 1]), 1);
 
@@ -79,18 +85,16 @@ export const MonthView = () => {
   }, [days]);
 
   return (
-    <div
-      className={clsx(
-        "flex flex-col flex-1 h-full min-h-0 print:bg-white print:text-black print:h-full",
-        bgClass,
-      )}
-    >
-      <div className="grid grid-cols-7 border-b border-outline-variant/30 shrink-0 print:border-black/50">
+    <div className={clsx("flex flex-col flex-1 h-full min-h-0", bgClass)}>
+      <div className={clsx("grid grid-cols-7 border-b shrink-0", borderClass)}>
         {WEEKDAYS.map((day) => (
           <div key={day} className="py-2 text-center">
             <Typography
               variant="label-small"
-              className="text-on-surface-variant font-semibold print:text-black"
+              className={clsx(
+                "font-semibold",
+                isPrintMode ? "text-black" : "text-on-surface-variant",
+              )}
             >
               {day}
             </Typography>
@@ -98,16 +102,19 @@ export const MonthView = () => {
         ))}
       </div>
 
-      <div className="flex-1 grid grid-rows-6 min-h-0 print:h-full print:grid">
+      <div className="flex-1 grid grid-rows-6 min-h-0">
         {weeks.map((week, weekIndex) => {
           const segments = getEventSegments(week, displayEvents);
 
           return (
             <div
               key={weekIndex}
-              className="relative border-b border-outline-variant/30 last:border-b-0 min-h-[80px] overflow-hidden print:min-h-0 print:border-black/50"
+              className={clsx(
+                "relative border-b last:border-b-0 min-h-[80px] overflow-hidden",
+                borderClass,
+              )}
             >
-              <div className="absolute inset-0 grid grid-cols-7 print:h-full print:static">
+              <div className="absolute inset-0 grid grid-cols-7">
                 {week.map((day) => {
                   const isCurrentMonth = isSameMonth(day, currentDate);
                   const isDayToday = isToday(day);
@@ -117,12 +124,16 @@ export const MonthView = () => {
                     <div
                       key={day.toISOString()}
                       className={clsx(
-                        "border-r border-outline-variant/30 last:border-r-0 p-1 flex flex-col print:border-black/50",
+                        "border-r last:border-r-0 p-1 flex flex-col transition-colors",
+                        borderClass,
                         !isCurrentMonth &&
-                          "bg-black/5 dark:bg-white/5 opacity-50 print:bg-transparent",
-                        "hover:bg-on-surface/5 cursor-pointer transition-colors",
+                          (isPrintMode
+                            ? "opacity-30"
+                            : "bg-black/5 dark:bg-white/5 opacity-50"),
+                        !isPrintMode && "hover:bg-on-surface/5 cursor-pointer",
                       )}
                       onClick={(e) => {
+                        if (isPrintMode) return;
                         const rect = e.currentTarget.getBoundingClientRect();
                         openPopover("create", rect, day);
                       }}
@@ -131,15 +142,21 @@ export const MonthView = () => {
                         <button
                           type="button"
                           onClick={(e) => {
+                            if (isPrintMode) return;
                             e.stopPropagation();
                             setCurrentDate(day);
                             setView("day");
                           }}
                           className={clsx(
                             "flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium transition-colors z-10",
-                            isDayToday
-                              ? "bg-primary text-on-primary hover:bg-primary/90 print:bg-transparent print:text-black print:border print:border-black"
-                              : "text-on-surface hover:bg-on-surface/10 print:text-black",
+                            isDayToday && !isPrintMode
+                              ? "bg-primary text-on-primary hover:bg-primary/90"
+                              : isPrintMode
+                                ? "text-black"
+                                : "text-on-surface hover:bg-on-surface/10",
+                            isDayToday &&
+                              isPrintMode &&
+                              "font-bold border-2 border-black rounded-full",
                           )}
                         >
                           {isFirstDayOfMonth
@@ -152,7 +169,7 @@ export const MonthView = () => {
                 })}
               </div>
 
-              <div className="absolute inset-0 grid grid-cols-7 pointer-events-none mt-10 p-1 gap-y-1 print:mt-8">
+              <div className="absolute inset-0 grid grid-cols-7 pointer-events-none mt-10 p-1 gap-y-1">
                 {segments.map((segment) => {
                   const { event, colStart, colSpan, row } = segment;
                   const isAllDayOrSpanning = event.isAllDay || colSpan > 1;
@@ -177,7 +194,7 @@ export const MonthView = () => {
                         height: "22px",
                       }}
                       onClick={(e) => {
-                        if (isCurrentlyDraft) return;
+                        if (isCurrentlyDraft || isPrintMode) return;
                         e.stopPropagation();
                         const rect = e.currentTarget.getBoundingClientRect();
                         const originalId = String(event.id).split("-occ-")[0];
@@ -195,6 +212,7 @@ export const MonthView = () => {
                           className={clsx(
                             "h-full w-full rounded-md px-2 flex items-center overflow-hidden transition-opacity",
                             !isCurrentlyDraft &&
+                              !isPrintMode &&
                               "cursor-pointer hover:opacity-90",
                             isCurrentlyDraft &&
                               "border-2 border-dashed border-current shadow-lg ring-2 ring-primary ring-offset-1",
@@ -203,13 +221,13 @@ export const MonthView = () => {
                               : COLOR_MAP[colorVariant].split(" ")[0] +
                                   " " +
                                   COLOR_MAP[colorVariant].split(" ")[1],
-                            "print:border print:border-black/50 print:bg-transparent print:text-black",
+                            isPrintMode && "border border-black/30",
                           )}
                           style={{ backgroundColor: event.colorHex }}
                         >
                           <Typography
                             variant="label-small"
-                            className="truncate font-semibold text-inherit print:text-black"
+                            className="truncate font-semibold text-inherit"
                           >
                             {event.title || "(No title)"}
                           </Typography>
@@ -219,6 +237,7 @@ export const MonthView = () => {
                           className={clsx(
                             "h-full w-full rounded-md px-1 flex items-center gap-1.5 overflow-hidden transition-colors",
                             !isCurrentlyDraft &&
+                              !isPrintMode &&
                               "cursor-pointer hover:bg-on-surface/10",
                             isCurrentlyDraft &&
                               "border-2 border-dashed border-outline-variant",
@@ -226,16 +245,25 @@ export const MonthView = () => {
                         >
                           <div
                             className={clsx(
-                              "w-2 h-2 rounded-full shrink-0 print:bg-transparent print:border print:border-black/50",
+                              "w-2 h-2 rounded-full shrink-0",
                               event.colorHex ? "" : DOT_COLOR_MAP[colorVariant],
+                              isPrintMode && "border border-black/30",
                             )}
                             style={{ backgroundColor: event.colorHex }}
                           />
                           <Typography
                             variant="label-small"
-                            className="truncate font-medium text-on-surface print:text-black"
+                            className={clsx(
+                              "truncate font-medium",
+                              isPrintMode ? "text-black" : "text-on-surface",
+                            )}
                           >
-                            <span className="opacity-70 mr-1 print:opacity-100">
+                            <span
+                              className={clsx(
+                                "mr-1",
+                                isPrintMode ? "opacity-100" : "opacity-70",
+                              )}
+                            >
                               {format(event.start, "h:mma").toLowerCase()}
                             </span>
                             {event.title || "(No title)"}

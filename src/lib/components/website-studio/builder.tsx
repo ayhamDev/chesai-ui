@@ -1,13 +1,13 @@
-// src/lib/components/website-studio/builder.tsx
 "use client";
 
-import { Undo2, Redo2 } from "lucide-react";
+import { Undo2, Redo2, Plus, Command, Play } from "lucide-react";
 import React, { useEffect, useState, useMemo, useRef } from "react";
 
 import { Resizable } from "../resizable";
 import { Typography } from "../typography";
 import { Tabs } from "../tabs";
 import { IconButton } from "../icon-button";
+import { Button } from "../button";
 
 import { StudioCanvas } from "./canvas/StudioCanvas";
 import { useStudioStore } from "./store";
@@ -20,13 +20,19 @@ import { LayersTab } from "./builder/LayersTab";
 import { ComponentsTab } from "./builder/ComponentsTab";
 import { InspectorPanel } from "./builder/InspectorPanel";
 import { PageDialogs } from "./builder/PageDialogs";
+import { ComponentPickerDialog } from "./builder/ComponentPickerDialog";
+import { PreviewOverlay } from "./builder/PreviewOverlay";
 import { filterTree } from "./builder/helpers";
 import type { PageNode, ComponentTreeNode, PageAction } from "./builder/types";
+import { Kbd } from "../kbd";
+import { Divider } from "../divider";
 
 export interface BuilderProps {
   components: ComponentRegistry;
   initialState: WebsiteSchema;
   cms?: any;
+  actions?: Record<string, Function>; // <-- Added
+  customApi?: any; // <-- Added
   topBarLeft?: React.ReactNode;
   topBarCenter?: React.ReactNode;
   topBarRight?: React.ReactNode;
@@ -38,10 +44,13 @@ export const Builder: React.FC<BuilderProps> = ({
   components,
   initialState,
   cms,
+  actions,
+  customApi,
   topBarLeft,
   topBarCenter,
   topBarRight,
   customPageActions,
+  onExit,
 }) => {
   const {
     initStudio,
@@ -66,6 +75,7 @@ export const Builder: React.FC<BuilderProps> = ({
     copyNodes,
     pasteNodes,
     duplicateNodes,
+    openComponentPicker,
   } = useStudioStore();
 
   const [pageSearch, setPageSearch] = useState("");
@@ -81,6 +91,8 @@ export const Builder: React.FC<BuilderProps> = ({
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editPageSlug, setEditPageSlug] = useState("");
   const [editPageTitle, setEditPageTitle] = useState("");
+
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const componentsRef = useRef(components);
   componentsRef.current = components;
@@ -153,7 +165,16 @@ export const Builder: React.FC<BuilderProps> = ({
     return () => clearTimeout(scrollTimer);
   }, [selectedNodeIds, activePage?.content]);
 
-  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleStudioPreviewEvent = (e: Event) => {
+      setIsPreviewOpen(true);
+    };
+
+    window.addEventListener("studio-preview", handleStudioPreviewEvent);
+    return () =>
+      window.removeEventListener("studio-preview", handleStudioPreviewEvent);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isInput =
@@ -164,15 +185,16 @@ export const Builder: React.FC<BuilderProps> = ({
       if (isInput) return;
 
       const state = useStudioStore.getState();
+      const key = e.key.toLowerCase();
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+      if ((e.ctrlKey || e.metaKey) && key === "z") {
         e.preventDefault();
         if (e.shiftKey) state.redo();
         else state.undo();
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+      } else if ((e.ctrlKey || e.metaKey) && key === "y") {
         e.preventDefault();
         state.redo();
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+      } else if ((e.ctrlKey || e.metaKey) && key === "c") {
         if (
           state.selectedNodeIds.length > 0 &&
           state.viewContext.type === "PAGE"
@@ -180,7 +202,7 @@ export const Builder: React.FC<BuilderProps> = ({
           e.preventDefault();
           state.copyNodes(state.selectedNodeIds);
         }
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
+      } else if ((e.ctrlKey || e.metaKey) && key === "v") {
         if (state.clipboard.length > 0 && state.viewContext.type === "PAGE") {
           e.preventDefault();
           const targetId =
@@ -211,7 +233,7 @@ export const Builder: React.FC<BuilderProps> = ({
 
           state.pasteNodes(targetId, canAcceptChildren ? "inside" : "after");
         }
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+      } else if ((e.ctrlKey || e.metaKey) && key === "d") {
         if (
           state.selectedNodeIds.length > 0 &&
           state.viewContext.type === "PAGE"
@@ -227,6 +249,16 @@ export const Builder: React.FC<BuilderProps> = ({
           e.preventDefault();
           state.removeNodes(state.selectedNodeIds);
         }
+      } else if (e.key === "i" && e.ctrlKey && !e.altKey && !e.shiftKey) {
+        e.preventDefault();
+        if (state.selectedNodeIds.length === 1) {
+          state.openComponentPicker("after", state.selectedNodeIds[0]);
+        } else {
+          state.openComponentPicker("inside", "ROOT");
+        }
+      } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setIsPreviewOpen(true);
       }
     };
 
@@ -357,7 +389,12 @@ export const Builder: React.FC<BuilderProps> = ({
   };
 
   return (
-    <BuilderContextProvider components={components} cms={cms}>
+    <BuilderContextProvider
+      components={components}
+      cms={cms}
+      actions={actions}
+      customApi={customApi}
+    >
       <div className="flex flex-col w-full h-screen bg-background text-on-background overflow-hidden font-manrope">
         <header className="h-14 bg-surface border-b border-outline-variant/30 flex items-center justify-between px-4 shrink-0 z-50 shadow-sm">
           <div className="flex items-center gap-3">
@@ -381,12 +418,54 @@ export const Builder: React.FC<BuilderProps> = ({
                 <Redo2 size={16} className="opacity-70" />
               </IconButton>
             </div>
+            <div className="border-r border-outline-variant/30 pr-3">
+              <Button
+                variant="ghost"
+                shape="minimal"
+                size="sm"
+                startIcon={<Plus size={16} />}
+                onClick={() => openComponentPicker("inside", "ROOT")}
+                className="font-medium"
+                title="Insert Component (I)"
+                endIcon={
+                  <Kbd variant="flat" className="gap-2">
+                    <Command size={14} /> + I
+                  </Kbd>
+                }
+              >
+                Insert
+              </Button>
+            </div>
+
             {topBarLeft}
           </div>
           <div className="flex items-center gap-2 hidden lg:flex">
             {topBarCenter}
           </div>
-          <div className="flex items-center gap-4">{topBarRight}</div>
+          <div className="flex items-center gap-4">
+            {topBarRight}
+            <div className="flex items-center gap-1 border-l border-outline-variant/30 pl-4 pr-2">
+              <IconButton
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsPreviewOpen(true)}
+                className="h-8 w-8 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest"
+                title="Preview Interactive Site (Ctrl+Enter)"
+              >
+                <Play size={16} className="ml-0.5 fill-current" />
+              </IconButton>
+            </div>
+            {onExit && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 px-4 font-bold shadow-none"
+                onClick={onExit}
+              >
+                Exit
+              </Button>
+            )}
+          </div>
         </header>
 
         <Resizable className="flex-1 overflow-hidden z-0 bg-surface-container-lowest">
@@ -514,6 +593,13 @@ export const Builder: React.FC<BuilderProps> = ({
         editPageTitle={editPageTitle}
         setEditPageTitle={setEditPageTitle}
         handleEditPage={handleEditPage}
+      />
+      <ComponentPickerDialog />
+
+      {/* --- RENDER PREVIEW OVERLAY --- */}
+      <PreviewOverlay
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
       />
     </BuilderContextProvider>
   );

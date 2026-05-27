@@ -9,6 +9,7 @@ import { Switch } from "../../switch";
 import { Typography } from "../../typography";
 import { useBuilderContext } from "../BuilderContext";
 import { useStudioStore } from "../store";
+import { toast } from "../../toast";
 import type { ComponentControl, StudioNode } from "../types";
 import { ColorPicker } from "../../color-picker";
 import { Slider } from "../../slider";
@@ -36,7 +37,6 @@ const LinkControl = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Filter pages dynamically based on what the user types
   const filteredPages = useMemo(() => {
     const query = (value || "").toLowerCase().trim();
     if (!query) return pages;
@@ -159,12 +159,10 @@ const ControlRenderer = ({
   const { website } = useStudioStore();
   const { cms } = useBuilderContext();
 
-  // Track if this property is bound to a CMS variable
   const isCMSBound =
     typeof value === "string" && value.startsWith("{{") && value.endsWith("}}");
   const cmsKey = isCMSBound ? value.replace(/[{}]/g, "").trim() : "";
 
-  // Extract flat map of CMS suggestions (e.g. ["hero.badge", "hero.headline"])
   const cmsSuggestions = useMemo(() => {
     if (!cms) return [];
     const paths: string[] = [];
@@ -184,10 +182,8 @@ const ControlRenderer = ({
 
   const toggleCMSBinding = () => {
     if (isCMSBound) {
-      // Revert back to default value or empty string
       onChange(control.defaultValue ?? "");
     } else {
-      // Bind to first available CMS suggestion
       onChange(`{{${cmsSuggestions[0] || "variable"}}}`);
     }
   };
@@ -196,7 +192,6 @@ const ControlRenderer = ({
 
   return (
     <div className="flex flex-col gap-1.5 mb-3 last:mb-0">
-      {/* Property Label + Actions */}
       <div className="flex items-center justify-between px-0.5">
         <Typography
           variant="label-small"
@@ -205,7 +200,6 @@ const ControlRenderer = ({
           {control.label}
         </Typography>
 
-        {/* Variable binding toggle button */}
         {control.supportsCMS && cmsSuggestions.length > 0 && (
           <button
             type="button"
@@ -224,11 +218,9 @@ const ControlRenderer = ({
         )}
       </div>
 
-      {/* Render custom input if developer overrode rendering */}
       {control.render ? (
         control.render({ value, onChange, currentProps, nodeId })
       ) : isCMSBound ? (
-        /* CMS VARIABLE SELECTOR */
         <Select
           variant="filled"
           size="sm"
@@ -241,7 +233,6 @@ const ControlRenderer = ({
           startContent={<Database className="w-4 h-4 text-primary shrink-0" />}
         />
       ) : (
-        /* STANDARD MANUAL CONTROLS */
         (() => {
           switch (control.type) {
             case "boolean":
@@ -332,7 +323,7 @@ const ControlRenderer = ({
                 </div>
               );
 
-            default: // Handles "text" and any other unrecognized types
+            default:
               return (
                 <Input
                   size="sm"
@@ -362,10 +353,10 @@ interface InspectorPanelProps {
 export const InspectorPanel: React.FC<InspectorPanelProps> = ({
   selectedNodeIds,
 }) => {
-  const { website, activePageId, updateNodeProps } = useStudioStore();
+  const { website, activePageId, updateNodeProps, updateNodeId } =
+    useStudioStore();
   const { components } = useBuilderContext();
 
-  // Get current active node (with explicit typing to avoid `never` inference)
   const selectedNode = useMemo<StudioNode | null>(() => {
     if (selectedNodeIds.length !== 1 || !website || !activePageId) return null;
     const page = website.pages.find((p) => p.id === activePageId);
@@ -384,7 +375,32 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
 
   const compDef = selectedNode ? components[selectedNode.type] : null;
 
-  // Group controls and evaluate visibility logic
+  // --- NODE ID RENAME STATE ---
+  const [localNodeId, setLocalNodeId] = useState("");
+  useEffect(() => {
+    if (selectedNode) setLocalNodeId(selectedNode.id);
+  }, [selectedNode?.id]);
+
+  const handleNodeIdCommit = () => {
+    if (!selectedNode) return;
+    const cleanId = localNodeId.trim().replace(/\s+/g, "-");
+    if (cleanId && cleanId !== selectedNode.id) {
+      updateNodeId(selectedNode.id, cleanId);
+      // Check if update was successful (silently reverted by store if duplicate)
+      setTimeout(() => {
+        const currentSelected = useStudioStore.getState().selectedNodeIds;
+        if (currentSelected.includes(selectedNode.id)) {
+          toast.error("Rename failed", {
+            description: "Node ID must be unique across the page.",
+          });
+          setLocalNodeId(selectedNode.id); // Revert UI
+        }
+      }, 50);
+    } else {
+      setLocalNodeId(selectedNode.id); // Reset if blank
+    }
+  };
+
   const groupedControls = useMemo(() => {
     if (!compDef || !selectedNode) return {};
 
@@ -463,19 +479,44 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         </div>
       </div>
 
-      {/* PROPERTIES LIST (Flat, non-accordion design) */}
       <div className="flex-1 overflow-y-auto scrollbar-thin pb-12 p-4 flex flex-col gap-6">
+        {/* --- NEW IDENTITY SECTION --- */}
+        <div className="flex flex-col gap-3">
+          <Typography
+            variant="label-small"
+            className="font-bold text-on-surface-variant/60 uppercase tracking-widest text-[10px] pb-1.5 border-b border-outline-variant/30"
+          >
+            Identity
+          </Typography>
+          <div className="flex flex-col gap-1.5 mb-3">
+            <Typography
+              variant="label-small"
+              className="font-bold text-on-surface-variant/80 tracking-wide text-[11px] px-0.5"
+            >
+              Node ID
+            </Typography>
+            <Input
+              size="sm"
+              variant="filled"
+              shape="minimal"
+              className="font-mono text-xs"
+              value={localNodeId}
+              onValueChange={(val) => setLocalNodeId(val.replace(/\s+/g, "-"))}
+              onBlur={handleNodeIdCommit}
+              onKeyDown={(e) => e.key === "Enter" && handleNodeIdCommit()}
+            />
+          </div>
+        </div>
+
+        {/* PROPERTIES LIST (Dynamic) */}
         {Object.entries(groupedControls).map(([groupName, controls]) => (
           <div key={groupName} className="flex flex-col gap-3">
-            {/* Section Header */}
             <Typography
               variant="label-small"
               className="font-bold text-on-surface-variant/60 uppercase tracking-widest text-[10px] pb-1.5 border-b border-outline-variant/30"
             >
               {groupName}
             </Typography>
-
-            {/* Section Controls */}
             <div className="flex flex-col gap-1">
               {controls.map(({ key, control }) => (
                 <ControlRenderer
