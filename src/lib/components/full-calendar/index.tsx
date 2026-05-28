@@ -183,11 +183,11 @@ export const PrintPagesLayout = ({
   );
 };
 
-const FullCalendarRootContent = ({
+const FullCalendarRootContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({
   className,
   children,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => {
+}, ref) => {
   const { setPrintPreviewOpen, printSettings, variant } = useFullCalendar();
 
   useEffect(() => {
@@ -239,6 +239,7 @@ const FullCalendarRootContent = ({
     <>
       <style>{printCss}</style>
       <div
+        ref={ref}
         className={clsx(
           "flex flex-col w-full h-full text-on-surface rounded-2xl overflow-hidden font-manrope relative print:hidden",
           getCalendarBgClasses(variant),
@@ -260,7 +261,8 @@ const FullCalendarRootContent = ({
         )}
     </>
   );
-};
+});
+FullCalendarRootContent.displayName = "FullCalendarRootContent";
 
 const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
   (

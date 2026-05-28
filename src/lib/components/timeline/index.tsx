@@ -139,10 +139,10 @@ const TimelineDot = React.forwardRef<HTMLDivElement, TimelineDotProps>(
         {/* If diamond, we must counter-rotate the children so icons remain upright */}
         {shape === "diamond" && React.Children.count(children) > 0 ? (
           <div className="-rotate-45 flex items-center justify-center w-full h-full">
-            {children}
+            {children as React.ReactNode}
           </div>
         ) : (
-          children
+          children as React.ReactNode
         )}
       </motion.div>
     );

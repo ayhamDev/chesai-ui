@@ -68,7 +68,7 @@ const BreadcrumbLink = React.forwardRef<
   HTMLAnchorElement,
   React.AnchorHTMLAttributes<HTMLAnchorElement> & { asChild?: boolean }
 >(({ asChild, className, ...props }, ref) => {
-  const Comp = asChild ? Slot : "a";
+  const Comp = (asChild ? Slot : "a") as any;
 
   return (
     <Comp

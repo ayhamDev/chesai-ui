@@ -19,14 +19,14 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
+  DropdownMenuPortal,
 } from "../dropdown-menu";
 
 // Tracks how deep we are in the sub-menus
@@ -259,7 +259,6 @@ const MenubarItem = React.forwardRef<
       ref={ref as any}
       inset={inset}
       className={className}
-      shape={shape}
       onSelect={(e) => {
         closeMenu();
         props.onSelect?.(e);
@@ -367,7 +366,7 @@ const MenubarSubTrigger = React.forwardRef<
       <DropdownMenuTrigger asChild>
         <button
           ref={localRef}
-          onPointerDown={event}
+          onPointerDown={event as any}
           className={clsx(
             itemStyles,
             "data-[state=open]:bg-secondary-container/60",
@@ -376,7 +375,7 @@ const MenubarSubTrigger = React.forwardRef<
             shape === "sharp" && "!rounded-none",
             className,
           )}
-          {...props}
+          {...(props as any)}
         >
           <span className="relative z-10 flex flex-1 items-center gap-2">
             {children}
@@ -392,7 +391,6 @@ const MenubarSubTrigger = React.forwardRef<
       ref={ref as any}
       inset={inset}
       className={className}
-      shape={shape}
       {...props}
     >
       {children}
@@ -415,7 +413,6 @@ const MenubarSubContent = React.forwardRef<
         side="right"
         sideOffset={12}
         align="start"
-        shape={shape}
         className={className}
         {...props}
       />
@@ -423,12 +420,7 @@ const MenubarSubContent = React.forwardRef<
   }
 
   return (
-    <DropdownMenuSubContent
-      ref={ref as any}
-      shape={shape}
-      className={className}
-      {...props}
-    />
+    <DropdownMenuSubContent ref={ref as any} className={className} {...props} />
   );
 });
 MenubarSubContent.displayName = "Menubar.SubContent";
@@ -508,9 +500,7 @@ const MenubarCheckboxItem = React.forwardRef<
       ref={ref as any}
       checked={checked}
       onCheckedChange={onCheckedChange}
-      inset={inset}
       className={className}
-      shape={shape}
       onSelect={(e) => {
         closeMenu();
         props.onSelect?.(e);
@@ -613,9 +603,7 @@ const MenubarRadioItem = React.forwardRef<
     <DropdownMenuRadioItem
       ref={ref as any}
       value={value}
-      inset={inset}
       className={className}
-      shape={shape}
       onSelect={(e) => {
         closeMenu();
         props.onSelect?.(e);

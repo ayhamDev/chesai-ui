@@ -23,13 +23,13 @@ export const ThemeInjector: React.FC<ThemeInjectorProps> = ({
       acc[varName] = value;
       return acc;
     },
-    {} as React.CSSProperties,
+    {} as Record<string, any>,
   );
 
   return (
     <div
       className="website-studio-theme-root"
-      style={cssVariables}
+      style={cssVariables as React.CSSProperties}
       data-theme-mode={designSystem.mode} // Hook for Dark/Light mode CSS selectors
     >
       {children}

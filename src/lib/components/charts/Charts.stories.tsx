@@ -71,8 +71,10 @@ export const ChartShowcase: StoryObj = {
             <BarChart
               data={salesData}
               index="month"
+              scrollable={true}
               categories={["sales", "profit"]}
               valueFormatter={(v) => `$${v},`}
+              minWidth={1000}
               shape="full"
             />
           </Card>

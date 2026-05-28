@@ -43,6 +43,8 @@ export interface DatePickerProps {
   size?: "sm" | "md" | "lg";
   color?: "primary" | "secondary" | "error";
   itemShape?: Shape;
+  className?: string;
+  classNames?: Partial<Record<"base" | "label" | "inputWrapper" | "innerWrapper", string>>;
 }
 
 const shapeStyles: Record<Shape, string> = {
@@ -213,6 +215,7 @@ export const DatePicker = ({
   isInvalid,
   shape = "minimal",
   itemShape = "full",
+  classNames,
 }: DatePickerProps) => {
   const [open, setOpen] = useState(false);
   const [tempDate, setTempDate] = useState<Date | undefined>(value);
@@ -257,6 +260,7 @@ export const DatePicker = ({
         }),
         "w-full justify-start text-left font-normal text-on-surface",
         !isValidValue && "text-on-surface-variant/50",
+        classNames?.inputWrapper,
       )}
     >
       <CalendarIcon className="mr-2 h-4 w-4 opacity-50 shrink-0" />

@@ -35,6 +35,7 @@ interface TimePickerProps extends Omit<
   value?: Date;
   onChange?: (date: Date) => void;
   variant?: "docked" | "modal";
+  inputVariant?: "filled" | "filled-inverted" | "outlined" | "outlined-inverted" | "underlined" | "underlined-inverted" | "ghost" | "ghost-inverted";
 }
 
 interface NumberInputBlockProps {

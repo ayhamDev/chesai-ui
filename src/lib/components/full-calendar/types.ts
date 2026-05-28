@@ -64,4 +64,8 @@ export interface FullCalendarProps<T = any> {
   renderEventContent?: (event: CalendarEvent<T>, view: CalendarView) => React.ReactNode
 
   className?: string
+
+  onDateClick?: (date: Date) => void
+  onEventClick?: (event: CalendarEvent<T>) => void
+  children?: React.ReactNode
 }

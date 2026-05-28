@@ -70,7 +70,7 @@ const getParentAndIndex = (
       return { parentId, index: i };
     }
     if (nodes[i].children) {
-      const res = getParentAndIndex(nodes[i].children, targetId, nodes[i].id);
+      const res = getParentAndIndex(nodes[i].children || [], targetId, nodes[i].id);
       if (res) return res;
     }
   }

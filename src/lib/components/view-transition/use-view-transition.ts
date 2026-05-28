@@ -3,42 +3,25 @@
 import { useCallback } from 'react'
 import { flushSync } from 'react-dom'
 
-// Standardize TypeScript definitions for browsers that support the API
-declare global {
-  interface Document {
-    startViewTransition?: (callback: () => void | Promise<void>) => {
-      finished: Promise<void>
-      ready: Promise<void>
-      updateCallbackDone: Promise<void>
-    }
-  }
-}
-
 export function useViewTransition() {
   const startTransition = useCallback(<T>(callback: () => T | Promise<T>): Promise<void> => {
-    // 1. Fallback for browsers (Safari/Firefox) that don't support View Transitions yet
-    if (!document.startViewTransition) {
+    const startViewTransition = document.startViewTransition;
+    if (!startViewTransition) {
       const result = callback()
-      return result instanceof Promise ? result.then(() => {}) : Promise.resolve()
+      return (result as any) instanceof Promise ? (result as any).then(() => {}) : Promise.resolve()
     }
 
-    // 2. Execute the transition
     return new Promise(resolve => {
-      const transition = document.startViewTransition(() => {
-        let result: T | Promise<T>
+      const transition = startViewTransition.call(document, () => {
+        let result: T | Promise<T> | undefined = undefined;
 
-        // flushSync forces React to process the state change synchronously.
-        // This is critical for the browser to snapshot the "After" DOM state accurately.
         flushSync(() => {
           result = callback()
         })
 
-        // If the navigation returns a promise (e.g., Next.js chunk loading),
-        // returning it tells the View Transition API to wait for the new page to load.
-        return result instanceof Promise ? result : Promise.resolve()
+        return (result as any) instanceof Promise ? (result as any) : Promise.resolve()
       })
 
-      // Resolve the wrapper promise when the animation completes
       transition.finished.then(resolve)
     })
   }, [])

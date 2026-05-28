@@ -152,7 +152,7 @@ const NavigationMenuContentItem = React.forwardRef<
     ref,
   ) => {
     const localRef = useRef<HTMLAnchorElement>(null);
-    useImperativeHandle(ref, () => localRef.current as HTMLAnchorElement);
+    useImperativeHandle(ref as React.Ref<any>, () => localRef.current as HTMLAnchorElement);
     const [, event] = useRipple({
       // @ts-ignore
       ref: localRef,

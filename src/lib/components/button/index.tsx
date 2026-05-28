@@ -127,8 +127,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     if (asChild) {
+      const SlotComp = Slot as any;
       return (
-        <Slot
+        <SlotComp
           className={clsx(
             buttonVariants({ variant, size, shape, className, isLoading }),
             disabled || isLoading ? "opacity-70 pointer-events-none" : "",
@@ -142,7 +143,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           {...props}
         >
           {children}
-        </Slot>
+        </SlotComp>
       );
     }
 

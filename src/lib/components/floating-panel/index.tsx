@@ -103,7 +103,7 @@ const getPositionStyles = (position: FloatingPanelPosition, offset: number) => {
 
 export interface FloatingPanelProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
-  "children"
+  "children" | "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart"
 > {
   children: React.ReactNode;
   position?: FloatingPanelPosition;

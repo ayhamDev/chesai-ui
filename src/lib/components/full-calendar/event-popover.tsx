@@ -4,7 +4,7 @@
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
 import { format } from "date-fns";
-import { AnimatePresence, motion, useMotionValue } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue, useDragControls } from "framer-motion";
 import { Check, Clock, GripHorizontal, Repeat, Trash2, X } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -151,6 +151,7 @@ export const EventPopover = () => {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const popoverRef = useRef<HTMLDivElement>(null);
+  const dragControls = useDragControls();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -891,7 +892,8 @@ export const EventPopover = () => {
             ref={popoverRef}
             drag
             dragMomentum={false}
-            dragHandle=".drag-handle"
+            dragControls={dragControls}
+            dragListener={false}
             style={{
               x,
               y,
@@ -905,7 +907,13 @@ export const EventPopover = () => {
             transition={{ duration: 0.15 }}
             className="absolute bg-surface-container-high border border-outline-variant/50 rounded-2xl shadow-2xl pointer-events-auto flex flex-col h-auto max-h-[90vh]"
           >
-            <div className="flex items-center justify-between px-2 py-1.5 bg-surface-container-high border-b border-outline-variant/20 drag-handle cursor-move rounded-t-2xl shrink-0">
+            <div
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                dragControls.start(e);
+              }}
+              className="flex items-center justify-between px-2 py-1.5 bg-surface-container-high border-b border-outline-variant/20 drag-handle cursor-move rounded-t-2xl shrink-0"
+            >
               <IconButton
                 variant="ghost"
                 size="sm"

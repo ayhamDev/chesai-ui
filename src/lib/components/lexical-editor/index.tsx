@@ -205,7 +205,7 @@ export const LexicalEditor = ({
         )}
       >
         <LexicalComposer initialConfig={editorConfig}>
-          {!readOnly && !disabled && <ToolbarPlugin shape={shape} />}
+          {!readOnly && !disabled && <ToolbarPlugin shape={shape || undefined} />}
 
           <div className="relative flex-1">
             <RichTextPlugin

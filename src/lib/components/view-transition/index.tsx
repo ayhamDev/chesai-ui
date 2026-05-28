@@ -30,7 +30,7 @@ export const TransitionLink = forwardRef<HTMLElement, TransitionLinkProps>(
     };
 
     return (
-      <Comp ref={ref} onClick={handleClick} {...props}>
+      <Comp ref={ref as any} onClick={handleClick} {...props}>
         {children}
       </Comp>
     );

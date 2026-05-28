@@ -566,9 +566,7 @@ const DialogDescription = forwardRef<
 });
 
 export interface DialogBodyProps
-  extends
-    Omit<HTMLAttributes<HTMLDivElement>, "dir">,
-    Omit<ElasticScrollAreaProps, "children" | "className" | "ref"> {}
+  extends ElasticScrollAreaProps {}
 const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
   (
     {

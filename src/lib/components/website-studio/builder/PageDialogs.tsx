@@ -114,7 +114,7 @@ export const PageDialogs: React.FC<PageDialogsProps> = ({
               label="Page Title"
               placeholder="About Us"
               value={editPageTitle}
-              onChange={(e) => editPageTitle(e.target.value)}
+              onChange={(e) => setEditPageTitle(e.target.value)}
             />
           </DialogBody>
           <DialogFooter>

@@ -335,7 +335,7 @@ const RenderNode: React.FC<RenderNodeProps> = ({
       )}
       {/* NO MORE WRAPPER DIV! Renders the exact component provided in the registry */}
       <ComponentDef.render {...finalProps} {...boundEvents}>
-        {renderedChildren?.length ? renderedChildren : finalProps.children}
+        {renderedChildren?.length ? renderedChildren : (cleanProps as any).children}
       </ComponentDef.render>
     </NodeErrorBoundary>
   );
@@ -355,13 +355,13 @@ export const ThemeInjector: React.FC<{
       acc[varName] = value;
       return acc;
     },
-    {} as React.CSSProperties,
+    {} as Record<string, any>,
   );
 
   return (
     <div
       className="website-studio-theme-root w-full min-h-screen flex flex-col bg-background text-on-background"
-      style={cssVariables}
+      style={cssVariables as React.CSSProperties}
       data-theme-mode={designSystem.mode}
     >
       {children}

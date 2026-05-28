@@ -120,7 +120,7 @@ const DropdownMenuItem = React.forwardRef<
     color: "var(--color-ripple-dark)",
     duration: 400,
   });
-  React.useImperativeHandle(ref, () => localRef.current!);
+  React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
   return (
     <RadixDropdownMenu.Item
@@ -150,7 +150,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     color: "var(--color-ripple-dark)",
     duration: 400,
   });
-  React.useImperativeHandle(ref, () => localRef.current!);
+  React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
   return (
     <RadixDropdownMenu.CheckboxItem
@@ -187,7 +187,7 @@ const DropdownMenuRadioItem = React.forwardRef<
     color: "var(--color-ripple-dark)",
     duration: 400,
   });
-  React.useImperativeHandle(ref, () => localRef.current!);
+  React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
   return (
     <RadixDropdownMenu.RadioItem
@@ -225,7 +225,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     color: "var(--color-ripple-dark)",
     duration: 400,
   });
-  React.useImperativeHandle(ref, () => localRef.current!);
+  React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
   return (
     <RadixDropdownMenu.SubTrigger

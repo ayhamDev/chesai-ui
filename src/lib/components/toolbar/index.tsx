@@ -392,7 +392,7 @@ const ToolbarToggleItem = React.forwardRef<
     const finalShape = shape || context.shape;
 
     const localRef = React.useRef<HTMLButtonElement>(null);
-    React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
+    React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current as HTMLButtonElement);
     const rippleColor =
       variant === "primary" || variant === "default"
         ? "var(--color-ripple-dark)" // Defined in theme.css as rgba(255,255,255, 0.1)

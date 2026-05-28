@@ -13,6 +13,7 @@ import {
   useReactFlow,
   useViewport,
 } from "@xyflow/react";
+import { type Node } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { clsx } from "clsx";
 import { ArtboardNode } from "./ArtboardNode";
@@ -76,7 +77,7 @@ const nodeTypes = {
   artboard: ArtboardNode,
 };
 
-const initialPageNodes = [
+const initialPageNodes: Node<{ label: string; width: number; height: number; isIsolationMode?: boolean; componentId?: string; }>[] = [
   {
     id: "desktop",
     type: "artboard",
@@ -200,7 +201,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
       if (
         isLogsPanelOpen &&
         logsPanelRef.current &&
-        !logsPanelRef.current.contains(event.target as Node)
+        !logsPanelRef.current.contains(event.target as any)
       ) {
         setIsLogsPanelOpen(false);
         aiConfig?.onPanelCollapseToggle?.(false);
@@ -317,7 +318,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        nodeTypes={nodeTypes}
+        nodeTypes={nodeTypes as any}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}

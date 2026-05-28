@@ -28,8 +28,9 @@ import {
   $getSelection,
   $isRangeSelection,
   $getNearestNodeFromDOMNode,
+  $isElementNode,
   CAN_REDO_COMMAND,
-  CAN_REDO_COMMAND as CAN_UNDO_COMMAND,
+  CAN_UNDO_COMMAND,
   CLICK_COMMAND,
   FORMAT_ELEMENT_COMMAND,
   FORMAT_TEXT_COMMAND,
@@ -114,7 +115,7 @@ export const ToolbarPlugin = ({
           ? anchorNode
           : anchorNode.getTopLevelElementOrThrow();
 
-      const elementFormat = element.getFormatType();
+      const elementFormat = $isElementNode(element) ? element.getFormatType() : "left";
       setAlign(elementFormat || "left");
 
       const elementKey = element.getKey();
@@ -158,9 +159,9 @@ export const ToolbarPlugin = ({
         1,
       ),
       editor.registerCommand(
-        UNDO_COMMAND,
-        () => {
-          setCanUndo(editor.hasNodes());
+        CAN_UNDO_COMMAND,
+        (payload) => {
+          setCanUndo(payload);
           return false;
         },
         1,

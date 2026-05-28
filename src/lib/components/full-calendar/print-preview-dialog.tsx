@@ -53,10 +53,8 @@ export const PrintPreviewDialog = () => {
   }, [printWidth, printHeight, isPrintPreviewOpen]);
 
   return (
-    <Dialog open={isPrintPreviewOpen} onOpenChange={setPrintPreviewOpen}>
+    <Dialog open={isPrintPreviewOpen} onOpenChange={setPrintPreviewOpen} isLocked={true}>
       <DialogContent
-        onInteractOutside={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
         className="flex flex-col md:flex-row gap-0 p-0 overflow-hidden max-w-6xl! w-[95vw] h-[85vh] bg-surface-container"
         shape="minimal"
       >

@@ -15,7 +15,7 @@ function findNodeAndParent(
       return { node: nodes[i], parentArray: nodes, index: i }
     }
     if (nodes[i].children) {
-      const result = findNodeAndParent(nodes[i].children, targetId)
+      const result = findNodeAndParent(nodes[i].children || [], targetId)
       if (result) return result
     }
   }

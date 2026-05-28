@@ -28,6 +28,8 @@ export interface ChartProps {
   height?: number | string;
   className?: string;
   valueFormatter?: (value: number) => string;
+  scrollable?: boolean;
+  minWidth?: number | string;
 }
 
 export const AreaChart = ({
@@ -35,11 +37,13 @@ export const AreaChart = ({
   categories,
   index,
   variant = "primary",
-  shape = "minimal", // Extracted but visual impact on Area is minimal
+  shape = "minimal",
   colors,
   height = 300,
   className,
   valueFormatter = (value) => `${value}`,
+  scrollable = false,
+  minWidth = 500,
 }: ChartProps) => {
   const chartId = useId();
   const isGhost = variant === "ghost";
@@ -48,102 +52,110 @@ export const AreaChart = ({
   return (
     <div
       className={clsx(
-        "outline-none[&_.recharts-surface]:outline-none",
+        "outline-none [&_.recharts-surface]:outline-none",
+        scrollable && "overflow-x-auto scrollbar-thin",
         className,
       )}
       style={{ height }}
     >
-      <ResponsiveContainer width="100%" height="100%">
-        <RechartsAreaChart
-          data={data}
-          margin={
-            isGhost
-              ? { top: 0, right: 0, bottom: 0, left: 0 }
-              : { top: 10, right: 10, bottom: 0, left: 0 }
-          }
-        >
-          <defs>
+      <div
+        style={{
+          minWidth: scrollable ? minWidth : undefined,
+          height: "100%",
+        }}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <RechartsAreaChart
+            data={data}
+            margin={
+              isGhost
+                ? { top: 0, right: 0, bottom: 0, left: 0 }
+                : { top: 10, right: 10, bottom: 0, left: 0 }
+            }
+          >
+            <defs>
+              {categories.map((category, i) => {
+                const color = colors?.[i] || getColorForIndex(i);
+                return (
+                  <linearGradient
+                    key={`${chartId}-${category}`}
+                    id={`gradient-${chartId}-${i}`}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="100%"
+                      stopColor={color}
+                      stopOpacity={isGhost ? 0.2 : 0.4}
+                    />
+                    <stop offset="95%" stopColor={color} stopOpacity={0} />
+                  </linearGradient>
+                );
+              })}
+            </defs>
+
+            {!isGhost && (
+              <CartesianGrid
+                {...chartGridConfig}
+                vertical={false}
+                horizontal={!isSecondary}
+              />
+            )}
+
+            {!isGhost && <XAxis dataKey={index} {...chartAxisConfig} />}
+
+            {!isGhost && (
+              <YAxis
+                {...chartAxisConfig}
+                tickFormatter={valueFormatter}
+                hide={isSecondary}
+                width={45}
+              />
+            )}
+
+            {!isGhost && (
+              <Tooltip
+                content={<ChartTooltip />}
+                cursor={{
+                  stroke: "var(--md-sys-color-outline-variant)",
+                  strokeWidth: 1,
+                  strokeDasharray: "4 4",
+                }}
+              />
+            )}
+
             {categories.map((category, i) => {
               const color = colors?.[i] || getColorForIndex(i);
               return (
-                <linearGradient
-                  key={`${chartId}-${category}`}
-                  id={`gradient-${chartId}-${i}`}
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop
-                    offset="100%"
-                    stopColor={color}
-                    stopOpacity={isGhost ? 0.2 : 0.4}
-                  />
-                  <stop offset="95%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
+                <Area
+                  key={category}
+                  type="monotone"
+                  dataKey={category}
+                  stroke={color}
+                  fill={`url(#gradient-${chartId}-${i})`}
+                  strokeWidth={isGhost ? 1 : 2}
+                  fillOpacity={1}
+                  animationDuration={1500}
+                  animationEasing="ease-in-out"
+                  activeDot={
+                    !isGhost
+                      ? {
+                          r: 4,
+                          strokeWidth: 2,
+                          stroke: "var(--md-sys-color-surface)",
+                          fill: color,
+                        }
+                      : false
+                  }
+                  isAnimationActive={true}
+                />
               );
             })}
-          </defs>
-
-          {!isGhost && (
-            <CartesianGrid
-              {...chartGridConfig}
-              vertical={false}
-              horizontal={!isSecondary}
-            />
-          )}
-
-          {!isGhost && <XAxis dataKey={index} {...chartAxisConfig} />}
-
-          {!isGhost && (
-            <YAxis
-              {...chartAxisConfig}
-              tickFormatter={valueFormatter}
-              hide={isSecondary}
-              width={45}
-            />
-          )}
-
-          {!isGhost && (
-            <Tooltip
-              content={<ChartTooltip />}
-              cursor={{
-                stroke: "var(--md-sys-color-outline-variant)",
-                strokeWidth: 1,
-                strokeDasharray: "4 4",
-              }}
-            />
-          )}
-
-          {categories.map((category, i) => {
-            const color = colors?.[i] || getColorForIndex(i);
-            return (
-              <Area
-                key={category}
-                type="monotone"
-                dataKey={category}
-                stroke={color}
-                fill={`url(#gradient-${chartId}-${i})`}
-                strokeWidth={isGhost ? 1 : 2}
-                fillOpacity={1}
-                animationDuration={1500}
-                animationEasing="ease-in-out"
-                activeDot={
-                  !isGhost
-                    ? {
-                        r: 4,
-                        strokeWidth: 2,
-                        stroke: "var(--md-sys-color-surface)",
-                        fill: color,
-                      }
-                    : false
-                }
-                isAnimationActive={true}
-              />
-            );
-          })}
-        </RechartsAreaChart>
-      </ResponsiveContainer>
+          </RechartsAreaChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };

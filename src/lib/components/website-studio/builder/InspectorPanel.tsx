@@ -285,7 +285,7 @@ const ControlRenderer = ({
                 <ColorPicker
                   value={value || ""}
                   onChange={onChange}
-                  variant="filled"
+                  variant="flat"
                   shape="minimal"
                 />
               );

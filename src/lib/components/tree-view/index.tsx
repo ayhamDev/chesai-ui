@@ -739,11 +739,11 @@ export function TreeView<T>({
           >
             {content}
             <DragOverlay
-              dropAnimation={defaultDropAnimationSideEffects({
+              dropAnimation={{
                 sideEffects: defaultDropAnimationSideEffects({
                   styles: { active: { opacity: "0.4" } },
                 }),
-              })}
+              }}
             >
               {activeId && activeItem ? (
                 <div className="relative inline-flex items-center pointer-events-none">

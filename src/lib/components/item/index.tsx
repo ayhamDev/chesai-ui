@@ -325,7 +325,7 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
     },
     ref,
   ) => {
-    const Comp = asChild ? Slot : "div";
+    const Comp = (asChild ? Slot : "div") as any;
 
     const localRef = React.useRef<HTMLDivElement>(null);
     React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
@@ -482,7 +482,8 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
                   opacity: 0,
                   marginTop: 0,
                   marginBottom: 0,
-                  paddingY: 0,
+                  paddingTop: 0,
+                  paddingBottom: 0,
                   border: "none",
                 }
               : {}

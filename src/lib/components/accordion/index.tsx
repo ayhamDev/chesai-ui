@@ -146,7 +146,7 @@ const AccordionTrigger = React.forwardRef<
     disabled: disableRipple,
   });
   // FIX: Ensure non-null return for imperative handle
-  React.useImperativeHandle(ref, () => localRef.current!);
+  React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
   return (
     <AccordionPrimitive.Header className="flex">
