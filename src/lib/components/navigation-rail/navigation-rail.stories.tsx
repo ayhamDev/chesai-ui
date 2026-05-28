@@ -161,7 +161,7 @@ export const StackedMode: Story = {
   args: {
     ...Default.args,
     itemLayout: "stacked",
-    variant: "primary",
+    variant: "ghost",
   },
   parameters: {
     docs: {

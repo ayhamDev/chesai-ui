@@ -1,3 +1,4 @@
+// src/lib/components/elastic-scroll-area/index.tsx
 "use client";
 
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
@@ -83,6 +84,7 @@ const DefaultRefreshIndicator: FC<RefreshIndicatorProps> = ({
 const useElasticAndRefresh = (
   viewportRef: RefObject<HTMLDivElement | null>,
   motionValue: MotionValue<number>,
+  indicatorY: MotionValue<number>, // Added dedicated indicator motion value
   options: {
     orientation: "vertical" | "horizontal";
     isEnabled: boolean;
@@ -103,6 +105,8 @@ const useElasticAndRefresh = (
   const isVertical = orientation === "vertical";
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const isRefreshingRef = useRef(false); // Ref for sync event listeners without dependency updates
+
   const isTouching = useRef(false);
   const startPos = useRef(0);
   const isOverscrolling = useRef(false);
@@ -111,10 +115,21 @@ const useElasticAndRefresh = (
   const isRecovering = useRef(false);
   const recoveryAnimation = useRef<any>(null);
 
+  // Sync the indicator with scroll pulls, unless we are currently refreshing
+  useEffect(() => {
+    const unsub = motionValue.on("change", (latest) => {
+      if (!isRefreshingRef.current) {
+        indicatorY.set(latest > 0 ? latest : 0);
+      }
+    });
+    return () => unsub();
+  }, [motionValue, indicatorY]);
+
   const springToZero = useCallback(() => {
     isRecovering.current = true;
     if (recoveryAnimation.current) recoveryAnimation.current.stop();
 
+    // 1. Spring list back
     recoveryAnimation.current = animate(motionValue, 0, {
       type: "spring",
       stiffness: SNAP_BACK_STIFFNESS,
@@ -124,18 +139,42 @@ const useElasticAndRefresh = (
         recoveryAnimation.current = null;
       },
     });
-  }, [motionValue]);
+
+    // 2. Spring indicator back (if not held by an ongoing refresh)
+    if (!isRefreshingRef.current) {
+      animate(indicatorY, 0, {
+        type: "spring",
+        stiffness: SNAP_BACK_STIFFNESS,
+        damping: SNAP_BACK_DAMPING,
+      });
+    }
+  }, [motionValue, indicatorY]);
 
   const triggerRefresh = useCallback(async () => {
     if (!onRefresh || !isVertical) {
       springToZero();
       return;
     }
+
     setIsRefreshing(true);
+    isRefreshingRef.current = true;
     isRecovering.current = true;
 
     if (recoveryAnimation.current) recoveryAnimation.current.stop();
+
+    // 1. Instantly return list to 0 immediately when released
     recoveryAnimation.current = animate(motionValue, 0, {
+      type: "spring",
+      stiffness: SNAP_BACK_STIFFNESS,
+      damping: SNAP_BACK_DAMPING,
+      onComplete: () => {
+        isRecovering.current = false;
+        recoveryAnimation.current = null;
+      },
+    });
+
+    // 2. Smoothly lock the indicator at the threshold offset while refreshing
+    animate(indicatorY, pullThreshold, {
       type: "spring",
       stiffness: SNAP_BACK_STIFFNESS,
       damping: SNAP_BACK_DAMPING,
@@ -145,16 +184,30 @@ const useElasticAndRefresh = (
       await onRefresh();
     } finally {
       setIsRefreshing(false);
-      isRecovering.current = false;
+      isRefreshingRef.current = false;
+
+      // 3. Retreat indicator back to 0 once completely done
+      animate(indicatorY, 0, {
+        type: "spring",
+        stiffness: SNAP_BACK_STIFFNESS,
+        damping: SNAP_BACK_DAMPING,
+      });
     }
-  }, [onRefresh, springToZero, isVertical, motionValue]);
+  }, [
+    onRefresh,
+    springToZero,
+    isVertical,
+    motionValue,
+    indicatorY,
+    pullThreshold,
+  ]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport || !isEnabled) return;
 
     const handleWheel = (event: WheelEvent) => {
-      if (isRefreshing) return;
+      if (isRefreshingRef.current) return;
       const {
         scrollTop,
         scrollLeft,
@@ -215,7 +268,7 @@ const useElasticAndRefresh = (
     };
 
     const handleTouchStart = (event: TouchEvent) => {
-      if (isRefreshing || event.touches.length !== 1) return;
+      if (isRefreshingRef.current || event.touches.length !== 1) return;
 
       if (isRecovering.current) {
         isRecovering.current = false;
@@ -229,7 +282,11 @@ const useElasticAndRefresh = (
     };
 
     const handleTouchMove = (event: TouchEvent) => {
-      if (!isTouching.current || isRefreshing || event.touches.length !== 1)
+      if (
+        !isTouching.current ||
+        isRefreshingRef.current ||
+        event.touches.length !== 1
+      )
         return;
 
       const {
@@ -313,7 +370,6 @@ const useElasticAndRefresh = (
     isRefreshEnabled,
     pullThreshold,
     triggerRefresh,
-    isRefreshing,
     isVertical,
   ]);
 
@@ -353,11 +409,13 @@ const ElasticScrollAreaRoot = forwardRef<
     );
 
     const motionValue = useMotionValue(0);
+    const indicatorY = useMotionValue(0);
     const isVertical = orientation === "vertical";
 
     const { isRefreshing } = useElasticAndRefresh(
       localViewportRef,
       motionValue,
+      indicatorY,
       {
         orientation,
         isEnabled: elasticity || pullToRefresh,
@@ -413,9 +471,8 @@ const ElasticScrollAreaRoot = forwardRef<
       return () => observer.disconnect();
     }, [dimmingEdges, updateEdgeStates]);
 
-    const pullProgress = useTransform(motionValue, (v) => (v > 0 ? v : 0));
     const indicatorOpacity = useTransform(
-      pullProgress,
+      indicatorY,
       [0, pullThreshold * 0.5],
       [0, 1],
     );
@@ -476,14 +533,13 @@ const ElasticScrollAreaRoot = forwardRef<
             key={"refresh"}
             className="pointer-events-none absolute inset-x-0 top-[-10px] z-50 flex justify-center"
             style={{
-              y: isRefreshing ? pullThreshold + 40 : pullProgress,
-              opacity: isRefreshing ? 1 : indicatorOpacity,
+              y: indicatorY,
+              opacity: indicatorOpacity,
             }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-transparent">
               <RefreshIndicatorComponent
-                pullProgress={pullProgress}
+                pullProgress={indicatorY}
                 isRefreshing={isRefreshing}
               />
             </div>

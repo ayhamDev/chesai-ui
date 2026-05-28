@@ -37,28 +37,36 @@ const COLOR_VARIANTS = {
       "bg-surface-container-highest hover:bg-surface-container-highest/80 text-on-surface",
     expandedHeader: "bg-surface-container-high text-on-surface",
     expandedBody: "bg-surface-container-high",
+    mutedText: "text-on-surface-variant",
     placeholder: "text-on-surface-variant/60",
+    inputPlaceholder: "placeholder:text-on-surface-variant/60",
   },
   primary: {
     trigger:
       "bg-primary-container hover:bg-primary-container/90 text-on-primary-container",
     expandedHeader: "bg-primary-container text-on-primary-container",
     expandedBody: "bg-surface-container-low",
+    mutedText: "text-on-primary-container/80",
     placeholder: "text-on-primary-container/60",
+    inputPlaceholder: "placeholder:text-on-primary-container/60",
   },
   secondary: {
     trigger:
       "bg-secondary-container hover:bg-secondary-container/90 text-on-secondary-container",
     expandedHeader: "bg-secondary-container text-on-secondary-container",
     expandedBody: "bg-surface-container",
+    mutedText: "text-on-secondary-container/80",
     placeholder: "text-on-secondary-container/60",
+    inputPlaceholder: "placeholder:text-on-secondary-container/60",
   },
   transparent: {
     trigger:
       "bg-transparent hover:bg-surface-container-highest/30 text-on-surface",
     expandedHeader: "bg-surface-container-high text-on-surface",
     expandedBody: "bg-surface-container-high",
+    mutedText: "text-on-surface-variant",
     placeholder: "text-on-surface-variant/60",
+    inputPlaceholder: "placeholder:text-on-surface-variant/60",
   },
 };
 
@@ -229,7 +237,8 @@ export const SearchView = ({
       <motion.div
         initial={{
           top: triggerRect.top,
-          left: triggerRect.left,
+          // FIX: Nudge left slightly on enter to correct visual alignment
+          left: triggerRect.left - 10,
           width: triggerRect.width,
           height: triggerRect.height,
           borderRadius: triggerVariant === "icon" ? 999 : triggerBorderRadius,
@@ -287,7 +296,7 @@ export const SearchView = ({
                 className={clsx(
                   "h-full w-full bg-transparent text-lg outline-none",
                   "text-inherit",
-                  colors.placeholder,
+                  colors.inputPlaceholder,
                 )}
                 placeholder={placeholder}
                 value={value}
@@ -309,16 +318,6 @@ export const SearchView = ({
                   <X className="h-6 w-6" />
                 </IconButton>
               )}
-              <IconButton
-                variant="ghost"
-                className={clsx(
-                  color === "primary" || color === "secondary"
-                    ? "text-inherit hover:bg-white/10"
-                    : "text-on-surface",
-                )}
-              >
-                <Mic className="h-6 w-6" />
-              </IconButton>
             </div>
           </motion.div>
 
@@ -339,7 +338,7 @@ export const SearchView = ({
               <div
                 className={clsx(
                   "flex-1 text-lg px-2 truncate",
-                  colors.placeholder,
+                  value ? colors.mutedText : colors.placeholder,
                   triggerVariant === "minimal" && "text-center",
                 )}
               >
@@ -409,7 +408,7 @@ export const SearchView = ({
           <span
             className={clsx(
               "text-lg truncate select-none text-center",
-              value ? "text-inherit" : "opacity-70",
+              value ? colors.mutedText : colors.placeholder,
             )}
           >
             {value || placeholder}
@@ -437,7 +436,7 @@ export const SearchView = ({
         <div
           className={clsx(
             "flex flex-1 items-center px-2 text-lg truncate select-none",
-            value ? "text-inherit" : "opacity-70",
+            value ? colors.mutedText : colors.placeholder,
           )}
         >
           {value || placeholder}

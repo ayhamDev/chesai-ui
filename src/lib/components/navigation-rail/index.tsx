@@ -167,8 +167,8 @@ const NavigationRailFAB = React.forwardRef<
         }}
         transition={{
           type: "spring",
-          stiffness: 300,
-          damping: 24,
+          stiffness: 400,
+          damping: 30,
           mass: 1,
         }}
         className={clsx(

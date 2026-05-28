@@ -42,7 +42,6 @@ import {
   Moon,
   ChevronDown,
   X,
-  Wand2,
   ArrowUp,
   MoreHorizontal,
   Paperclip,
@@ -58,12 +57,15 @@ export interface StudioAIConfig {
   enabled: boolean;
   suggestions?: string[];
   models?: string[];
+  defaultModel?: string;
+  onModelChange?: (model: string) => void;
   onPromptSubmit?: (
     prompt: string,
-    context: { nodes: any[]; files: File[] },
+    context: { nodes: any[]; files: File[]; model?: string },
   ) => void;
   onPanelCollapseToggle?: (isOpen: boolean) => void;
   logsContent?: React.ReactNode;
+  customActions?: React.ReactNode; // Inject custom buttons here (like settings, wand, etc.)
 }
 
 interface CanvasInnerProps {
@@ -118,9 +120,12 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
   const [promptText, setPromptText] = useState("");
   const [isLogsPanelOpen, setIsLogsPanelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const [activeModel, setActiveModel] = useState(
-    aiConfig?.models?.[0] || "3 Flash",
+
+  // Model state defaults cleanly if nothing is provided
+  const [activeModel, setActiveModel] = useState<string | undefined>(
+    aiConfig?.defaultModel || aiConfig?.models?.[0],
   );
+
   const [isDraggingFile, setIsDraggingFile] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -285,6 +290,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
     aiConfig?.onPromptSubmit?.(promptText, {
       nodes: studioNodesToSubmit,
       files: attachedFiles,
+      model: activeModel,
     });
 
     setPromptText("");
@@ -683,11 +689,14 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                     </div>
 
                     <div className="flex items-center gap-1.5">
+                      {/* Inject any Custom Actions provided via the config */}
+                      {aiConfig.customActions}
+
                       {aiConfig.models && aiConfig.models.length > 0 && (
                         <DropdownMenu shape="minimal">
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" shape="full">
-                              {activeModel}
+                              {activeModel || aiConfig.models[0]}
                               <ChevronDown size={12} className="opacity-50" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -695,19 +704,20 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                             {aiConfig.models.map((model) => (
                               <DropdownMenuItem
                                 key={model}
-                                onClick={() => setActiveModel(model)}
+                                onClick={() => {
+                                  setActiveModel(model);
+                                  aiConfig.onModelChange?.(model);
+                                }}
                               >
-                                {activeModel === model && <Check />}
+                                {activeModel === model && (
+                                  <Check className="w-4 h-4 mr-2" />
+                                )}
                                 {model}
                               </DropdownMenuItem>
                             ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
-
-                      <IconButton variant="ghost" size="sm">
-                        <Wand2 size={14} />
-                      </IconButton>
 
                       <IconButton
                         variant="ghost"

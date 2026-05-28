@@ -549,7 +549,6 @@ export const Builder: React.FC<BuilderProps> = ({
             <StudioCanvas
               aiConfig={{
                 enabled: true,
-                models: ["3 Flash", "4 Turbo", "Claude 3.5"],
                 suggestions: [
                   "Add a dark mode version of these screens",
                   "Refine the product cards to show more details",

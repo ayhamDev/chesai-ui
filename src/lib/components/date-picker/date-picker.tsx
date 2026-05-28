@@ -288,7 +288,7 @@ export const DatePicker = ({
               align="start"
               sideOffset={4}
               className={clsx(
-                "z-50 w-[330px] min-w-auto bg-surface-container-high p-0 shadow-xl overflow-hidden",
+                "z-[1000] w-[330px] min-w-auto bg-surface-container-high p-0 shadow-xl overflow-hidden",
                 shapeStyles[shape],
                 "data-[state=open]:animate-menu-enter",
                 "data-[state=closed]:animate-menu-exit",

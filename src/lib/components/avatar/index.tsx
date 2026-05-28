@@ -27,18 +27,21 @@ const avatarVariants = cva(
       size: "md",
       shape: "full",
     },
-  }
+  },
 );
 
 const getInitials = (name: string) => {
-  const words = name.split(" ").filter(Boolean);
+  const words = typeof name === "string" ? name.split(" ").filter(Boolean) : [];
+
   if (words.length === 0) return "?";
   if (words.length === 1) return words[0].charAt(0).toUpperCase();
+
   return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
 };
 
 export interface AvatarProps
-  extends React.ComponentPropsWithoutRef<typeof RadixAvatar.Root>,
+  extends
+    React.ComponentPropsWithoutRef<typeof RadixAvatar.Root>,
     VariantProps<typeof avatarVariants> {
   src?: string;
   fallback?: string;
@@ -59,7 +62,7 @@ export const Avatar = React.forwardRef<
       variant = "default",
       ...props
     },
-    ref
+    ref,
   ) => {
     const [loadingStatus, setLoadingStatus] = useState<
       "idle" | "loading" | "loaded" | "error"
@@ -120,6 +123,6 @@ export const Avatar = React.forwardRef<
         </RadixAvatar.Fallback>
       </RadixAvatar.Root>
     );
-  }
+  },
 );
 Avatar.displayName = "Avatar";
