@@ -210,7 +210,7 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
   const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false);
 
   const { website, activePageId } = useStudioStore();
-  const { components, cms, actions, customApi } = useBuilderContext();
+  const { components, cms, actions, customApi, globalHeadCode, globalBodyCode, designSystem } = useBuilderContext();
 
   const [previewPageId, setPreviewPageId] = useState<string | null>(null);
 
@@ -674,9 +674,11 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
                         key={`${reloadKey}-${previewPageId}`}
                         components={components}
                         data={activePage.content}
-                        designSystem={website?.designSystem}
+                        designSystem={designSystem || website?.designSystem}
                         cms={cms}
                         customApi={customApi}
+                        globalHeadCode={globalHeadCode}
+                        globalBodyCode={globalBodyCode}
                         actions={{
                           ...actions,
                           openLink: (url: string, target: string) => {

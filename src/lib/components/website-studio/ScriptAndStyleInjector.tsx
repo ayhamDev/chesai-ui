@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 interface ScriptAndStyleInjectorProps {
   /** The raw HTML string containing elements like scripts, styles, or meta tags */
@@ -9,26 +9,31 @@ interface ScriptAndStyleInjectorProps {
 
 /**
  * Safely parses and injects custom head or body scripts/styles inside the client environment.
- * Handles cleanup of script/style side-effects when transitioning routes or unmounting.
+ * Automatically scopes injections to the document it mounts in (crucial for iframe isolation).
  */
 export const ScriptAndStyleInjector: React.FC<ScriptAndStyleInjectorProps> = ({
   html,
   target,
 }) => {
-  useEffect(() => {
-    if (!html || typeof window === "undefined") return;
+  const mountRef = useRef<HTMLDivElement>(null);
 
-    // Use a temporary container to parse the raw HTML structure securely
-    const container = document.createElement("div");
+  useEffect(() => {
+    if (!html || !mountRef.current) return;
+
+    // Securely retrieve the document context this component is mounted inside (e.g. an iframe)
+    const doc = mountRef.current.ownerDocument;
+    if (!doc) return;
+
+    const targetElement = target === "head" ? doc.head : doc.body;
+    const container = doc.createElement("div");
     container.innerHTML = html.trim();
 
-    const targetElement = target === "head" ? document.head : document.body;
     const injectedNodes: Node[] = [];
 
     Array.from(container.childNodes).forEach((node) => {
       if (node instanceof HTMLScriptElement) {
-        // Recreate the script element and map its attributes to trigger execution.
-        const scriptElement = document.createElement("script");
+        // Recreate the script element to trigger execution
+        const scriptElement = doc.createElement("script");
 
         Array.from(node.attributes).forEach((attr) => {
           scriptElement.setAttribute(attr.name, attr.value);
@@ -60,5 +65,5 @@ export const ScriptAndStyleInjector: React.FC<ScriptAndStyleInjectorProps> = ({
     };
   }, [html, target]);
 
-  return null;
+  return <div ref={mountRef} style={{ display: "none" }} data-injector-target={target} />;
 };

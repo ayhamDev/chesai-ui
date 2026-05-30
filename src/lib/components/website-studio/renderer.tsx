@@ -360,10 +360,19 @@ export const ThemeInjector: React.FC<{
     {} as Record<string, any>,
   );
 
+  const canvasBg =
+    designSystem.tokens["--color-canvas"] ||
+    designSystem.tokens["color-canvas"];
+
+  const combinedStyles: React.CSSProperties = {
+    ...cssVariables,
+    backgroundColor: canvasBg ? String(canvasBg) : "var(--md-sys-color-background)",
+  };
+
   return (
     <div
-      className="website-studio-theme-root w-full min-h-screen flex flex-col bg-background text-on-background"
-      style={cssVariables as React.CSSProperties}
+      className="website-studio-theme-root w-full min-h-screen flex flex-col text-on-background transition-colors duration-200"
+      style={combinedStyles}
       data-theme-mode={designSystem.mode}
     >
       {children}

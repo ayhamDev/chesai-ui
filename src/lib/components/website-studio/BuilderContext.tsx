@@ -1,13 +1,16 @@
 "use client";
 
 import React, { createContext, useContext } from "react";
-import type { ComponentRegistry } from "./types";
+import type { ComponentRegistry, DesignSystemSchema } from "./types";
 
 interface BuilderContextValue {
   components: ComponentRegistry;
   cms?: any;
-  actions?: Record<string, Function>; // Added to hold global actions
-  customApi?: any; // Added to hold custom API for sandboxed code
+  actions?: Record<string, Function>;
+  customApi?: any;
+  globalHeadCode?: string;
+  globalBodyCode?: string;
+  designSystem?: DesignSystemSchema;
 }
 
 const BuilderContext = createContext<BuilderContextValue | null>(null);
@@ -28,9 +31,22 @@ export const BuilderContextProvider = ({
   cms,
   actions,
   customApi,
+  globalHeadCode,
+  globalBodyCode,
+  designSystem,
 }: BuilderContextValue & { children: React.ReactNode }) => {
   return (
-    <BuilderContext.Provider value={{ components, cms, actions, customApi }}>
+    <BuilderContext.Provider
+      value={{
+        components,
+        cms,
+        actions,
+        customApi,
+        globalHeadCode,
+        globalBodyCode,
+        designSystem,
+      }}
+    >
       {children}
     </BuilderContext.Provider>
   );

@@ -18,7 +18,7 @@ export const ArtboardNode = ({ data, selected }: NodeProps<any>) => {
   const { label, width, height, isIsolationMode, componentId } =
     data as ArtboardData;
 
-  const { components, cms, actions, customApi } = useBuilderContext();
+  const { components, cms, actions, customApi, globalHeadCode, globalBodyCode, designSystem } = useBuilderContext();
   const { website, activePageId } = useStudioStore();
 
   const activePage = website?.pages.find((p) => p.id === activePageId);
@@ -103,9 +103,11 @@ export const ArtboardNode = ({ data, selected }: NodeProps<any>) => {
           <Renderer
             components={components}
             data={activePage.content}
-            designSystem={website?.designSystem}
+            designSystem={designSystem || website?.designSystem}
             cms={cms || {}}
             customApi={customApi}
+            globalHeadCode={globalHeadCode}
+            globalBodyCode={globalBodyCode}
             actions={{
               ...actions,
               openLink: (url: string, target: string) => {

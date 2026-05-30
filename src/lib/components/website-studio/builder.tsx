@@ -26,13 +26,17 @@ import { filterTree } from "./builder/helpers";
 import type { PageNode, ComponentTreeNode, PageAction } from "./builder/types";
 import { Kbd } from "../kbd";
 import { Divider } from "../divider";
+import type { DesignSystemSchema } from "./types";
 
 export interface BuilderProps {
   components: ComponentRegistry;
   initialState: WebsiteSchema;
   cms?: any;
-  actions?: Record<string, Function>; // <-- Added
-  customApi?: any; // <-- Added
+  actions?: Record<string, Function>;
+  customApi?: any;
+  globalHeadCode?: string;
+  globalBodyCode?: string;
+  designSystem?: DesignSystemSchema;
   topBarLeft?: React.ReactNode;
   topBarCenter?: React.ReactNode;
   topBarRight?: React.ReactNode;
@@ -46,6 +50,9 @@ export const Builder: React.FC<BuilderProps> = ({
   cms,
   actions,
   customApi,
+  globalHeadCode,
+  globalBodyCode,
+  designSystem,
   topBarLeft,
   topBarCenter,
   topBarRight,
@@ -394,6 +401,9 @@ export const Builder: React.FC<BuilderProps> = ({
       cms={cms}
       actions={actions}
       customApi={customApi}
+      globalHeadCode={globalHeadCode}
+      globalBodyCode={globalBodyCode}
+      designSystem={designSystem}
     >
       <div className="flex flex-col w-full h-screen bg-background text-on-background overflow-hidden font-manrope">
         <header className="h-14 bg-surface border-b border-outline-variant/30 flex items-center justify-between px-4 shrink-0 z-50 shadow-sm">
