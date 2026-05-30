@@ -5,7 +5,6 @@ import { Renderer } from './renderer'
 import { ScriptAndStyleInjector } from './ScriptAndStyleInjector'
 
 export { defaultActions } from './defaultActions'
-export * from './registry'
 export { ScriptAndStyleInjector } from './ScriptAndStyleInjector'
 export { useStudioStore } from './store'
 export * from './types'
