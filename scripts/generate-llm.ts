@@ -40,7 +40,7 @@ User-agent: CCBot
 Allow: /
 `
 
-// Categories Mapping (UPDATED with all new components)
+// Categories Mapping (Thoroughly updated with all components from the library)
 const CATEGORIES: Record<string, string[]> = {
   'Form & Input': [
     'button',
@@ -58,6 +58,8 @@ const CATEGORIES: Record<string, string[]> = {
     'icon-button',
     'input',
     'input-group',
+    'lexical-editor',
+    'medium-text-editor',
     'multi-select',
     'number-input',
     'otp-field',
@@ -89,6 +91,7 @@ const CATEGORIES: Record<string, string[]> = {
     'tabs',
     'taskbar',
     'toolbar',
+    'view-transition',
   ],
   'Overlays & Feedback': [
     'action-sheet',
@@ -118,6 +121,7 @@ const CATEGORIES: Record<string, string[]> = {
     'data-table',
     'device',
     'editor',
+    'full-calendar',
     'image',
     'kbd',
     'location-picker',
@@ -129,6 +133,7 @@ const CATEGORIES: Record<string, string[]> = {
     'typography',
     'video-player',
     'virtual-list',
+    'website-studio',
   ],
   Misc: ['theme-controls'],
 }

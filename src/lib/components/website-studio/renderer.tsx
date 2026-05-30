@@ -335,7 +335,9 @@ const RenderNode: React.FC<RenderNodeProps> = ({
       )}
       {/* NO MORE WRAPPER DIV! Renders the exact component provided in the registry */}
       <ComponentDef.render {...finalProps} {...boundEvents}>
-        {renderedChildren?.length ? renderedChildren : (cleanProps as any).children}
+        {renderedChildren?.length
+          ? renderedChildren
+          : (cleanProps as any).children}
       </ComponentDef.render>
     </NodeErrorBoundary>
   );

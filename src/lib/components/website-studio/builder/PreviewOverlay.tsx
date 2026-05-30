@@ -1,40 +1,38 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { createPortal } from "react-dom";
+import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  X,
-  RotateCw,
-  Smartphone,
-  Tablet as TabletIcon,
-  Monitor,
+  Battery,
+  File,
+  Home,
   Maximize,
   Minimize,
-  Battery,
-  Signal,
-  Wifi,
-  FileText,
+  Monitor,
   PanelLeftClose,
   PanelLeftOpen,
+  RotateCw,
   Search,
-  Home,
-  File,
+  Signal,
+  Smartphone,
+  Tablet as TabletIcon,
+  Wifi,
+  X,
 } from "lucide-react";
-import { clsx } from "clsx";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { useTheme } from "../../../context/ThemeProvider";
-import { Typography } from "../../typography";
-import { IconButton } from "../../icon-button";
 import { Button } from "../../button";
-import { Renderer } from "../renderer";
-import { useStudioStore } from "../store";
-import { useBuilderContext } from "../BuilderContext";
-import { ElasticScrollArea } from "../../elastic-scroll-area";
-import { Tooltip, TooltipProvider, TooltipTrigger } from "../../tooltip";
-import { TreeView } from "../../tree-view";
+import { IconButton } from "../../icon-button";
 import { Input } from "../../input";
 import { toast } from "../../toast";
+import { Tooltip, TooltipProvider, TooltipTrigger } from "../../tooltip";
+import { TreeView } from "../../tree-view";
+import { Typography } from "../../typography";
+import { useBuilderContext } from "../BuilderContext";
+import { Renderer } from "../renderer";
+import { useStudioStore } from "../store";
 import type { PageNode } from "./types";
 
 // --- NAVIGATION INTERCEPTOR ---

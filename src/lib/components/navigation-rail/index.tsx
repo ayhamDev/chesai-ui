@@ -167,8 +167,8 @@ const NavigationRailFAB = React.forwardRef<
         }}
         transition={{
           type: "spring",
-          stiffness: 400,
-          damping: 30,
+          stiffness: 300,
+          damping: 28,
           mass: 1,
         }}
         className={clsx(
@@ -304,8 +304,8 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
             transition={{
               type: "spring",
               stiffness: 300,
-              damping: 20,
-              mass: 1.2,
+              damping: 28,
+              mass: 1,
             }}
           />
         )}
@@ -508,9 +508,9 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
         }}
         transition={{
           type: "spring",
-          stiffness: 400,
-          damping: 24,
-          mass: 0.9,
+          stiffness: 300,
+          damping: 28,
+          mass: 1,
         }}
         style={{
           display: "block",

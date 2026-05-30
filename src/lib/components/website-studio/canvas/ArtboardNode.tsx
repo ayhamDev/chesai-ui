@@ -1,28 +1,27 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
-import { Handle, Position, NodeProps, useViewport } from "@xyflow/react";
+import { Handle, NodeProps, Position, useViewport } from "@xyflow/react";
 import { clsx } from "clsx";
 import {
-  Copy,
-  Clipboard,
-  Trash2,
-  RefreshCw,
-  ArrowUpToLine,
   ArrowDownToLine,
+  ArrowUpToLine,
+  Clipboard,
+  Copy,
   CornerDownRight,
-  Plus,
   Play,
+  Plus,
+  RefreshCw,
+  Trash2,
 } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
-import { Typography } from "../../typography";
+import { useTheme } from "../../../context/ThemeProvider";
 import { ContextMenu } from "../../context-menu";
-import { useStudioStore } from "../store";
+import { Typography } from "../../typography";
 import { useBuilderContext } from "../BuilderContext";
 import { Renderer } from "../renderer";
-import { useTheme } from "../../../context/ThemeProvider";
-import { toast } from "../../toast";
+import { useStudioStore } from "../store";
 import type { ComponentControl, StudioNode } from "../types";
 
 // --- TYPES & HELPERS ---
@@ -70,7 +69,11 @@ const getParentAndIndex = (
       return { parentId, index: i };
     }
     if (nodes[i].children) {
-      const res = getParentAndIndex(nodes[i].children || [], targetId, nodes[i].id);
+      const res = getParentAndIndex(
+        nodes[i].children || [],
+        targetId,
+        nodes[i].id,
+      );
       if (res) return res;
     }
   }
@@ -808,10 +811,7 @@ const ArtboardIframe = ({
   const finalHeight = Math.max(contentHeight, defaultHeight);
 
   return (
-    <div
-      className="relative w-full transition-[height] duration-200"
-      style={{ height: finalHeight }}
-    >
+    <div className="relative w-full " style={{ height: finalHeight }}>
       <iframe
         ref={iframeRef}
         onLoad={handleLoad}
