@@ -46,6 +46,8 @@ interface BottomTabsContextProps {
   size: BottomTabsSize;
   variant: BottomTabsVariant;
   itemVariant: BottomTabsItemVariant;
+  pillStyle: "full" | "icon";
+  disableRipple: boolean;
 }
 
 const BottomTabsContext = createContext<BottomTabsContextProps | null>(null);
@@ -127,10 +129,13 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     showLabels,
     size,
     itemVariant,
+    pillStyle,
+    disableRipple,
   } = useBottomTabs();
 
   const isActive = activeTab === name;
   const finalShape = itemShape || navigatorShape;
+  const isIconPill = pillStyle === "icon";
 
   const localRef = useRef<HTMLButtonElement>(null);
 
@@ -191,6 +196,13 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 
   const config = sizeConfigs[size];
 
+  // Map balanced indicator pill dimensions relative to navigation container size
+  const iconContainerSize = {
+    sm: "w-12 h-7",
+    md: "w-14 h-8",
+    lg: "w-16 h-9",
+  }[size];
+
   const shapeToBorderRadius = {
     full: 9999,
     minimal: 12,
@@ -203,6 +215,48 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     sharp: "rounded-none",
   };
 
+  const buttonHasBloom = !isActive && !isIconPill;
+
+  // Set colors on the icon container vs text labels to keep high contrast
+  const iconColorClass = isActive
+    ? isIconPill
+      ? activeTextClass
+      : "text-inherit"
+    : "text-on-surface-variant";
+
+  const iconContainer = (
+    <div
+      className={clsx(
+        "relative flex items-center justify-center shrink-0 transition-colors",
+        isIconPill ? iconContainerSize : "h-6 w-6",
+        isIconPill && shapeToClassName[finalShape],
+        isIconPill ? iconColorClass : "text-inherit",
+        isIconPill &&
+          !isActive && [
+            "after:absolute after:inset-0 after:z-[-1] after:bg-on-surface/10 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out",
+            "group-hover:after:opacity-100 group-hover:after:scale-100",
+          ],
+      )}
+    >
+      {isActive && isIconPill && (
+        <motion.div
+          layoutId={indicatorId}
+          className={clsx("absolute inset-0 z-0", activeIndicatorClass)}
+          style={{ borderRadius: shapeToBorderRadius[finalShape] }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 28,
+            mass: 1,
+          }}
+        />
+      )}
+      <div className="relative z-10 flex items-center justify-center">
+        {icon({ isActive, size: config.iconSize })}
+      </div>
+    </div>
+  );
+
   return (
     <li className="flex-1">
       <button
@@ -211,20 +265,25 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
         role="tab"
         aria-selected={isActive}
         onClick={() => onTabPress(name)}
-        onPointerDown={event}
+        onPointerDown={disableRipple ? undefined : event}
         className={clsx(
           "relative z-10 flex w-full flex-col items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           config.height,
-          isActive ? activeTextClass : "text-on-surface-variant",
+          isIconPill && "group",
+          isActive
+            ? isIconPill
+              ? "text-on-surface"
+              : `${activeTextClass} font-semibold`
+            : "text-on-surface-variant",
           shapeToClassName[finalShape],
           // Add hover effect if not active
-          !isActive && [
+          buttonHasBloom && [
             "after:absolute after:inset-0 after:z-[-1] after:bg-on-surface/10 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out",
             "hover:after:opacity-100 hover:after:scale-100",
           ],
         )}
       >
-        {isActive && (
+        {isActive && !isIconPill && (
           <motion.div
             layoutId={indicatorId}
             className={clsx("absolute inset-0 z-0", activeIndicatorClass)}
@@ -242,9 +301,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
           layout
           className="relative z-10 flex flex-col items-center justify-center"
         >
-          <div className="relative z-10">
-            {icon({ isActive, size: config.iconSize })}
-          </div>
+          {iconContainer}
 
           {showLabels && (
             <AnimatePresence initial={false}>
@@ -296,6 +353,10 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   onTabPress: (name: string) => void;
   itemLayout?: "stacked" | "inline";
   showLabels?: boolean;
+  /** Restricts active background highlight to a pill shape behind the icon. Defaults to 'full'. */
+  pillStyle?: "full" | "icon";
+  /** Suppresses the click ripple effect. Defaults to false. */
+  disableRipple?: boolean;
 }
 
 const BottomTabsNavigator: React.FC<NavigatorProps> = ({
@@ -311,6 +372,8 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
   bordered = true,
   shadow = "lg",
   showLabels = true,
+  pillStyle = "full",
+  disableRipple = false,
   className,
   ...props
 }) => {
@@ -339,6 +402,8 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
       size,
       variant,
       itemVariant,
+      pillStyle,
+      disableRipple,
     }),
     [
       activeTab,
@@ -351,6 +416,8 @@ const BottomTabsNavigator: React.FC<NavigatorProps> = ({
       size,
       variant,
       itemVariant,
+      pillStyle,
+      disableRipple,
     ],
   );
 

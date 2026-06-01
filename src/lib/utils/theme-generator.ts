@@ -8,6 +8,7 @@ import {
   MaterialDynamicColors,
   redFromArgb,
   SchemeTonalSpot,
+  TonalPalette,
 } from '@material/material-color-utilities'
 
 // Formats ARGB (number) to "R G B" string
@@ -25,9 +26,7 @@ function formatColorValue(value: string): string {
       return value // Return as-is if parsing fails
     }
   }
-  // Assume it's already "r g b" or "rgb(r g b)" - strictly strictly we need "r g b" for Tailwind opacity
-  // If user passes "rgb(0,0,0)", stripping "rgb(" and ")" is complex without regex,
-  // but let's assume standard hex inputs for simplicity or direct r g b strings.
+  // Assume it's already "r g b" or "rgb(r g b)"
   return value.replace(/^rgb\((.+)\)$/, '$1').replace(/,/g, ' ')
 }
 
@@ -74,6 +73,14 @@ export const CSS_MAPPING = {
 export type ThemeColorKey = keyof typeof CSS_MAPPING
 export type ThemeOverrides = Partial<Record<ThemeColorKey, string>>
 
+// Define the relationships between base colors and their dependent tokens
+const ACCENT_FAMILIES = {
+  primary: { on: 'onPrimary', container: 'primaryContainer', onContainer: 'onPrimaryContainer' },
+  secondary: { on: 'onSecondary', container: 'secondaryContainer', onContainer: 'onSecondaryContainer' },
+  tertiary: { on: 'onTertiary', container: 'tertiaryContainer', onContainer: 'onTertiaryContainer' },
+  error: { on: 'onError', container: 'errorContainer', onContainer: 'onErrorContainer' },
+} as const
+
 /**
  * Generates an MD3 Palette from a hex color AND/OR applies manual overrides.
  */
@@ -109,22 +116,53 @@ export function applyThemeVariables(
       const primaryArgb = MaterialDynamicColors.primary.getArgb(scheme)
       computedValues['--md-sys-color-surface-tint'] = `rgb(${argbToRgbNumbers(primaryArgb)})`
     } catch (error) {
-      console.error('Failed to generate Material Theme from color:', error)
+      console.error('Failed to generate Material Theme from seed color:', error)
     }
   }
 
-  // 2. Apply Manual Overrides (Precedence over generated values)
+  // 2. Auto-Generate Related Tokens for Accent Overrides
+  // If a user overrides "primary", we automatically generate "onPrimary", "primaryContainer", etc.
+  // to guarantee beautiful contrast, unless they explicitly override those too.
+  Object.entries(ACCENT_FAMILIES).forEach(([baseKey, tokens]) => {
+    const overrideVal = overrides[baseKey as ThemeColorKey]
+    if (overrideVal && overrideVal.startsWith('#')) {
+      try {
+        const argb = argbFromHex(overrideVal)
+        const hct = Hct.fromInt(argb)
+        const palette = TonalPalette.fromHueAndChroma(hct.hue, hct.chroma)
+
+        // Calculate accessible foreground text tone based on the user's custom background tone
+        // If the color is dark (< 60 tone), use white (100). If light, use very dark (10).
+        const onTone = hct.tone < 60 ? 100 : 10
+
+        // Container colors: MD3 standard offset tones
+        const containerTone = isDark ? 30 : 90
+        const onContainerTone = isDark ? 90 : 10
+
+        if (!overrides[tokens.on as ThemeColorKey]) {
+          computedValues[`--md-sys-color-${CSS_MAPPING[tokens.on as ThemeColorKey]}`] =
+            `rgb(${argbToRgbNumbers(palette.tone(onTone))})`
+        }
+        if (!overrides[tokens.container as ThemeColorKey]) {
+          computedValues[`--md-sys-color-${CSS_MAPPING[tokens.container as ThemeColorKey]}`] =
+            `rgb(${argbToRgbNumbers(palette.tone(containerTone))})`
+        }
+        if (!overrides[tokens.onContainer as ThemeColorKey]) {
+          computedValues[`--md-sys-color-${CSS_MAPPING[tokens.onContainer as ThemeColorKey]}`] =
+            `rgb(${argbToRgbNumbers(palette.tone(onContainerTone))})`
+        }
+      } catch (error) {
+        console.warn(`Failed to auto-generate contrast palette for override ${baseKey}:`, error)
+      }
+    }
+  })
+
+  // 3. Apply Exact Manual Overrides
+  // Explicit overrides take final precedence over both the Seed and the Auto-Generator.
   Object.entries(overrides).forEach(([key, value]) => {
     if (value && CSS_MAPPING[key as ThemeColorKey]) {
       const cssKey = CSS_MAPPING[key as ThemeColorKey]
-      // Convert HEX to "rgb(r g b)" format for CSS var
       const formattedValue = formatColorValue(value)
-      // Ensure it is wrapped in rgb() if it's just numbers, to match standard CSS syntax expected by browser
-      // BUT Tailwind config usually expects just "r g b" if using <alpha-value>.
-      // The theme.css uses rgb(r g b).
-      // Let's ensure consistency:
-      // If the utility generated it above, it wrapped in rgb().
-      // If manual, we mimic that.
 
       const isRgbNumbers = /^\d{1,3}\s\d{1,3}\s\d{1,3}$/.test(formattedValue)
       const finalString = isRgbNumbers ? `rgb(${formattedValue})` : formattedValue
@@ -133,9 +171,7 @@ export function applyThemeVariables(
     }
   })
 
-  // 3. Write to DOM
-  // If no seed and no overrides, we might want to clear styles to revert to CSS file defaults.
-  // But if we have *some* overrides, we set them.
+  // 4. Write to DOM
   if (!seedColorHex && Object.keys(overrides).length === 0) {
     clearThemeVariables()
     return

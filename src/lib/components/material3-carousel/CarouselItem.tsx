@@ -1,4 +1,4 @@
-// src/components/material3-carousel/CarouselItem.tsx
+// src/lib/components/material3-carousel/CarouselItem.tsx
 import React, { memo } from "react";
 import { motion, useTransform } from "framer-motion";
 import { clsx } from "clsx";
@@ -13,49 +13,47 @@ const CarouselItem: React.FC<CarouselItemProps> = memo(
     subtitle,
     progress,
     inputRange,
-    widthRange,
-    marginRange, // Now receiving margin ranges
+    sizeRange,
+    gapRange,
+    orientation = "horizontal",
     onClick,
   }) => {
-    const safeInputRange = inputRange || [index - 1, index, index + 1];
-    const safeWidthRange = widthRange || ["0%", "100%", "0%"];
-    // Default margin range: 0 -> 16px -> 0
-    const safeMarginRange = marginRange || ["0px", "16px", "0px"];
+    const isVert = orientation === "vertical";
 
-    const width = useTransform(progress!, safeInputRange, safeWidthRange, {
+    const safeInputRange = inputRange || [index - 1, index, index + 1];
+    const safeSizeRange = sizeRange || ["0%", "100%", "0%"];
+    const safeGapRange = gapRange || ["0px", "16px", "0px"];
+
+    // Framer interpolates the standard percentage/pixel strings flawlessly
+    const size = useTransform(progress!, safeInputRange, safeSizeRange, {
       clamp: true,
     });
-
-    // --- DYNAMIC SPACING ---
-    // Animates to 0px when item is hidden, eliminating the "Stacking" bug
-    const marginRight = useTransform(
-      progress!,
-      safeInputRange,
-      safeMarginRange
-    );
+    const gap = useTransform(progress!, safeInputRange, safeGapRange, {
+      clamp: true,
+    });
 
     const contentOpacity = useTransform(
       progress!,
       [index - 0.5, index, index + 0.8],
-      [0, 1, 0]
+      [0, 1, 0],
     );
 
     return (
       <motion.div
         className={twMerge(
           clsx(
-            "relative h-full overflow-hidden bg-surface-container-low",
-            "rounded-[24px]",
-            // REMOVED: border-r-[12px] class (This was the cause of the bug)
-            "bg-clip-padding"
-          )
+            "relative overflow-hidden bg-surface-container-low rounded-[24px] bg-clip-padding",
+            // Remove w-full/h-full here since they will be strictly governed by inline styles
+          ),
         )}
         style={{
-          width,
-          marginRight, // Applying animated margin
+          width: isVert ? "100%" : size,
+          height: isVert ? size : "100%",
+          marginRight: isVert ? "0px" : gap,
+          marginBottom: isVert ? gap : "0px",
           flexShrink: 0,
           flexGrow: 0,
-          willChange: "width, margin-right",
+          willChange: isVert ? "height, margin-bottom" : "width, margin-right",
           transform: "translateZ(0)",
         }}
         onClick={onClick}
@@ -89,7 +87,7 @@ const CarouselItem: React.FC<CarouselItemProps> = memo(
         </motion.div>
       </motion.div>
     );
-  }
+  },
 );
 
 export default CarouselItem;

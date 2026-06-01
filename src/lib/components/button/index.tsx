@@ -7,7 +7,8 @@ import useRipple from "use-ripple-hook";
 import { LoadingIndicator } from "../loadingIndicator";
 
 export const buttonVariants = cva(
-  "font-button select-none font-semibold cursor-pointer active:scale-95 min-w-max focus-visible:outline-none transition-all duration-300 ease-emphasized flex items-center justify-center relative overflow-hidden z-0",
+  // Added 'transition-all duration-300 ease-in-out' to ensure out-of-the-box browser transitions
+  "font-button select-none font-semibold cursor-pointer active:scale-95 min-w-max focus-visible:outline-none transition-all duration-300 ease-in-out flex items-center justify-center relative overflow-hidden z-0",
   {
     variants: {
       variant: {
@@ -64,6 +65,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   shape?: "full" | "minimal" | "sharp";
   isLoading?: boolean;
+  isActive?: boolean;
   startIcon?: React.ReactNode;
   endIcon?: React.ReactNode;
   asChild?: boolean;
@@ -97,6 +99,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       startIcon,
       endIcon,
       isLoading,
+      isActive,
       asChild = false,
       style,
       ...props
@@ -189,7 +192,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         <div
           className={clsx(
-            "pointer-events-none transition-all duration-300 ease-emphasized",
+            "pointer-events-none transition-all duration-300 ease-in-out",
             isLoading ? spinnerSizeMap[size] : "w-0",
           )}
         />
@@ -204,13 +207,37 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           className="flex items-center justify-center overflow-hidden whitespace-nowrap"
         >
           <div className="flex items-center justify-center">
-            {startIcon && (
-              <span className="mr-2 flex items-center">{startIcon}</span>
-            )}
+            {/* Animated Start Icon Container */}
+            <AnimatePresence initial={false}>
+              {startIcon && (
+                <motion.span
+                  initial={{ width: 0, opacity: 0, marginRight: 0 }}
+                  animate={{ width: "auto", opacity: 1, marginRight: 8 }}
+                  exit={{ width: 0, opacity: 0, marginRight: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="flex items-center overflow-hidden whitespace-nowrap"
+                >
+                  {startIcon}
+                </motion.span>
+              )}
+            </AnimatePresence>
+
             {children}
-            {endIcon && (
-              <span className="ml-2 flex items-center">{endIcon}</span>
-            )}
+
+            {/* Animated End Icon Container */}
+            <AnimatePresence initial={false}>
+              {endIcon && (
+                <motion.span
+                  initial={{ width: 0, opacity: 0, marginLeft: 0 }}
+                  animate={{ width: "auto", opacity: 1, marginLeft: 8 }}
+                  exit={{ width: 0, opacity: 0, marginLeft: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="flex items-center overflow-hidden whitespace-nowrap"
+                >
+                  {endIcon}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       </button>

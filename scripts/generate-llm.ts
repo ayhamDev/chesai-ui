@@ -1,7 +1,9 @@
 // scripts/generate-llm.ts
 import fs from 'node:fs'
 import path from 'node:path'
+import dotenv from 'dotenv'
 
+dotenv.config()
 // --- CONFIGURATION ---
 const SOURCE_DIR = 'src/lib'
 const COMPONENTS_DIR = 'src/lib/components'

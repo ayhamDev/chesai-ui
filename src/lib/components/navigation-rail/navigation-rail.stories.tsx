@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Compass, Home, Library, Plus } from "lucide-react";
+import { Compass, Home, Library, NavigationIcon, Plus } from "lucide-react";
 import { LayoutProvider } from "../../context/layout-context";
 import { LayoutDirectionToggle } from "../layout-toggle";
 import { ShallowRouter, useRouter } from "../shallow-router";
@@ -39,6 +39,16 @@ const meta: Meta<typeof NavigationRail.Navigator> = {
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
+    },
+    pillStyle: {
+      control: "select",
+      options: ["full", "icon"],
+      description:
+        "Controls whether the active background highlight covers the entire button width ('full') or acts as a capsule around the icon only ('icon').",
+    },
+    disableRipple: {
+      control: "boolean",
+      description: "Allows disabling the ripple background effect on click.",
     },
     bordered: {
       control: "boolean",
@@ -144,6 +154,8 @@ export const Default: Story = {
     bordered: false,
     itemVariant: "primary",
     itemLayout: "inline",
+    pillStyle: "full",
+    disableRipple: false,
     expandOnHover: true,
     forceExpanded: false,
     overlay: false,
@@ -256,7 +268,11 @@ export const OverlayOnDesktop: Story = {
     ...Default.args,
     variant: "surface",
     overlay: true,
-    expandOnHover: true, // You can still hover to open the overlay!
+
+    // You can still hover to open the overlay!
+    expandOnHover: true,
+
+    expandable: true,
   },
   parameters: {
     docs: {
@@ -284,6 +300,30 @@ export const NotExpandable: Story = {
       description: {
         story:
           "Setting `expandable={false}` permanently locks the rail in its collapsed state, disabling hover expansion and hiding the toggle button entirely. Note: if you want labels visible in this state, use `itemLayout='stacked'` instead.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab">
+      <RenderWithLayout {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const IconPillStyle: Story = {
+  name: "8. Icon Pill Style (MD3)",
+  args: {
+    ...Default.args,
+    itemLayout: "stacked",
+    pillStyle: "icon",
+    shape: "full",
+    disableRipple: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Setting `pillStyle='icon'` aligns with the modern Material Design 3 layout, shrinking both the active indicator capsule and the hover bloom effect to wrap tightly around only the icon container. The text label remains positioned underneath.",
       },
     },
   },

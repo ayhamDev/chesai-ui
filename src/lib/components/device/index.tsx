@@ -14,7 +14,6 @@ import {
 import React, { useState } from "react";
 import { Button } from "../button";
 import { ButtonGroup } from "../button-group";
-import { Typography } from "../typography";
 
 // --- CVA Variants for dynamic styling ---
 const frameVariants = cva(
@@ -27,7 +26,7 @@ const frameVariants = cva(
         laptop: "w-[1280px] h-[800px] rounded-2xl p-2",
       },
     },
-  }
+  },
 );
 
 const bezelVariants = cva("relative w-full h-full bg-black overflow-hidden", {
@@ -69,7 +68,7 @@ const DeviceFrame = ({ children, defaultType = "phone" }: DeviceFrameProps) => {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
-    })
+    }),
   );
 
   React.useEffect(() => {
@@ -80,15 +79,15 @@ const DeviceFrame = ({ children, defaultType = "phone" }: DeviceFrameProps) => {
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
-          })
+          }),
         ),
-      60000
+      60000,
     );
     return () => clearInterval(timer);
   }, []);
 
   const FrameContent = (
-    <div className="transform scale-[0.8] origin-top">
+    <div className="transform scale-[0.8] origin-top max-h-[50vh]">
       {/* Phone Frame */}
       <div className={frameVariants({ device })}>
         {/* Inner bezel */}
@@ -129,7 +128,7 @@ const DeviceFrame = ({ children, defaultType = "phone" }: DeviceFrameProps) => {
               <div
                 className={clsx(
                   "w-full h-full overflow-hidden relative",
-                  "mt-12 pb-12"
+                  "mt-12 pb-12",
                 )}
               >
                 {children}
@@ -173,8 +172,8 @@ const DeviceFrame = ({ children, defaultType = "phone" }: DeviceFrameProps) => {
   );
 
   return (
-    <div className="flex flex-col items-center gap-6 p-4">
-      <ButtonGroup shape="minimal">
+    <div className="flex flex-col items-center gap-6 p-4 pt-0">
+      <ButtonGroup shape="full" gap="sm">
         <Button
           variant={device === "phone" ? "primary" : "secondary"}
           onClick={() => setDevice("phone")}

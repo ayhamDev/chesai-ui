@@ -135,7 +135,7 @@ export const Default: Story = {
 export const InfiniteLoop: Story = {
   name: "2. Infinite Loop & Autoplay",
   args: {
-    slidesPerView: 5,
+    slidesPerView: 4,
     height: "450px",
     loop: true,
     autoplay: true,
@@ -230,4 +230,37 @@ export const CompactMobile: Story = {
     },
   },
   render: CarouselTemplate,
+};
+
+export const VerticalCarousel: Story = {
+  name: "7. Vertical Orientation",
+  args: {
+    slidesPerView: 3,
+    height: "600px", // Give it a fixed height to scroll within
+    loop: false,
+    autoplay: true,
+    orientation: "vertical",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Pass `orientation='vertical'` to stack items vertically. Supports all the exact same layout expansions, gaps, looping, and swipe gestures.",
+      },
+    },
+  },
+  render: (args) => (
+    <div className="w-[400px] mx-auto border border-outline-variant p-4 bg-surface rounded-3xl">
+      <Carousel {...args}>
+        {ITEMS.map((item, index) => (
+          <CarouselItem
+            key={item.id}
+            index={index}
+            imageUrl={item.image}
+            title={item.title}
+          />
+        ))}
+      </Carousel>
+    </div>
+  ),
 };

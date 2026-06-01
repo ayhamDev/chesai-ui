@@ -121,7 +121,7 @@ export const MaterialAnimation: Story = {
     variant: "basic",
     shape: "full",
     animation: "material3",
-    glass: true
+    glass: false
   },
   parameters: { layout: "centered" },
   render: (args) => {

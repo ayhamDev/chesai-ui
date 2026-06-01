@@ -40,6 +40,16 @@ const meta: Meta<typeof BottomTabs.Navigator> = {
       description:
         "Stacked: Labels always visible. Inline: Labels show only when active (Shift pattern).",
     },
+    pillStyle: {
+      control: "select",
+      options: ["full", "icon"],
+      description:
+        "Controls whether the active background highlight covers the full item height ('full') or acts as an isolated capsule behind the icon ('icon').",
+    },
+    disableRipple: {
+      control: "boolean",
+      description: "Suppresses the press ripple animation.",
+    },
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
@@ -114,6 +124,8 @@ export const StackedDefault: Story = {
     itemLayout: "stacked",
     bordered: true,
     shape: "full",
+    pillStyle: "full",
+    disableRipple: false,
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
@@ -245,10 +257,36 @@ export const NoLabels: Story = {
     showLabels: false,
     shape: "full",
     shadow: "sm",
-    size: "sm"
+    size: "sm",
   },
   render: (args) => (
     <ShallowRouter paramName="tab_no_labels">
+      <RenderWithRouter {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const IconPillStyle: Story = {
+  name: "7. Icon Pill Style (MD3)",
+  args: {
+    mode: "attached",
+    itemLayout: "stacked",
+    pillStyle: "icon",
+    itemVariant: "secondary",
+    shape: "full",
+    disableRipple: true,
+    size: "lg"
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Setting `pillStyle='icon'` aligns with modern Material Design 3 guidelines: active indicator capsules and hover outlines wrap around the icon, leaving text labels visible and clear on the navigation bar surface.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab">
       <RenderWithRouter {...args} />
     </ShallowRouter>
   ),

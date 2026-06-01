@@ -1,25 +1,19 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import {
-  Bell,
   ChevronRight,
   File,
-  Lock,
   Menu,
   MoreVertical,
-  Palette,
   Pen,
   Pin,
   Star,
   Trash2,
 } from "lucide-react";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Avatar } from "../avatar";
-import { Badge } from "../badge";
-import { Checkbox } from "../checkbox";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { FAB } from "../fab";
 import { IconButton } from "../icon-button";
-import { Switch } from "../switch";
 import { toast, Toaster } from "../toast";
 import { Typography } from "../typography";
 import {

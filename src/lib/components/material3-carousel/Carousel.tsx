@@ -1,4 +1,4 @@
-// src/components/material3-carousel/Carousel.tsx
+// src/lib/components/material3-carousel/Carousel.tsx
 import React, {
   useState,
   useRef,
@@ -10,7 +10,7 @@ import { motion, useMotionValue, PanInfo, animate } from "framer-motion";
 import { CarouselProps, CarouselItemProps } from "./types";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { EASING, DURATION } from "../stack-router/transitions";
+import { EASING } from "../stack-router/transitions";
 
 const Carousel: React.FC<CarouselProps> = ({
   children,
@@ -20,14 +20,16 @@ const Carousel: React.FC<CarouselProps> = ({
   breakpoints = {},
   loop = false,
   autoplay = false,
+  orientation = "horizontal",
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const [containerSize, setContainerSize] = useState(0);
   const [currentSlidesPerView, setCurrentSlidesPerView] =
     useState(slidesPerView);
   const [isDragging, setIsDragging] = useState(false);
 
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const isVert = orientation === "vertical";
 
   // --- 1. CHILD PROCESSING ---
   const originalChildren = React.Children.toArray(children);
@@ -57,15 +59,23 @@ const Carousel: React.FC<CarouselProps> = ({
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         if (!containerRef.current) return;
-        const width = window.innerWidth;
-        setContainerWidth(containerRef.current.offsetWidth);
+
+        // Breakpoints always map to window width, even if carousel is vertical
+        const windowWidth = window.innerWidth;
+
+        // Physics needs the container's primary axis dimension
+        const size = isVert
+          ? containerRef.current.offsetHeight
+          : containerRef.current.offsetWidth;
+
+        setContainerSize(size);
 
         const points = Object.keys(breakpoints)
           .map(Number)
           .sort((a, b) => a - b);
         let activeSPV = slidesPerView;
         for (const point of points) {
-          if (width >= point && breakpoints[point].slidesPerView) {
+          if (windowWidth >= point && breakpoints[point].slidesPerView) {
             activeSPV = breakpoints[point].slidesPerView!;
           }
         }
@@ -79,83 +89,87 @@ const Carousel: React.FC<CarouselProps> = ({
       window.removeEventListener("resize", handleResize);
       clearTimeout(timeoutId);
     };
-  }, [breakpoints, slidesPerView]);
+  }, [breakpoints, slidesPerView, isVert]);
 
-  // --- 3. PHYSICS GENERATION (FIXED SPACING) ---
-  const { inputRange, widthRange, marginRange } = useMemo(() => {
+  // --- 3. PHYSICS GENERATION (DYNAMIC PRECISE PERCENTAGES) ---
+  const { inputRange, sizeRange, gapRange } = useMemo(() => {
     const spv = Math.max(1, Math.round(currentSlidesPerView));
 
-    let widths: string[] = [];
+    const GAP_SIZE = 16;
+    const fallbackSize = 1000;
+    const currentContainerAxis =
+      containerSize > 0 ? containerSize : fallbackSize;
 
-    // Ensure sum of widths === 100%
-    if (spv === 1) widths = ["100%"];
-    else if (spv === 2) widths = ["65%", "35%"];
-    else if (spv === 3) widths = ["50%", "30%", "20%"];
+    // Calculate exactly what percentage of the container the gaps consume
+    const gapPct = (GAP_SIZE / currentContainerAxis) * 100;
+    const visibleGaps = spv - 1;
+    const totalGapPct = gapPct * visibleGaps;
+
+    // Distribute the remaining percentage among the slides
+    const remainingPct = Math.max(0, 100 - totalGapPct);
+
+    let baseSizes: number[] = [];
+
+    // Ensure sum of baseSizes === 1.0 (100% of available space)
+    if (spv === 1) baseSizes = [1];
+    else if (spv === 2) baseSizes = [0.65, 0.35];
+    else if (spv === 3) baseSizes = [0.5, 0.3, 0.2];
     else {
-      // Weighted distribution for 4+
-      const activePct = 40;
-      const remainingPct = 100 - activePct;
+      const activeWeight = 0.4;
+      const remWeight = 0.6;
       const neighborsCount = spv - 1;
       const weights = Array.from(
         { length: neighborsCount },
         (_, i) => neighborsCount - i,
       );
       const totalWeight = weights.reduce((a, b) => a + b, 0);
-      const neighborWidths = weights.map(
-        (w) => (w / totalWeight) * remainingPct,
-      );
-      widths = [
-        `${activePct}%`,
-        ...neighborWidths.map((w) => `${w.toFixed(2)}%`),
-      ];
+      const neighborSizes = weights.map((w) => (w / totalWeight) * remWeight);
+      baseSizes = [activeWeight, ...neighborSizes];
     }
 
-    const inputs: number[] = [];
-    const widthOutputs: string[] = [];
-    const marginOutputs: string[] = [];
+    // Convert to exact, Framer-interpolatable percentage strings
+    const sizes = baseSizes.map((s) => `${(s * remainingPct).toFixed(4)}%`);
 
-    // --- GAP CONFIG ---
-    const GAP_SIZE = "16px";
+    const inputs: number[] = [];
+    const sizeOutputs: string[] = [];
+    const gapOutputs: string[] = [];
 
     // 1. Previous Item (Completely Gone)
-    // We explicitly set margin to 0px so it takes NO space.
     inputs.push(1);
-    widthOutputs.push("0%");
-    marginOutputs.push("0px");
+    sizeOutputs.push("0%");
+    gapOutputs.push("0px");
 
-    // 2. Active Item
+    // 2. Active Item (1st visible)
     inputs.push(0);
-    widthOutputs.push(widths[0]);
-    marginOutputs.push(GAP_SIZE);
+    sizeOutputs.push(sizes[0]);
+    gapOutputs.push(spv === 1 ? "0px" : `${GAP_SIZE}px`);
 
-    // 3. Next Items
+    // 3. Following Items
     for (let i = 1; i < spv; i++) {
       inputs.push(-i);
-      widthOutputs.push(widths[i]);
-      // If it's the very last visible item, usually we might want 0 margin,
-      // but for consistency in a loop, keeping 16px is safer.
-      marginOutputs.push(GAP_SIZE);
+      sizeOutputs.push(sizes[i]);
+      // The last visible item drops its margin so it hugs the boundary perfectly
+      gapOutputs.push(i === spv - 1 ? "0px" : `${GAP_SIZE}px`);
     }
 
     // 4. Next Next (Completely Gone)
     inputs.push(-spv);
-    widthOutputs.push("0%");
-    marginOutputs.push("0px");
+    sizeOutputs.push("0%");
+    gapOutputs.push("0px");
 
-    // Sort for Framer Motion
     const zipped = inputs.map((val, i) => ({
       inp: val,
-      wid: widthOutputs[i],
-      mar: marginOutputs[i],
+      siz: sizeOutputs[i],
+      gap: gapOutputs[i],
     }));
     zipped.sort((a, b) => a.inp - b.inp);
 
     return {
       inputRange: zipped.map((z) => z.inp),
-      widthRange: zipped.map((z) => z.wid),
-      marginRange: zipped.map((z) => z.mar),
+      sizeRange: zipped.map((z) => z.siz),
+      gapRange: zipped.map((z) => z.gap),
     };
-  }, [currentSlidesPerView]);
+  }, [currentSlidesPerView, containerSize]);
 
   // --- 4. TELEPORTATION ---
   const handleTeleport = useCallback(() => {
@@ -170,6 +184,8 @@ const Carousel: React.FC<CarouselProps> = ({
 
   // --- 5. AUTOPLAY ---
   const autoplayTimer = useRef<NodeJS.Timeout | null>(null);
+  const autoplayDirection = useRef<1 | -1>(1);
+
   const startAutoplay = useCallback(() => {
     if (!autoplay) return;
     const delay =
@@ -179,16 +195,30 @@ const Carousel: React.FC<CarouselProps> = ({
     autoplayTimer.current = setInterval(() => {
       if (isDragging) return;
       const current = progress.get();
-      const target = Math.round(current) + 1;
+
+      let step = autoplayDirection.current;
+      let target = Math.round(current) + step;
+
+      // Ping-pong reverse logic for non-looping mode
+      if (!loop) {
+        const maxIndex = totalCount - 1;
+        if (target >= maxIndex) {
+          target = maxIndex;
+          autoplayDirection.current = -1;
+        } else if (target <= 0) {
+          target = 0;
+          autoplayDirection.current = 1;
+        }
+      }
 
       animate(progress, target, {
         type: "tween",
         duration: 0.8,
-        ease: EASING.emphasized, // MD3 Emphasized
+        ease: EASING.emphasized,
         onComplete: handleTeleport,
       });
     }, delay);
-  }, [autoplay, isDragging, progress, handleTeleport]);
+  }, [autoplay, isDragging, progress, handleTeleport, loop, totalCount]);
 
   const stopAutoplay = useCallback(() => {
     if (autoplayTimer.current) {
@@ -209,9 +239,13 @@ const Carousel: React.FC<CarouselProps> = ({
   };
 
   const handleDrag = (_: any, info: PanInfo) => {
-    if (containerWidth === 0) return;
-    const dragFactor = containerWidth / currentSlidesPerView;
-    const deltaIndex = -info.delta.x / dragFactor;
+    if (containerSize === 0) return;
+
+    // Read the correct axis
+    const delta = isVert ? info.delta.y : info.delta.x;
+
+    const dragFactor = containerSize / currentSlidesPerView;
+    const deltaIndex = -delta / dragFactor;
     const newProgress = progress.get() + deltaIndex;
 
     if (!loop) {
@@ -228,7 +262,7 @@ const Carousel: React.FC<CarouselProps> = ({
   const handleDragEnd = (_: any, info: PanInfo) => {
     setIsDragging(false);
     const current = progress.get();
-    const velocity = info.velocity.x;
+    const velocity = isVert ? info.velocity.y : info.velocity.x;
     let target = Math.round(current);
 
     const FLICK_THRESHOLD = 400;
@@ -237,12 +271,19 @@ const Carousel: React.FC<CarouselProps> = ({
       else if (velocity > 0 && target >= current) target -= 1;
     }
 
-    if (!loop) target = Math.max(0, Math.min(target, totalCount - 1));
+    if (!loop) {
+      const maxIndex = totalCount - 1;
+      target = Math.max(0, Math.min(target, maxIndex));
+
+      // Smartly reset the autoplay direction so it doesn't fight the user's swipe
+      if (target <= 0) autoplayDirection.current = 1;
+      if (target >= maxIndex) autoplayDirection.current = -1;
+    }
 
     animate(progress, target, {
       type: "tween",
       duration: 0.5,
-      ease: EASING.emphasizedDecelerate, // MD3 Decelerate
+      ease: EASING.emphasizedDecelerate,
       onComplete: () => {
         handleTeleport();
         if (
@@ -271,7 +312,10 @@ const Carousel: React.FC<CarouselProps> = ({
     >
       <motion.div
         ref={containerRef}
-        className="flex w-full h-full items-center pl-1"
+        className={clsx(
+          "flex w-full h-full items-center",
+          isVert ? "flex-col pt-1" : "flex-row pl-1",
+        )}
         onPanStart={handleDragStart}
         onPan={handleDrag}
         onPanEnd={handleDragEnd}
@@ -287,8 +331,9 @@ const Carousel: React.FC<CarouselProps> = ({
               index: i,
               progress: progress,
               inputRange: absoluteInputRange,
-              widthRange: widthRange,
-              marginRange: marginRange, // Pass the new margin ranges
+              sizeRange: sizeRange,
+              gapRange: gapRange,
+              orientation: orientation,
             },
           );
         })}

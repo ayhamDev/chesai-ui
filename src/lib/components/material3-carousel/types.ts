@@ -1,3 +1,4 @@
+// src/lib/components/material3-carousel/types.ts
 import type { MotionValue } from 'framer-motion'
 
 export interface CarouselBreakpoint {
@@ -19,6 +20,8 @@ export interface CarouselProps {
   }
   loop?: boolean
   autoplay?: boolean | CarouselAutoplay
+  /** The scroll direction of the carousel. @default "horizontal" */
+  orientation?: 'horizontal' | 'vertical'
 }
 
 export interface CarouselItemProps {
@@ -28,8 +31,8 @@ export interface CarouselItemProps {
   subtitle?: string
   progress?: MotionValue<number>
   inputRange?: number[]
-  widthRange?: string[]
-  // Fix: Added missing marginRange
-  marginRange?: string[]
+  sizeRange?: string[]
+  gapRange?: string[]
+  orientation?: 'horizontal' | 'vertical'
   onClick?: () => void
 }

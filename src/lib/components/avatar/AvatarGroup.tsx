@@ -16,7 +16,7 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
   ...props
 }) => {
   const childArray = React.Children.toArray(children).filter(
-    React.isValidElement
+    React.isValidElement,
   ) as React.ReactElement<AvatarProps>[];
 
   const totalAvatars = childArray.length;
@@ -55,7 +55,7 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
             child.props.className,
             // Ring matches the surface behind it (usually background or card)
             "ring-2 ring-surface",
-            hoverEffectClasses
+            hoverEffectClasses,
           ),
           style: newStyle,
         });

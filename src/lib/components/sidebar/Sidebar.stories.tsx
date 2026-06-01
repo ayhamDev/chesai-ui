@@ -8,6 +8,14 @@ import {
   Settings,
   ShoppingCart,
   Users,
+  Home,
+  MessageSquare,
+  PlusSquare,
+  CreditCard,
+  Folder,
+  Contact,
+  Compass,
+  Sparkles,
 } from "lucide-react";
 import React from "react";
 import { LayoutProvider } from "../../context/layout-context";
@@ -29,6 +37,7 @@ const meta: Meta<typeof Sidebar> = {
     "Sidebar.Footer": Sidebar.Footer,
     "Sidebar.Item": Sidebar.Item,
     "Sidebar.Trigger": Sidebar.Trigger,
+    "Sidebar.Collapse": Sidebar.Collapse,
   },
   tags: ["autodocs"],
   parameters: {
@@ -173,9 +182,8 @@ const SidebarContentExample = ({
             <Sidebar.Label>Archive</Sidebar.Label>
             {Array.from({ length: 15 }).map((_, i) => (
               // @ts-ignore
-              <Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>
-                Archive Item {i + 1}
-              </Sidebar.Item>
+              (<Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>Archive Item {i + 1}
+              </Sidebar.Item>)
             ))}
           </Sidebar.Group>
         )}
@@ -239,4 +247,171 @@ export const Default: Story = {
       </main>
     </Sidebar.Provider>
   ),
+};
+
+export const MockupNesting: Story = {
+  name: "2. Nested Menu (Like Your Mockup)",
+  args: {
+    layout: "sidebar",
+    variant: "primary",
+    shape: "minimal",
+    itemShape: "full",
+    itemSize: "lg",
+    itemVariant: "ghost",
+    expandOnHover: false,
+  },
+  render: (args) => {
+    const [active, setActive] = React.useState("enlarz");
+
+    return (
+      <Sidebar.Provider>
+        <Sidebar {...args} width="18rem">
+          <Sidebar.Header className="justify-between">
+            <div className="flex items-center gap-3 overflow-hidden py-2 px-1">
+              <Sparkles className="h-6 w-6 text-on-surface" />
+              <Typography
+                variant="title-medium"
+                className="font-bold tracking-tight"
+              >
+                Menu
+              </Typography>
+            </div>
+          </Sidebar.Header>
+
+          <Sidebar.Content>
+            <Sidebar.Group>
+              <Sidebar.Item
+                icon={<Home />}
+                isActive={active === "home"}
+                onClick={() => setActive("home")}
+              >
+                Home
+              </Sidebar.Item>
+
+              <Sidebar.Item
+                icon={<MessageSquare />}
+                isActive={active === "messages"}
+                onClick={() => setActive("messages")}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-pink-500 animate-pulse" />
+                    <Badge
+                      variant="primary"
+                      shape="full"
+                      className="px-1.5 h-5 bg-on-surface text-surface font-semibold text-xs"
+                    >
+                      2
+                    </Badge>
+                  </div>
+                }
+              >
+                Messages
+              </Sidebar.Item>
+
+              <Sidebar.Collapse
+                icon={<PlusSquare />}
+                label="Integrations"
+                indicator="plus-minus"
+                isActive={active.startsWith("int-")}
+              >
+                <Sidebar.Item
+                  icon={<Folder />}
+                  isActive={active === "int-1"}
+                  onClick={() => setActive("int-1")}
+                >
+                  Framer Sync
+                </Sidebar.Item>
+                <Sidebar.Item
+                  icon={<Folder />}
+                  isActive={active === "int-2"}
+                  onClick={() => setActive("int-2")}
+                >
+                  GitHub App
+                </Sidebar.Item>
+              </Sidebar.Collapse>
+
+              <Sidebar.Item
+                icon={<CreditCard />}
+                isActive={active === "finance"}
+                onClick={() => setActive("finance")}
+              >
+                Finance
+              </Sidebar.Item>
+
+              {/* Opened by default to match the design diagram */}
+              <Sidebar.Collapse
+                icon={<Archive />}
+                label="Threads"
+                indicator="plus-minus"
+                defaultOpen
+                isActive={["fignuts", "enlarz", "hugeicons"].includes(active)}
+              >
+                <Sidebar.Item
+                  icon={<Folder />}
+                  isActive={active === "fignuts"}
+                  onClick={() => setActive("fignuts")}
+                >
+                  Fignuts
+                </Sidebar.Item>
+                <Sidebar.Item
+                  icon={<Folder />}
+                  isActive={active === "enlarz"}
+                  onClick={() => setActive("enlarz")}
+                >
+                  Enlarz System
+                </Sidebar.Item>
+                <Sidebar.Item
+                  icon={<Folder />}
+                  isActive={active === "hugeicons"}
+                  onClick={() => setActive("hugeicons")}
+                >
+                  Hugeicons
+                </Sidebar.Item>
+              </Sidebar.Collapse>
+
+              <Sidebar.Item
+                icon={<Contact />}
+                isActive={active === "contacts"}
+                onClick={() => setActive("contacts")}
+              >
+                Contacts
+              </Sidebar.Item>
+
+              <Sidebar.Collapse
+                icon={<Compass />}
+                label="Explore"
+                indicator="plus-minus"
+                isActive={active.startsWith("exp-")}
+              >
+                <Sidebar.Item
+                  icon={<Folder />}
+                  isActive={active === "exp-1"}
+                  onClick={() => setActive("exp-1")}
+                >
+                  Trending
+                </Sidebar.Item>
+              </Sidebar.Collapse>
+            </Sidebar.Group>
+          </Sidebar.Content>
+        </Sidebar>
+
+        <main className="flex-1 p-6 flex flex-col bg-graphite-background">
+          <header className="h-16 border-b border-graphite-border flex items-center px-4 gap-4 bg-graphite-card rounded-xl mb-4">
+            <Sidebar.Trigger />
+            <Separator orientation="vertical" className="h-6" />
+            <Typography variant="title-small">Mockup Showcase</Typography>
+          </header>
+          <div className="flex-1 flex flex-col items-center justify-center text-graphite-foreground/50 text-center">
+            <Typography variant="large">
+              Interactive Nesting Component
+            </Typography>
+            <Typography variant="body-small" className="mt-2">
+              Currently Active Item:{" "}
+              <strong className="text-primary">{active}</strong>
+            </Typography>
+          </div>
+        </main>
+      </Sidebar.Provider>
+    );
+  },
 };

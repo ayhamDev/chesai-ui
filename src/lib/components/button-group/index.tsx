@@ -1,75 +1,127 @@
 import { clsx } from "clsx";
 import React from "react";
 
-// Explicitly define the shape type for clarity and type safety
 type ButtonShape = "full" | "minimal" | "sharp";
+type ButtonGap = "none" | "xs" | "sm" | "md" | "lg";
 
-// Define the component's props
-// FIX 1: The wrapping element is now a <fieldset>, so the attributes should match.
 interface ButtonGroupProps extends React.HTMLAttributes<HTMLFieldSetElement> {
   children: React.ReactNode;
   shape?: ButtonShape;
+  gap?: ButtonGap;
+  activeShape?: ButtonShape;
 }
+
+const gapClasses: Record<ButtonGap, string> = {
+  none: "gap-0",
+  xs: "gap-px",
+  sm: "gap-0.5",
+  md: "gap-1",
+  lg: "gap-2",
+};
+
+const getButtonShapeClasses = (
+  index: number,
+  total: number,
+  shape: ButtonShape,
+  hasGap: boolean,
+  isActive?: boolean,
+  activeShape?: ButtonShape,
+) => {
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+  const isOnly = total === 1;
+
+  if (shape === "sharp") return "!rounded-none";
+
+  // If the button is active, apply a finite capsule rounding override
+  if (isActive && activeShape) {
+    if (activeShape === "full") return "!rounded-[30px]"; // Finite value to prevent animation overshoot
+    if (activeShape === "minimal") return "!rounded-xl";
+    if (activeShape === "sharp") return "!rounded-none";
+  }
+
+  if (isOnly) {
+    if (shape === "full") return "!rounded-[30px]"; // Finite value
+    if (shape === "minimal") return "!rounded-xl";
+  }
+
+  if (hasGap) {
+    if (shape === "full") {
+      if (isFirst) return "!rounded-l-[30px] !rounded-r-md";
+      if (isLast) return "!rounded-l-md !rounded-r-[30px]";
+      return "!rounded-md";
+    }
+
+    if (shape === "minimal") {
+      if (isFirst) return "!rounded-l-xl !rounded-r-md";
+      if (isLast) return "!rounded-l-md !rounded-r-xl";
+      return "!rounded-md";
+    }
+  } else {
+    // Seamless layout using finite radius values for smooth transitions
+    if (shape === "full") {
+      if (isFirst) return "!rounded-l-[30px] !rounded-r-none";
+      if (isLast) return "!rounded-l-none !rounded-r-[30px]";
+      return "!rounded-none";
+    }
+
+    if (shape === "minimal") {
+      if (isFirst) return "!rounded-l-xl !rounded-r-none";
+      if (isLast) return "!rounded-l-none !rounded-r-xl";
+      return "!rounded-none";
+    }
+  }
+  return "";
+};
 
 export const ButtonGroup = ({
   children,
   className,
   shape = "full",
+  gap = "none",
+  activeShape = "full",
   ...props
 }: ButtonGroupProps) => {
-  // Map the shape prop to the correct Tailwind CSS classes for the outer corners
-  const shapeClasses: Record<ButtonShape, { left: string; right: string }> = {
-    full: { left: "rounded-l-full", right: "rounded-r-full" },
-    minimal: { left: "rounded-l-lg", right: "rounded-r-lg" },
-    sharp: { left: "rounded-l-none", right: "rounded-r-none" },
-  };
-
-  const childArray = React.Children.toArray(children);
+  const childArray = React.Children.toArray(children).filter(
+    React.isValidElement,
+  );
+  const hasGap = gap !== "none";
 
   return (
-    // FIX 1: Use a more semantic <fieldset> element as suggested by the linter.
-    // The role="group" attribute is now implicit.
-    // Added border-none and p-0 to reset default fieldset browser styles.
     <fieldset
-      className={clsx("inline-flex items-center border-none p-0", className)}
+      className={clsx(
+        "inline-flex items-center border-none p-0 m-0",
+        gapClasses[gap],
+        className,
+      )}
       {...props}
     >
       {childArray.map((child, index) => {
-        // FIX 2 & 3: Use a generic type guard to inform TypeScript about the child's props.
-        // This ensures child.props is recognized as an object with a potential `className`.
-        if (!React.isValidElement<React.HTMLAttributes<HTMLElement>>(child)) {
-          return child;
-        }
-
         const isFirst = index === 0;
-        const isLast = index === childArray.length - 1;
+        const childProps = (child as React.ReactElement<any>).props;
+        const isActive = childProps.isActive;
 
-        // --- NEW, ROBUST LOGIC INSPIRED BY SPLITBUTTON ---
-        // Determine the precise rounding classes based on the child's position.
-        let positionClasses = "";
-        if (isFirst) {
-          // The first child gets the group's left rounding and a sharp right corner.
-          positionClasses = clsx(shapeClasses[shape].left, "rounded-r-none");
-        } else if (isLast) {
-          // The last child gets the group's right rounding and a sharp left corner.
-          positionClasses = clsx(shapeClasses[shape].right, "rounded-l-none");
-        } else {
-          // All middle children are forced to be sharp on both sides.
-          positionClasses = "rounded-none";
-        }
+        const shapeClass = getButtonShapeClasses(
+          index,
+          childArray.length,
+          shape,
+          hasGap,
+          isActive,
+          activeShape,
+        );
 
         const newClassName = clsx(
-          child.props.className, // This is now type-safe
-          positionClasses,
-          // Create the overlapping border effect for a seamless look.
-          !isFirst && "-ml-px",
-          // Ensure the focused button renders on top of its siblings.
+          childProps.className,
+          shapeClass,
+          !isFirst && !hasGap && "-ml-px",
           "focus:z-10",
         );
 
-        return React.cloneElement(child, {
-          ...child.props, // This spread is also now type-safe
+        // We override the button's internal shape prop to 'sharp' (rounded-none)
+        // to prevent base 'rounded-full' (9999px) from conflicting with smooth CSS transitions.
+        return React.cloneElement(child as React.ReactElement<any>, {
           className: newClassName,
+          shape: "sharp",
         });
       })}
     </fieldset>

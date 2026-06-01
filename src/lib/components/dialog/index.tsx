@@ -146,7 +146,7 @@ DialogTrigger.displayName = "DialogTrigger";
 
 // --- ANIMATION VARIANTS ---
 const basicDialogVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.85 },
+  hidden: { opacity: 0.3, scale: 0.85 },
   visible: {
     opacity: 1,
     scale: 1,
@@ -565,8 +565,7 @@ const DialogDescription = forwardRef<
   );
 });
 
-export interface DialogBodyProps
-  extends ElasticScrollAreaProps {}
+export interface DialogBodyProps extends ElasticScrollAreaProps {}
 const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
   (
     {

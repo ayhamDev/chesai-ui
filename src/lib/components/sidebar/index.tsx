@@ -10,6 +10,9 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
+  ChevronDown,
+  Plus,
+  Minus,
 } from "lucide-react";
 import React, {
   createContext,
@@ -53,6 +56,7 @@ interface SidebarContextProps {
   itemVariant: SidebarItemVariant;
   side: SidebarSide;
   isRtl: boolean;
+  indicatorId: string;
 }
 
 const SidebarContext = createContext<SidebarContextProps | null>(null);
@@ -79,6 +83,7 @@ export const SidebarProvider = ({
   const [openMobile, setOpenMobile] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { isRtl } = useLayout();
+  const indicatorId = React.useId();
 
   const toggleSidebar = () => {
     if (isMobile) {
@@ -103,6 +108,7 @@ export const SidebarProvider = ({
         itemVariant: "primary",
         side: "left",
         isRtl,
+        indicatorId,
       }}
     >
       {children}
@@ -266,6 +272,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       openMobile,
       setOpenMobile,
       isRtl,
+      indicatorId,
     } = useSidebar();
     const isCollapsed = state === "collapsed";
 
@@ -316,6 +323,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       itemVariant: itemVariant || "primary",
       side: side || "left",
       isRtl,
+      indicatorId,
     };
 
     if (isMobile) {
@@ -545,7 +553,7 @@ const SidebarFooter = React.forwardRef<
 ));
 SidebarFooter.displayName = "Sidebar.Footer";
 
-// --- Sidebar FAB (REFACTORED: CSS-driven Layout) ---
+// --- Sidebar FAB ---
 export interface SidebarFABProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon: React.ReactNode;
   label?: React.ReactNode;
@@ -569,8 +577,8 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
       ref: localRef,
       color:
         variant === "primary"
-          ? "var(--color-ripple-dark)" // Defined in theme.css as rgba(255,255,255, 0.1)
-          : "var(--color-ripple-light)", // Defined in theme.css as rgba(0,0,0, 0.1)
+          ? "var(--color-ripple-dark)"
+          : "var(--color-ripple-light)",
       duration: 400,
     });
 
@@ -593,14 +601,10 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
           ref={localRef}
           type="button"
           onPointerDown={event}
-          // REMOVED 'layout' prop to prevent layout thrashing
-          // REMOVED explicit width animation; let CSS w-full handle it
           animate={{
             borderRadius: "1rem",
           }}
           className={clsx(
-            // Added 'w-full' so it stays attached to the parent container edges
-            // Added 'px-3' to align content exactly like Sidebar.Item
             "h-14 relative flex items-center w-full overflow-hidden transition-colors px-3",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             variantClasses[variant],
@@ -608,12 +612,10 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
           // @ts-ignore
           {...props}
         >
-          {/* Icon Container - centered and fixed size */}
           <div className="flex items-center justify-center shrink-0 w-6 h-6 z-10">
             {icon}
           </div>
 
-          {/* Label Container - Smoothly collapses width/margin */}
           <AnimatePresence mode="wait">
             {!isCollapsed && label && (
               <motion.span
@@ -637,9 +639,11 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
   },
 );
 SidebarFAB.displayName = "Sidebar.FAB";
+
 // --- Item Variants ---
 const sidebarItemVariants = cva(
-  "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 overflow-hidden z-0",
+  // Removed `overflow-hidden` so the layoutId indicator slides smoothly without clipping
+  "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 z-0",
   {
     variants: {
       isActive: {
@@ -665,11 +669,10 @@ const sidebarItemVariants = cva(
       },
     },
     compoundVariants: [
-      // Primary
       {
         itemVariant: "primary",
         isActive: true,
-        className: "bg-primary text-on-primary font-bold shadow-sm",
+        className: "text-on-primary font-bold", // shadow removed here, applied directly to the sliding indicator
       },
       {
         itemVariant: "primary",
@@ -677,12 +680,10 @@ const sidebarItemVariants = cva(
         className:
           "text-on-surface-variant hover:text-on-surface after:bg-surface-container-highest",
       },
-      // Secondary
       {
         itemVariant: "secondary",
         isActive: true,
-        className:
-          "bg-secondary-container text-on-secondary-container font-bold",
+        className: "text-on-secondary-container font-bold",
       },
       {
         itemVariant: "secondary",
@@ -690,11 +691,10 @@ const sidebarItemVariants = cva(
         className:
           "text-on-surface-variant hover:text-on-surface after:bg-secondary-container/50",
       },
-      // Tertiary
       {
         itemVariant: "tertiary",
         isActive: true,
-        className: "bg-tertiary-container text-on-tertiary-container font-bold",
+        className: "text-on-tertiary-container font-bold",
       },
       {
         itemVariant: "tertiary",
@@ -702,12 +702,10 @@ const sidebarItemVariants = cva(
         className:
           "text-on-surface-variant hover:text-on-surface after:bg-tertiary-container/50",
       },
-      // Ghost
       {
         itemVariant: "ghost",
         isActive: true,
-        className:
-          "bg-transparent text-primary font-bold hover:bg-surface-container-highest/50",
+        className: "text-primary font-bold",
       },
       {
         itemVariant: "ghost",
@@ -724,6 +722,12 @@ const sidebarItemVariants = cva(
     },
   },
 );
+
+const shapeClasses = {
+  sharp: "rounded-none",
+  minimal: "rounded-lg",
+  full: "rounded-full",
+};
 
 // --- Sidebar Item ---
 interface SidebarItemProps
@@ -747,13 +751,16 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
       itemVariant: contextItemVariant,
       isMobile,
       setOpenMobile,
+      indicatorId,
     } = useSidebar();
 
     const isCollapsed = !isMobile && state === "collapsed";
     const localRef = useRef<HTMLButtonElement>(null);
+    const rippleRef = useRef<HTMLDivElement>(null); // Ripple layer strictly for clipping
     React.useImperativeHandle(ref, () => localRef.current!);
 
     const effectiveVariant = itemVariant || contextItemVariant;
+    const effectiveShape = props.shape || contextShape;
 
     const isSolidActive =
       isActive &&
@@ -764,7 +771,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
 
     const [, event] = useRipple({
       // @ts-ignore
-      ref: localRef,
+      ref: rippleRef,
       color: rippleColor,
       duration: 300,
     });
@@ -793,7 +800,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
             isActive,
             itemVariant: effectiveVariant,
             size: props.size || contextSize,
-            shape: props.shape || contextShape,
+            shape: effectiveShape,
           }),
           "px-3",
           className,
@@ -804,6 +811,35 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
           props.onClick?.(e);
         }}
       >
+        {/* Animated Sliding Highlight Layer */}
+        {isActive && (
+          <motion.div
+            layoutId={indicatorId}
+            className={clsx(
+              "absolute inset-0 z-0 pointer-events-none",
+              effectiveVariant === "primary" && "bg-primary shadow-sm",
+              effectiveVariant === "secondary" &&
+                "bg-secondary-container shadow-sm",
+              effectiveVariant === "tertiary" &&
+                "bg-tertiary-container shadow-sm",
+              effectiveVariant === "ghost" && "bg-surface-container-highest/50",
+              shapeClasses[effectiveShape],
+            )}
+            transition={{
+              type: "spring",
+              stiffness: 350,
+              damping: 28,
+              mass: 1,
+            }}
+          />
+        )}
+
+        {/* Dedicated Ripple Container to clip ripples without affecting layoutId */}
+        <div
+          ref={rippleRef}
+          className="absolute inset-0 z-0 overflow-hidden rounded-[inherit] pointer-events-none"
+        />
+
         {icon && (
           <motion.span
             animate={{ scale: isPressed ? 0.85 : 1 }}
@@ -872,6 +908,259 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
   },
 );
 SidebarItem.displayName = "Sidebar.Item";
+
+// --- Sidebar Collapse (Nesting) ---
+export interface SidebarCollapseProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  icon?: React.ReactNode;
+  label: React.ReactNode;
+  isActive?: boolean;
+  defaultOpen?: boolean;
+  children?: React.ReactNode;
+  badge?: React.ReactNode;
+  itemVariant?: SidebarItemVariant;
+  indicator?: "chevron" | "plus-minus" | React.ReactNode;
+}
+
+const SidebarCollapse = React.forwardRef<
+  HTMLButtonElement,
+  SidebarCollapseProps
+>(
+  (
+    {
+      className,
+      icon,
+      label,
+      isActive,
+      defaultOpen = false,
+      children,
+      badge,
+      itemVariant,
+      indicator = "chevron",
+      ...props
+    },
+    ref,
+  ) => {
+    const {
+      state,
+      size: contextSize,
+      shape: contextShape,
+      itemVariant: contextItemVariant,
+      isMobile,
+      setSidebarState,
+    } = useSidebar();
+
+    const [isOpen, setIsOpen] = useState(defaultOpen);
+    const isCollapsed = !isMobile && state === "collapsed";
+    const localRef = useRef<HTMLButtonElement>(null);
+    const rippleRef = useRef<HTMLDivElement>(null);
+    React.useImperativeHandle(ref, () => localRef.current!);
+
+    const effectiveVariant = itemVariant || contextItemVariant;
+    const effectiveShape = props.shape || contextShape;
+
+    const isSolidActive =
+      isActive &&
+      (effectiveVariant === "primary" || effectiveVariant === "tertiary");
+    const rippleColor = isSolidActive
+      ? "var(--color-ripple-light)"
+      : "var(--color-ripple-dark)";
+
+    const [, event] = useRipple({
+      // @ts-ignore
+      ref: rippleRef,
+      color: rippleColor,
+      duration: 300,
+    });
+
+    const [isPressed, setIsPressed] = useState(false);
+    const iconSize = props.size === "lg" ? 24 : props.size === "sm" ? 16 : 20;
+
+    const showChildren = isOpen && !isCollapsed;
+
+    const handleToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (isCollapsed) {
+        setSidebarState("expanded");
+        setIsOpen(true);
+      } else {
+        setIsOpen((prev) => !prev);
+      }
+      props.onClick?.(e);
+    };
+
+    const renderIndicator = () => {
+      if (indicator === "plus-minus") {
+        return (
+          <div className="flex items-center justify-center h-4 w-4 relative z-10">
+            {isOpen ? (
+              <Minus className="h-4 w-4 opacity-70 stroke-[1.5]" />
+            ) : (
+              <Plus className="h-4 w-4 opacity-70 stroke-[1.5]" />
+            )}
+          </div>
+        );
+      }
+
+      if (indicator === "chevron") {
+        return (
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="flex items-center justify-center relative z-10"
+          >
+            <ChevronDown className="h-4 w-4 opacity-60" />
+          </motion.div>
+        );
+      }
+
+      if (React.isValidElement(indicator)) {
+        return <div className="relative z-10 flex">{indicator}</div>;
+      }
+
+      return (
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          className="flex items-center justify-center relative z-10"
+        >
+          <ChevronDown className="h-4 w-4 opacity-60" />
+        </motion.div>
+      );
+    };
+
+    return (
+      <div className="w-full flex flex-col gap-1">
+        <button
+          ref={localRef}
+          onPointerDown={(e) => {
+            event(e);
+            setIsPressed(true);
+          }}
+          onPointerUp={() => setIsPressed(false)}
+          onPointerLeave={() => setIsPressed(false)}
+          className={clsx(
+            sidebarItemVariants({
+              isActive,
+              itemVariant: effectiveVariant,
+              size: props.size || contextSize,
+              shape: effectiveShape,
+            }),
+            "px-3",
+            className,
+          )}
+          {...props}
+          onClick={handleToggle}
+          aria-expanded={showChildren}
+        >
+          {/* Active Highlight Layer (Without layoutId to avoid collisions with child items) */}
+          <AnimatePresence>
+            {isActive && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className={clsx(
+                  "absolute inset-0 z-0 pointer-events-none",
+                  effectiveVariant === "primary" && "bg-primary shadow-sm",
+                  effectiveVariant === "secondary" &&
+                    "bg-secondary-container shadow-sm",
+                  effectiveVariant === "tertiary" &&
+                    "bg-tertiary-container shadow-sm",
+                  effectiveVariant === "ghost" &&
+                    "bg-surface-container-highest/50",
+                  shapeClasses[effectiveShape],
+                )}
+                transition={{ duration: 0.2 }}
+              />
+            )}
+          </AnimatePresence>
+
+          <div
+            ref={rippleRef}
+            className="absolute inset-0 z-0 overflow-hidden rounded-[inherit] pointer-events-none"
+          />
+
+          {icon && (
+            <motion.span
+              animate={{ scale: isPressed ? 0.85 : 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+              className="flex shrink-0 items-center justify-center transition-colors duration-300 relative z-10"
+            >
+              {React.isValidElement(icon)
+                ? React.cloneElement(icon as React.ReactElement, {
+                    // @ts-ignore
+                    size: iconSize,
+                  })
+                : icon}
+            </motion.span>
+          )}
+
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0, marginInlineStart: 0 }}
+                animate={{
+                  opacity: 1,
+                  width: "auto",
+                  marginInlineStart: "0.75rem",
+                }}
+                exit={{ opacity: 0, width: 0, marginInlineStart: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="flex-1 overflow-hidden whitespace-nowrap text-start min-w-0 relative z-10"
+              >
+                {label}
+              </motion.span>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence mode="wait">
+            {!isCollapsed && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+                className="ms-auto shrink-0 flex items-center gap-2 relative z-10"
+              >
+                {badge}
+                {renderIndicator()}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {showChildren && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{
+                height: "auto",
+                opacity: 1,
+                transition: {
+                  height: { duration: 0.25, ease: "easeOut" },
+                  opacity: { duration: 0.2, delay: 0.05 },
+                },
+              }}
+              exit={{
+                height: 0,
+                opacity: 0,
+                transition: {
+                  height: { duration: 0.2, ease: "easeIn" },
+                  opacity: { duration: 0.15 },
+                },
+              }}
+              className="overflow-hidden w-full"
+            >
+              <div className="relative ms-[23px] ps-4 border-s border-outline-variant/40 flex flex-col gap-1 mt-1 pb-1">
+                {children}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  },
+);
+SidebarCollapse.displayName = "Sidebar.Collapse";
 
 // --- Sidebar Trigger ---
 const SidebarTrigger = React.forwardRef<
@@ -975,4 +1264,5 @@ export const Sidebar = Object.assign(SidebarRoot, {
   Group: SidebarGroup,
   Label: SidebarLabel,
   FAB: SidebarFAB,
+  Collapse: SidebarCollapse,
 });
