@@ -1,54 +1,41 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import {
-  BarChart2,
-  Database,
-  Edit3,
-  Globe,
-  LayoutGrid,
-  PenTool,
-  Play,
-  Plus,
-  Settings,
-  Type,
-} from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
 import { clsx } from "clsx";
+import { BarChart2, Edit3, Globe, Settings } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { WebsiteStudio } from "./index";
 import type { ComponentRegistry, WebsiteSchema } from "./types";
-import { useStudioStore } from "./store";
 
 // --- TanStack Router Imports ---
 import {
-  createMemoryHistory,
+  createHashHistory,
   createRootRoute,
   createRoute,
   createRouter,
+  Outlet,
   RouterProvider,
   useNavigate,
-  Outlet,
-  createHashHistory,
 } from "@tanstack/react-router";
 
 // --- Chesai UI Component Imports ---
 import {
+  Accessibility,
   ArrowRight,
   Github,
+  Palette,
   Sparkles,
   Zap,
-  Accessibility,
-  Palette,
 } from "lucide-react";
 import { AppBar } from "../appbar";
 import { Button } from "../button";
 import { Card } from "../card";
 import { CodeEditor } from "../code-editor";
+import { IconButton } from "../icon-button";
+import { Input } from "../input";
 import { InstallCommand } from "../install-command";
 import { Flex } from "../layout/flex";
 import { Grid, GridItem } from "../layout/grid";
 import { toast, Toaster } from "../toast";
 import { Typography } from "../typography";
-import { IconButton } from "../icon-button";
-import { Input } from "../input";
 
 const meta: Meta<typeof WebsiteStudio.Renderer> = {
   title: "Website Studio/Chesai UI Landing Page",

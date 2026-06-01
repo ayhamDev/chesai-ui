@@ -10,7 +10,7 @@ const preview: Preview = {
   parameters: {
     options: {
       storySort: {
-        order: ["Website Studio", "*"],
+        order: ["Website Studio", "Theme", "Showcase", "*"],
       },
     },
     darkMode: {
