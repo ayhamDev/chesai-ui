@@ -65,8 +65,8 @@ const rootVariants = cva(
 const trackVariants = cva("relative overflow-hidden", {
   variants: {
     visual: {
-      line: "bg-surface-container-highest",
-      bar: "bg-surface-container-highest",
+      line: "",
+      bar: "",
     },
     orientation: {
       horizontal: "w-full",
@@ -131,65 +131,16 @@ const thumbVariants = cva(
       },
       shape: {
         full: "rounded-full",
-        minimal: "rounded-md",
+        minimal: "rounded-lg",
         sharp: "rounded-none",
       },
       orientation: {
         horizontal: "",
         vertical: "",
       },
-      size: { sm: "", md: "", lg: "" },
     },
-    compoundVariants: [
-      // --- Bar Thumbs (Horizontal) ---
-      {
-        visual: "bar",
-        orientation: "horizontal",
-        size: "sm",
-        className:
-          "h-[75px] w-[3px] top-9.5 -translate-y-1/2 group-active/slider:scale-y-110 group-active/slider:scale-x-90",
-      },
-      {
-        visual: "bar",
-        orientation: "horizontal",
-        size: "md",
-        className:
-          "h-[75px] w-[3px] top-9.5 -translate-y-1/2 group-active/slider:scale-y-110 group-active/slider:scale-x-90",
-      },
-      {
-        visual: "bar",
-        orientation: "horizontal",
-        size: "lg",
-        className:
-          "h-[75px] w-[3px] top-9.5 -translate-y-1/2 group-active/slider:scale-y-110 group-active/slider:scale-x-90",
-      },
-
-      // --- Bar Thumbs (Vertical) ---
-      {
-        visual: "bar",
-        orientation: "vertical",
-        size: "sm",
-        className:
-          "w-[75px] h-[3px] left-1/2 -translate-x-1/2 group-active/slider:scale-x-110 group-active/slider:scale-y-90",
-      },
-      {
-        visual: "bar",
-        orientation: "vertical",
-        size: "md",
-        className:
-          "w-[75px] h-[3px] left-1/2 -translate-x-1/2 group-active/slider:scale-x-110 group-active/slider:scale-y-90",
-      },
-      {
-        visual: "bar",
-        orientation: "vertical",
-        size: "lg",
-        className:
-          "w-[75px] h-[3px] left-1/2 -translate-x-1/2 group-active/slider:scale-x-110 group-active/slider:scale-y-90",
-      },
-    ],
     defaultVariants: {
       visual: "bar",
-      size: "md",
       orientation: "horizontal",
       color: "primary",
       shape: "full",
@@ -239,7 +190,6 @@ const ValueLabel = ({
       exit={{ opacity: 0, scale: 0.8, x: 0, y: 0 }}
       transition={{ duration: 0.15, ease: "easeOut" }}
       className="absolute top-0 left-0 pointer-events-none"
-      // Center relative to thumb
       style={{
         left: "50%",
         top: "50%",
@@ -291,7 +241,6 @@ const Ticks = ({
           const isActive =
             percentage >= activeRange[0] && percentage <= activeRange[1];
 
-          // Determine position style based on orientation
           const posStyle =
             orientation === "horizontal"
               ? { left: `${percentage}%` }
@@ -302,7 +251,6 @@ const Ticks = ({
               key={i}
               className={clsx(
                 "absolute rounded-full transition-colors",
-                // Center ticks
                 orientation === "horizontal"
                   ? "top-1/2 -translate-x-1/2 -translate-y-1/2"
                   : "left-1/2 -translate-x-1/2 translate-y-1/2",
@@ -338,6 +286,19 @@ export interface SliderProps extends Omit<
   withLabel?: boolean;
   thumbRingColor?: string;
   orientation?: "horizontal" | "vertical";
+  /**
+   * Transparent physical gap (in pixels) between the thumb and active/inactive segments.
+   * @default 0
+   */
+  gap?: number;
+  /**
+   * Override height of the long thumb (supports dynamic classes like 'h-16' or raw CSS '80px').
+   */
+  thumbHeight?: string;
+  /**
+   * Override width of the long thumb (supports dynamic classes like 'w-1.5' or raw CSS '4px').
+   */
+  thumbWidth?: string;
 }
 
 // --- COMPONENT ---
@@ -367,6 +328,9 @@ export const Slider = React.forwardRef<
       endIcon,
       disabled,
       thumbRingColor,
+      gap = 0,
+      thumbHeight,
+      thumbWidth,
       ...props
     },
     ref,
@@ -393,8 +357,6 @@ export const Slider = React.forwardRef<
       onValueChange?.(newValues);
     };
 
-    // Calculate Active Range for styling
-    // Returns { start, length, range } where start/length are percentages
     const getTrackStats = () => {
       const val0 = internalValue[0] ?? min;
       const pct0 = Math.max(
@@ -435,7 +397,6 @@ export const Slider = React.forwardRef<
         }
       }
 
-      // Standard
       return {
         start: "0%",
         length: `${pct0}%`,
@@ -447,27 +408,201 @@ export const Slider = React.forwardRef<
     const tickCount = step ? Math.floor((max - min) / step) : 0;
 
     const ringWidth = 6;
-    const thumbStyle =
-      visual === "bar"
-        ? {
-            boxShadow: `0 0 0 ${ringWidth}px ${
-              thumbRingColor || "var(--md-sys-color-surface)"
-            }`,
-          }
-        : {};
-
-    // Apply orientation-specific styles to range
-    const rangeStyle =
-      orientation === "horizontal"
-        ? { left: stats.start, width: stats.length }
-        : { bottom: stats.start, height: stats.length };
-
-    // Determine content color based on the selected variant color
-    // This affects icons inside the bar
+    const thumbStyle: React.CSSProperties = {};
     const contentColorClass =
       color === "primary" || color === "error"
         ? "text-on-primary"
         : "text-on-secondary-container";
+
+    // --- GAP / SEGMENTATION COMPUTATION ---
+    const pct0 = Math.max(
+      0,
+      Math.min(100, (((internalValue[0] ?? min) - min) / (max - min)) * 100),
+    );
+
+    const getSegmentStyles = (
+      startPct: number,
+      endPct: number,
+      startOffset: number,
+      endOffset: number,
+    ) => {
+      const posStr =
+        startOffset === 0
+          ? `${startPct}%`
+          : `calc(${startPct}% + ${startOffset}px)`;
+
+      const lenStr =
+        endOffset - startOffset === 0
+          ? `${endPct - startPct}%`
+          : `calc(${endPct - startPct}% + ${endOffset - startOffset}px)`;
+
+      if (orientation === "horizontal") {
+        return {
+          left: `min(100%, max(0px, ${posStr}))`,
+          width: `max(0px, ${lenStr})`,
+          top: 0,
+          height: "100%",
+        };
+      } else {
+        return {
+          bottom: `min(100%, max(0px, ${posStr}))`,
+          height: `max(0px, ${lenStr})`,
+          left: 0,
+          width: "100%",
+        };
+      }
+    };
+
+    // --- SMOOTH EDGE BOUNDARY CALCULATION ---
+    const roundingClassForSegment = (start: number, end: number) => {
+      if (shape === "sharp") return "rounded-none";
+
+      const isH = orientation === "horizontal";
+
+      if (shape === "minimal") {
+        // Outer corners smoothed with rounded-xl, gap corners smoothed with 4px (rounded-sm)
+        if (start === 0 && end === 100) return "rounded-xl";
+        if (start === 0) {
+          return isH
+            ? "rounded-l-xl rounded-r-md"
+            : "rounded-b-xl rounded-t-md";
+        }
+        if (end === 100) {
+          return isH
+            ? "rounded-r-xl rounded-l-md"
+            : "rounded-t-xl rounded-b-md";
+        }
+        return "rounded-md";
+      }
+
+      // shape === "full"
+      // Outer corners smoothed with finite capsule rounding (30px), gap corners smoothed with 4px (rounded-md)
+      if (start === 0 && end === 100) return "rounded-[30px]";
+      if (start === 0) {
+        return isH
+          ? "rounded-l-[30px] rounded-r-md"
+          : "rounded-b-[30px] rounded-t-md";
+      }
+      if (end === 100) {
+        return isH
+          ? "rounded-r-[30px] rounded-l-md"
+          : "rounded-t-[30px] rounded-b-md";
+      }
+      return "rounded-md";
+    };
+
+    let segments: {
+      start: number;
+      end: number;
+      isRange: boolean;
+      style: React.CSSProperties;
+      className: string;
+    }[] = [];
+
+    if (variant === "range") {
+      const pct1 = Math.max(
+        0,
+        Math.min(100, (((internalValue[1] ?? max) - min) / (max - min)) * 100),
+      );
+      const minPct = Math.min(pct0, pct1);
+      const maxPct = Math.max(pct0, pct1);
+
+      segments = [
+        {
+          start: 0,
+          end: minPct,
+          isRange: false,
+          style: getSegmentStyles(0, minPct, 0, -gap),
+          className: "bg-surface-container-highest",
+        },
+        {
+          start: minPct,
+          end: maxPct,
+          isRange: true,
+          style: getSegmentStyles(minPct, maxPct, gap, -gap),
+          className: rangeVariants({ visual, orientation, color }),
+        },
+        {
+          start: maxPct,
+          end: 100,
+          isRange: false,
+          style: getSegmentStyles(maxPct, 100, gap, 0),
+          className: "bg-surface-container-highest",
+        },
+      ];
+    } else if (variant === "centered") {
+      const center = (max + min) / 2;
+      const centerPct = ((center - min) / (max - min)) * 100;
+
+      if (pct0 < centerPct) {
+        segments = [
+          {
+            start: 0,
+            end: pct0,
+            isRange: false,
+            style: getSegmentStyles(0, pct0, 0, -gap),
+            className: "bg-surface-container-highest",
+          },
+          {
+            start: pct0,
+            end: centerPct,
+            isRange: true,
+            style: getSegmentStyles(pct0, centerPct, gap, 0),
+            className: rangeVariants({ visual, orientation, color }),
+          },
+          {
+            start: centerPct,
+            end: 100,
+            isRange: false,
+            style: getSegmentStyles(centerPct, 100, 0, 0),
+            className: "bg-surface-container-highest",
+          },
+        ];
+      } else {
+        segments = [
+          {
+            start: 0,
+            end: centerPct,
+            isRange: false,
+            style: getSegmentStyles(0, centerPct, 0, 0),
+            className: "bg-surface-container-highest",
+          },
+          {
+            start: centerPct,
+            end: pct0,
+            isRange: true,
+            style: getSegmentStyles(centerPct, pct0, 0, -gap),
+            className: rangeVariants({ visual, orientation, color }),
+          },
+          {
+            start: pct0,
+            end: 100,
+            isRange: false,
+            style: getSegmentStyles(pct0, 100, gap, 0),
+            className: "bg-surface-container-highest",
+          },
+        ];
+      }
+    } else {
+      segments = [
+        {
+          start: 0,
+          end: pct0,
+          isRange: true,
+          style: getSegmentStyles(0, pct0, 0, -gap),
+          className: rangeVariants({ visual, orientation, color }),
+        },
+        {
+          start: pct0,
+          end: 100,
+          isRange: false,
+          style: getSegmentStyles(pct0, 100, gap, 0),
+          className: "bg-surface-container-highest",
+        },
+      ];
+    }
+
+    const isTailwindClass = (val: string) => /^(h-|w-)/.test(val);
 
     return (
       <div
@@ -506,11 +641,18 @@ export const Slider = React.forwardRef<
           <SliderPrimitive.Track
             className={trackVariants({ visual, orientation, shape })}
           >
-            {/* Active Range Fill */}
-            <div
-              className={rangeVariants({ visual, orientation, color })}
-              style={rangeStyle}
-            />
+            {/* Split Segments (Physical transparent gap + Smoothed Edges) */}
+            {segments.map((seg, idx) => (
+              <div
+                key={idx}
+                className={clsx(
+                  seg.className,
+                  "absolute transition-[border-radius] duration-300 ease-in-out",
+                  roundingClassForSegment(seg.start, seg.end),
+                )}
+                style={seg.style}
+              />
+            ))}
 
             {/* Ticks */}
             {withTicks && (
@@ -565,25 +707,83 @@ export const Slider = React.forwardRef<
           </SliderPrimitive.Track>
 
           {/* Thumbs */}
-          {internalValue.map((val, i) => (
-            <SliderPrimitive.Thumb
-              key={i}
-              className={thumbVariants({
-                visual,
-                size,
-                orientation,
-                color,
-                shape,
-              })}
-              style={thumbStyle}
-            >
-              <AnimatePresence>
-                {withLabel && (isHovered || isDragging) && (
-                  <ValueLabel value={val} orientation={orientation} />
+          {internalValue.map((val, i) => {
+            const customThumbStyle: React.CSSProperties = { ...thumbStyle };
+            let customThumbClassName = "";
+
+            // Apply custom height/width to the thumb
+            if (thumbHeight) {
+              if (isTailwindClass(thumbHeight)) {
+                customThumbClassName += ` !${thumbHeight}`;
+              } else {
+                customThumbStyle.height = thumbHeight;
+              }
+            }
+            if (thumbWidth) {
+              if (isTailwindClass(thumbWidth)) {
+                customThumbClassName += ` !${thumbWidth}`;
+              } else {
+                customThumbStyle.width = thumbWidth;
+              }
+            }
+
+            // Calculate position offset for the thumb to center it correctly
+            const thumbHeightValue = thumbHeight
+              ? parseFloat(thumbHeight.replace(/[^\d.-]/g, "")) || 20
+              : 20; // Default if parsing fails
+            const thumbWidthValue = thumbWidth
+              ? parseFloat(thumbWidth.replace(/[^\d.-]/g, "")) || 20
+              : 20; // Default if parsing fails
+            const unit =
+              thumbHeight?.includes("px") || thumbWidth?.includes("px")
+                ? "px"
+                : ""; // Assume Tailwind classes handle units
+
+            const offsetX =
+              orientation === "horizontal"
+                ? `calc(-50% + ${thumbWidth === undefined ? 0 : unit === "px" ? `-${thumbWidthValue / 2}` : `calc(-${thumbWidthValue}/2)`}px)`
+                : "-50%";
+            const offsetY =
+              orientation === "vertical"
+                ? `calc(-50% + ${thumbHeight === undefined ? 0 : unit === "px" ? `-${thumbHeightValue / 2}` : `calc(-${thumbHeightValue}/2)`}px)`
+                : "-50%";
+
+            const positionStyle: React.CSSProperties = {
+              transform: `translate(${orientation === "horizontal" ? "var(--radix-slider-thumb-transform, 0px)" : "0px"}, ${orientation === "vertical" ? "var(--radix-slider-thumb-transform, 0px)" : "0px"})`,
+              left: orientation === "horizontal" ? "0" : "50%",
+              top: orientation === "vertical" ? "0" : "50%",
+            };
+
+            return (
+              <SliderPrimitive.Thumb
+                key={i}
+                className={clsx(
+                  thumbVariants({
+                    visual,
+                    orientation,
+                    color,
+                    shape,
+                  }),
+                  customThumbClassName,
+                  // Dynamically apply centering offsets for custom thumb sizes
+                  orientation === "horizontal" &&
+                    "ml-[var(--radix-slider-thumb-transform, 0px)]",
+                  orientation === "vertical" &&
+                    "mt-[var(--radix-slider-thumb-transform, 0px)]",
                 )}
-              </AnimatePresence>
-            </SliderPrimitive.Thumb>
-          ))}
+                style={{
+                  ...customThumbStyle,
+                  ...positionStyle,
+                }}
+              >
+                <AnimatePresence>
+                  {withLabel && (isHovered || isDragging) && (
+                    <ValueLabel value={val} orientation={orientation} />
+                  )}
+                </AnimatePresence>
+              </SliderPrimitive.Thumb>
+            );
+          })}
 
           {/* Standard Bar End Dot (Horizontal) */}
           {visual === "bar" &&

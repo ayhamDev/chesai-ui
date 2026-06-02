@@ -4,8 +4,8 @@
 import { interpolate } from "flubber";
 import { animate, motion, useMotionValue } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
+import { EASING } from "../stack-router/transitions";
 import { SHAPE_PATHS, type ShapeType } from "./paths";
-import { EASING, DURATION } from "../stack-router/transitions";
 
 export interface ShapeProps extends React.SVGProps<SVGSVGElement> {
   shape: ShapeType;

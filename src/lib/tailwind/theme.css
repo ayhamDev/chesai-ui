@@ -55,6 +55,10 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --font-button: var(--font-plain);
 
+    /* --- Global Motion Variables (Expressive by default) --- */
+    --theme-transition-duration: 300ms;
+    --theme-transition-ease: var(--ease-expressive-default-spatial);
+
     --md-sys-color-primary: rgb(143 76 56);
     --md-sys-color-surface-tint: rgb(143 76 56);
     --md-sys-color-on-primary: rgb(255 255 255);
@@ -143,6 +147,11 @@
     --duration-long2: 500ms;
     --duration-long3: 550ms;
     --duration-long4: 600ms;
+  }
+
+  :root[data-animation-style="standard"] {
+    --theme-transition-duration: 200ms;
+    --theme-transition-ease: var(--ease-standard);
   }
 
   /* Light Medium Contrast */

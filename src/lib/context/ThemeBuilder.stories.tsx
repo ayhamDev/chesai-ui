@@ -377,6 +377,8 @@ const SidebarControls = () => {
     setFonts,
     contrast,
     setContrast,
+    animationStyle,
+    setAnimationStyle,
   } = useTheme();
 
   const { show } = useDialog();
@@ -386,14 +388,14 @@ const SidebarControls = () => {
   const handleGlobalReset = () => {
     setTheme("light");
     setContrast("standard");
-    setSeedColor(null); // <-- FIX: Reset to null to remove generated variables and rely on default theme.css
+    setAnimationStyle("expressive");
+    setSeedColor(null);
     resetOverrides();
     setFonts({
       brand: "Manrope",
       plain: "Manrope",
-      expressiveButtons: false,
     });
-    setColorFamily(""); // Reset the UI dropdown
+    setColorFamily("");
   };
 
   const handleExport = () => {
@@ -403,7 +405,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <ChesaiProvider
       defaultTheme="${theme}"
-      defaultContrast="${contrast}"${seedColor ? `\n      defaultSeedColor="${seedColor}"` : ""}
+      defaultContrast="${contrast}"
+      defaultAnimationStyle="${animationStyle}"${seedColor ? `\n      defaultSeedColor="${seedColor}"` : ""}
       defaultFonts={${JSON.stringify(fonts, null, 2).split("\n").join("\n      ")}}
       defaultOverrides={${JSON.stringify(overrides, null, 2).split("\n").join("\n      ")}}
     >
@@ -627,20 +630,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               />
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-surface-container-low rounded-xl border border-outline-variant/30 mt-1">
-              <div className="flex flex-col">
-                <Typography variant="label-large">
-                  Expressive Buttons
-                </Typography>
-                <Typography variant="body-small" muted>
-                  Use Brand font for actions
-                </Typography>
-              </div>
-              <Switch
-                checked={fonts.expressiveButtons}
-                onCheckedChange={(c) => setFonts({ expressiveButtons: c })}
-              />
-            </div>
           </section>
 
           {/* --- CORE COLORS (OVERRIDES) --- */}

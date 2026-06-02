@@ -1,9 +1,18 @@
+// src/lib/components/shape/shaped-components.tsx
 "use client";
 
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { interpolate } from "flubber";
-import { animate, motion, useMotionValue } from "framer-motion";
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 import React, {
   forwardRef,
   useEffect,
@@ -12,9 +21,14 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import useRipple from "use-ripple-hook";
+import { ImageOff, X } from "lucide-react";
 import { Shape } from "./index";
 import { SHAPE_PATHS, type ShapeType } from "./paths";
+import { EASING, DURATION } from "../stack-router/transitions";
+import { Skeleton } from "../skeleton";
+import type { ImageEffect } from "../image";
 
 // --- 1. SHAPED ICON (Wrapper) ---
 export interface ShapedIconProps extends React.SVGProps<SVGSVGElement> {
@@ -37,34 +51,42 @@ export const ShapedIcon = forwardRef<SVGSVGElement, ShapedIconProps>(
 );
 ShapedIcon.displayName = "ShapedIcon";
 
-// --- 2. SHAPED IMAGE (FLUID MORPHING) ---
-export interface ShapedImageProps extends React.SVGProps<SVGSVGElement> {
+// --- 2. SHAPED CONTAINER (CSS clip-path mask) ---
+export interface ShapedContainerProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "onError" | "onLoad"
+> {
   shape: ShapeType;
-  src: string;
-  alt?: string;
+  /** Width and height of the container. */
   size?: number | string;
   /** Duration in seconds for the morph animation */
   duration?: number;
+  /** Easing curve for the morph */
+  ease?: any;
+  /** Class applied to the outer wrapper boundary */
+  containerClassName?: string;
 }
 
-export const ShapedImage = forwardRef<SVGSVGElement, ShapedImageProps>(
+export const ShapedContainer = forwardRef<HTMLDivElement, ShapedContainerProps>(
   (
     {
       shape,
-      src,
-      alt,
       size = "100%",
       duration = 0.8,
+      ease = EASING.emphasized,
       className,
+      containerClassName,
       style,
+      children,
       ...props
     },
     ref,
   ) => {
     const uniqueId = useId();
-    const maskId = `mask-${uniqueId}`;
+    // Sanitize ID to prevent query selector issues
+    const clipId = `clip-container-${uniqueId.replace(/:/g, "")}`;
 
-    // --- Animation Logic (Same as Shape component) ---
+    // -- MORPH STATE --
     const pathD = useMotionValue(SHAPE_PATHS[shape]);
     const progress = useMotionValue(0);
     const [currentShape, setCurrentShape] = useState(shape);
@@ -83,9 +105,9 @@ export const ShapedImage = forwardRef<SVGSVGElement, ShapedImageProps>(
 
         const playback = animate(progress, 1, {
           duration: duration,
-          ease: [0.2, 0, 0, 1], // MD3 Emphasized Ease
+          ease: ease,
           onUpdate: (latest) => {
-            pathD.set(interpolator(latest));
+            pathD.set(interpolator(latest) as string);
           },
           onComplete: () => {
             previousShape.current = shape;
@@ -95,47 +117,418 @@ export const ShapedImage = forwardRef<SVGSVGElement, ShapedImageProps>(
 
         return () => playback.stop();
       }
-    }, [shape, currentShape, duration, pathD, progress]);
+    }, [shape, currentShape, duration, ease, pathD, progress]);
 
     return (
-      <svg
+      <div
         ref={ref}
-        viewBox="0 0 380 380"
-        xmlns="http://www.w3.org/2000/svg"
-        className={clsx("block", className)}
-        style={{
-          width: size,
-          height: size,
-          ...style,
-        }}
+        className={clsx(
+          "relative isolate transition-all duration-300 overflow-visible aspect-square",
+          containerClassName,
+        )}
+        style={{ width: size, height: size, ...style }}
         {...props}
       >
+        {/* SVG defining the responsive clip-path */}
+        <svg
+          width="0"
+          height="0"
+          className="absolute pointer-events-none"
+          style={{ position: "absolute", width: 0, height: 0 }}
+        >
+          <defs>
+            <clipPath id={clipId} clipPathUnits="objectBoundingBox">
+              {/* Magic scale factor: 1 / 380 = 0.002631578947368421 */}
+              {/* Scales the 380x380 internal path to a fluid 0..1 bounding box */}
+              <motion.path d={pathD} transform="scale(0.002631578947368421)" />
+            </clipPath>
+          </defs>
+        </svg>
+
+        {/* The actual HTML content (Clipped natively by CSS) */}
+        <div
+          className={clsx("w-full h-full", className)}
+          style={{
+            clipPath: `url(#${clipId})`,
+            WebkitClipPath: `url(#${clipId})`,
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    );
+  },
+);
+ShapedContainer.displayName = "ShapedContainer";
+
+// --- 3. SHAPED IMAGE (FLUID MORPHING + ADVANCED EFFECTS) ---
+
+export interface ShapedImageProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "onError" | "onLoad"
+> {
+  shape: ShapeType;
+  src: string;
+  placeholderSrc?: string;
+  alt?: string;
+  size?: number | string;
+  /** Duration in seconds for the morph animation */
+  duration?: number;
+  /** Easing curve for the morph */
+  ease?: any;
+  showSkeleton?: boolean;
+  fallback?: React.ReactNode;
+  effects?: ImageEffect[];
+  zoomOnHover?: boolean;
+  aspectRatio?: "auto" | "square" | "video" | "portrait" | "wide";
+  variant?: "default" | "bordered" | "elevated";
+}
+
+export const ShapedImage = forwardRef<HTMLDivElement, ShapedImageProps>(
+  (
+    {
+      shape,
+      src,
+      placeholderSrc,
+      alt = "",
+      size = "100%",
+      duration = 0.8,
+      ease = EASING.emphasized,
+      showSkeleton = true,
+      fallback,
+      effects = [],
+      zoomOnHover = false,
+      aspectRatio = "auto",
+      variant = "default",
+      className,
+      style,
+      onClick,
+      ...props
+    },
+    ref,
+  ) => {
+    const [status, setStatus] = useState<"loading" | "loaded" | "error">(
+      "loading",
+    );
+    const [isZoomed, setIsZoomed] = useState(false);
+    const uniqueId = useId();
+    const maskId = `mask-${uniqueId}`;
+
+    const hasInspect = effects.includes("inspect");
+    const hasZoom = effects.includes("zoom");
+
+    // -- INSPECT MODE STATE --
+    const mouseX = useMotionValue(50);
+    const mouseY = useMotionValue(50);
+    const maskX = useSpring(mouseX, { stiffness: 200, damping: 25 });
+    const maskY = useSpring(mouseY, { stiffness: 200, damping: 25 });
+    const transformOrigin = useMotionTemplate`${maskX}% ${maskY}%`;
+    const [isHovering, setIsHovering] = useState(false);
+
+    // -- MORPH STATE --
+    const pathD = useMotionValue(SHAPE_PATHS[shape]);
+    const progress = useMotionValue(0);
+    const [currentShape, setCurrentShape] = useState(shape);
+    const previousShape = useRef(shape);
+
+    useEffect(() => {
+      if (shape !== currentShape) {
+        const startPath = SHAPE_PATHS[previousShape.current];
+        const endPath = SHAPE_PATHS[shape];
+
+        const interpolator = interpolate(startPath, endPath, {
+          maxSegmentLength: 2,
+        });
+
+        progress.set(0);
+
+        const playback = animate(progress, 1, {
+          duration: duration,
+          ease: ease,
+          onUpdate: (latest) => {
+            pathD.set(interpolator(latest) as string);
+          },
+          onComplete: () => {
+            previousShape.current = shape;
+            setCurrentShape(shape);
+          },
+        });
+
+        return () => playback.stop();
+      }
+    }, [shape, currentShape, duration, ease, pathD, progress]);
+
+    // -- LOADING STATE --
+    useEffect(() => {
+      setStatus("loading");
+      const img = new window.Image();
+      img.src = src;
+      img.onload = () => setStatus("loaded");
+      img.onerror = () => setStatus("error");
+    }, [src]);
+
+    // -- ZOOM SCROLL LOCK --
+    useEffect(() => {
+      if (isZoomed) {
+        document.body.style.overflow = "hidden";
+        const handleEsc = (e: KeyboardEvent) => {
+          if (e.key === "Escape") setIsZoomed(false);
+        };
+        window.addEventListener("keydown", handleEsc);
+        return () => {
+          document.body.style.overflow = "";
+          window.removeEventListener("keydown", handleEsc);
+        };
+      }
+    }, [isZoomed]);
+
+    const isInteractive = !!onClick || zoomOnHover || hasZoom;
+    const shouldRenderSkeleton =
+      showSkeleton && status === "loading" && !placeholderSrc;
+
+    // -- HANDLERS --
+    const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (hasZoom && status === "loaded") {
+        setIsZoomed(true);
+      }
+      onClick?.(e);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!hasInspect) return;
+      const { left, top, width, height } =
+        e.currentTarget.getBoundingClientRect();
+      const xPercent = ((e.clientX - left) / width) * 100;
+      const yPercent = ((e.clientY - top) / height) * 100;
+      mouseX.set(xPercent);
+      mouseY.set(yPercent);
+      setIsHovering(true);
+    };
+
+    const handleMouseLeave = () => {
+      if (!hasInspect) return;
+      setIsHovering(false);
+      mouseX.set(50);
+      mouseY.set(50);
+    };
+
+    const renderMainImage = (isModal = false) => (
+      <motion.svg
+        layoutId={hasZoom ? `shaped-image-${uniqueId}` : undefined}
+        viewBox="0 0 380 380"
+        className={clsx(
+          "block w-full h-full will-change-transform",
+          "relative z-10",
+          isModal && "max-h-[90vh] max-w-[90vw] cursor-default",
+        )}
+        initial={{ opacity: 0 }}
+        animate={{
+          opacity: status === "loaded" ? 1 : 0,
+        }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+      >
         <defs>
-          <mask id={maskId}>
-            {/* The white fill defines the visible area */}
+          <mask id={isModal ? `${maskId}-modal` : maskId}>
             <motion.path
-              className={"will-change-transform transform-3d"}
+              className="will-change-transform transform-3d"
               d={pathD}
               fill="white"
             />
           </mask>
         </defs>
 
-        {/* The image masked by the morphing path */}
-        <image
-          href={src}
-          width="100%"
-          height="100%"
-          preserveAspectRatio="xMidYMid slice"
-          mask={`url(#${maskId})`}
-        />
-      </svg>
+        <g mask={`url(#${isModal ? `${maskId}-modal` : maskId})`}>
+          <motion.image
+            href={src}
+            width="100%"
+            height="100%"
+            preserveAspectRatio="xMidYMid slice"
+            style={{
+              transformOrigin:
+                hasInspect && !isModal ? transformOrigin : "center center",
+            }}
+            animate={{
+              scale:
+                hasInspect && isHovering && !isModal
+                  ? 2
+                  : zoomOnHover && !isModal && !hasInspect
+                    ? 1.05
+                    : 1,
+            }}
+            transition={{
+              scale: {
+                duration: hasInspect ? 0 : 0.5,
+                ease: hasInspect ? "linear" : "easeOut",
+              },
+            }}
+          />
+        </g>
+
+        {variant === "bordered" && (
+          <motion.path
+            d={pathD}
+            fill="none"
+            className="stroke-outline-variant stroke-[4px]"
+          />
+        )}
+      </motion.svg>
+    );
+
+    return (
+      <>
+        {/* --- INLINE CONTAINER --- */}
+        <div
+          ref={ref}
+          className={clsx(
+            "relative isolate transition-all duration-300 overflow-visible",
+            aspectRatio === "square" && "aspect-square",
+            aspectRatio === "video" && "aspect-video",
+            aspectRatio === "portrait" && "aspect-[3/4]",
+            aspectRatio === "wide" && "aspect-[2/1]",
+            hasInspect && "cursor-crosshair",
+            hasZoom && "cursor-zoom-in",
+            isInteractive &&
+              "group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+            variant === "elevated" && "drop-shadow-md",
+            isZoomed && "invisible",
+            className,
+          )}
+          style={{ width: size, height: size, ...style }}
+          onClick={handleContainerClick}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          tabIndex={isInteractive ? 0 : undefined}
+          onKeyDown={(e) => {
+            if (isInteractive && (e.key === "Enter" || e.key === " ")) {
+              e.preventDefault();
+              handleContainerClick(e as any);
+            }
+          }}
+          {...props}
+        >
+          {/* SKELETON */}
+          <AnimatePresence>
+            {shouldRenderSkeleton && (
+              <motion.svg
+                viewBox="0 0 380 380"
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0 z-10 w-full h-full pointer-events-none animate-pulse"
+              >
+                <motion.path
+                  d={pathD}
+                  className="fill-surface-container-highest"
+                />
+              </motion.svg>
+            )}
+          </AnimatePresence>
+
+          {/* ERROR STATE */}
+          {status === "error" && (
+            <motion.svg
+              viewBox="0 0 380 380"
+              className="absolute inset-0 z-20 w-full h-full"
+            >
+              <motion.path
+                d={pathD}
+                className="fill-surface-container-highest"
+              />
+              <foreignObject x="0" y="0" width="100%" height="100%">
+                <div className="flex flex-col items-center justify-center w-full h-full text-on-surface-variant/50 p-4 text-center">
+                  {fallback || (
+                    <>
+                      <ImageOff className="h-8 w-8 mb-2 opacity-50" />
+                      <span className="text-xs font-medium">
+                        Failed to load
+                      </span>
+                    </>
+                  )}
+                </div>
+              </foreignObject>
+            </motion.svg>
+          )}
+
+          {/* BLUR-UP PLACEHOLDER */}
+          {placeholderSrc && status !== "error" && (
+            <motion.svg
+              viewBox="0 0 380 380"
+              className={clsx(
+                "absolute inset-0 z-0",
+                status === "loaded" ? "opacity-0" : "opacity-100",
+              )}
+              style={{ transition: "opacity 0.5s ease-out" }}
+            >
+              <defs>
+                <mask id={`${maskId}-placeholder`}>
+                  <motion.path d={pathD} fill="white" />
+                </mask>
+              </defs>
+              <g mask={`url(#${maskId}-placeholder)`}>
+                <image
+                  href={placeholderSrc}
+                  width="100%"
+                  height="100%"
+                  preserveAspectRatio="xMidYMid slice"
+                  className="blur-xl scale-110"
+                  style={{ transformOrigin: "center center" }}
+                />
+              </g>
+            </motion.svg>
+          )}
+
+          {/* MAIN IMAGE (INLINE) */}
+          {status !== "error" && renderMainImage(false)}
+        </div>
+
+        {/* --- ZOOM MODAL (PORTAL) --- */}
+        {hasZoom && (
+          <AnimatePresence>
+            {isZoomed && (
+              <Portal>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm cursor-zoom-out"
+                  onClick={() => setIsZoomed(false)}
+                >
+                  <button
+                    className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors z-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsZoomed(false);
+                    }}
+                  >
+                    <X size={24} />
+                  </button>
+
+                  <div
+                    className="relative w-full h-full flex items-center justify-center p-4 md:p-12"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {renderMainImage(true)}
+                  </div>
+                </motion.div>
+              </Portal>
+            )}
+          </AnimatePresence>
+        )}
+      </>
     );
   },
 );
+
 ShapedImage.displayName = "ShapedImage";
 
-// --- 3. SHAPED ICON BUTTON ---
+// --- PORTAL HELPER ---
+const Portal = ({ children }: { children: React.ReactNode }) => {
+  if (typeof window === "undefined") return null;
+  return createPortal(children, document.body);
+};
+
+// --- 4. SHAPED ICON BUTTON ---
 
 const shapedButtonVariants = cva(
   "group relative flex items-center justify-center cursor-pointer focus:outline-none transition-all duration-300 active:scale-95",
@@ -170,12 +563,6 @@ const shapedButtonVariants = cva(
   },
 );
 
-// To fix the button ripple, we still need the CSS mask approach
-// because standard buttons can't use SVG <mask> for HTML content easily.
-// However, since we are just clipping the ripple (which is usually circular),
-// CSS mask-image is acceptable for buttons, even if it snaps.
-// If you want fluid morphing on buttons too, the button would need to be SVG-based
-// which makes handling children (text/icons) much harder.
 const getShapeMask = (shape: ShapeType) => {
   const path = SHAPE_PATHS[shape];
   const svg = `<svg viewBox="0 0 380 380" xmlns="http://www.w3.org/2000/svg"><path d="${path}" /></svg>`;
@@ -267,7 +654,7 @@ export const ShapedIconButton = forwardRef<
 );
 ShapedIconButton.displayName = "ShapedIconButton";
 
-// --- 4. SHAPED BADGE ---
+// --- 5. SHAPED BADGE ---
 
 const shapedBadgeVariants = cva(
   "relative inline-flex items-center justify-center font-bold select-none transition-all duration-300",
@@ -342,5 +729,5 @@ export const ShapedBadge = forwardRef<HTMLDivElement, ShapedBadgeProps>(
 );
 ShapedBadge.displayName = "ShapedBadge";
 
-// --- 5. SHAPED BUTTON (Alias) ---
+// --- 6. SHAPED BUTTON (Alias) ---
 export const ShapedButton = ShapedIconButton;

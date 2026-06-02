@@ -10,6 +10,7 @@ import { DialogProvider } from "./DialogProvider";
 
 type Theme = "dark" | "light" | "system";
 type Contrast = "standard" | "medium" | "high";
+type AnimationStyle = "expressive" | "standard";
 
 export interface ChesaiProviderProps {
   children: React.ReactNode;
@@ -17,6 +18,8 @@ export interface ChesaiProviderProps {
   defaultTheme?: Theme;
   /** Initial contrast preference. Defaults to 'standard' */
   defaultContrast?: Contrast;
+  /** Initial animation preference. Defaults to 'expressive' */
+  defaultAnimationStyle?: AnimationStyle;
   /** Initial layout direction. Defaults to 'ltr' */
   initialDirection?: Direction;
   /** Custom storage key for theme persistence */
@@ -27,15 +30,11 @@ export interface ChesaiProviderProps {
   toasterProps?: React.ComponentProps<typeof Toaster>;
 }
 
-/**
- * ChesaiProvider
- * The root provider that integrates all design system contexts.
- * Wrap your root layout (Next.js) or App component (Vite/CRA) with this.
- */
 export function ChesaiProvider({
   children,
   defaultTheme = "system",
   defaultContrast = "standard",
+  defaultAnimationStyle = "expressive",
   initialDirection = "ltr",
   themeStorageKey = "chesai-ui-theme",
   layoutStorageKey = "layout-direction",
@@ -45,6 +44,7 @@ export function ChesaiProvider({
     <ThemeProvider
       defaultTheme={defaultTheme}
       defaultContrast={defaultContrast}
+      defaultAnimationStyle={defaultAnimationStyle}
       storageKey={themeStorageKey}
     >
       <LayoutProvider
@@ -54,7 +54,6 @@ export function ChesaiProvider({
         <TooltipProvider>
           <ActionSheetProvider>
             <DialogProvider>
-              {/* Added DialogProvider inside ActionSheetProvider */}
               {children}
               <Toaster {...toasterProps} />
             </DialogProvider>

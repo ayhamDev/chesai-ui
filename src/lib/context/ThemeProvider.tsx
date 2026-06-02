@@ -8,6 +8,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import type { Transition } from "framer-motion";
 import { loadGoogleFont, PRESET_FONTS } from "../utils/font-loader";
 import {
   applyThemeVariables,
@@ -18,11 +19,11 @@ import {
 
 type Theme = "dark" | "light" | "system";
 type Contrast = "standard" | "medium" | "high";
+type AnimationStyle = "expressive" | "standard";
 
 export interface FontSettings {
   brand: string;
   plain: string;
-  expressiveButtons: boolean;
 }
 
 interface ThemeProviderState {
@@ -33,6 +34,10 @@ interface ThemeProviderState {
   resolvedTheme: "light" | "dark";
   fonts: FontSettings;
   setFonts: (fonts: Partial<FontSettings>) => void;
+
+  // Animation Style
+  animationStyle: AnimationStyle;
+  setAnimationStyle: (style: AnimationStyle) => void;
 
   // Dynamic Theme
   seedColor: string | null;
@@ -47,7 +52,6 @@ interface ThemeProviderState {
 const defaultFontSettings: FontSettings = {
   brand: "Manrope",
   plain: "Manrope",
-  expressiveButtons: false,
 };
 
 const initialState: ThemeProviderState = {
@@ -58,6 +62,8 @@ const initialState: ThemeProviderState = {
   resolvedTheme: "light",
   fonts: defaultFontSettings,
   setFonts: () => null,
+  animationStyle: "expressive",
+  setAnimationStyle: () => null,
   seedColor: null,
   setSeedColor: () => null,
   overrides: {},
@@ -72,11 +78,13 @@ interface ThemeProviderProps {
   defaultTheme?: Theme;
   defaultContrast?: Contrast;
   defaultFonts?: FontSettings;
+  defaultAnimationStyle?: AnimationStyle;
   defaultSeedColor?: string | null;
   defaultOverrides?: ThemeOverrides;
   storageKey?: string;
   contrastStorageKey?: string;
   fontStorageKey?: string;
+  animationStorageKey?: string;
   seedColorStorageKey?: string;
   overridesStorageKey?: string;
 }
@@ -86,11 +94,13 @@ export function ThemeProvider({
   defaultTheme = "system",
   defaultContrast = "standard",
   defaultFonts = defaultFontSettings,
+  defaultAnimationStyle = "expressive",
   defaultSeedColor = null,
   defaultOverrides = {},
   storageKey = "chesai-ui-theme",
   contrastStorageKey = "chesai-ui-contrast",
   fontStorageKey = "chesai-ui-fonts",
+  animationStorageKey = "chesai-ui-animation",
   seedColorStorageKey = "chesai-ui-seed-color",
   overridesStorageKey = "chesai-ui-overrides",
   ...props
@@ -113,6 +123,18 @@ export function ThemeProvider({
     }
     return defaultContrast;
   });
+
+  const [animationStyle, setAnimationStyleState] = useState<AnimationStyle>(
+    () => {
+      if (typeof window !== "undefined") {
+        return (
+          (localStorage.getItem(animationStorageKey) as AnimationStyle) ||
+          defaultAnimationStyle
+        );
+      }
+      return defaultAnimationStyle;
+    },
+  );
 
   const [seedColor, setSeedColorState] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
@@ -227,14 +249,17 @@ export function ThemeProvider({
 
     root.style.setProperty("--font-brand", getFontValue(fonts.brand));
     root.style.setProperty("--font-plain", getFontValue(fonts.plain));
-
-    const buttonFontSource = fonts.expressiveButtons
-      ? fonts.brand
-      : fonts.plain;
-    root.style.setProperty("--font-button", getFontValue(buttonFontSource));
+    root.style.setProperty("--font-button", getFontValue(fonts.plain));
 
     localStorage.setItem(fontStorageKey, JSON.stringify(fonts));
   }, [fonts, fontStorageKey]);
+
+  // Apply Animation Style HTML Attribute
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.setAttribute("data-animation-style", animationStyle);
+    localStorage.setItem(animationStorageKey, animationStyle);
+  }, [animationStyle, animationStorageKey]);
 
   // Apply Classes
   useEffect(() => {
@@ -282,7 +307,6 @@ export function ThemeProvider({
             prev !== newResolved ? newResolved : prev,
           );
           setThemeState((prev) => (prev !== newResolved ? newResolved : prev));
-          // Contrast logic...
         }
       });
     });
@@ -319,6 +343,8 @@ export function ThemeProvider({
       localStorage.setItem(contrastStorageKey, newContrast);
       setContrastState(newContrast);
     },
+    animationStyle,
+    setAnimationStyle: (style: AnimationStyle) => setAnimationStyleState(style),
     resolvedTheme,
     fonts,
     setFonts: (newFonts: Partial<FontSettings>) => {
@@ -348,4 +374,26 @@ export const useTheme = () => {
     throw new Error("useTheme must be used within a ThemeProvider");
   }
   return context;
+};
+
+/**
+ * Hook to elegantly supply the correct Framer Motion transition config based on global theme preference.
+ */
+export const useThemeTransition = (
+  expressiveTransition: Transition = {
+    type: "spring",
+    stiffness: 400,
+    damping: 30,
+    mass: 1,
+  },
+  standardTransition: Transition = {
+    type: "tween",
+    ease: [0.2, 0, 0, 1],
+    duration: 0.25,
+  },
+): Transition => {
+  const { animationStyle } = useTheme();
+  return animationStyle === "expressive"
+    ? expressiveTransition
+    : standardTransition;
 };

@@ -14,11 +14,13 @@ import { useEffect, useState } from "react";
 import {
   ShapedBadge,
   ShapedButton,
+  ShapedContainer,
   ShapedIcon,
   ShapedIconButton,
   ShapedImage,
 } from "./shaped-components";
 import { SHAPE_PATHS, type ShapeType } from "./paths";
+import { Card } from "../card";
 import { Typography } from "../typography";
 
 const meta: Meta = {
@@ -236,4 +238,82 @@ export const FloatingActionButtons: StoryObj = {
       </div>
     </div>
   ),
+};
+
+export const Containers: StoryObj = {
+  name: "6. Shaped Containers",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The `ShapedContainer` acts as a div wrapper that clips its arbitrary HTML contents safely within the SVG shape.",
+      },
+    },
+  },
+  render: () => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [currentShape, setCurrentShape] = useState<ShapeType>("cookie4");
+    const shapes = [
+      "cookie4",
+      "flower",
+      "hexagon",
+      "burst",
+      "sunny",
+    ] as ShapeType[];
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setCurrentShape((prev) => {
+          const currentIndex = shapes.indexOf(prev);
+          const nextIndex = (currentIndex + 1) % shapes.length;
+          return shapes[nextIndex];
+        });
+      }, 2000);
+      return () => clearInterval(interval);
+    }, [shapes]);
+
+    return (
+      <div className="flex flex-col gap-8 items-center">
+        <Typography
+          variant="body-medium"
+          muted
+          className="text-center max-w-md"
+        >
+          The <code>ShapedContainer</code> allows you to mask any arbitrary HTML
+          content (text, buttons, gradients) inside a fluid, morphing SVG path.
+        </Typography>
+
+        <div className="flex gap-8 items-center flex-wrap justify-center">
+          <ShapedContainer
+            shape={currentShape}
+            size={250}
+            className="bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 text-white flex flex-col items-center justify-center p-6 text-center"
+          >
+            <Typography
+              variant="headline-small"
+              className="text-white font-bold mb-2"
+            >
+              Morphing
+            </Typography>
+            <Typography variant="body-small" className="text-white/90">
+              Any HTML element can be placed here and it will be masked
+              perfectly.
+            </Typography>
+          </ShapedContainer>
+
+          <ShapedContainer
+            shape="pentagon"
+            size={250}
+            className="bg-surface-container-high flex flex-col items-center justify-center p-6 text-center shadow-inner"
+          >
+            <Camera className="w-10 h-10 mb-3 text-primary" />
+            <Typography variant="title-small" className="font-bold">
+              Static Mask
+            </Typography>
+          </ShapedContainer>
+        </div>
+      </div>
+    );
+  },
 };

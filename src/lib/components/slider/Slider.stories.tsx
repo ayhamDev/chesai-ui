@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Volume1, Volume2, Sun, Minus, Plus, AlertCircle } from "lucide-react";
+import { Volume2, Sun, Minus, Plus, AlertCircle } from "lucide-react";
+import { useState } from "react";
 import { Slider } from "./index";
 import { Card } from "../card";
 import { Typography } from "../typography";
@@ -13,7 +14,7 @@ const meta: Meta<typeof Slider> = {
     docs: {
       description: {
         component:
-          "MD3 Slider with Line (Thin) and Bar (Thick) visual styles, supporting Standard, Centered, and Range behaviors. Now includes Shape and Color props.",
+          "MD3 Slider with Line (Thin) and Bar (Thick) styles. Supports standard, centered, and range variants. Now includes physical segment gaps, dynamic edge smoothing, and adjustable thumb geometry.",
       },
     },
   },
@@ -40,6 +41,23 @@ const meta: Meta<typeof Slider> = {
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
+      description:
+        "Outer border radius. Gap corners smooth dynamically to prevent overshoots.",
+    },
+    gap: {
+      control: { type: "range", min: 0, max: 32, step: 1 },
+      description:
+        "Physical transparent gap between the thumb and track segments.",
+    },
+    thumbHeight: {
+      control: "text",
+      description:
+        "Override height/length of the thumb (supports dynamic classes like 'h-16' or raw CSS '80px').",
+    },
+    thumbWidth: {
+      control: "text",
+      description:
+        "Override width/thickness of the thumb (supports dynamic classes like 'w-1.5' or raw CSS '4px').",
     },
     withTicks: { control: "boolean" },
     withLabel: { control: "boolean" },
@@ -98,15 +116,47 @@ export const RangeBar: Story = {
     size: "lg",
     defaultValue: [25, 75],
     withLabel: true,
+    gap: 8,
+    thumbHeight: "80px",
+    thumbWidth: "4px",
   },
   render: (args) => (
-    <div className="w-80">
+    <div className="w-[450px]">
       <Slider {...args} />
     </div>
   ),
 };
 
-// --- 2. LINE VARIATIONS (Thin) ---
+// --- 2. GAP & ADJUSTABLE GEOMETRY ---
+
+export const RoundedPillWithGap: Story = {
+  name: "Pill Bar (Gap & Smoothed Edges)",
+  args: {
+    visual: "bar",
+    size: "sm",
+    shape: "full",
+    defaultValue: [47],
+    gap: 10,
+    thumbHeight: "80px",
+    thumbWidth: "4px",
+    color: "primary",
+  },
+  render: (args) => {
+    return (
+      <div className="w-96 flex flex-col gap-6 p-6 bg-surface-container/20 rounded-2xl">
+        <Typography
+          variant="label-medium"
+          className="opacity-60 uppercase font-bold tracking-wider"
+        >
+          Smoothed Edges ({args.shape})
+        </Typography>
+        <Slider {...args} />
+      </div>
+    );
+  },
+};
+
+// --- 3. LINE VARIATIONS (Thin) ---
 
 export const StandardLine: Story = {
   name: "Standard Line",
@@ -137,7 +187,7 @@ export const LineWithIcons: Story = {
   ),
 };
 
-// --- 3. COLORS & SHAPES ---
+// --- 4. COLORS & SHAPES ---
 
 export const Variations: Story = {
   name: "Colors & Shapes",
@@ -210,25 +260,34 @@ export const Variations: Story = {
   ),
 };
 
-// --- 4. USE CASES ---
+// --- 5. USE CASES ---
 
 export const VolumeControl: Story = {
   name: "Use Case: Volume (Bar)",
-  render: () => (
-    <Card className="w-96 p-8 flex flex-col gap-6" variant="primary">
-      <Typography variant="title-small">System Volume</Typography>
+  render: () => {
+    const [val, setVal] = useState([47]);
+    return (
+      <Card className="w-96 p-8 flex flex-col gap-6" variant="primary">
+        <Typography variant="title-small">Notification Volume</Typography>
 
-      {/* Bar Slider with Icon Inside */}
-      <Slider
-        visual="bar"
-        size="lg"
-        defaultValue={[70]}
-        startIcon={<Volume2 className="text-on-primary" />}
-        withLabel
-        thumbRingColor="var(--md-sys-color-surface-container-low)"
-      />
-    </Card>
-  ),
+        <Slider
+          visual="bar"
+          size="sm"
+          shape="full"
+          value={val}
+          onValueChange={setVal}
+          startIcon={<Volume2 className="text-on-primary" />}
+          gap={10}
+          thumbHeight="80px"
+          thumbWidth="4px"
+        />
+
+        <Typography variant="body-medium" className="opacity-60">
+          System volume level: {val[0]}%
+        </Typography>
+      </Card>
+    );
+  },
 };
 
 export const DiscreteSteps: Story = {
@@ -242,6 +301,7 @@ export const DiscreteSteps: Story = {
     defaultValue: [30],
     withTicks: true,
     withLabel: true,
+    gap: 3
   },
   render: (args) => (
     <div className="w-80">

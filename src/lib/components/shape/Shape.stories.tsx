@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useEffect, useState } from "react";
-import { Shape } from "./index";
+import { Shape, ShapedContainer } from "./index";
 import { SHAPE_PATHS, type ShapeType } from "./paths";
 import { Card } from "../card";
 import { Typography } from "../typography";
@@ -118,12 +118,14 @@ export const UsageInCards: Story = {
         </Card>
 
         <Card className="p-6 flex items-center gap-4">
-          <div className="w-16 h-16 shrink-0 relative flex items-center justify-center">
-            <Shape shape="sunny" className="absolute inset-0 text-blue-100" />
-            <span className="relative font-bold text-blue-600 text-xl">
-              1st
-            </span>
-          </div>
+          <ShapedContainer
+            shape="bun"
+            size={50}
+            className="bg-amber-200 flex flex-col items-center justify-center text-center"
+          >
+            <Typography variant="title-medium">1st</Typography>
+          </ShapedContainer>
+
           <div>
             <Typography variant="title-small">Badges</Typography>
             <Typography variant="body-small" muted={true}>

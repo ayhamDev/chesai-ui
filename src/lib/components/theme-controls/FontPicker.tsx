@@ -1,9 +1,9 @@
 "use client";
 
-import { Check, Type, ChevronDown } from "lucide-react";
+import { Check, Type, ChevronDown, Play } from "lucide-react";
 import { useTheme } from "../../context/ThemeProvider";
 import { Button } from "../button";
-import { Switch } from "../switch"; // Ensure you have exported Switch
+import { Switch } from "../switch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,15 +16,14 @@ import {
 import { PRESET_FONTS } from "../../utils/font-loader";
 
 export const FontPicker = () => {
-  const { fonts, setFonts } = useTheme();
+  const { fonts, setFonts, animationStyle, setAnimationStyle } = useTheme();
 
-  // Helper to filter presets for the UI
   const brandOptions = Object.keys(PRESET_FONTS);
   const bodyOptions = Object.keys(PRESET_FONTS);
+
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
       <div className="flex gap-2">
-        {/* 1. Headline / Brand Font Picker */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -60,7 +59,6 @@ export const FontPicker = () => {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* 2. Body / Plain Font Picker */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -97,20 +95,20 @@ export const FontPicker = () => {
         </DropdownMenu>
       </div>
 
-      {/* 3. Button Font Toggle */}
       <div className="flex items-center gap-3 pl-0 sm:pl-4 sm:border-l border-outline-variant">
         <label
           htmlFor="expressive-toggle"
-          className="text-sm font-medium text-on-surface cursor-pointer select-none"
+          className="text-sm font-medium text-on-surface cursor-pointer select-none flex items-center gap-2"
         >
-          Expressive Buttons
+          <Play size={14} className="opacity-70" />
+          Expressive Motion
         </label>
         <Switch
           id="expressive-toggle"
           size="sm"
-          checked={fonts.expressiveButtons}
+          checked={animationStyle === "expressive"}
           onCheckedChange={(checked) =>
-            setFonts({ expressiveButtons: checked })
+            setAnimationStyle(checked ? "expressive" : "standard")
           }
         />
       </div>
