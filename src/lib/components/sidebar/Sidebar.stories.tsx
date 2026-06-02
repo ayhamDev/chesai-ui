@@ -2,20 +2,20 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
   Archive,
   Box,
-  Inbox,
-  LayoutDashboard,
-  MessagesSquare,
-  Settings,
-  ShoppingCart,
-  Users,
-  Home,
-  MessageSquare,
-  PlusSquare,
+  Compass,
+  Contact,
   CreditCard,
   Folder,
-  Contact,
-  Compass,
+  Home,
+  Inbox,
+  LayoutDashboard,
+  MessageSquare,
+  MessagesSquare,
+  PlusSquare,
+  Settings,
+  ShoppingCart,
   Sparkles,
+  Users,
 } from "lucide-react";
 import React from "react";
 import { LayoutProvider } from "../../context/layout-context";
@@ -51,8 +51,34 @@ const meta: Meta<typeof Sidebar> = {
     },
     variant: {
       control: "select",
-      options: ["primary", "secondary", "ghost"],
-      description: "The visual theme/color of the sidebar.",
+      options: [
+        "surface",
+        "surface-container-lowest",
+        "surface-container-low",
+        "surface-container",
+        "surface-container-high",
+        "surface-container-highest",
+        "background",
+        "primary",
+        "secondary",
+        "tertiary",
+        "error",
+        "ghost",
+      ],
+      description: "The visual theme/color of the sidebar container.",
+    },
+    itemVariant: {
+      control: "select",
+      options: [
+        "primary",
+        "secondary",
+        "tertiary",
+        "error",
+        "surface",
+        "ghost",
+      ],
+      description:
+        "The visual theme/color of the active items within the sidebar.",
     },
     shape: {
       control: "select",
@@ -107,7 +133,7 @@ const SidebarContentExample = ({
     <>
       <Sidebar.Header className="justify-between">
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-graphite-primary text-graphite-primaryForeground">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary">
             <Box className="h-5 w-5" />
           </div>
           {!isCollapsed && (
@@ -199,9 +225,7 @@ const SidebarContentExample = ({
           {!isCollapsed && (
             <div className="flex flex-col truncate">
               <span className="text-sm font-medium">Jane Doe</span>
-              <span className="text-xs text-graphite-foreground/60 truncate">
-                jane@acme.com
-              </span>
+              <span className="text-xs opacity-60 truncate">jane@acme.com</span>
             </div>
           )}
         </div>
@@ -219,7 +243,7 @@ export const Default: Story = {
   name: "1. Playground (All Props)",
   args: {
     layout: "inset",
-    variant: "ghost",
+    variant: "surface",
     shape: "minimal",
     itemShape: "full",
     itemSize: "lg",
@@ -232,12 +256,12 @@ export const Default: Story = {
         <SidebarContentExample />
       </Sidebar>
       <main className="flex-1 p-6 flex flex-col bg-graphite-background">
-        <header className="h-16 border-b border-graphite-border flex items-center px-4 gap-4 bg-graphite-card rounded-xl mb-4">
+        <header className="h-16 border-b border-outline-variant/30 flex items-center px-4 gap-4 bg-surface rounded-xl mb-4">
           <Sidebar.Trigger />
           <Separator orientation="vertical" className="h-6" />
           <Typography variant="title-small">Playground</Typography>
         </header>
-        <div className="flex-1 flex flex-col items-center justify-center text-graphite-foreground/50 text-center">
+        <div className="flex-1 flex flex-col items-center justify-center text-on-surface/50 text-center">
           <Typography variant="large">Adjust Sidebar Controls</Typography>
           <Typography variant="body-small" className="mt-2">
             Use the layout toggle in the top right to switch between LTR and
@@ -253,11 +277,11 @@ export const MockupNesting: Story = {
   name: "2. Nested Menu (Like Your Mockup)",
   args: {
     layout: "sidebar",
-    variant: "primary",
+    variant: "surface-container-low",
     shape: "minimal",
     itemShape: "full",
     itemSize: "lg",
-    itemVariant: "ghost",
+    itemVariant: "secondary",
     expandOnHover: false,
   },
   render: (args) => {
@@ -338,7 +362,6 @@ export const MockupNesting: Story = {
                 Finance
               </Sidebar.Item>
 
-              {/* Opened by default to match the design diagram */}
               <Sidebar.Collapse
                 icon={<Archive />}
                 label="Threads"
@@ -395,13 +418,13 @@ export const MockupNesting: Story = {
           </Sidebar.Content>
         </Sidebar>
 
-        <main className="flex-1 p-6 flex flex-col bg-graphite-background">
-          <header className="h-16 border-b border-graphite-border flex items-center px-4 gap-4 bg-graphite-card rounded-xl mb-4">
+        <main className="flex-1 p-6 flex flex-col bg-surface-dim">
+          <header className="h-16 border-b border-outline-variant/30 flex items-center px-4 gap-4 bg-surface rounded-xl mb-4 shadow-sm">
             <Sidebar.Trigger />
             <Separator orientation="vertical" className="h-6" />
             <Typography variant="title-small">Mockup Showcase</Typography>
           </header>
-          <div className="flex-1 flex flex-col items-center justify-center text-graphite-foreground/50 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center text-on-surface/50 text-center">
             <Typography variant="large">
               Interactive Nesting Component
             </Typography>

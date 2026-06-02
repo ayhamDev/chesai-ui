@@ -3,6 +3,7 @@
 
 import { clsx } from "clsx";
 import {
+  animate,
   motion,
   type MotionValue,
   useMotionValue,
@@ -21,11 +22,8 @@ import { Typography } from "../typography";
 
 // --- CONTEXT FOR MANUAL MORPHING ---
 export interface AppBarContextValue {
-  /** The raw scroll offset of the container */
   scrollY: MotionValue<number>;
-  /** Progress from 0 (fully expanded) to 1 (fully collapsed) */
   collapseProgress: MotionValue<number>;
-  /** The total distance in pixels it takes to fully collapse the header */
   collapseDistance: number;
 }
 
@@ -42,7 +40,7 @@ export const useAppBarContext = () => {
 };
 
 // --- TYPES ---
-export type AppBarVariant = "small" | "center" | "medium" | "large";
+export type AppBarVariant = "small" | "center" | "medium" | "large" | "custom";
 export type AppBarScrollBehavior = "pinned" | "floating" | "hide";
 export type AppBarColor =
   | "surface"
@@ -108,6 +106,10 @@ export interface AppBarProps extends Omit<
   expandedHeight?: number;
   effectScrollThreshold?: number;
   collapseScrollDistance?: number;
+  /** Automatically smooth-snaps to fully collapsed or fully expanded state if the user stops scrolling halfway */
+  snap?: boolean;
+  /** Automatically passes mouse wheels and touch drags on the AppBar down to the scroll container */
+  forwardScroll?: boolean;
 }
 
 export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
@@ -132,20 +134,35 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
       expandedHeight,
       effectScrollThreshold = 5,
       collapseScrollDistance,
+      snap = false,
+      forwardScroll = true,
       children,
       className,
       ...props
     },
     ref,
   ) => {
-    // --- MANUAL SCROLL TRACKING ---
-    // Replaced Framer Motion's useScroll to perfectly handle dynamic ref swaps during route transitions.
-    const scrollY = useMotionValue(0);
+    // Merge forwarded ref with internal ref so we can attach events directly to the header element
+    const internalRef = useRef<HTMLElement>(null);
+    React.useImperativeHandle(ref, () => internalRef.current as HTMLElement);
 
+    // --- MANUAL SCROLL TRACKING ---
+    const scrollY = useMotionValue(0);
+    const snapRef = useRef(snap);
+    const collapseDistanceRef = useRef(1);
+
+    snapRef.current = snap;
+
+    // --- EFFECT: Snapping & Core Scroll Listener ---
     useEffect(() => {
       let rafId: number;
       let retries = 0;
       let cleanup: (() => void) | null = null;
+      let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
+      let activeAnim: any = null;
+      let isPointerDown = false;
+      let isSnapping = false;
 
       const attach = () => {
         const container = scrollContainerRef?.current;
@@ -157,14 +174,96 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
           return;
         }
 
+        const checkSnap = () => {
+          if (!snapRef.current || isPointerDown || isSnapping) return;
+
+          const current = container.scrollTop;
+          const distance = collapseDistanceRef.current;
+
+          if (current > 2 && current < distance - 2) {
+            const targetY = current > distance / 2 ? distance : 0;
+
+            isSnapping = true;
+            if (activeAnim) activeAnim.stop();
+
+            activeAnim = animate(current, targetY, {
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+              mass: 1,
+              restDelta: 1,
+              onUpdate: (val) => {
+                container.scrollTop = val;
+              },
+              onComplete: () => {
+                isSnapping = false;
+              },
+            });
+          }
+        };
+
         const handleScroll = () => {
           scrollY.set(container.scrollTop);
+          if (snapRef.current) {
+            if (scrollTimeout) clearTimeout(scrollTimeout);
+            if (!isSnapping) {
+              scrollTimeout = setTimeout(checkSnap, 80);
+            }
+          }
+        };
+
+        const handlePointerDown = () => {
+          isPointerDown = true;
+          if (isSnapping && activeAnim) {
+            activeAnim.stop();
+            isSnapping = false;
+          }
+        };
+
+        const handlePointerUp = () => {
+          isPointerDown = false;
+        };
+
+        const handleInterrupt = () => {
+          if (isSnapping && activeAnim) {
+            activeAnim.stop();
+            isSnapping = false;
+          }
         };
 
         container.addEventListener("scroll", handleScroll, { passive: true });
-        handleScroll(); // Force initial sync
+        container.addEventListener("wheel", handleInterrupt, { passive: true });
+        container.addEventListener("touchstart", handleInterrupt, {
+          passive: true,
+        });
 
-        cleanup = () => container.removeEventListener("scroll", handleScroll);
+        // Track pointer globally so we know if the user is holding down ANYWHERE (content or header)
+        if (typeof window !== "undefined") {
+          window.addEventListener("pointerdown", handlePointerDown, {
+            passive: true,
+          });
+          window.addEventListener("pointerup", handlePointerUp, {
+            passive: true,
+          });
+          window.addEventListener("pointercancel", handlePointerUp, {
+            passive: true,
+          });
+        }
+
+        handleScroll();
+
+        cleanup = () => {
+          container.removeEventListener("scroll", handleScroll);
+          container.removeEventListener("wheel", handleInterrupt);
+          container.removeEventListener("touchstart", handleInterrupt);
+          if (typeof window !== "undefined") {
+            window.removeEventListener("pointerdown", handlePointerDown);
+            window.removeEventListener("pointerup", handlePointerUp);
+            window.removeEventListener("pointercancel", handlePointerUp);
+          }
+          if (scrollTimeout) clearTimeout(scrollTimeout);
+          if (activeAnim) activeAnim.stop();
+        };
       };
 
       attach();
@@ -173,7 +272,101 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
         cancelAnimationFrame(rafId);
         if (cleanup) cleanup();
       };
-    }, [scrollContainerRef, routeKey]); // Critically depends on routeKey to re-attach cleanly
+    }, [scrollContainerRef, routeKey]);
+
+    // --- EFFECT: Mouse/Touch Event Proxy (Forwarding Scroll to underlying container) ---
+    useEffect(() => {
+      if (!forwardScroll) return;
+      const header = internalRef.current;
+      const container = scrollContainerRef?.current;
+      if (!header || !container) return;
+
+      const isTargetScrollable = (target: HTMLElement | null) => {
+        let current = target;
+        while (current && current !== header) {
+          const style = window.getComputedStyle(current);
+          if (
+            (style.overflowY === "auto" || style.overflowY === "scroll") &&
+            current.scrollHeight > current.clientHeight
+          ) {
+            return true;
+          }
+          current = current.parentElement;
+        }
+        return false;
+      };
+
+      const onWheel = (e: WheelEvent) => {
+        if (isTargetScrollable(e.target as HTMLElement)) return;
+        container.scrollTop += e.deltaY;
+      };
+
+      let startY = 0;
+      let lastY = 0;
+      let velocity = 0;
+      let lastTime = 0;
+      let momentumRaf = 0;
+      let isDragging = false;
+
+      const onTouchStart = (e: TouchEvent) => {
+        if (isTargetScrollable(e.target as HTMLElement)) return;
+        cancelAnimationFrame(momentumRaf);
+        startY = e.touches[0].clientY;
+        lastY = startY;
+        lastTime = performance.now();
+        isDragging = true;
+      };
+
+      const onTouchMove = (e: TouchEvent) => {
+        if (!isDragging) return;
+        const currentY = e.touches[0].clientY;
+        const deltaY = lastY - currentY;
+        const currentTime = performance.now();
+        const deltaTime = currentTime - lastTime;
+
+        container.scrollTop += deltaY;
+
+        if (deltaTime > 0) {
+          velocity = deltaY / deltaTime;
+        }
+
+        lastY = currentY;
+        lastTime = currentTime;
+      };
+
+      const onTouchEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        // Emulate native momentum/inertia
+        let currentVelocity = velocity;
+        const friction = 0.93; // Multiplier dictates how fast it slows down
+
+        const applyMomentum = () => {
+          if (Math.abs(currentVelocity) > 0.1) {
+            container.scrollTop += currentVelocity * 16; // 16ms approx per frame
+            currentVelocity *= friction;
+            momentumRaf = requestAnimationFrame(applyMomentum);
+          }
+        };
+        momentumRaf = requestAnimationFrame(applyMomentum);
+      };
+
+      header.addEventListener("wheel", onWheel, { passive: true });
+      header.addEventListener("touchstart", onTouchStart, { passive: true });
+      header.addEventListener("touchmove", onTouchMove, { passive: true });
+      header.addEventListener("touchend", onTouchEnd, { passive: true });
+      header.addEventListener("touchcancel", onTouchEnd, { passive: true });
+
+      return () => {
+        header.removeEventListener("wheel", onWheel);
+        header.removeEventListener("touchstart", onTouchStart);
+        header.removeEventListener("touchmove", onTouchMove);
+        header.removeEventListener("touchend", onTouchEnd);
+        header.removeEventListener("touchcancel", onTouchEnd);
+        cancelAnimationFrame(momentumRaf);
+      };
+    }, [scrollContainerRef, forwardScroll]);
 
     const [isScrolled, setIsScrolled] = useState(false);
     const headerY = useMotionValue(0);
@@ -191,8 +384,9 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
 
     const isLarge = variant === "large";
     const isMedium = variant === "medium";
-    const isSmallOrCenter = variant === "small" || variant === "center";
-    const isExpandingVariant = isMedium || isLarge || !!expandedContent;
+    const isCustom = variant === "custom";
+    const isExpandingVariant =
+      isMedium || isLarge || isCustom || !!expandedContent;
 
     const [measuredTop, setMeasuredTop] = useState(collapsedHeight);
     const [measuredExpanded, setMeasuredExpanded] = useState(
@@ -235,6 +429,9 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
       collapseScrollDistance ?? measuredExpanded,
       1,
     );
+
+    collapseDistanceRef.current = collapseDistance;
+
     const expandedTotalHeight = measuredTop + measuredExpanded;
 
     const collapseProgress = useTransform(
@@ -276,7 +473,11 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
     const expandedY = expandedAnimation === "none" ? 0 : defaultExpandedY;
 
     const hasLeading = !!leadingIcon;
-    const scaleCollapsed = isLarge ? 22 / 28 : isMedium ? 22 / 24 : 1;
+    const scaleCollapsed = isLarge
+      ? 22 / 28
+      : isMedium || isCustom
+        ? 22 / 24
+        : 1;
     const titleScale = useTransform(
       scrollY,
       [0, collapseDistance],
@@ -292,7 +493,7 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
       { clamp: true },
     );
 
-    const yCollapsed = isLarge ? 10 : 7;
+    const yCollapsed = isLarge ? 10 : isMedium || isCustom ? 7 : 0;
     const titleY = useTransform(
       scrollY,
       [0, collapseDistance],
@@ -372,7 +573,7 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
         value={{ scrollY, collapseProgress, collapseDistance }}
       >
         <motion.header
-          ref={ref as any}
+          ref={internalRef as any}
           role="banner"
           style={{
             y: headerY as any,

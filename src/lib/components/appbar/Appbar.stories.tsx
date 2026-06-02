@@ -224,11 +224,13 @@ export const Large: Story = {
   args: {
     variant: "large",
     title: "Large App Bar",
+
     leadingIcon: (
       <IconButton variant="ghost" aria-label="Back">
         <ArrowLeft />
       </IconButton>
     ),
+
     trailingIcons: (
       <>
         <IconButton variant="ghost" aria-label="Search">
@@ -239,6 +241,9 @@ export const Large: Story = {
         </IconButton>
       </>
     ),
+
+    snap: true,
+    collapsible: true,
   },
   render: renderWithScrollContainer,
 };
@@ -257,7 +262,7 @@ export const Floating: Story = {
       </IconButton>
     ),
 
-    collapsible: true
+    collapsible: true,
   },
   render: renderWithScrollContainer,
 };
@@ -275,7 +280,7 @@ export const Hide: Story = {
       </IconButton>
     ),
 
-    collapsible: true
+    collapsible: true,
   },
   render: renderWithScrollContainer,
 };
@@ -455,17 +460,21 @@ export const ManualMorphing: Story = {
     expandedHeight: 120,
     effectScrollThreshold: 50,
     expandedAnimation: "none",
+
     leadingIcon: (
       <IconButton variant="ghost">
         <ArrowLeft />
       </IconButton>
     ),
+
     trailingIcons: (
       <IconButton variant="ghost">
         <Settings />
       </IconButton>
     ),
+
     expandedContent: <CustomMorphingHeader />,
+    snap: false,
   },
   render: renderWithScrollContainer,
 };
@@ -499,6 +508,47 @@ export const CustomThresholds: Story = {
       description: {
         story:
           "Override the default MD3 sizing and scroll thresholds. Here, the collapsed bar is 80px tall, the expanded area is 120px tall. The scroll color shift won't happen until you scroll 150px, and the collapse animation is stretched over 300px of scrolling.",
+      },
+    },
+  },
+  render: renderWithScrollContainer,
+};
+
+export const CustomSizeWithSnap: Story = {
+  name: "13. Custom Size & Snapping",
+  args: {
+    variant: "custom",
+    color: "surface",
+    scrolledColor: "surface",
+    elevateOnScroll: false,
+    snap: true, // Forces snapping
+    collapsedHeight: 80, // Taller than standard (64px)
+    expandedHeight: 250, // Massive canvas size
+    title: "Massive Custom Bar",
+    leadingIcon: (
+      <IconButton variant="ghost">
+        <ArrowLeft />
+      </IconButton>
+    ),
+
+    expandedContent: (
+      <div className="h-full flex flex-col justify-end pb-4">
+        <Typography variant="display-small" className="font-bold">
+          Welcome to the Mountains
+        </Typography>
+        <Typography variant="body-large" className="opacity-70 mt-2 max-w-md">
+          Scroll down. If you stop halfway, the physics engine will snap this
+          smoothly back to the closest boundary without fighting your momentum.
+        </Typography>
+      </div>
+    ),
+    customPaddingTop: "pt-[300px]",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "By using `variant='custom'`, you break out of the MD3 standard sizes. The AppBar becomes completely beholden to your `collapsedHeight` and `expandedHeight` props. Combined with `snap={true}`, it gives you a smooth, iOS-like morphing header.",
       },
     },
   },

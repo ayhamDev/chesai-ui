@@ -207,7 +207,7 @@ Wrap form inputs using the \`<Field>\` API to get automatic layout, labeling, an
 When asked to generate code:
 1. Provide the complete, copy-pasteable React component.
 2. Assume all \`chesai-ui\` components are exported from \`"chesai-ui"\`.
-3. Assume \`lucide-react\` is used for icons.
+3. Assume \`lucide-react\` or \`Material Symbols\` or \`iconify\` is used for icons.
 4. Prioritize clean, semantic MD3 hierarchy (e.g., placing a \`surface-container-high\` Card on top of a \`surface\` background).
 5. Always consider the mobile vs. desktop experience using the Multi-Pane paradigms.
 `
@@ -233,11 +233,11 @@ chesai-ui is an expressive, high-performance UI library designed for modern web 
 ## Installation
 
 \`\`\`bash
-npm install chesai-ui lucide-react
+npm install chesai-ui lucide-react (or any other icon library of your choice)
 # or 
-pnpm add chesai-ui lucide-react
+pnpm add chesai-ui lucide-react  (or any other icon library of your choice)
 \`\`\`
-*(Note: \`lucide-react\` is highly recommended as it is the standard icon library used across chesai-ui)*
+*(Note: \`lucide-react\` or \`Material Symbols\` or \`iconify\` is highly recommended as it is the standard icon library used across chesai-ui)*
 
 ---
 
@@ -297,7 +297,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   defaultFonts={{
     brand: 'Manrope',  // Headings
     plain: 'Inter',    // Body text
-    expressiveButtons: true 
   }}
   defaultOverrides={{
     primary: '#ff0000', // Explicitly override a specific MD3 token if needed

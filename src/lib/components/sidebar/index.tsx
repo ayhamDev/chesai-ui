@@ -24,7 +24,7 @@ import React, {
 import useRipple from "use-ripple-hook";
 import { useLayout } from "../../context/layout-context";
 import { ElasticScrollArea } from "../elastic-scroll-area";
-import { FAB, type FABProps } from "../fab";
+import { type SidebarFABProps } from "../fab";
 import { IconButton } from "../icon-button";
 import { Sheet } from "../sheet";
 import { EASING } from "../stack-router/transitions";
@@ -34,12 +34,25 @@ type SidebarState = "expanded" | "collapsed";
 type SidebarSize = "sm" | "md" | "lg";
 type SidebarShape = "sharp" | "minimal" | "full";
 type SidebarVariant =
+  | "surface"
+  | "surface-container-lowest"
+  | "surface-container-low"
+  | "surface-container"
+  | "surface-container-high"
+  | "surface-container-highest"
+  | "background"
   | "primary"
   | "secondary"
   | "tertiary"
-  | "ghost"
-  | "surface";
-type SidebarItemVariant = "primary" | "secondary" | "tertiary" | "ghost";
+  | "error"
+  | "ghost";
+type SidebarItemVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "error"
+  | "surface"
+  | "ghost";
 type SidebarSide = "left" | "right";
 
 // --- Context ---
@@ -104,7 +117,7 @@ export const SidebarProvider = ({
         isMobile,
         size: "md",
         shape: "minimal",
-        variant: "primary",
+        variant: "surface-container-low",
         itemVariant: "primary",
         side: "left",
         isRtl,
@@ -116,9 +129,40 @@ export const SidebarProvider = ({
   );
 };
 
+// --- Helper for Mobile Sheet Color ---
+const resolveSidebarColor = (v: SidebarVariant) => {
+  switch (v) {
+    case "surface-container-lowest":
+      return "bg-surface-container-lowest text-on-surface";
+    case "surface-container-low":
+      return "bg-surface-container-low text-on-surface";
+    case "surface-container":
+      return "bg-surface-container text-on-surface";
+    case "surface-container-high":
+      return "bg-surface-container-high text-on-surface";
+    case "surface-container-highest":
+      return "bg-surface-container-highest text-on-surface";
+    case "background":
+      return "bg-background text-on-background";
+    case "primary":
+      return "bg-primary text-on-primary";
+    case "secondary":
+      return "bg-secondary-container text-on-secondary-container";
+    case "tertiary":
+      return "bg-tertiary-container text-on-tertiary-container";
+    case "error":
+      return "bg-error-container text-on-error-container";
+    case "ghost":
+      return "bg-transparent text-on-surface";
+    case "surface":
+    default:
+      return "bg-surface text-on-surface";
+  }
+};
+
 // --- Sidebar Root ---
 const sidebarVariants = cva(
-  "group/sidebar flex flex-col overflow-hidden transition-all duration-300 ease-ios text-on-surface box-border",
+  "group/sidebar flex flex-col overflow-hidden transition-all duration-300 ease-ios box-border",
   {
     variants: {
       layout: {
@@ -128,11 +172,20 @@ const sidebarVariants = cva(
         inset: "h-full",
       },
       variant: {
-        primary: "bg-surface-container-low",
-        secondary: "bg-surface-container-highest",
+        surface: "bg-surface text-on-surface",
+        "surface-container-lowest":
+          "bg-surface-container-lowest text-on-surface",
+        "surface-container-low": "bg-surface-container-low text-on-surface",
+        "surface-container": "bg-surface-container text-on-surface",
+        "surface-container-high": "bg-surface-container-high text-on-surface",
+        "surface-container-highest":
+          "bg-surface-container-highest text-on-surface",
+        background: "bg-background text-on-background",
+        primary: "bg-primary text-on-primary",
+        secondary: "bg-secondary-container text-on-secondary-container",
         tertiary: "bg-tertiary-container text-on-tertiary-container",
-        surface: "bg-surface",
-        ghost: "bg-transparent",
+        error: "bg-error-container text-on-error-container",
+        ghost: "bg-transparent text-on-surface",
       },
       side: {
         left: "",
@@ -152,7 +205,7 @@ const sidebarVariants = cva(
       {
         layout: "sidebar",
         side: "left",
-        className: "border-e border-outline-variant",
+        className: "border-e border-outline-variant/50",
       },
       {
         layout: "sidebar",
@@ -175,7 +228,7 @@ const sidebarVariants = cva(
       {
         layout: "sidebar",
         side: "right",
-        className: "border-s border-outline-variant",
+        className: "border-s border-outline-variant/50",
       },
       {
         layout: "sidebar",
@@ -203,21 +256,21 @@ const sidebarVariants = cva(
       {
         overlay: true,
         side: "left",
-        className: "start-0 border-e border-outline-variant",
+        className: "start-0 border-e border-outline-variant/50",
       },
       {
         overlay: true,
         side: "right",
-        className: "end-0 border-s border-outline-variant",
+        className: "end-0 border-s border-outline-variant/50",
       },
       {
-        variant: "tertiary",
+        variant: "ghost",
         className: "border-transparent!",
       },
     ],
     defaultVariants: {
       layout: "sidebar",
-      variant: "primary",
+      variant: "surface-container-low",
       shape: "minimal",
       side: "left",
       overlay: false,
@@ -247,7 +300,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       className,
       children,
       layout = "sidebar",
-      variant = "primary",
+      variant = "surface-container-low",
       itemVariant = "primary",
       side = "left",
       shape = "minimal",
@@ -319,7 +372,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       isMobile,
       size: itemSize,
       shape: itemShape,
-      variant: variant || "primary",
+      variant: variant || "surface-container-low",
       itemVariant: itemVariant || "primary",
       side: side || "left",
       isRtl,
@@ -351,9 +404,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
               <div
                 className={clsx(
                   "flex h-full flex-col",
-                  variant === "secondary"
-                    ? "bg-surface-container-high"
-                    : "bg-surface-container-low",
+                  resolveSidebarColor(variant || "surface-container-low"),
                 )}
               >
                 <SidebarContext.Provider value={contextValue}>
@@ -387,10 +438,8 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
                 className={clsx(
                   "fixed top-0 bottom-0 z-50 flex flex-col overflow-hidden shadow-2xl",
                   isStart ? "start-0" : "end-0",
-                  variant === "secondary"
-                    ? "bg-surface-container-high"
-                    : "bg-surface-container-low",
-                  variant === "primary" && "border-e border-outline-variant",
+                  resolveSidebarColor(variant || "surface-container-low"),
+                  variant !== "ghost" && "border-e border-outline-variant/50",
                   className,
                 )}
                 style={{ width: mobileWidth }}
@@ -642,7 +691,6 @@ SidebarFAB.displayName = "Sidebar.FAB";
 
 // --- Item Variants ---
 const sidebarItemVariants = cva(
-  // Removed `overflow-hidden` so the layoutId indicator slides smoothly without clipping
   "group relative flex w-full items-center border border-transparent font-medium outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 z-0",
   {
     variants: {
@@ -655,6 +703,8 @@ const sidebarItemVariants = cva(
         primary: "",
         secondary: "",
         tertiary: "",
+        error: "",
+        surface: "",
         ghost: "",
       },
       size: {
@@ -672,7 +722,7 @@ const sidebarItemVariants = cva(
       {
         itemVariant: "primary",
         isActive: true,
-        className: "text-on-primary font-bold", // shadow removed here, applied directly to the sliding indicator
+        className: "text-on-primary font-bold",
       },
       {
         itemVariant: "primary",
@@ -680,6 +730,7 @@ const sidebarItemVariants = cva(
         className:
           "text-on-surface-variant hover:text-on-surface after:bg-surface-container-highest",
       },
+
       {
         itemVariant: "secondary",
         isActive: true,
@@ -691,6 +742,7 @@ const sidebarItemVariants = cva(
         className:
           "text-on-surface-variant hover:text-on-surface after:bg-secondary-container/50",
       },
+
       {
         itemVariant: "tertiary",
         isActive: true,
@@ -702,6 +754,31 @@ const sidebarItemVariants = cva(
         className:
           "text-on-surface-variant hover:text-on-surface after:bg-tertiary-container/50",
       },
+
+      {
+        itemVariant: "error",
+        isActive: true,
+        className: "text-on-error-container font-bold",
+      },
+      {
+        itemVariant: "error",
+        isActive: false,
+        className:
+          "text-on-surface-variant hover:text-error after:bg-error-container/50",
+      },
+
+      {
+        itemVariant: "surface",
+        isActive: true,
+        className: "text-on-surface font-bold",
+      },
+      {
+        itemVariant: "surface",
+        isActive: false,
+        className:
+          "text-on-surface-variant hover:text-on-surface after:bg-surface-container-highest",
+      },
+
       {
         itemVariant: "ghost",
         isActive: true,
@@ -756,16 +833,15 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
 
     const isCollapsed = !isMobile && state === "collapsed";
     const localRef = useRef<HTMLButtonElement>(null);
-    const rippleRef = useRef<HTMLDivElement>(null); // Ripple layer strictly for clipping
+    const rippleRef = useRef<HTMLDivElement>(null);
     React.useImperativeHandle(ref, () => localRef.current!);
 
     const effectiveVariant = itemVariant || contextItemVariant;
     const effectiveShape = props.shape || contextShape;
 
-    const isSolidActive =
-      isActive &&
-      (effectiveVariant === "primary" || effectiveVariant === "tertiary");
-    const rippleColor = isSolidActive
+    // Determine Ripple based on text color accessibility
+    const isSolidPrimaryActive = isActive && effectiveVariant === "primary";
+    const rippleColor = isSolidPrimaryActive
       ? "var(--color-ripple-light)"
       : "var(--color-ripple-dark)";
 
@@ -780,11 +856,15 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
     const iconSize = props.size === "lg" ? 24 : props.size === "sm" ? 16 : 20;
 
     let dotClass = "bg-primary";
-    if (effectiveVariant === "primary" && isActive) dotClass = "bg-on-primary";
-    if (effectiveVariant === "secondary" && isActive)
-      dotClass = "bg-on-secondary-container";
-    if (effectiveVariant === "tertiary" && isActive)
-      dotClass = "bg-on-tertiary-container";
+    if (isActive) {
+      if (effectiveVariant === "primary") dotClass = "bg-on-primary";
+      else if (effectiveVariant === "secondary")
+        dotClass = "bg-on-secondary-container";
+      else if (effectiveVariant === "tertiary")
+        dotClass = "bg-on-tertiary-container";
+      else if (effectiveVariant === "error") dotClass = "bg-on-error-container";
+      else if (effectiveVariant === "surface") dotClass = "bg-on-surface";
+    }
 
     return (
       <button
@@ -822,6 +902,9 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
                 "bg-secondary-container shadow-sm",
               effectiveVariant === "tertiary" &&
                 "bg-tertiary-container shadow-sm",
+              effectiveVariant === "error" && "bg-error-container shadow-sm",
+              effectiveVariant === "surface" &&
+                "bg-surface-container-highest shadow-sm",
               effectiveVariant === "ghost" && "bg-surface-container-highest/50",
               shapeClasses[effectiveShape],
             )}
@@ -834,7 +917,6 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
           />
         )}
 
-        {/* Dedicated Ripple Container to clip ripples without affecting layoutId */}
         <div
           ref={rippleRef}
           className="absolute inset-0 z-0 overflow-hidden rounded-[inherit] pointer-events-none"
@@ -958,10 +1040,8 @@ const SidebarCollapse = React.forwardRef<
     const effectiveVariant = itemVariant || contextItemVariant;
     const effectiveShape = props.shape || contextShape;
 
-    const isSolidActive =
-      isActive &&
-      (effectiveVariant === "primary" || effectiveVariant === "tertiary");
-    const rippleColor = isSolidActive
+    const isSolidPrimaryActive = isActive && effectiveVariant === "primary";
+    const rippleColor = isSolidPrimaryActive
       ? "var(--color-ripple-light)"
       : "var(--color-ripple-dark)";
 
@@ -1065,6 +1145,10 @@ const SidebarCollapse = React.forwardRef<
                     "bg-secondary-container shadow-sm",
                   effectiveVariant === "tertiary" &&
                     "bg-tertiary-container shadow-sm",
+                  effectiveVariant === "error" &&
+                    "bg-error-container shadow-sm",
+                  effectiveVariant === "surface" &&
+                    "bg-surface-container-highest shadow-sm",
                   effectiveVariant === "ghost" &&
                     "bg-surface-container-highest/50",
                   shapeClasses[effectiveShape],
