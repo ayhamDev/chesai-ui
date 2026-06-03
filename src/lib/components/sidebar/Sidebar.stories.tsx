@@ -1,3 +1,4 @@
+// src/lib/components/sidebar/Sidebar.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   Archive,
@@ -93,6 +94,12 @@ const meta: Meta<typeof Sidebar> = {
     itemSize: {
       control: "select",
       options: ["sm", "md", "lg"],
+    },
+    indicatorAnimation: {
+      control: "select",
+      options: ["slide", "bloom"],
+      description:
+        "Transitions the active background layout using Magic Motion (slide) or via a blooming scale/fade interaction.",
     },
     expandOnHover: {
       control: "boolean",
@@ -208,8 +215,9 @@ const SidebarContentExample = ({
             <Sidebar.Label>Archive</Sidebar.Label>
             {Array.from({ length: 15 }).map((_, i) => (
               // @ts-ignore
-              (<Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>Archive Item {i + 1}
-              </Sidebar.Item>)
+              <Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>
+                Archive Item {i + 1}
+              </Sidebar.Item>
             ))}
           </Sidebar.Group>
         )}
@@ -249,6 +257,7 @@ export const Default: Story = {
     itemSize: "lg",
     itemVariant: "primary",
     expandOnHover: false,
+    indicatorAnimation: "slide",
   },
   render: (args) => (
     <Sidebar.Provider>
@@ -437,4 +446,36 @@ export const MockupNesting: Story = {
       </Sidebar.Provider>
     );
   },
+};
+
+export const BloomAnimation: Story = {
+  name: "3. Bloom Indicator Animation",
+  args: {
+    ...Default.args,
+    indicatorAnimation: "bloom",
+    itemVariant: "tertiary",
+    itemShape: "minimal",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Setting `indicatorAnimation='bloom'` changes the active tab indicator from sliding to a blooming (scale and fade) effect.",
+      },
+    },
+  },
+  render: (args) => (
+    <Sidebar.Provider>
+      <Sidebar {...args}>
+        <SidebarContentExample />
+      </Sidebar>
+      <main className="flex-1 p-6 flex flex-col bg-graphite-background">
+        <header className="h-16 border-b border-outline-variant/30 flex items-center px-4 gap-4 bg-surface rounded-xl mb-4">
+          <Sidebar.Trigger />
+          <Separator orientation="vertical" className="h-6" />
+          <Typography variant="title-small">Playground</Typography>
+        </header>
+      </main>
+    </Sidebar.Provider>
+  ),
 };

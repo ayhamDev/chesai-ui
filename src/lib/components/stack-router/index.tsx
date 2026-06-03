@@ -1,5 +1,6 @@
 // src/lib/components/stack-router/index.tsx
 "use client";
+export * from "./adapters/tanstack";
 
 import { clsx } from "clsx";
 import {
@@ -18,16 +19,18 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { AppBar, type AppBarProps } from "../appbar";
+import { AppBar } from "../appbar";
 import { IconButton } from "../icon-button";
 import { STACK_TRANSITIONS } from "./transitions";
 import {
+  type ControlledStackNavigationProps,
   type NavigationEvent,
   type NavigationEventCallback,
   type NavigationProp,
   type Route,
   type RouteProp,
   type StackNavigationState,
+  type StackNavigatorProps,
   type StackScreenComponent,
   type StackScreenOptions,
 } from "./types";
@@ -64,6 +67,7 @@ export function useRoute<
   return route as RouteProp<T, R>;
 }
 
+// --- Internal UI Components ---
 const HeaderLeft = <T extends Record<string, object | undefined>>({
   options,
   navigation,
@@ -257,7 +261,7 @@ const Header = <T extends Record<string, object | undefined>>({
   );
 };
 
-// --- Extracted Screen Wrapper (FIXES HOOKS-IN-LOOP ISSUE) ---
+// --- Extracted Screen Wrapper ---
 function StackScreenWrapper<T extends Record<string, object | undefined>>({
   route,
   index,
@@ -292,7 +296,6 @@ function StackScreenWrapper<T extends Record<string, object | undefined>>({
   const isActive = index === stateIndex;
   const variantName = isActive ? "center" : "behind";
 
-  // Safe to call hook here as it is statically defined per component mount
   const routeNavigation = useMemo(
     (): NavigationProp<T> =>
       ({
@@ -354,29 +357,24 @@ function StackScreenWrapper<T extends Record<string, object | undefined>>({
   );
 }
 
-// --- Main Navigator Logic ---
-interface StackNavigatorProps<T extends Record<string, object | undefined>> {
-  initialRouteName: keyof T;
-  children:
-    | React.ReactElement<StackScreenComponent<T, keyof T>["props"]>
-    | React.ReactElement<StackScreenComponent<T, keyof T>["props"]>[];
-  screenOptions?:
-    | StackScreenOptions
-    | ((props: {
-        route: RouteProp<T, keyof T>;
-        navigation: NavigationProp<T>;
-      }) => StackScreenOptions);
-  mode?: "memory" | "path";
-  basePath?: string;
-}
+// ============================================================================
+// CORE LAYER 1: HEADLESS CONTROLLED STACK NAVIGATOR (Pure UI)
+// ============================================================================
 
-const StackNavigator = <T extends Record<string, object | undefined>>({
-  initialRouteName,
-  children,
+export function ControlledStackNavigator<
+  T extends Record<string, object | undefined>,
+>({
+  state,
+  onNavigate,
+  onPush,
+  onReplace,
+  onGoBack,
+  onPop,
+  onPopToTop,
+  canGoBack,
   screenOptions: globalScreenOptions,
-  mode = "memory",
-  basePath = "",
-}: StackNavigatorProps<T>) => {
+  children,
+}: ControlledStackNavigationProps<T>) {
   const screens = useMemo(() => {
     const screenConfig: Record<
       string,
@@ -399,69 +397,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     Record<string, Partial<StackScreenOptions>>
   >({});
 
-  const getParamsFromUrl = () => {
-    if (typeof window === "undefined") return undefined;
-    const search = new URLSearchParams(window.location.search);
-    const params: Record<string, string> = {};
-    search.forEach((value, key) => {
-      params[key] = value;
-    });
-    return Object.keys(params).length > 0 ? (params as any) : undefined;
-  };
-
-  const constructUrl = (name: string, params?: object) => {
-    if (mode !== "path") return undefined;
-    let url = `${basePath}/${String(name)}`;
-    url = url.replace(/\/+/g, "/");
-
-    if (params) {
-      const searchParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          searchParams.set(key, String(value));
-        }
-      });
-      const searchString = searchParams.toString();
-      if (searchString) url += `?${searchString}`;
-    }
-    return url;
-  };
-
-  const [state, setState] = useState<StackNavigationState<T>>(() => {
-    if (typeof window !== "undefined") {
-      if (window.history.state?.routes) {
-        return window.history.state as StackNavigationState<T>;
-      }
-      if (mode === "path") {
-        const path = window.location.pathname;
-        const currentPathName = path.replace(basePath, "").replace(/^\//, "");
-        if (currentPathName && screens[currentPathName]) {
-          const params = getParamsFromUrl();
-          return {
-            index: 0,
-            routes: [
-              {
-                key: `${String(currentPathName)}-${Date.now()}`,
-                name: currentPathName as keyof T,
-                params: params,
-              },
-            ],
-          };
-        }
-      }
-    }
-    return {
-      index: 0,
-      routes: [
-        {
-          key: `${String(initialRouteName)}-${Date.now()}`,
-          name: initialRouteName,
-          params: undefined,
-        },
-      ],
-    };
-  });
-
   const listeners = useRef<
     Record<NavigationEvent, Set<NavigationEventCallback>>
   >({
@@ -479,30 +414,6 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     }
   }, [state.index, state.routes]);
 
-  useLayoutEffect(() => {
-    if (typeof window !== "undefined") {
-      const currentState = window.history.state;
-      if (!currentState?.routes) {
-        const currentRoute = state.routes[state.index];
-        const url = constructUrl(
-          currentRoute.name as string,
-          currentRoute.params,
-        );
-        window.history.replaceState({ ...currentState, ...state }, "", url);
-      }
-    }
-  }, [state, mode, basePath]);
-
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      if (event.state && event.state.routes) {
-        setState(event.state as StackNavigationState<T>);
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
   const currentRoute = state.routes[state.index] as RouteProp<T, keyof T>;
   const screen = screens[currentRoute.name as string];
 
@@ -510,73 +421,13 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
     NavigationProp<T>,
     "scrollContainerRef"
   > => {
-    const canGoBack = () => state.index > 0;
-
     return {
-      navigate: (name, params) => {
-        const newRoute: Route<T, keyof T> = {
-          key: `${String(name)}-${Date.now()}`,
-          name,
-          params: params as any,
-        };
-        const newState: StackNavigationState<T> = {
-          index: state.routes.length,
-          routes: [...state.routes, newRoute],
-        };
-        const url = constructUrl(name as string, params as any);
-        window.history.pushState(
-          { ...window.history.state, ...newState },
-          "",
-          url,
-        );
-        setState(newState);
-      },
-      push: (name, params) => {
-        const newRoute: Route<T, keyof T> = {
-          key: `${String(name)}-${Date.now()}`,
-          name,
-          params: params as any,
-        };
-        const newState: StackNavigationState<T> = {
-          index: state.routes.length,
-          routes: [...state.routes, newRoute],
-        };
-        const url = constructUrl(name as string, params as any);
-        window.history.pushState(
-          { ...window.history.state, ...newState },
-          "",
-          url,
-        );
-        setState(newState);
-      },
-      replace: (name, params) => {
-        const newRoute: Route<T, keyof T> = {
-          key: `${String(name)}-${Date.now()}`,
-          name,
-          params: params as any,
-        };
-        const newRoutes = [...state.routes.slice(0, -1), newRoute];
-        const newState: StackNavigationState<T> = {
-          index: newRoutes.length - 1,
-          routes: newRoutes,
-        };
-        const url = constructUrl(name as string, params as any);
-        window.history.replaceState(
-          { ...window.history.state, ...newState },
-          "",
-          url,
-        );
-        setState(newState);
-      },
-      goBack: () => {
-        if (canGoBack()) window.history.back();
-      },
-      pop: (count = 1) => {
-        if (canGoBack()) window.history.go(-count);
-      },
-      popToTop: () => {
-        if (canGoBack()) window.history.go(-state.index);
-      },
+      navigate: onNavigate,
+      push: onPush,
+      replace: onReplace,
+      goBack: onGoBack,
+      pop: onPop,
+      popToTop: onPopToTop,
       canGoBack,
       // @ts-ignore
       setOptions: (options) => {
@@ -593,7 +444,17 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         listeners[event].delete(callback);
       },
     };
-  }, [state.index, state.routes, listeners, currentRoute, mode, basePath]);
+  }, [
+    onNavigate,
+    onPush,
+    onReplace,
+    onGoBack,
+    onPop,
+    onPopToTop,
+    canGoBack,
+    currentRoute.key,
+    listeners,
+  ]);
 
   const activeScreenOptions = useMemo(() => {
     const resolvedGlobalOptions =
@@ -689,6 +550,296 @@ const StackNavigator = <T extends Record<string, object | undefined>>({
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+// ============================================================================
+// CORE LAYER 2: DEFAULT ADAPTERS (Routing Logic)
+// ============================================================================
+
+/**
+ * A utility hook that allows any external routing library (React Router, Next.js, etc.)
+ * to manage the state of the ControlledStackNavigator simply by calling these methods.
+ */
+export function useExternalStackState<
+  T extends Record<string, object | undefined>,
+>(initialRouteName: keyof T, initialParams?: any) {
+  const [state, setState] = useState<StackNavigationState<T>>({
+    index: 0,
+    routes: [
+      {
+        key: `${String(initialRouteName)}-${Date.now()}`,
+        name: initialRouteName,
+        params: initialParams,
+      },
+    ],
+  });
+
+  const canGoBack = () => state.index > 0;
+
+  const navigate = (name: keyof T, params?: any) => {
+    const newRoute: Route<T, keyof T> = {
+      key: `${String(name)}-${Date.now()}`,
+      name,
+      params: params as any,
+    };
+    setState((prev) => ({
+      index: prev.routes.length,
+      routes: [...prev.routes, newRoute],
+    }));
+  };
+
+  const replace = (name: keyof T, params?: any) => {
+    const newRoute: Route<T, keyof T> = {
+      key: `${String(name)}-${Date.now()}`,
+      name,
+      params: params as any,
+    };
+    setState((prev) => {
+      const newRoutes = [...prev.routes.slice(0, -1), newRoute];
+      return {
+        index: newRoutes.length - 1,
+        routes: newRoutes,
+      };
+    });
+  };
+
+  const goBack = () => {
+    if (canGoBack()) {
+      setState((prev) => ({
+        index: prev.index - 1,
+        routes: prev.routes.slice(0, -1),
+      }));
+    }
+  };
+
+  const pop = (count = 1) => {
+    if (canGoBack()) {
+      setState((prev) => ({
+        index: Math.max(0, prev.index - count),
+        routes: prev.routes.slice(0, prev.routes.length - count),
+      }));
+    }
+  };
+
+  const popToTop = () => {
+    if (canGoBack()) {
+      setState((prev) => ({
+        index: 0,
+        routes: [prev.routes[0]],
+      }));
+    }
+  };
+
+  return {
+    state,
+    onNavigate: navigate,
+    onPush: navigate,
+    onReplace: replace,
+    onGoBack: goBack,
+    onPop: pop,
+    onPopToTop: popToTop,
+    canGoBack,
+  };
+}
+
+/**
+ * The built-in adapter that mimics the exact `window.history` behavior
+ * of the original chesai-ui StackRouter. Ensures 100% backward compatibility.
+ */
+function useBuiltInHistoryAdapter<T extends Record<string, object | undefined>>(
+  initialRouteName: keyof T,
+  mode: "memory" | "path" = "memory",
+  basePath: string = "",
+  validScreenNames: string[] = [], // Passed down to validate URL mapping
+) {
+  const getParamsFromUrl = () => {
+    if (typeof window === "undefined") return undefined;
+    const search = new URLSearchParams(window.location.search);
+    const params: Record<string, string> = {};
+    search.forEach((value, key) => {
+      params[key] = value;
+    });
+    return Object.keys(params).length > 0 ? (params as any) : undefined;
+  };
+
+  const constructUrl = (name: string, params?: object) => {
+    if (mode !== "path") return undefined;
+    let url = `${basePath}/${String(name)}`;
+    url = url.replace(/\/+/g, "/");
+
+    if (params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.set(key, String(value));
+        }
+      });
+      const searchString = searchParams.toString();
+      if (searchString) url += `?${searchString}`;
+    }
+    return url;
+  };
+
+  const [state, setState] = useState<StackNavigationState<T>>(() => {
+    if (typeof window !== "undefined") {
+      if (window.history.state?.routes) {
+        return window.history.state as StackNavigationState<T>;
+      }
+      if (mode === "path") {
+        const path = window.location.pathname;
+        const currentPathName = path.replace(basePath, "").replace(/^\//, "");
+        if (currentPathName && validScreenNames.includes(currentPathName)) {
+          const params = getParamsFromUrl();
+          return {
+            index: 0,
+            routes: [
+              {
+                key: `${String(currentPathName)}-${Date.now()}`,
+                name: currentPathName as keyof T,
+                params: params,
+              },
+            ],
+          };
+        }
+      }
+    }
+    return {
+      index: 0,
+      routes: [
+        {
+          key: `${String(initialRouteName)}-${Date.now()}`,
+          name: initialRouteName,
+          params: undefined,
+        },
+      ],
+    };
+  });
+
+  useLayoutEffect(() => {
+    if (typeof window !== "undefined") {
+      const currentState = window.history.state;
+      if (!currentState?.routes) {
+        const currentRoute = state.routes[state.index];
+        const url = constructUrl(
+          currentRoute.name as string,
+          currentRoute.params,
+        );
+        window.history.replaceState({ ...currentState, ...state }, "", url);
+      }
+    }
+  }, [state, mode, basePath]);
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.routes) {
+        setState(event.state as StackNavigationState<T>);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const canGoBack = () => state.index > 0;
+
+  const navigate = (name: keyof T, params?: any) => {
+    const newRoute: Route<T, keyof T> = {
+      key: `${String(name)}-${Date.now()}`,
+      name,
+      params: params as any,
+    };
+    const newState: StackNavigationState<T> = {
+      index: state.routes.length,
+      routes: [...state.routes, newRoute],
+    };
+    const url = constructUrl(name as string, params as any);
+    window.history.pushState({ ...window.history.state, ...newState }, "", url);
+    setState(newState);
+  };
+
+  const replace = (name: keyof T, params?: any) => {
+    const newRoute: Route<T, keyof T> = {
+      key: `${String(name)}-${Date.now()}`,
+      name,
+      params: params as any,
+    };
+    const newRoutes = [...state.routes.slice(0, -1), newRoute];
+    const newState: StackNavigationState<T> = {
+      index: newRoutes.length - 1,
+      routes: newRoutes,
+    };
+    const url = constructUrl(name as string, params as any);
+    window.history.replaceState(
+      { ...window.history.state, ...newState },
+      "",
+      url,
+    );
+    setState(newState);
+  };
+
+  const goBack = () => {
+    if (canGoBack()) window.history.back();
+  };
+
+  const pop = (count = 1) => {
+    if (canGoBack()) window.history.go(-count);
+  };
+
+  const popToTop = () => {
+    if (canGoBack()) window.history.go(-state.index);
+  };
+
+  return {
+    state,
+    onNavigate: navigate,
+    onPush: navigate,
+    onReplace: replace,
+    onGoBack: goBack,
+    onPop: pop,
+    onPopToTop: popToTop,
+    canGoBack,
+  };
+}
+
+// ============================================================================
+// LEGACY WRAPPER (Preserves `createStackNavigator` API backwards compatibility)
+// ============================================================================
+
+const StackNavigator = <T extends Record<string, object | undefined>>({
+  initialRouteName,
+  children,
+  screenOptions,
+  mode = "memory",
+  basePath = "",
+}: StackNavigatorProps<T>) => {
+  // Extract screen names for URL validation in the adapter
+  const validScreenNames = useMemo(() => {
+    const names: string[] = [];
+    React.Children.forEach(
+      children,
+      (
+        child: React.ReactElement<StackScreenComponent<T, keyof T>["props"]>,
+      ) => {
+        if (React.isValidElement(child)) {
+          names.push(child.props.name as string);
+        }
+      },
+    );
+    return names;
+  }, [children]);
+
+  // Utilize the built-in adapter which encapsulates all `window.history` logic.
+  const adapterProps = useBuiltInHistoryAdapter(
+    initialRouteName,
+    mode,
+    basePath,
+    validScreenNames,
+  );
+
+  return (
+    <ControlledStackNavigator {...adapterProps} screenOptions={screenOptions}>
+      {children}
+    </ControlledStackNavigator>
   );
 };
 

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Card } from "../card";
-import { Grid, GridItem } from "../layout/grid";
+import { Grid, GridItem } from "../layouts/grid";
 import { Typography } from "../typography";
 import { AreaChart } from "./area-chart";
 import { BarChart } from "./bar-chart";

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import React from "react";
 import { Image } from "./index";
-import { Grid, GridItem } from "../layout/grid";
+import { Grid, GridItem } from "../layouts/grid";
 import { Typography } from "../typography";
 import { AlertCircle } from "lucide-react";
 

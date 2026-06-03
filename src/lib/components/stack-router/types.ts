@@ -10,18 +10,16 @@ export interface StackScreenOptions {
   headerLeft?: (props: { canGoBack: boolean }) => React.ReactNode
   headerRight?: (props: { canGoBack: boolean }) => React.ReactNode
 
-  // --- NEW: Advanced AppBar Slots ---
+  // --- Advanced AppBar Slots ---
   headerBottom?: (props: { canGoBack: boolean }) => React.ReactNode
   headerTopRow?: (props: { canGoBack: boolean }) => React.ReactNode
   headerExpanded?: (props: { canGoBack: boolean }) => React.ReactNode
 
   headerStyle?: {
-    backgroundColor?: AppBarColor | 'card' | 'background' // kept legacy names for safety
+    backgroundColor?: AppBarColor | 'card' | 'background'
   }
 
-  // Full access to the underlying AppBar configuration
   appBarProps?: Partial<AppBarProps>
-
   animation?: any
   pageClassName?: string
   headerAnimationEnabled?: boolean
@@ -36,7 +34,8 @@ export interface StackScreenComponent<T extends Record<string, object | undefine
   (props: StackScreenProps<T, R>): React.ReactNode
   props: {
     name: R
-    component: (props: StackScreenProps<T, R>) => React.ReactNode
+    component?: (props: StackScreenProps<T, R>) => React.ReactNode
+    children?: (props: StackScreenProps<T, R>) => React.ReactNode
     options?: StackScreenOptions | ((props: { route: RouteProp<T, R> }) => StackScreenOptions)
   }
 }
@@ -58,19 +57,56 @@ export type NavigationEvent = 'transitionStart' | 'transitionEnd'
 export type NavigationEventCallback = (event: { data: { closing: boolean } }) => void
 
 export interface NavigationProp<T extends Record<string, object | undefined>> {
-  navigate: <R extends keyof T>(name: R, params: T[R]) => void
-  push: <R extends keyof T>(name: R, params: T[R]) => void
-  replace: <R extends keyof T>(name: R, params: T[R]) => void
+  navigate: <R extends keyof T>(name: R, params?: T[R]) => void
+  push: <R extends keyof T>(name: R, params?: T[R]) => void
+  replace: <R extends keyof T>(name: R, params?: T[R]) => void
   goBack: () => void
   pop: (count?: number) => void
   popToTop: () => void
   canGoBack: () => boolean
   addListener: (event: NavigationEvent, callback: NavigationEventCallback) => () => void
   removeListener: (event: NavigationEvent, callback: NavigationEventCallback) => void
+  setOptions: (options: Partial<StackScreenOptions>) => void
   scrollContainerRef: React.RefCallback<HTMLElement | null> | React.MutableRefObject<HTMLElement | null>
 }
 
 export interface StackAnimation {
   transition?: Transition
   variants: Variants
+}
+
+// --- NEW: Headless / Controlled Types ---
+
+export interface ControlledStackNavigationProps<T extends Record<string, object | undefined>> {
+  /** The current state of the stack (routes array and active index) */
+  state: StackNavigationState<T>
+
+  /** Navigation action callbacks */
+  onNavigate: <R extends keyof T>(name: R, params?: T[R]) => void
+  onPush: <R extends keyof T>(name: R, params?: T[R]) => void
+  onReplace: <R extends keyof T>(name: R, params?: T[R]) => void
+  onGoBack: () => void
+  onPop: (count?: number) => void
+  onPopToTop: () => void
+  canGoBack: () => boolean
+
+  /** Global screen options applied to all routes */
+  screenOptions?:
+    | StackScreenOptions
+    | ((props: { route: RouteProp<T, keyof T>; navigation: NavigationProp<T> }) => StackScreenOptions)
+
+  /** The StackScreen children */
+  children: React.ReactNode
+}
+
+export interface StackNavigatorProps<T extends Record<string, object | undefined>> {
+  initialRouteName: keyof T
+  children:
+    | React.ReactElement<StackScreenComponent<T, keyof T>['props']>
+    | React.ReactElement<StackScreenComponent<T, keyof T>['props']>[]
+  screenOptions?:
+    | StackScreenOptions
+    | ((props: { route: RouteProp<T, keyof T>; navigation: NavigationProp<T> }) => StackScreenOptions)
+  mode?: 'memory' | 'path'
+  basePath?: string
 }

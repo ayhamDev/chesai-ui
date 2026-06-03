@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "../dropdown-menu";
 import { IconButton } from "../icon-button";
-import { GridItem } from "../layout/grid";
+import { GridItem } from "../layouts/grid";
 import { Typography } from "../typography";
 import { DataDisplay } from "./index";
 

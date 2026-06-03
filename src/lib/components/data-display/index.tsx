@@ -34,8 +34,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../dropdown-menu";
-import { Grid, type GridProps } from "../layout/grid";
-import { Masonry, type MasonryProps } from "../layout/masonry";
+import { Grid, type GridProps } from "../layouts/grid";
+import { Masonry, type MasonryProps } from "../layouts/masonry";
 import { LoadingIndicator } from "../loadingIndicator";
 
 // --- Types ---

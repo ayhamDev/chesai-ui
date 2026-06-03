@@ -1,3 +1,4 @@
+// src/lib/components/bottom-tabs/bottom-tabs.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import { Compass, Home, Library, Radio } from "lucide-react";
 import { ShallowRouter, useRouter } from "../shallow-router";
@@ -45,6 +46,12 @@ const meta: Meta<typeof BottomTabs.Navigator> = {
       options: ["full", "icon"],
       description:
         "Controls whether the active background highlight covers the full item height ('full') or acts as an isolated capsule behind the icon ('icon').",
+    },
+    indicatorAnimation: {
+      control: "select",
+      options: ["slide", "bloom"],
+      description:
+        "Transitions the active background layout using Magic Motion (slide) or via a blooming scale/fade interaction.",
     },
     disableRipple: {
       control: "boolean",
@@ -125,6 +132,7 @@ export const StackedDefault: Story = {
     bordered: true,
     shape: "full",
     pillStyle: "full",
+    indicatorAnimation: "slide",
     disableRipple: false,
   },
   render: (args) => (
@@ -275,7 +283,7 @@ export const IconPillStyle: Story = {
     itemVariant: "secondary",
     shape: "full",
     disableRipple: true,
-    size: "lg"
+    size: "lg",
   },
   parameters: {
     docs: {
@@ -287,6 +295,32 @@ export const IconPillStyle: Story = {
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
+      <RenderWithRouter {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const BloomAnimation: Story = {
+  name: "8. Bloom Indicator Animation",
+  args: {
+    mode: "attached",
+    itemLayout: "stacked",
+    pillStyle: "full",
+    indicatorAnimation: "bloom",
+    itemVariant: "secondary",
+    shape: "full",
+    disableRipple: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Setting `indicatorAnimation='bloom'` changes the active tab indicator from sliding to a blooming (scale and fade) effect.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab_bloom">
       <RenderWithRouter {...args} />
     </ShallowRouter>
   ),

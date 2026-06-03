@@ -1,3 +1,4 @@
+// src/lib/components/navigation-rail/index.tsx
 "use client";
 
 import { useMediaQuery } from "@uidotdev/usehooks";
@@ -40,6 +41,7 @@ interface NavigationRailContextProps {
   isRtl: boolean;
   pillStyle: "full" | "icon";
   disableRipple: boolean;
+  indicatorAnimation: "slide" | "bloom";
 }
 
 const NavigationRailContext = createContext<NavigationRailContextProps | null>(
@@ -306,6 +308,7 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     itemLayout,
     pillStyle,
     disableRipple,
+    indicatorAnimation,
   } = useNavigationRail();
 
   const isActive = activeTab === name;
@@ -356,6 +359,21 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 
   const buttonHasBloom = !isActive && !isIconPill;
 
+  const isSlideAnim = indicatorAnimation === "slide";
+
+  // Perfectly matches the CSS scale-70 duration-300 ease-out hover effect
+  const sharedIndicatorProps = {
+    layoutId: isSlideAnim ? indicatorId : undefined,
+    initial: isSlideAnim ? false : { opacity: 0, scale: 0.7 },
+    animate: isSlideAnim ? undefined : { opacity: 1, scale: 1 },
+    exit: isSlideAnim ? undefined : { opacity: 0, scale: 0.7 },
+    transition: isSlideAnim
+      ? { type: "spring", stiffness: 300, damping: 28, mass: 1 }
+      : { duration: 0.3, ease: "easeOut" },
+    className: clsx("absolute inset-0 z-0", activeBg),
+    style: { borderRadius: shapeToBorderRadius[finalShape] },
+  };
+
   return (
     <li
       className={clsx(
@@ -389,19 +407,9 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
           ],
         )}
       >
-        {isActive && !isIconPill && (
-          <motion.div
-            layoutId={indicatorId}
-            className={clsx("absolute inset-0 z-0", activeBg)}
-            style={{ borderRadius: shapeToBorderRadius[finalShape] }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 28,
-              mass: 1,
-            }}
-          />
-        )}
+        <AnimatePresence>
+          {isActive && !isIconPill && <motion.div {...sharedIndicatorProps} />}
+        </AnimatePresence>
 
         <div
           className={clsx(
@@ -415,25 +423,16 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
               : "text-inherit",
             isIconPill &&
               !isActive && [
+                // Hover effect strictly disabled while active
                 "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-70 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out",
                 "group-hover:after:opacity-100 group-hover:after:scale-100",
                 "group-disabled:after:opacity-0",
               ],
           )}
         >
-          {isActive && isIconPill && (
-            <motion.div
-              layoutId={indicatorId}
-              className={clsx("absolute inset-0 z-0", activeBg)}
-              style={{ borderRadius: shapeToBorderRadius[finalShape] }}
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 28,
-                mass: 1,
-              }}
-            />
-          )}
+          <AnimatePresence>
+            {isActive && isIconPill && <motion.div {...sharedIndicatorProps} />}
+          </AnimatePresence>
           <div className="relative z-10 flex items-center justify-center">
             {icon({ isActive })}
           </div>
@@ -487,6 +486,7 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   expandable?: boolean;
   pillStyle?: "full" | "icon";
   disableRipple?: boolean;
+  indicatorAnimation?: "slide" | "bloom";
   /** Hides the menu/toggle button at the top of the rail */
   hideMenuButton?: boolean;
 }
@@ -508,6 +508,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   expandable = true,
   pillStyle = "full",
   disableRipple = false,
+  indicatorAnimation = "slide",
   hideMenuButton = false,
   className,
   style,
@@ -575,6 +576,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
       isRtl,
       pillStyle,
       disableRipple,
+      indicatorAnimation,
     }),
     [
       activeTab,
@@ -588,6 +590,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
       isRtl,
       pillStyle,
       disableRipple,
+      indicatorAnimation,
     ],
   );
 

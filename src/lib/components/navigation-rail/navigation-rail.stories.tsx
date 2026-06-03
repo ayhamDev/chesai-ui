@@ -1,3 +1,4 @@
+// src/lib/components/navigation-rail/navigation-rail.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import { Compass, Home, Library, NavigationIcon, Plus } from "lucide-react";
 import { LayoutProvider } from "../../context/layout-context";
@@ -45,6 +46,12 @@ const meta: Meta<typeof NavigationRail.Navigator> = {
       options: ["full", "icon"],
       description:
         "Controls whether the active background highlight covers the entire button width ('full') or acts as a capsule around the icon only ('icon').",
+    },
+    indicatorAnimation: {
+      control: "select",
+      options: ["slide", "bloom"],
+      description:
+        "Transitions the active background layout using Magic Motion (slide) or via a blooming scale/fade interaction.",
     },
     disableRipple: {
       control: "boolean",
@@ -155,6 +162,7 @@ export const Default: Story = {
     itemVariant: "primary",
     itemLayout: "inline",
     pillStyle: "full",
+    indicatorAnimation: "slide",
     disableRipple: false,
     expandOnHover: true,
     forceExpanded: false,
@@ -329,6 +337,32 @@ export const IconPillStyle: Story = {
   },
   render: (args) => (
     <ShallowRouter paramName="tab">
+      <RenderWithLayout {...args} />
+    </ShallowRouter>
+  ),
+};
+
+export const BloomAnimation: Story = {
+  name: "9. Bloom Indicator Animation",
+  args: {
+    ...Default.args,
+    itemLayout: "stacked",
+    pillStyle: "icon",
+    indicatorAnimation: "bloom",
+    itemVariant: "primary",
+    shape: "full",
+    disableRipple: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Setting `indicatorAnimation='bloom'` changes the active tab indicator from sliding to a blooming (scale and fade) effect.",
+      },
+    },
+  },
+  render: (args) => (
+    <ShallowRouter paramName="tab_bloom">
       <RenderWithLayout {...args} />
     </ShallowRouter>
   ),

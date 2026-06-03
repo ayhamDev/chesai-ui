@@ -32,8 +32,8 @@ import { CodeEditor } from "../code-editor";
 import { IconButton } from "../icon-button";
 import { Input } from "../input";
 import { InstallCommand } from "../install-command";
-import { Flex } from "../layout/flex";
-import { Grid, GridItem } from "../layout/grid";
+import { Flex } from "../layouts/flex";
+import { Grid, GridItem } from "../layouts/grid";
 import { toast, Toaster } from "../toast";
 import { Typography } from "../typography";
 

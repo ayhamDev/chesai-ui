@@ -4,7 +4,7 @@ import { Breadcrumb } from "./index";
 import { Button } from "../button";
 import { Card } from "../card";
 import { Typography } from "../typography";
-import { Flex } from "../layout/flex";
+import { Flex } from "../layouts/flex";
 
 const meta: Meta<typeof Breadcrumb> = {
   title: "Components/Navigators/Breadcrumb (Dynamic)",

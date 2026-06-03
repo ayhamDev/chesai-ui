@@ -1,3 +1,4 @@
+// src/lib/components/sidebar/index.tsx
 "use client";
 
 import { useMediaQuery } from "@uidotdev/usehooks";
@@ -5,14 +6,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  ChevronDown,
   Menu,
+  Minus,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
-  ChevronDown,
   Plus,
-  Minus,
 } from "lucide-react";
 import React, {
   createContext,
@@ -70,6 +71,7 @@ interface SidebarContextProps {
   side: SidebarSide;
   isRtl: boolean;
   indicatorId: string;
+  indicatorAnimation: "slide" | "bloom";
 }
 
 const SidebarContext = createContext<SidebarContextProps | null>(null);
@@ -122,6 +124,7 @@ export const SidebarProvider = ({
         side: "left",
         isRtl,
         indicatorId,
+        indicatorAnimation: "slide",
       }}
     >
       {children}
@@ -292,6 +295,7 @@ interface SidebarProps
   itemVariant?: SidebarItemVariant;
   expandOnHover?: boolean;
   overlay?: boolean;
+  indicatorAnimation?: "slide" | "bloom";
 }
 
 const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
@@ -313,10 +317,12 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       collapsible = true,
       expandOnHover = false,
       overlay = false,
+      indicatorAnimation,
       ...props
     },
     ref,
   ) => {
+    const context = useSidebar();
     const {
       state,
       setSidebarState,
@@ -326,7 +332,7 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
       setOpenMobile,
       isRtl,
       indicatorId,
-    } = useSidebar();
+    } = context;
     const isCollapsed = state === "collapsed";
 
     useEffect(() => {
@@ -364,19 +370,14 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
     }, [isMobile, openMobile, mobileLayout, mobileWidth, side, isRtl]);
 
     const contextValue = {
-      state,
-      openMobile,
-      setOpenMobile,
-      toggleSidebar,
-      setSidebarState,
-      isMobile,
+      ...context,
       size: itemSize,
       shape: itemShape,
       variant: variant || "surface-container-low",
       itemVariant: itemVariant || "primary",
       side: side || "left",
-      isRtl,
-      indicatorId,
+      indicatorAnimation:
+        indicatorAnimation || context.indicatorAnimation || "slide",
     };
 
     if (isMobile) {
@@ -697,7 +698,7 @@ const sidebarItemVariants = cva(
       isActive: {
         true: "",
         false:
-          "after:absolute after:inset-0 after:z-[-1] after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out hover:after:opacity-100 hover:after:scale-100",
+          "after:absolute after:inset-0 after:z-[-1] after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-300 after:ease-out hover:after:opacity-100 hover:after:scale-100",
       },
       itemVariant: {
         primary: "",
@@ -829,6 +830,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
       isMobile,
       setOpenMobile,
       indicatorId,
+      indicatorAnimation,
     } = useSidebar();
 
     const isCollapsed = !isMobile && state === "collapsed";
@@ -866,6 +868,29 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
       else if (effectiveVariant === "surface") dotClass = "bg-on-surface";
     }
 
+    const isSlideAnim = indicatorAnimation === "slide";
+
+    const sharedIndicatorProps = {
+      layoutId: isSlideAnim ? indicatorId : undefined,
+      initial: isSlideAnim ? false : { opacity: 0, scale: 0.75 },
+      animate: isSlideAnim ? undefined : { opacity: 1, scale: 1 },
+      exit: isSlideAnim ? undefined : { opacity: 0, scale: 0.75 },
+      transition: isSlideAnim
+        ? { type: "spring", stiffness: 350, damping: 28, mass: 1 }
+        : { duration: 0.25, ease: "easeOut" },
+      className: clsx(
+        "absolute inset-0 z-0 pointer-events-none",
+        effectiveVariant === "primary" && "bg-primary shadow-sm",
+        effectiveVariant === "secondary" && "bg-secondary-container shadow-sm",
+        effectiveVariant === "tertiary" && "bg-tertiary-container shadow-sm",
+        effectiveVariant === "error" && "bg-error-container shadow-sm",
+        effectiveVariant === "surface" &&
+          "bg-surface-container-highest shadow-sm",
+        effectiveVariant === "ghost" && "bg-surface-container-highest/50",
+        shapeClasses[effectiveShape],
+      ),
+    };
+
     return (
       <button
         ref={localRef}
@@ -891,31 +916,9 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
           props.onClick?.(e);
         }}
       >
-        {/* Animated Sliding Highlight Layer */}
-        {isActive && (
-          <motion.div
-            layoutId={indicatorId}
-            className={clsx(
-              "absolute inset-0 z-0 pointer-events-none",
-              effectiveVariant === "primary" && "bg-primary shadow-sm",
-              effectiveVariant === "secondary" &&
-                "bg-secondary-container shadow-sm",
-              effectiveVariant === "tertiary" &&
-                "bg-tertiary-container shadow-sm",
-              effectiveVariant === "error" && "bg-error-container shadow-sm",
-              effectiveVariant === "surface" &&
-                "bg-surface-container-highest shadow-sm",
-              effectiveVariant === "ghost" && "bg-surface-container-highest/50",
-              shapeClasses[effectiveShape],
-            )}
-            transition={{
-              type: "spring",
-              stiffness: 350,
-              damping: 28,
-              mass: 1,
-            }}
-          />
-        )}
+        <AnimatePresence>
+          {isActive && <motion.div {...sharedIndicatorProps} />}
+        </AnimatePresence>
 
         <div
           ref={rippleRef}
@@ -1029,6 +1032,7 @@ const SidebarCollapse = React.forwardRef<
       itemVariant: contextItemVariant,
       isMobile,
       setSidebarState,
+      indicatorAnimation,
     } = useSidebar();
 
     const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -1107,6 +1111,27 @@ const SidebarCollapse = React.forwardRef<
       );
     };
 
+    const isSlideAnim = indicatorAnimation === "slide";
+
+    const sharedIndicatorProps = {
+      // Intentionally no layoutId for Collapse to prevent collision
+      initial: isSlideAnim ? { opacity: 0 } : { opacity: 0, scale: 0.75 },
+      animate: isSlideAnim ? { opacity: 1 } : { opacity: 1, scale: 1 },
+      exit: isSlideAnim ? { opacity: 0 } : { opacity: 0, scale: 0.75 },
+      transition: { duration: 0.25, ease: "easeOut" },
+      className: clsx(
+        "absolute inset-0 z-0 pointer-events-none",
+        effectiveVariant === "primary" && "bg-primary shadow-sm",
+        effectiveVariant === "secondary" && "bg-secondary-container shadow-sm",
+        effectiveVariant === "tertiary" && "bg-tertiary-container shadow-sm",
+        effectiveVariant === "error" && "bg-error-container shadow-sm",
+        effectiveVariant === "surface" &&
+          "bg-surface-container-highest shadow-sm",
+        effectiveVariant === "ghost" && "bg-surface-container-highest/50",
+        shapeClasses[effectiveShape],
+      ),
+    };
+
     return (
       <div className="w-full flex flex-col gap-1">
         <button
@@ -1131,31 +1156,8 @@ const SidebarCollapse = React.forwardRef<
           onClick={handleToggle}
           aria-expanded={showChildren}
         >
-          {/* Active Highlight Layer (Without layoutId to avoid collisions with child items) */}
           <AnimatePresence>
-            {isActive && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className={clsx(
-                  "absolute inset-0 z-0 pointer-events-none",
-                  effectiveVariant === "primary" && "bg-primary shadow-sm",
-                  effectiveVariant === "secondary" &&
-                    "bg-secondary-container shadow-sm",
-                  effectiveVariant === "tertiary" &&
-                    "bg-tertiary-container shadow-sm",
-                  effectiveVariant === "error" &&
-                    "bg-error-container shadow-sm",
-                  effectiveVariant === "surface" &&
-                    "bg-surface-container-highest shadow-sm",
-                  effectiveVariant === "ghost" &&
-                    "bg-surface-container-highest/50",
-                  shapeClasses[effectiveShape],
-                )}
-                transition={{ duration: 0.2 }}
-              />
-            )}
+            {isActive && <motion.div {...sharedIndicatorProps} />}
           </AnimatePresence>
 
           <div
