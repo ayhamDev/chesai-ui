@@ -99,16 +99,15 @@ const ContextMenuRoot: React.FC<ContextMenuProps> = ({
   );
 };
 
-const ContextMenuTrigger = RadixContextMenu.Trigger;
-const ContextMenuGroup = RadixContextMenu.Group;
-const ContextMenuPortal = RadixContextMenu.Portal;
-const ContextMenuSub = RadixContextMenu.Sub;
-const ContextMenuRadioGroup = RadixContextMenu.RadioGroup;
+const ContextMenuTrigger: typeof RadixContextMenu.Trigger = RadixContextMenu.Trigger;
+const ContextMenuGroup: typeof RadixContextMenu.Group = RadixContextMenu.Group;
+const ContextMenuPortal: typeof RadixContextMenu.Portal = RadixContextMenu.Portal;
+const ContextMenuSub: typeof RadixContextMenu.Sub = RadixContextMenu.Sub;
+const ContextMenuRadioGroup: typeof RadixContextMenu.RadioGroup = RadixContextMenu.RadioGroup;
 
-const ContextMenuContent = React.forwardRef<
-  React.ElementRef<typeof RadixContextMenu.Content>,
-  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Content>
->(({ className, ...props }, ref) => {
+const ContextMenuContent: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Content> & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.Content>>
+> = React.forwardRef(({ className, ...props }, ref) => {
   const { shape, glass } = useContextMenuContext();
   return (
     <RadixContextMenu.Portal>
@@ -131,12 +130,9 @@ const ContextMenuContent = React.forwardRef<
 });
 ContextMenuContent.displayName = RadixContextMenu.Content.displayName;
 
-const ContextMenuItem = React.forwardRef<
-  React.ElementRef<typeof RadixContextMenu.Item>,
-  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Item> & {
-    inset?: boolean;
-  }
->(({ className, inset, ...props }, ref) => {
+const ContextMenuItem: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Item> & { inset?: boolean } & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.Item>>
+> = React.forwardRef(({ className, inset, ...props }, ref) => {
   const { shape, size } = useContextMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
@@ -165,10 +161,9 @@ const ContextMenuItem = React.forwardRef<
 });
 ContextMenuItem.displayName = RadixContextMenu.Item.displayName;
 
-const ContextMenuCheckboxItem = React.forwardRef<
-  React.ElementRef<typeof RadixContextMenu.CheckboxItem>,
-  React.ComponentPropsWithoutRef<typeof RadixContextMenu.CheckboxItem>
->(({ className, children, ...props }, ref) => {
+const ContextMenuCheckboxItem: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.CheckboxItem> & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.CheckboxItem>>
+> = React.forwardRef(({ className, children, ...props }, ref) => {
   const { shape, size } = useContextMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
@@ -196,10 +191,9 @@ const ContextMenuCheckboxItem = React.forwardRef<
 });
 ContextMenuCheckboxItem.displayName = RadixContextMenu.CheckboxItem.displayName;
 
-const ContextMenuRadioItem = React.forwardRef<
-  React.ElementRef<typeof RadixContextMenu.RadioItem>,
-  React.ComponentPropsWithoutRef<typeof RadixContextMenu.RadioItem>
->(({ className, children, ...props }, ref) => {
+const ContextMenuRadioItem: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.RadioItem> & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.RadioItem>>
+> = React.forwardRef(({ className, children, ...props }, ref) => {
   const { shape, size } = useContextMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
@@ -227,12 +221,9 @@ const ContextMenuRadioItem = React.forwardRef<
 });
 ContextMenuRadioItem.displayName = RadixContextMenu.RadioItem.displayName;
 
-const ContextMenuSubTrigger = React.forwardRef<
-  React.ElementRef<typeof RadixContextMenu.SubTrigger>,
-  React.ComponentPropsWithoutRef<typeof RadixContextMenu.SubTrigger> & {
-    inset?: boolean;
-  }
->(({ className, children, inset, ...props }, ref) => {
+const ContextMenuSubTrigger: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.SubTrigger> & { inset?: boolean } & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.SubTrigger>>
+> = React.forwardRef(({ className, children, inset, ...props }, ref) => {
   const { shape, size } = useContextMenuContext();
   const localRef = useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
@@ -262,10 +253,9 @@ const ContextMenuSubTrigger = React.forwardRef<
 });
 ContextMenuSubTrigger.displayName = RadixContextMenu.SubTrigger.displayName;
 
-const ContextMenuSubContent = React.forwardRef<
-  React.ElementRef<typeof RadixContextMenu.SubContent>,
-  React.ComponentPropsWithoutRef<typeof RadixContextMenu.SubContent>
->(({ className, ...props }, ref) => {
+const ContextMenuSubContent: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.SubContent> & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.SubContent>>
+> = React.forwardRef(({ className, ...props }, ref) => {
   const { shape, glass } = useContextMenuContext();
   return (
     <RadixContextMenu.SubContent
@@ -284,12 +274,9 @@ const ContextMenuSubContent = React.forwardRef<
 });
 ContextMenuSubContent.displayName = RadixContextMenu.SubContent.displayName;
 
-const ContextMenuLabel = React.forwardRef<
-  React.ElementRef<typeof RadixContextMenu.Label>,
-  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Label> & {
-    inset?: boolean;
-  }
->(({ className, inset, ...props }, ref) => (
+const ContextMenuLabel: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Label> & { inset?: boolean } & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.Label>>
+> = React.forwardRef(({ className, inset, ...props }, ref) => (
   <RadixContextMenu.Label
     ref={ref}
     className={clsx(
@@ -302,10 +289,9 @@ const ContextMenuLabel = React.forwardRef<
 ));
 ContextMenuLabel.displayName = RadixContextMenu.Label.displayName;
 
-const ContextMenuSeparator = React.forwardRef<
-  React.ElementRef<typeof RadixContextMenu.Separator>,
-  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Separator>
->(({ className, ...props }, ref) => (
+const ContextMenuSeparator: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixContextMenu.Separator> & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.Separator>>
+> = React.forwardRef(({ className, ...props }, ref) => (
   <RadixContextMenu.Separator
     ref={ref}
     className={clsx("-mx-1 my-1.5 h-px bg-outline-variant", className)}
@@ -345,4 +331,19 @@ export const ContextMenu = Object.assign(ContextMenuRoot, {
   Sub: ContextMenuSub,
   SubContent: ContextMenuSubContent,
   SubTrigger: ContextMenuSubTrigger,
-});
+}) as typeof ContextMenuRoot & {
+  Trigger: typeof ContextMenuTrigger;
+  Content: typeof ContextMenuContent;
+  Item: typeof ContextMenuItem;
+  CheckboxItem: typeof ContextMenuCheckboxItem;
+  RadioGroup: typeof ContextMenuRadioGroup;
+  RadioItem: typeof ContextMenuRadioItem;
+  Label: typeof ContextMenuLabel;
+  Separator: typeof ContextMenuSeparator;
+  Shortcut: typeof ContextMenuShortcut;
+  Group: typeof ContextMenuGroup;
+  Portal: typeof ContextMenuPortal;
+  Sub: typeof ContextMenuSub;
+  SubContent: typeof ContextMenuSubContent;
+  SubTrigger: typeof ContextMenuSubTrigger;
+};

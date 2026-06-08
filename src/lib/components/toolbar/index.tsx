@@ -234,10 +234,9 @@ const ToolbarRoot = React.forwardRef<
 );
 ToolbarRoot.displayName = "Toolbar";
 
-const ToolbarSeparator = React.forwardRef<
-  React.ElementRef<typeof ToolbarPrimitive.Separator>,
-  React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Separator>
->(({ className, ...props }, ref) => {
+const ToolbarSeparator: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Separator> & React.RefAttributes<React.ElementRef<typeof ToolbarPrimitive.Separator>>
+> = React.forwardRef(({ className, ...props }, ref) => {
   const { orientation, size } = useToolbarContext();
   return (
     <ToolbarPrimitive.Separator
@@ -350,10 +349,9 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
 );
 ToolbarButton.displayName = "ToolbarButton";
 
-const ToolbarToggleGroup = React.forwardRef<
-  React.ElementRef<typeof ToolbarPrimitive.ToggleGroup>,
-  React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleGroup>
->(({ className, ...props }, ref) => {
+const ToolbarToggleGroup: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleGroup> & React.RefAttributes<React.ElementRef<typeof ToolbarPrimitive.ToggleGroup>>
+> = React.forwardRef(({ className, ...props }, ref) => {
   const { orientation } = useToolbarContext();
   return (
     <ToolbarPrimitive.ToggleGroup
@@ -456,4 +454,10 @@ export const Toolbar = Object.assign(ToolbarRoot, {
   ToggleGroup: ToolbarToggleGroup,
   ToggleItem: ToolbarToggleItem,
   ItemTooltip: ToolbarItemTooltip,
-});
+}) as typeof ToolbarRoot & {
+  Button: typeof ToolbarButton;
+  Separator: typeof ToolbarSeparator;
+  ToggleGroup: typeof ToolbarToggleGroup;
+  ToggleItem: typeof ToolbarToggleItem;
+  ItemTooltip: typeof ToolbarItemTooltip;
+};

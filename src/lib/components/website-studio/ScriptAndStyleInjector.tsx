@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 
-interface ScriptAndStyleInjectorProps {
+export interface ScriptAndStyleInjectorProps {
   /** The raw HTML string containing elements like scripts, styles, or meta tags */
   html?: string;
   /** Where to append the extracted tags inside the document */

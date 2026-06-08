@@ -73,7 +73,9 @@ export const SelectItem = React.forwardRef<
       </SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
   );
-});
+}) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & React.RefAttributes<HTMLDivElement>
+>;
 SelectItem.displayName = SelectPrimitive.Item.displayName;
 
 export const SelectLabel = React.forwardRef<
@@ -89,7 +91,9 @@ export const SelectLabel = React.forwardRef<
     )}
     {...props}
   />
-));
+)) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label> & React.RefAttributes<HTMLLabelElement>
+>;
 SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
 export const SelectSeparator = React.forwardRef<
@@ -101,7 +105,9 @@ export const SelectSeparator = React.forwardRef<
     className={clsx("-mx-1 my-1.5 h-px bg-outline-variant", className)}
     {...props}
   />
-));
+)) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator> & React.RefAttributes<HTMLDivElement>
+>;
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
 
-export const SelectGroup = SelectPrimitive.Group;
+export const SelectGroup: typeof SelectPrimitive.Group = SelectPrimitive.Group;

@@ -64,11 +64,11 @@ const contentVariants = cva(
   },
 );
 
-const DropdownMenuTrigger = RadixDropdownMenu.Trigger;
-const DropdownMenuGroup = RadixDropdownMenu.Group;
-const DropdownMenuPortal = RadixDropdownMenu.Portal;
-const DropdownMenuSub = RadixDropdownMenu.Sub;
-const DropdownMenuRadioGroup = RadixDropdownMenu.RadioGroup;
+const DropdownMenuTrigger: typeof RadixDropdownMenu.Trigger = RadixDropdownMenu.Trigger;
+const DropdownMenuGroup: typeof RadixDropdownMenu.Group = RadixDropdownMenu.Group;
+const DropdownMenuPortal: typeof RadixDropdownMenu.Portal = RadixDropdownMenu.Portal;
+const DropdownMenuSub: typeof RadixDropdownMenu.Sub = RadixDropdownMenu.Sub;
+const DropdownMenuRadioGroup: typeof RadixDropdownMenu.RadioGroup = RadixDropdownMenu.RadioGroup;
 
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.Content>,
@@ -94,7 +94,10 @@ const DropdownMenuContent = React.forwardRef<
       />
     </RadixDropdownMenu.Portal>
   );
-});
+}) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.Content> &
+    React.RefAttributes<React.ElementRef<typeof RadixDropdownMenu.Content>>
+>;
 DropdownMenuContent.displayName = RadixDropdownMenu.Content.displayName;
 
 const itemStyles =
@@ -136,7 +139,11 @@ const DropdownMenuItem = React.forwardRef<
       {...props}
     />
   );
-});
+}) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.Item> & {
+    inset?: boolean;
+  } & React.RefAttributes<React.ElementRef<typeof RadixDropdownMenu.Item>>
+>;
 DropdownMenuItem.displayName = RadixDropdownMenu.Item.displayName;
 
 const DropdownMenuCheckboxItem = React.forwardRef<
@@ -172,7 +179,12 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       <span className="relative z-10">{children}</span>
     </RadixDropdownMenu.CheckboxItem>
   );
-});
+}) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.CheckboxItem> &
+    React.RefAttributes<
+      React.ElementRef<typeof RadixDropdownMenu.CheckboxItem>
+    >
+>;
 DropdownMenuCheckboxItem.displayName =
   RadixDropdownMenu.CheckboxItem.displayName;
 
@@ -209,7 +221,12 @@ const DropdownMenuRadioItem = React.forwardRef<
       <span className="relative z-10">{children}</span>
     </RadixDropdownMenu.RadioItem>
   );
-});
+}) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.RadioItem> &
+    React.RefAttributes<
+      React.ElementRef<typeof RadixDropdownMenu.RadioItem>
+    >
+>;
 DropdownMenuRadioItem.displayName = RadixDropdownMenu.RadioItem.displayName;
 
 const DropdownMenuSubTrigger = React.forwardRef<
@@ -247,7 +264,13 @@ const DropdownMenuSubTrigger = React.forwardRef<
       </span>
     </RadixDropdownMenu.SubTrigger>
   );
-});
+}) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.SubTrigger> & {
+    inset?: boolean;
+  } & React.RefAttributes<
+    React.ElementRef<typeof RadixDropdownMenu.SubTrigger>
+  >
+>;
 DropdownMenuSubTrigger.displayName = RadixDropdownMenu.SubTrigger.displayName;
 
 const DropdownMenuSubContent = React.forwardRef<
@@ -273,7 +296,12 @@ const DropdownMenuSubContent = React.forwardRef<
       {...props}
     />
   );
-});
+}) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.SubContent> &
+    React.RefAttributes<
+      React.ElementRef<typeof RadixDropdownMenu.SubContent>
+    >
+>;
 DropdownMenuSubContent.displayName = RadixDropdownMenu.SubContent.displayName;
 
 const DropdownMenuLabel = React.forwardRef<
@@ -291,7 +319,13 @@ const DropdownMenuLabel = React.forwardRef<
     )}
     {...props}
   />
-));
+)) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.Label> & {
+    inset?: boolean;
+  } & React.RefAttributes<
+    React.ElementRef<typeof RadixDropdownMenu.Label>
+  >
+>;
 DropdownMenuLabel.displayName = RadixDropdownMenu.Label.displayName;
 
 const DropdownMenuSeparator = React.forwardRef<
@@ -303,7 +337,12 @@ const DropdownMenuSeparator = React.forwardRef<
     className={clsx("-mx-1 my-1.5 h-px bg-outline-variant/60", className)}
     {...props}
   />
-));
+)) as React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.Separator> &
+    React.RefAttributes<
+      React.ElementRef<typeof RadixDropdownMenu.Separator>
+    >
+>;
 DropdownMenuSeparator.displayName = RadixDropdownMenu.Separator.displayName;
 
 const DropdownMenuShortcut = ({

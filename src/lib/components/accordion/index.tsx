@@ -116,10 +116,9 @@ const AccordionRoot = React.forwardRef<
 );
 AccordionRoot.displayName = "Accordion";
 
-const AccordionItem = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
->(({ className, ...props }, ref) => {
+const AccordionItem: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item> & React.RefAttributes<React.ElementRef<typeof AccordionPrimitive.Item>>
+> = React.forwardRef(({ className, ...props }, ref) => {
   const { variant, shape, layout } = useAccordionContext();
   return (
     <AccordionPrimitive.Item
@@ -131,12 +130,11 @@ const AccordionItem = React.forwardRef<
 });
 AccordionItem.displayName = "AccordionItem";
 
-const AccordionTrigger = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
+const AccordionTrigger: React.ForwardRefExoticComponent<
+  (React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
     disableRipple?: boolean;
-  }
->(({ className, children, disableRipple = false, ...props }, ref) => {
+  }) & React.RefAttributes<React.ElementRef<typeof AccordionPrimitive.Trigger>>
+> = React.forwardRef(({ className, children, disableRipple = false, ...props }, ref) => {
   const localRef = useRef<HTMLButtonElement | null>(null);
   const [, event] = useRipple({
     // FIX: Cast ref to HTMLElement for useRipple compatibility
@@ -168,10 +166,9 @@ const AccordionTrigger = React.forwardRef<
 });
 AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
 
-const AccordionContent = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+const AccordionContent: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content> & React.RefAttributes<React.ElementRef<typeof AccordionPrimitive.Content>>
+> = React.forwardRef(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
     className="overflow-hidden text-sm transition-all data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
@@ -188,4 +185,8 @@ export const Accordion = Object.assign(AccordionRoot, {
   Item: AccordionItem,
   Trigger: AccordionTrigger,
   Content: AccordionContent,
-});
+}) as typeof AccordionRoot & {
+  Item: typeof AccordionItem;
+  Trigger: typeof AccordionTrigger;
+  Content: typeof AccordionContent;
+};

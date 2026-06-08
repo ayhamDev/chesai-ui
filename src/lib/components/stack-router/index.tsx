@@ -380,11 +380,9 @@ export function ControlledStackNavigator<
       string,
       StackScreenComponent<T, keyof T>["props"]
     > = {};
-    React.Children.forEach(
-      children,
-      (
-        child: React.ReactElement<StackScreenComponent<T, keyof T>["props"]>,
-      ) => {
+    React.Children.forEach<React.ReactElement<StackScreenComponent<T, keyof T>["props"]>>(
+      children as React.ReactElement<StackScreenComponent<T, keyof T>["props"]>[],
+      (child) => {
         if (React.isValidElement(child)) {
           screenConfig[child.props.name as string] = child.props;
         }

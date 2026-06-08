@@ -154,7 +154,7 @@ const PreviewIframe = ({
 
 // --- PREVIEW OVERLAY ---
 
-interface PreviewOverlayProps {
+export interface PreviewOverlayProps {
   isOpen: boolean;
   onClose: () => void;
 }

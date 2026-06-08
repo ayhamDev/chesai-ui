@@ -15,7 +15,9 @@ import {
   type ComponentType,
   type ElementRef,
   forwardRef,
+  type ForwardRefExoticComponent,
   type FC,
+  type RefAttributes,
   type RefObject,
   useCallback,
   useEffect,
@@ -581,12 +583,11 @@ const ElasticScrollAreaRoot = forwardRef<
 ElasticScrollAreaRoot.displayName = "ElasticScrollArea";
 
 // --- STYLED SUB-COMPONENTS ---
-const ScrollBar = forwardRef<
-  ElementRef<typeof ScrollAreaPrimitive.Scrollbar>,
+const ScrollBar: ForwardRefExoticComponent<
   ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Scrollbar> & {
     scrollbarVisibility?: ElasticScrollAreaProps["scrollbarVisibility"];
-  }
->(
+  } & RefAttributes<ElementRef<typeof ScrollAreaPrimitive.Scrollbar>>
+> = forwardRef(
   (
     {
       className,
@@ -626,4 +627,6 @@ ScrollBar.displayName = ScrollAreaPrimitive.Scrollbar.displayName;
 
 export const ElasticScrollArea = Object.assign(ElasticScrollAreaRoot, {
   ScrollBar,
-});
+}) as typeof ElasticScrollAreaRoot & {
+  ScrollBar: typeof ScrollBar;
+};

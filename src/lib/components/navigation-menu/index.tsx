@@ -24,10 +24,9 @@ const contentItemVariants = cva([
 ]);
 
 // --- Core Components ---
-const NavigationMenuRoot = React.forwardRef<
-  React.ElementRef<typeof RadixNavigationMenu.Root>,
-  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Root>
->(({ className, children, ...props }, ref) => (
+const NavigationMenuRoot: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Root> & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Root>>
+> = React.forwardRef(({ className, children, ...props }, ref) => (
   <RadixNavigationMenu.Root
     ref={ref}
     className={clsx(
@@ -42,10 +41,9 @@ const NavigationMenuRoot = React.forwardRef<
 ));
 NavigationMenuRoot.displayName = RadixNavigationMenu.Root.displayName;
 
-const NavigationMenuList = React.forwardRef<
-  React.ElementRef<typeof RadixNavigationMenu.List>,
-  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.List>
->(({ className, ...props }, ref) => (
+const NavigationMenuList: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.List> & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.List>>
+> = React.forwardRef(({ className, ...props }, ref) => (
   <RadixNavigationMenu.List
     ref={ref}
     className={clsx(
@@ -57,13 +55,12 @@ const NavigationMenuList = React.forwardRef<
 ));
 NavigationMenuList.displayName = RadixNavigationMenu.List.displayName;
 
-const NavigationMenuItem = RadixNavigationMenu.Item;
+const NavigationMenuItem: typeof RadixNavigationMenu.Item = RadixNavigationMenu.Item;
 
 // --- Trigger ---
-const NavigationMenuTrigger = React.forwardRef<
-  React.ElementRef<typeof RadixNavigationMenu.Trigger>,
-  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Trigger>
->(({ className, children, ...props }, ref) => (
+const NavigationMenuTrigger: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Trigger> & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Trigger>>
+> = React.forwardRef(({ className, children, ...props }, ref) => (
   <RadixNavigationMenu.Trigger
     ref={ref}
     className={clsx(navigationMenuTriggerStyle(), "group", className)}
@@ -81,10 +78,9 @@ const NavigationMenuTrigger = React.forwardRef<
 NavigationMenuTrigger.displayName = RadixNavigationMenu.Trigger.displayName;
 
 // --- Content ---
-const NavigationMenuContent = React.forwardRef<
-  React.ElementRef<typeof RadixNavigationMenu.Content>,
-  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Content>
->(({ className, ...props }, ref) => (
+const NavigationMenuContent: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Content> & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Content>>
+> = React.forwardRef(({ className, ...props }, ref) => (
   <RadixNavigationMenu.Content
     ref={ref}
     className={clsx(
@@ -96,7 +92,7 @@ const NavigationMenuContent = React.forwardRef<
 ));
 NavigationMenuContent.displayName = RadixNavigationMenu.Content.displayName;
 
-const NavigationMenuLink = RadixNavigationMenu.Link;
+const NavigationMenuLink: typeof RadixNavigationMenu.Link = RadixNavigationMenu.Link;
 
 // --- ContentList Component ---
 const NavigationMenuContentList = React.forwardRef<
@@ -158,7 +154,7 @@ const NavigationMenuContentItem = React.forwardRef<
       ref: localRef,
       color: "var(--color-ripple-light)",
       duration: 400,
-    });
+});
 
     const hasDescription = !!children;
 
@@ -218,10 +214,9 @@ const NavigationMenuContentItem = React.forwardRef<
 NavigationMenuContentItem.displayName = "NavigationMenu.ContentItem";
 
 // --- Viewport & Indicator ---
-const NavigationMenuViewport = React.forwardRef<
-  React.ElementRef<typeof RadixNavigationMenu.Viewport>,
-  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Viewport>
->(({ className, ...props }, ref) => (
+const NavigationMenuViewport: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Viewport> & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Viewport>>
+> = React.forwardRef(({ className, ...props }, ref) => (
   <div className={clsx("absolute left-0 top-full flex justify-center")}>
     <RadixNavigationMenu.Viewport
       className={clsx(
@@ -235,10 +230,9 @@ const NavigationMenuViewport = React.forwardRef<
 ));
 NavigationMenuViewport.displayName = RadixNavigationMenu.Viewport.displayName;
 
-const NavigationMenuIndicator = React.forwardRef<
-  React.ElementRef<typeof RadixNavigationMenu.Indicator>,
-  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Indicator>
->(({ className, ...props }, ref) => (
+const NavigationMenuIndicator: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Indicator> & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Indicator>>
+> = React.forwardRef(({ className, ...props }, ref) => (
   <RadixNavigationMenu.Indicator
     ref={ref}
     className={clsx(
@@ -263,4 +257,14 @@ export const NavigationMenu = Object.assign(NavigationMenuRoot, {
   Viewport: NavigationMenuViewport,
   ContentList: NavigationMenuContentList,
   ContentItem: NavigationMenuContentItem,
-});
+}) as typeof NavigationMenuRoot & {
+  List: typeof NavigationMenuList;
+  Item: typeof NavigationMenuItem;
+  Content: typeof NavigationMenuContent;
+  Trigger: typeof NavigationMenuTrigger;
+  Link: typeof NavigationMenuLink;
+  Indicator: typeof NavigationMenuIndicator;
+  Viewport: typeof NavigationMenuViewport;
+  ContentList: typeof NavigationMenuContentList;
+  ContentItem: typeof NavigationMenuContentItem;
+};

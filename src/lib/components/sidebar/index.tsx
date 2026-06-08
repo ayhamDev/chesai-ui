@@ -25,7 +25,6 @@ import React, {
 import useRipple from "use-ripple-hook";
 import { useLayout } from "../../context/layout-context";
 import { ElasticScrollArea } from "../elastic-scroll-area";
-import { type SidebarFABProps } from "../fab";
 import { IconButton } from "../icon-button";
 import { Sheet } from "../sheet";
 import { EASING } from "../stack-router/transitions";
@@ -615,7 +614,7 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
     const { state, isMobile, itemVariant } = useSidebar();
     const isCollapsed = !isMobile && state === "collapsed";
 
-    const variant =
+    const variant: "primary" | "secondary" | "tertiary" | "ghost" =
       propVariant || (itemVariant === "ghost" ? "secondary" : "primary");
 
     const localRef = useRef<HTMLButtonElement>(null);
@@ -819,7 +818,7 @@ interface SidebarItemProps
 
 const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
   (
-    { className, icon, children, isActive, badge, itemVariant, ...props },
+    { className, icon, children, isActive, badge, itemVariant, size: sizeProp, shape, ...props },
     ref,
   ) => {
     const {
@@ -839,7 +838,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
     React.useImperativeHandle(ref, () => localRef.current!);
 
     const effectiveVariant = itemVariant || contextItemVariant;
-    const effectiveShape = props.shape || contextShape;
+    const effectiveShape = shape || contextShape;
 
     // Determine Ripple based on text color accessibility
     const isSolidPrimaryActive = isActive && effectiveVariant === "primary";
@@ -855,7 +854,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
     });
 
     const [isPressed, setIsPressed] = useState(false);
-    const iconSize = props.size === "lg" ? 24 : props.size === "sm" ? 16 : 20;
+    const iconSize = sizeProp === "lg" ? 24 : sizeProp === "sm" ? 16 : 20;
 
     let dotClass = "bg-primary";
     if (isActive) {
@@ -876,8 +875,8 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
       animate: isSlideAnim ? undefined : { opacity: 1, scale: 1 },
       exit: isSlideAnim ? undefined : { opacity: 0, scale: 0.75 },
       transition: isSlideAnim
-        ? { type: "spring", stiffness: 350, damping: 28, mass: 1 }
-        : { duration: 0.25, ease: "easeOut" },
+        ? { type: "spring" as const, stiffness: 350, damping: 28, mass: 1 }
+        : { duration: 0.25, ease: "easeOut" as const },
       className: clsx(
         "absolute inset-0 z-0 pointer-events-none",
         effectiveVariant === "primary" && "bg-primary shadow-sm",
@@ -904,7 +903,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
           sidebarItemVariants({
             isActive,
             itemVariant: effectiveVariant,
-            size: props.size || contextSize,
+            size: sizeProp || contextSize,
             shape: effectiveShape,
           }),
           "px-3",
@@ -1003,6 +1002,8 @@ export interface SidebarCollapseProps extends React.ButtonHTMLAttributes<HTMLBut
   children?: React.ReactNode;
   badge?: React.ReactNode;
   itemVariant?: SidebarItemVariant;
+  size?: SidebarSize;
+  shape?: SidebarShape;
   indicator?: "chevron" | "plus-minus" | React.ReactNode;
 }
 
@@ -1020,6 +1021,8 @@ const SidebarCollapse = React.forwardRef<
       children,
       badge,
       itemVariant,
+      size: sizeProp,
+      shape,
       indicator = "chevron",
       ...props
     },
@@ -1042,7 +1045,7 @@ const SidebarCollapse = React.forwardRef<
     React.useImperativeHandle(ref, () => localRef.current!);
 
     const effectiveVariant = itemVariant || contextItemVariant;
-    const effectiveShape = props.shape || contextShape;
+    const effectiveShape = shape || contextShape;
 
     const isSolidPrimaryActive = isActive && effectiveVariant === "primary";
     const rippleColor = isSolidPrimaryActive
@@ -1057,7 +1060,7 @@ const SidebarCollapse = React.forwardRef<
     });
 
     const [isPressed, setIsPressed] = useState(false);
-    const iconSize = props.size === "lg" ? 24 : props.size === "sm" ? 16 : 20;
+    const iconSize = sizeProp === "lg" ? 24 : sizeProp === "sm" ? 16 : 20;
 
     const showChildren = isOpen && !isCollapsed;
 
@@ -1118,7 +1121,7 @@ const SidebarCollapse = React.forwardRef<
       initial: isSlideAnim ? { opacity: 0 } : { opacity: 0, scale: 0.75 },
       animate: isSlideAnim ? { opacity: 1 } : { opacity: 1, scale: 1 },
       exit: isSlideAnim ? { opacity: 0 } : { opacity: 0, scale: 0.75 },
-      transition: { duration: 0.25, ease: "easeOut" },
+      transition: { duration: 0.25, ease: "easeOut" as const },
       className: clsx(
         "absolute inset-0 z-0 pointer-events-none",
         effectiveVariant === "primary" && "bg-primary shadow-sm",
@@ -1146,7 +1149,7 @@ const SidebarCollapse = React.forwardRef<
             sidebarItemVariants({
               isActive,
               itemVariant: effectiveVariant,
-              size: props.size || contextSize,
+              size: sizeProp || contextSize,
               shape: effectiveShape,
             }),
             "px-3",

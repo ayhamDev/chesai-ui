@@ -225,15 +225,14 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 
   const isSlideAnim = indicatorAnimation === "slide";
 
-  // Perfectly matches the CSS scale-70 duration-300 ease-out hover effect
   const sharedIndicatorProps = {
     layoutId: isSlideAnim ? indicatorId : undefined,
     initial: isSlideAnim ? false : { opacity: 0, scale: 0.7 },
     animate: isSlideAnim ? undefined : { opacity: 1, scale: 1 },
     exit: isSlideAnim ? undefined : { opacity: 0, scale: 0.7 },
     transition: isSlideAnim
-      ? { type: "spring", stiffness: 300, damping: 28, mass: 1 }
-      : { duration: 0.3, ease: "easeOut" },
+      ? { type: "spring" as const, stiffness: 300, damping: 28, mass: 1 }
+      : { duration: 0.3, ease: "easeOut" as const },
     className: clsx("absolute inset-0 z-0", activeIndicatorClass),
     style: { borderRadius: shapeToBorderRadius[finalShape] },
   };

@@ -123,12 +123,11 @@ const MenubarRoot = React.forwardRef<
 });
 MenubarRoot.displayName = "Menubar";
 
-const MenubarMenu = RadixNavigationMenu.Item;
+const MenubarMenu: typeof RadixNavigationMenu.Item = RadixNavigationMenu.Item;
 
-const MenubarTrigger = React.forwardRef<
-  React.ElementRef<typeof RadixNavigationMenu.Trigger>,
-  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Trigger>
->(({ className, children, ...props }, ref) => {
+const MenubarTrigger: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Trigger> & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Trigger>>
+> = React.forwardRef(({ className, children, ...props }, ref) => {
   const { isClickMode, setIsClickMode } = useMenubarContext();
 
   return (
@@ -165,10 +164,9 @@ const MenubarTrigger = React.forwardRef<
 });
 MenubarTrigger.displayName = "Menubar.Trigger";
 
-const MenubarContent = React.forwardRef<
-  React.ElementRef<typeof RadixNavigationMenu.Content>,
-  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Content>
->(({ className, children, ...props }, ref) => {
+const MenubarContent: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Content> & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Content>>
+> = React.forwardRef(({ className, children, ...props }, ref) => {
   const { closeMenu } = useMenubarContext();
 
   return (
@@ -211,10 +209,9 @@ const MenubarContent = React.forwardRef<
 });
 MenubarContent.displayName = "Menubar.Content";
 
-const MenubarItem = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuItem>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuItem> & { inset?: boolean }
->(({ className, inset, ...props }, ref) => {
+const MenubarItem: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof DropdownMenuItem> & { inset?: boolean } & React.RefAttributes<React.ElementRef<typeof DropdownMenuItem>>
+> = React.forwardRef(({ className, inset, ...props }, ref) => {
   const depth = useMenubarDepth();
   const { shape, closeMenu } = useMenubarContext();
   const { theme } = useTheme();
@@ -269,10 +266,9 @@ const MenubarItem = React.forwardRef<
 });
 MenubarItem.displayName = "Menubar.Item";
 
-const MenubarSeparator = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuSeparator>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuSeparator>
->(({ className, ...props }, ref) => {
+const MenubarSeparator: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof DropdownMenuSeparator> & React.RefAttributes<React.ElementRef<typeof DropdownMenuSeparator>>
+> = React.forwardRef(({ className, ...props }, ref) => {
   const depth = useMenubarDepth();
   if (depth === 1) {
     return (
@@ -289,10 +285,9 @@ const MenubarSeparator = React.forwardRef<
 });
 MenubarSeparator.displayName = "Menubar.Separator";
 
-const MenubarLabel = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuLabel>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuLabel> & { inset?: boolean }
->(({ className, inset, ...props }, ref) => {
+const MenubarLabel: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof DropdownMenuLabel> & { inset?: boolean } & React.RefAttributes<React.ElementRef<typeof DropdownMenuLabel>>
+> = React.forwardRef(({ className, inset, ...props }, ref) => {
   const depth = useMenubarDepth();
   if (depth === 1) {
     return (
@@ -339,12 +334,11 @@ const MenubarSub = (
   );
 };
 
-const MenubarSubTrigger = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuSubTrigger>,
+const MenubarSubTrigger: React.ForwardRefExoticComponent<
   React.ComponentPropsWithoutRef<typeof DropdownMenuSubTrigger> & {
     inset?: boolean;
-  }
->(({ className, children, inset, ...props }, ref) => {
+  } & React.RefAttributes<React.ElementRef<typeof DropdownMenuSubTrigger>>
+> = React.forwardRef(({ className, children, inset, ...props }, ref) => {
   const depth = useMenubarDepth();
   const { shape } = useMenubarContext();
   const { theme } = useTheme();
@@ -399,10 +393,9 @@ const MenubarSubTrigger = React.forwardRef<
 });
 MenubarSubTrigger.displayName = "Menubar.SubTrigger";
 
-const MenubarSubContent = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuSubContent>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuSubContent>
->(({ className, ...props }, ref) => {
+const MenubarSubContent: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof DropdownMenuSubContent> & React.RefAttributes<React.ElementRef<typeof DropdownMenuSubContent>>
+> = React.forwardRef(({ className, ...props }, ref) => {
   const depth = useMenubarDepth();
   const { shape } = useMenubarContext();
 
@@ -425,7 +418,7 @@ const MenubarSubContent = React.forwardRef<
 });
 MenubarSubContent.displayName = "Menubar.SubContent";
 
-const MenubarPortal = DropdownMenuPortal;
+const MenubarPortal: typeof DropdownMenuPortal = DropdownMenuPortal;
 
 const MenubarShortcut = ({
   className,
@@ -443,12 +436,11 @@ const MenubarShortcut = ({
 };
 MenubarShortcut.displayName = "MenubarShortcut";
 
-const MenubarCheckboxItem = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuCheckboxItem>,
+const MenubarCheckboxItem: React.ForwardRefExoticComponent<
   React.ComponentPropsWithoutRef<typeof DropdownMenuCheckboxItem> & {
     inset?: boolean;
-  }
->(({ className, children, checked, onCheckedChange, inset, ...props }, ref) => {
+  } & React.RefAttributes<React.ElementRef<typeof DropdownMenuCheckboxItem>>
+> = React.forwardRef(({ className, children, checked, onCheckedChange, inset, ...props }, ref) => {
   const depth = useMenubarDepth();
   const { shape, closeMenu } = useMenubarContext();
   const { theme } = useTheme();
@@ -513,10 +505,9 @@ const MenubarCheckboxItem = React.forwardRef<
 });
 MenubarCheckboxItem.displayName = "Menubar.CheckboxItem";
 
-const MenubarRadioGroup = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuRadioGroup>
->(({ value, onValueChange, children, ...props }, ref) => {
+const MenubarRadioGroup: React.ForwardRefExoticComponent<
+  React.ComponentPropsWithoutRef<typeof DropdownMenuRadioGroup> & React.RefAttributes<HTMLDivElement>
+> = React.forwardRef(({ value, onValueChange, children, ...props }, ref) => {
   const depth = useMenubarDepth();
   if (depth === 1) {
     return (
@@ -545,12 +536,11 @@ const MenubarRadioGroup = React.forwardRef<
 });
 MenubarRadioGroup.displayName = "Menubar.RadioGroup";
 
-const MenubarRadioItem = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuRadioItem>,
+const MenubarRadioItem: React.ForwardRefExoticComponent<
   React.ComponentPropsWithoutRef<typeof DropdownMenuRadioItem> & {
     inset?: boolean;
-  }
->(({ className, children, value, inset, ...props }, ref) => {
+  } & React.RefAttributes<React.ElementRef<typeof DropdownMenuRadioItem>>
+> = React.forwardRef(({ className, children, value, inset, ...props }, ref) => {
   const depth = useMenubarDepth();
   const { shape, closeMenu } = useMenubarContext();
   const radioContext = useContext(MenubarRadioContext);
@@ -631,4 +621,19 @@ export const Menubar = Object.assign(MenubarRoot, {
   SubContent: MenubarSubContent,
   SubTrigger: MenubarSubTrigger,
   Shortcut: MenubarShortcut,
-});
+}) as typeof MenubarRoot & {
+  Menu: typeof MenubarMenu;
+  Trigger: typeof MenubarTrigger;
+  Content: typeof MenubarContent;
+  Item: typeof MenubarItem;
+  Separator: typeof MenubarSeparator;
+  Label: typeof MenubarLabel;
+  CheckboxItem: typeof MenubarCheckboxItem;
+  RadioGroup: typeof MenubarRadioGroup;
+  RadioItem: typeof MenubarRadioItem;
+  Portal: typeof MenubarPortal;
+  Sub: typeof MenubarSub;
+  SubContent: typeof MenubarSubContent;
+  SubTrigger: typeof MenubarSubTrigger;
+  Shortcut: typeof MenubarShortcut;
+};
