@@ -43,7 +43,6 @@ import { Carousel, CarouselItem } from "../components/material3-carousel";
 import { NavigationRail } from "../components/navigation-rail";
 import { Resizable } from "../components/resizable";
 import { Select } from "../components/select";
-import { Switch } from "../components/switch";
 import { Toaster, toast } from "../components/toast";
 import { Typography } from "../components/typography";
 
@@ -592,7 +591,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <ColorPicker
                 value={seedColor || "#10b981"}
                 onChange={setSeedColor}
-                variant="filled"
+                variant="flat"
                 shape="minimal"
                 className="w-full"
               />
@@ -629,7 +628,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 items={fontOptions}
               />
             </div>
-
           </section>
 
           {/* --- CORE COLORS (OVERRIDES) --- */}
@@ -655,7 +653,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <ColorPicker
                     value={overrides[key] || ""}
                     onChange={(c) => setOverride(key, c)}
-                    variant="outlined"
+                    variant="bordered"
                   />
                 </div>
               ))}
@@ -831,7 +829,7 @@ const AppMockups = () => {
                       <div className="absolute top-4 left-4 z-10 pointer-events-none">
                         <IconButton
                           size="sm"
-                          variant="surface"
+                          variant="ghost"
                           className="bg-white/70 backdrop-blur-md text-black hover:bg-white shadow-sm pointer-events-auto"
                         >
                           <ArrowLeft size={18} />
