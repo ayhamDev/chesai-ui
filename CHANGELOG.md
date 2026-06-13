@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.0 (2026-06-13)
+
+
+### Features
+
+* add MD3 pill styles, collapsible sidebar nesting, and intelligent theme overrides ([13ce863](https://github.com/ayhamDev/chesai-ui/commit/13ce863cf046a197c73d1e35f446a764a410657e))
+* **components:** add glassmorphism support to Card, Dialog, and Sheet ([c515efc](https://github.com/ayhamDev/chesai-ui/commit/c515efcfd7dd6b3a23155c6e6fe35349057774a2))
+* comprehensive MD3 component overhaul and form integrations ([115bffd](https://github.com/ayhamDev/chesai-ui/commit/115bffd3d08f1728fecd842f58332b82a04c8f40))
+* major UI refinements, MD3 expressive updates, and RTL support ([2144b5d](https://github.com/ayhamDev/chesai-ui/commit/2144b5d91bf0f15bd5ca3026e31263c14691383a))
+* overhaul shape morphing, slider segmentation, and animation theming ([3dc5bf9](https://github.com/ayhamDev/chesai-ui/commit/3dc5bf959362a49df4732d981131a1c1da86aa4d))
+* restructure layout system, refactor stack-router with adapter pattern, and enhance navigation components ([3e28ac0](https://github.com/ayhamDev/chesai-ui/commit/3e28ac063a00349630535b32957c05e1fa607e37))
+* **studio:** add multi-selection, undo/redo history, page CRUD, and component isolation sandbox ([5e0990a](https://github.com/ayhamDev/chesai-ui/commit/5e0990aecfbcbf9dbe4167530dad9523d2f6377b))
+* **ui:** Enhance components with variants, filtering, and image zoom ([0e58ed3](https://github.com/ayhamDev/chesai-ui/commit/0e58ed35f194616154c69dd6ec9520c26da4d204))
+
 ## [3.0.1](https://github.com/IgnacioNMiranda/vite-component-library-template/compare/v3.0.0...v3.0.1) (2025-06-22)
 
 
