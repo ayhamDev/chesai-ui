@@ -58,6 +58,106 @@ Your goal is to write clean, performant, and hyper-responsive code that strictly
 
 ---
 
+## 🎨 Theme, Palette, & Tailwind Configuration
+
+### 1. Accessing Theme Variables in JavaScript / TypeScript
+You can access theme tokens programmatically using the \`useTheme\` hook. The hook returns a \`palette\` object containing the standard CSS variables, and a \`getComputedColor\` helper to extract evaluated color values (e.g., for Canvas, Recharts, or third-party libraries).
+
+\`\`\`tsx
+import { useTheme } from "chesai-ui";
+
+export function CustomWidget() {
+  const { palette, getComputedColor } = useTheme();
+
+  return (
+    <div style={{ backgroundColor: palette.surfaceContainer }}>
+      <canvas
+        ref={(canvas) => {
+          if (canvas) {
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              // Evaluates live computed colors from the DOM
+              ctx.fillStyle = getComputedColor("primary"); 
+              ctx.fillRect(0, 0, 100, 100);
+            }
+          }
+        }}
+      />
+    </div>
+  );
+}
+\`\`\`
+
+### 2. Tailwind CSS IntelliSense Setup
+
+#### Tailwind CSS v4 Projects
+Tailwind CSS v4 automatically parses \`@theme\` directives inside imported dependency stylesheets. Client applications only need to import the stylesheet:
+\`\`\`css
+@import "tailwindcss";
+@import "chesai-ui/styles.css";
+\`\`\`
+
+#### Tailwind CSS v3 Projects
+For older projects utilizing a \`tailwind.config.js\`, use the exported \`chesaiColors\` helper to map the design tokens to standard Tailwind utility classes:
+\`\`\`javascript
+const { chesaiColors } = require("chesai-ui");
+
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        ...chesaiColors,
+      },
+    },
+  },
+};
+\`\`\`
+
+### 3. Complete Token Reference Mapping
+
+The following keys are available under \`useTheme().palette.*\` and mapped to \`var(--md-sys-color-*)\` CSS variables:
+
+| Palette Key | CSS Variable Name | Tailwind Color Utility | Description |
+| :--- | :--- | :--- | :--- |
+| \`primary\` | \`--md-sys-color-primary\` | \`primary\` | Primary branding color |
+| \`onPrimary\` | \`--md-sys-color-on-primary\` | \`on-primary\` | Text/icons on primary |
+| \`primaryContainer\` | \`--md-sys-color-primary-container\` | \`primary-container\` | Background container for primary actions |
+| \`onPrimaryContainer\` | \`--md-sys-color-on-primary-container\` | \`on-primary-container\` | Text/icons on primary container |
+| \`secondary\` | \`--md-sys-color-secondary\` | \`secondary\` | Secondary accent color |
+| \`onSecondary\` | \`--md-sys-color-on-secondary\` | \`on-secondary\` | Text/icons on secondary |
+| \`secondaryContainer\` | \`--md-sys-color-secondary-container\` | \`secondary-container\` | Background container for secondary actions |
+| \`onSecondaryContainer\` | \`--md-sys-color-on-secondary-container\` | \`on-secondary-container\` | Text/icons on secondary container |
+| \`tertiary\` | \`--md-sys-color-tertiary\` | \`tertiary\` | Tertiary accent color |
+| \`onTertiary\` | \`--md-sys-color-on-tertiary\` | \`on-tertiary\` | Text/icons on tertiary |
+| \`tertiaryContainer\` | \`--md-sys-color-tertiary-container\` | \`tertiary-container\` | Background container for tertiary actions |
+| \`onTertiaryContainer\` | \`--md-sys-color-on-tertiary-container\` | \`on-tertiary-container\` | Text/icons on tertiary container |
+| \`error\` | \`--md-sys-color-error\` | \`error\` | Error messages and danger states |
+| \`onError\` | \`--md-sys-color-on-error\` | \`on-error\` | Text/icons on error backgrounds |
+| \`errorContainer\` | \`--md-sys-color-error-container\` | \`error-container\` | Background container for error states |
+| \`onErrorContainer\` | \`--md-sys-color-on-error-container\` | \`on-error-container\` | Text/icons on error container |
+| \`background\` | \`--md-sys-color-background\` | \`background\` | Main page background |
+| \`onBackground\` | \`--md-sys-color-on-background\` | \`on-background\` | Text/icons on background |
+| \`surface\` | \`--md-sys-color-surface\` | \`surface\` | Card and sheet backgrounds |
+| \`onSurface\` | \`--md-sys-color-on-surface\` | \`on-surface\` | Text/icons on surface elements |
+| \`surfaceVariant\` | \`--md-sys-color-surface-variant\` | \`surface-variant\` | Secondary surface background |
+| \`onSurfaceVariant\` | \`--md-sys-color-on-surface-variant\` | \`on-surface-variant\` | Text/icons on surface variant |
+| \`outline\` | \`--md-sys-color-outline\` | \`outline\` | High-contrast borders |
+| \`outlineVariant\` | \`--md-sys-color-outline-variant\` | \`outline-variant\` | Low-contrast dividers and borders |
+| \`shadow\` | \`--md-sys-color-shadow\` | \`shadow\` | Shadow overlays |
+| \`scrim\` | \`--md-sys-color-scrim\` | \`scrim\` | Modal backdrop overlays |
+| \`inverseSurface\` | \`--md-sys-color-inverse-surface\` | \`inverse-surface\` | Dark contrast background in Light Mode |
+| \`inverseOnSurface\` | \`--md-sys-color-inverse-on-surface\` | \`inverse-on-surface\` | Light contrast text in Light Mode |
+| \`inversePrimary\` | \`--md-sys-color-inverse-primary\` | \`inverse-primary\` | Primary contrast brand color |
+| \`surfaceDim\` | \`--md-sys-color-surface-dim\` | \`surface-dim\` | Dimmed surface background |
+| \`surfaceBright\` | \`--md-sys-color-surface-bright\` | \`surface-bright\` | Brightened surface background |
+| \`surfaceContainerLowest\` | \`--md-sys-color-surface-container-lowest\` | \`surface-container-lowest\` | Lowest elevation surface |
+| \`surfaceContainerLow\` | \`--md-sys-color-surface-container-low\` | \`surface-container-low\` | Low elevation surface |
+| \`surfaceContainer\` | \`--md-sys-color-surface-container\` | \`surface-container\` | Default elevation surface |
+| \`surfaceContainerHigh\` | \`--md-sys-color-surface-container-high\` | \`surface-container-high\` | High elevation surface |
+| \`surfaceContainerHighest\` | \`--md-sys-color-surface-container-highest\` | \`surface-container-highest\` | Highest elevation surface |
+
+---
+
 ## 📱 Responsive Canonical Layouts (Crucial Architecture)
 Based on Material Design 3 guidelines for large screens and foldables, applications must seamlessly transition between single-screen mobile views and multi-pane desktop/tablet views.
 
@@ -222,6 +322,7 @@ chesai-ui is an expressive, high-performance UI library designed for modern web 
 
 ## Key Features
 - **Theming:** Multi-level contrast support (Standard, Medium, High) across Light/Dark modes using MD3 tokens.
+- **Palette Access:** Accessible programmatically via \`useTheme().palette.*\` or evaluated dynamically using \`useTheme().getComputedColor('*')\`.
 - **Navigation:** Includes a native-like 'StackRouter' (React Navigation style), 'ShallowRouter' for URL-synced UI state, and responsive 'NavigationRail'/'BottomTabs'.
 - **Expressive Motion:** Powered by Framer Motion. Includes 'ElasticScrollArea' (iOS-style rubber-banding), 'MaterialMorph' loading indicators, and shared-layout transitions.
 - **Virtualized Layouts:** Optimized components for large datasets including 'VirtualGrid', 'VirtualFlex', and 'VirtualMasonry' (via TanStack Virtual).

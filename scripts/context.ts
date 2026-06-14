@@ -1,3 +1,4 @@
+// scripts/context.ts
 import { mkdir, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -9,15 +10,6 @@ const SRC_LIB_PATH = path.join(process.cwd(), 'src', 'lib')
 const OUTPUT_DIR = path.join(process.cwd(), '.LLM')
 const OUTPUT_FILE = path.join(OUTPUT_DIR, 'context.mdx')
 
-/**
- * Define all the source directories to be included in the context file.
- * - 'title': The markdown heading for this section.
- * - 'path': The absolute path to the directory.
- * - 'type': How to process the directory.
- *   - 'components': Special handling for component folders (component + related files + story).
- *   - 'files': Simple handling, grabs all files with matching extensions.
- * - 'extensions': (Only for 'files' type) An array of file extensions to include.
- */
 const CONTEXT_SOURCES = [
   {
     title: 'UI Components',
@@ -40,16 +32,12 @@ const CONTEXT_SOURCES = [
     title: 'Tailwind & Styling',
     path: path.join(SRC_LIB_PATH, 'tailwind'),
     type: 'files',
-    extensions: ['.css', '.ts'], // Include .ts for potential tailwind.config.ts helpers
+    extensions: ['.css', '.ts'], 
   },
 ]
-// ---------------------
 
 // --- Helper Functions ---
 
-/**
- * Recursively walks a directory and returns a list of files that match the allowed extensions.
- */
 async function recursiveFindFiles(dir: string, allowedExtensions: string[]): Promise<string[]> {
   const files: string[] = []
   try {
@@ -68,25 +56,14 @@ async function recursiveFindFiles(dir: string, allowedExtensions: string[]): Pro
   return files
 }
 
-/**
- * Finds the main component file (the first .tsx file that isn't a story file)
- * in a component directory. This is often 'index.tsx' or 'ComponentName.tsx'.
- */
 async function findMainComponentFile(dirPath: string): Promise<string | null> {
   const files = await recursiveFindFiles(dirPath, ['.tsx'])
-  // Filter for the main component file (not a story or test file)
   const mainFile = files.find(file => !file.endsWith('.stories.tsx') && !file.endsWith('.test.tsx'))
   return mainFile || null
 }
 
 // --- Directory Processors ---
 
-/**
- * Processes a directory of standard component folders, capturing the main component,
- * all related source files (.tsx, .ts) within the folder structure, and the story file.
- * @param dirPath The path to the components directory (e.g., 'src/lib/components').
- * @returns An array of formatted MDX blocks.
- */
 async function processComponentDirectory(dirPath: string): Promise<string[]> {
   const mdxBlocks: string[] = []
   try {
@@ -97,28 +74,22 @@ async function processComponentDirectory(dirPath: string): Promise<string[]> {
         const componentName = dirent.name
         const componentDirPath = path.join(dirPath, componentName)
 
-        // Find all related source files (including main component)
         const allSourceFiles = await recursiveFindFiles(componentDirPath, ['.tsx', '.ts'])
 
-        // Separate stories and other source files
         const storyFilePath = allSourceFiles.find(file => file.endsWith('.stories.tsx'))
         const componentFiles = allSourceFiles.filter(file => file !== storyFilePath)
 
-        // Find the main component file (for the primary title)
         const mainComponentFilePath = await findMainComponentFile(componentDirPath)
 
         if (componentFiles.length > 0) {
           const blocks: string[] = []
 
-          // 1. Title Block
           blocks.push(`\n### Component: \`${componentName}\``)
           blocks.push(
             `This section includes all related source files for the \`${componentName}\` component, including nested sub-components (like \`header.tsx\`) and utilities.`,
           )
 
-          // 2. Component/Related Files Blocks
           for (const filePath of componentFiles.sort()) {
-            // Sort for consistent output order
             const fileContent = await Bun.file(filePath).text()
             const relativePath = path.relative(process.cwd(), filePath)
             const lang = path.extname(filePath).substring(1)
@@ -131,7 +102,6 @@ ${fileContent.trim()}
 `)
           }
 
-          // 3. Storybook Block (if found)
           if (storyFilePath) {
             const storyCode = await Bun.file(storyFilePath).text()
             blocks.push(`
@@ -152,12 +122,6 @@ ${storyCode.trim()}
   return mdxBlocks
 }
 
-/**
- * Processes a generic directory, reading all files that match the allowed extensions.
- * @param dirPath The path to the directory.
- * @param allowedExtensions An array of extensions to include (e.g., ['.ts', '.css']).
- * @returns An array of formatted MDX blocks.
- */
 async function processGenericDirectory(dirPath: string, allowedExtensions: string[]): Promise<string[]> {
   const mdxBlocks: string[] = []
   try {
@@ -199,12 +163,10 @@ async function generateAIContext() {
       if (source.type === 'components') {
         sectionBlocks = await processComponentDirectory(source.path)
       } else if (source.type === 'files') {
-        // Note: For generic directories, we still use the non-recursive processor
         sectionBlocks = await processGenericDirectory(source.path, source?.extensions)
       }
 
       if (sectionBlocks.length > 0) {
-        // Add a main header for the section and then all its content blocks
         const sectionHeader = `\n---\n\n## ${source.title}\n`
         allMdxBlocks.push(sectionHeader, ...sectionBlocks)
         console.log(`✅ (${sectionBlocks.length} items)`)
@@ -221,17 +183,19 @@ async function generateAIContext() {
     await mkdir(OUTPUT_DIR, { recursive: true })
 
     const introPrompt = `
-# AI Prompt Context for chesai-ui Component Library that is inspired by Material Desgin 3
+# AI Prompt Context for chesai-ui Component Library (Material Design 3 Inspired)
 
-You are an expert React developer tasked with assisting in the development of the "chesai-ui" library. The following document contains the complete source code for all UI components, hooks, contexts, and styling configurations.
+You are an expert React developer assisting with the development and usage of the "chesai-ui" library. The following document contains the complete source code for all UI components, hooks, contexts, and styling configurations.
 
-**Your Task for Usage:**
-import { ComponentName } from 'chesai-ui'
+**Theme & Palette Guidelines:**
+- Programmatic access to variables should utilize the \`useTheme().palette\` object (e.g. \`palette.primary\`, \`palette.surfaceContainer\`).
+- If an exact evaluated RGB/Hex string is required (for canvas or non-CSS engines), invoke \`useTheme().getComputedColor(key)\` with a valid palette key.
+- Custom Tailwind colors are integrated natively via CSS \`@theme\` in v4, and via the exported \`chesaiColors\` config mapping for v3 projects.
 
-**Your Task for development:**
+**Development Guidelines:**
 - Use this file as the single source of truth for the entire library.
 - When asked to create, modify, or extend any part of the library, refer to its source code provided here.
-- Maintain the existing coding style, architecture, and conventions (e.g., using CVA, Radix UI, Framer Motion).
+- Maintain the existing coding style, architecture, and conventions (using CVA, Radix UI, Framer Motion).
 - Provide complete, copy-pasteable code blocks for your solutions.
 `
 

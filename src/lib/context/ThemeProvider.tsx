@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useRef,
   useState,
+  useMemo,
 } from "react";
 import type { Transition } from "framer-motion";
 import { loadGoogleFont, PRESET_FONTS } from "../utils/font-loader";
@@ -15,6 +16,7 @@ import {
   clearThemeVariables,
   type ThemeOverrides,
   type ThemeColorKey,
+  CSS_MAPPING,
 } from "../utils/theme-generator";
 
 type Theme = "dark" | "light" | "system";
@@ -25,6 +27,9 @@ export interface FontSettings {
   brand: string;
   plain: string;
 }
+
+// Define the shape of the palette object mapping keys to CSS variable strings
+export type ThemePalette = Record<ThemeColorKey, string>;
 
 interface ThemeProviderState {
   theme: Theme;
@@ -47,12 +52,23 @@ interface ThemeProviderState {
   overrides: ThemeOverrides;
   setOverride: (key: ThemeColorKey, value: string | null) => void;
   resetOverrides: () => void;
+
+  // Palette Accessors
+  palette: ThemePalette;
+  getComputedColor: (key: ThemeColorKey) => string;
 }
 
 const defaultFontSettings: FontSettings = {
   brand: "Manrope",
   plain: "Manrope",
 };
+
+// Generate static references to CSS variables
+const staticPalette = Object.keys(CSS_MAPPING).reduce((acc, key) => {
+  const cssKey = CSS_MAPPING[key as ThemeColorKey];
+  acc[key as ThemeColorKey] = `var(--md-sys-color-${cssKey})`;
+  return acc;
+}, {} as ThemePalette);
 
 const initialState: ThemeProviderState = {
   theme: "system",
@@ -69,6 +85,8 @@ const initialState: ThemeProviderState = {
   overrides: {},
   setOverride: () => null,
   resetOverrides: () => null,
+  palette: staticPalette,
+  getComputedColor: () => "",
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
@@ -236,6 +254,18 @@ export function ThemeProvider({
     localStorage.removeItem(overridesStorageKey);
   }, [overridesStorageKey]);
 
+  // Evaluates the live computed color value of the given key from the DOM
+  const getComputedColor = useCallback((key: ThemeColorKey): string => {
+    if (typeof window === "undefined") return "";
+    const cssKey = CSS_MAPPING[key];
+    if (!cssKey) return "";
+    const root = window.document.documentElement;
+    return window
+      .getComputedStyle(root)
+      .getPropertyValue(`--md-sys-color-${cssKey}`)
+      .trim();
+  }, []);
+
   // --- 3. EFFECTS ---
 
   // Apply Fonts
@@ -359,6 +389,8 @@ export function ThemeProvider({
     overrides,
     setOverride,
     resetOverrides,
+    palette: staticPalette,
+    getComputedColor,
   };
 
   return (

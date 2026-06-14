@@ -3,12 +3,10 @@ import {
   Bell,
   Calendar,
   CheckCircle2,
-  ChevronRight,
   Command as CmdIcon,
   Mic,
   Music,
   Pause,
-  Play,
   Plus,
   Search,
   Send,
@@ -19,7 +17,6 @@ import {
   User,
   Volume2,
 } from "lucide-react";
-import { useState } from "react";
 
 // Chesai Components
 import { Avatar } from "../avatar";
