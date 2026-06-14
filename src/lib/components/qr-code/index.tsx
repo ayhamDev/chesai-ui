@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: <explanation> */
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { type Variants, motion, AnimatePresence } from "framer-motion";
 import {
@@ -25,8 +25,6 @@ import { Toolbar } from "../toolbar";
 import { ShapedImage } from "../shape";
 import { Typography } from "../typography";
 import type { ShapeType } from "../shape/paths";
-
-// --- TYPES & VARIANTS ---
 
 const qrContainerVariants = cva(
   "relative flex flex-col items-center justify-center rounded-3xl transition-colors duration-300",
@@ -59,7 +57,6 @@ const qrContainerVariants = cva(
   },
 );
 
-// --- SHAPE DEFINITIONS ---
 export type DotShape = "square" | "circle" | "rounded" | "diamond" | "classy";
 export type CornerFrameShape =
   | "square"
@@ -69,8 +66,6 @@ export type CornerFrameShape =
   | "leaf";
 export type CornerDotShape = "square" | "circle" | "rounded" | "diamond";
 
-// --- CONTEXT ---
-
 interface QRCodeContextValue {
   value: string;
   matrix: Uint8Array | number[];
@@ -78,8 +73,8 @@ interface QRCodeContextValue {
   color: string;
   cornerColor?: string;
   dotShape: DotShape;
-  cornerFrameShape: CornerFrameShape; // Renamed from cornerShape
-  cornerDotShape: CornerDotShape; // New prop
+  cornerFrameShape: CornerFrameShape;
+  cornerDotShape: CornerDotShape;
   logo?: string;
   logoSize: number;
   logoBackgroundColor: string;
@@ -97,45 +92,25 @@ const useQRCode = () => {
   return context;
 };
 
-// --- PROPS ---
-
-export interface QRCodeRootProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof qrContainerVariants> {
+export interface QRCodeRootProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "primary" | "secondary" | "ghost" | "white" | null;
+  padding?: "none" | "sm" | "md" | "lg";
+  shadow?: "none" | "sm" | "md" | "lg";
   value: string;
-  /** Size in pixels (width & height) */
   size?: number;
-  /** Shape of the small data dots */
   dotShape?: DotShape;
-  /** Shape of the 3 corner finder frames (outer ring) */
   cornerFrameShape?: CornerFrameShape;
-  /** Shape of the 3 corner finder dots (inner ball) */
   cornerDotShape?: CornerDotShape;
-  /**
-   * Deprecated: Use `cornerFrameShape` instead.
-   * @deprecated
-   */
   cornerShape?: CornerFrameShape;
-  /** Color of the data dots (Tailwind class or CSS var) */
   color?: string;
-  /** Color of the corner finders */
   cornerColor?: string;
-  /** URL for a centered logo */
   logo?: string;
-  /** Size of the logo (0-1 relative to QR size) @default 0.2 */
   logoSize?: number;
-  /** Background color behind the logo for contrast */
   logoBackgroundColor?: string;
-  /** Error Correction Level */
   ecLevel?: "L" | "M" | "Q" | "H";
-  /** @deprecated Use <QRCode.Toolbar /> instead */
   showToolbar?: boolean;
-  /** @deprecated Use <QRCode.Content /> instead */
   showData?: boolean;
 }
-
-// --- HELPERS ---
 
 const mapCornerToToolbarShape = (
   c: CornerFrameShape,
@@ -178,8 +153,6 @@ const isUrl = (s: string) => {
   }
 };
 
-// --- PATH GENERATORS ---
-
 const getModulePath = (x: number, y: number, shape: DotShape): string => {
   switch (shape) {
     case "circle":
@@ -189,12 +162,11 @@ const getModulePath = (x: number, y: number, shape: DotShape): string => {
     case "diamond":
       return `M ${x + 0.5},${y} L ${x + 1},${y + 0.5} L ${x + 0.5},${y + 1} L ${x},${y + 0.5} Z`;
     case "classy":
-      // Rounded squares with slightly more curve than 'rounded'
       return `M ${x + 0.5}, ${y} 
               L ${x + 1}, ${y} 
               Q ${x + 1}, ${y + 1} ${x + 0.5}, ${y + 1} 
               Q ${x}, ${y + 1} ${x}, ${y + 0.5} 
-              Q ${x}, ${y} ${x + 0.5}, ${y} Z`; // Simplified approximation for "classy" - essentially a soft round
+              Q ${x}, ${y} ${x + 0.5}, ${y} Z`;
     case "square":
     default:
       return `M ${x},${y} h1 v1 h-1 z`;
@@ -207,11 +179,9 @@ const getCornerPath = (
   frameShape: CornerFrameShape,
   dotShape: CornerDotShape,
 ): string => {
-  // --- FRAME GENERATION (Outer Ring) ---
   const getFrame = () => {
     switch (frameShape) {
       case "circle":
-        // Outer radius 3.5, inner cutout radius 2.5
         return `M ${x + 3.5}, ${y} 
                 A 3.5,3.5 0 1,0 ${x + 3.5}, ${y + 7} 
                 A 3.5,3.5 0 1,0 ${x + 3.5}, ${y} 
@@ -219,33 +189,25 @@ const getCornerPath = (
                 A 2.5,2.5 0 1,1 ${x + 3.5}, ${y + 6} 
                 A 2.5,2.5 0 1,1 ${x + 3.5}, ${y + 1} Z`;
       case "extra-rounded":
-        // Large border radius (approx 2.5 units)
         return `M ${x + 3.5},${y} h0 a3.5,3.5 0 0 1 3.5,3.5 v0 a3.5,3.5 0 0 1 -3.5,3.5 h0 a3.5,3.5 0 0 1 -3.5,-3.5 v0 a3.5,3.5 0 0 1 3.5,-3.5 Z 
                 M ${x + 3.5},${y + 1} h0 a2.5,2.5 0 0 1 2.5,2.5 v0 a2.5,2.5 0 0 1 -2.5,2.5 h0 a2.5,2.5 0 0 1 -2.5,-2.5 v0 a2.5,2.5 0 0 1 2.5,-2.5 Z`;
       case "rounded":
-        // Medium border radius (approx 1 unit)
         return `M ${x + 1},${y} h5 a1,1 0 0 1 1,1 v5 a1,1 0 0 1 -1,1 h-5 a1,1 0 0 1 -1,-1 v-5 a1,1 0 0 1 1,-1 Z
                 M ${x + 1},${y + 1} h5 v5 h-5 Z`;
       case "leaf":
-        // Leaf shape: Top-Left & Bottom-Right rounded, others sharp
         return `M ${x + 3.5},${y} 
                 h2.5 a1,1 0 0 1 1,1 v5 a1,1 0 0 1 -1,1 h-2.5 
                 a3.5,3.5 0 0 1 -3.5,-3.5 v0 a3.5,3.5 0 0 1 3.5,-3.5 Z
-                M ${x + 1},${y + 1} h5 v5 h-5 Z`; // Cutout remains square-ish for style or can match
+                M ${x + 1},${y + 1} h5 v5 h-5 Z`;
       case "square":
       default:
-        // Standard 7x7 outer, 5x5 inner cutout
         return `M ${x},${y} h7 v7 h-7 Z M ${x + 1},${y + 1} v5 h5 v-5 Z`;
     }
   };
 
-  // --- DOT GENERATION (Inner Ball) ---
   const getDot = () => {
-    // Center of the 7x7 block is (x+3.5, y+3.5). The dot is 3x3.
-    // Top-left of dot is (x+2, y+2).
     switch (dotShape) {
       case "circle":
-        // Radius 1.5
         return `M ${x + 3.5}, ${y + 2} A 1.5,1.5 0 1,0 ${x + 3.5}, ${y + 5} A 1.5,1.5 0 1,0 ${x + 3.5}, ${y + 2} Z`;
       case "rounded":
         return `M ${x + 2.5},${y + 2} h2 a0.5,0.5 0 0 1 0.5,0.5 v2 a0.5,0.5 0 0 1 -0.5,0.5 h-2 a0.5,0.5 0 0 1 -0.5,-0.5 v-2 a0.5,0.5 0 0 1 0.5,-0.5 Z`;
@@ -259,8 +221,6 @@ const getCornerPath = (
 
   return `${getFrame()} ${getDot()}`;
 };
-
-// --- IMAGE GENERATION HELPER ---
 
 const generateQRBlob = (
   svgElement: SVGSVGElement,
@@ -276,7 +236,7 @@ const generateQRBlob = (
     const url = URL.createObjectURL(svgBlob);
 
     const canvas = document.createElement("canvas");
-    const scale = 2; // High resolution
+    const scale = 2;
     canvas.width = size * scale;
     canvas.height = size * scale;
     const ctx = canvas.getContext("2d");
@@ -317,8 +277,6 @@ const generateQRBlob = (
   });
 };
 
-// --- SUB-COMPONENTS ---
-
 export const QRCodeCanvas = React.forwardRef<
   SVGSVGElement,
   React.SVGProps<SVGSVGElement>
@@ -337,7 +295,6 @@ export const QRCodeCanvas = React.forwardRef<
     svgRef,
   } = useQRCode();
 
-  // Combine local ref with context ref
   React.useImperativeHandle(forwardedRef, () => svgRef.current!);
 
   const qrSize = Math.sqrt(matrix.length);
@@ -376,7 +333,6 @@ export const QRCodeCanvas = React.forwardRef<
       }
     }
 
-    // Add corners with the separate frame and dot logic
     cPaths.push(getCornerPath(0, 0, cornerFrameShape, cornerDotShape));
     cPaths.push(
       getCornerPath(matrixSize - 7, 0, cornerFrameShape, cornerDotShape),
@@ -422,7 +378,6 @@ export const QRCodeCanvas = React.forwardRef<
 
   return (
     <div style={{ width: size, height: size }} className="relative shrink-0">
-      {/* @ts-ignore */}
       <motion.svg
         ref={svgRef}
         viewBox={`0 0 ${qrSize} ${qrSize}`}
@@ -602,7 +557,6 @@ export const QRCodeToolbar = React.forwardRef<
       exit={{ opacity: 0, height: 0, marginTop: 0 }}
       className="overflow-hidden w-full flex justify-center"
     >
-      {/* @ts-ignore */}
       <Toolbar
         variant="secondary"
         shape={toolbarShape}
@@ -630,7 +584,6 @@ export const QRCodeToolbar = React.forwardRef<
         <Toolbar.Button
           tooltip="Download PNG"
           onClick={handleDownload}
-          // @ts-ignore
           isLoading={status === "downloading"}
         >
           <Download className="w-4 h-4" />
@@ -652,10 +605,7 @@ export const QRCodeToolbar = React.forwardRef<
 });
 QRCodeToolbar.displayName = "QRCode.Toolbar";
 
-// --- MAIN COMPONENT (ROOT) ---
-
-// @ts-ignore
-const QRCodeRoot = React.forwardRef<HTMLDivElement, QRCodeProps>(
+const QRCodeRoot = React.forwardRef<HTMLDivElement, QRCodeRootProps>(
   (
     {
       value,
@@ -663,7 +613,7 @@ const QRCodeRoot = React.forwardRef<HTMLDivElement, QRCodeProps>(
       dotShape = "rounded",
       cornerFrameShape = "extra-rounded",
       cornerDotShape = "circle",
-      cornerShape, // Deprecated prop
+      cornerShape,
       color = "currentColor",
       cornerColor,
       logo,
@@ -674,7 +624,7 @@ const QRCodeRoot = React.forwardRef<HTMLDivElement, QRCodeProps>(
       padding,
       shadow,
       className,
-      showToolbar = false, // Deprecated flags kept for backward compatibility if children empty
+      showToolbar = false,
       showData = false,
       style,
       children,
@@ -686,7 +636,6 @@ const QRCodeRoot = React.forwardRef<HTMLDivElement, QRCodeProps>(
     const [error, setError] = useState<string | null>(null);
     const svgRef = useRef<SVGSVGElement>(null);
 
-    // Handle deprecated prop with fallback
     const effectiveCornerFrame = cornerShape || cornerFrameShape;
 
     useEffect(() => {
@@ -714,7 +663,6 @@ const QRCodeRoot = React.forwardRef<HTMLDivElement, QRCodeProps>(
       logo,
       logoSize,
       logoBackgroundColor,
-      // @ts-ignore
       svgRef,
       variant,
     };
@@ -740,7 +688,6 @@ const QRCodeRoot = React.forwardRef<HTMLDivElement, QRCodeProps>(
           }}
           {...props}
         >
-          {/* Render Children if present, otherwise render Default Layout */}
           {hasChildren ? (
             children
           ) : (

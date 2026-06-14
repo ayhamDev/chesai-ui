@@ -27,6 +27,9 @@ export interface SearchViewProps {
   variant?: "modal" | "docked" | "fullscreen";
   triggerVariant?: "default" | "minimal" | "icon";
   color?: "surface" | "primary" | "secondary" | "transparent";
+  expandedHeight?: number | string;
+  expandedMinHeight?: number | string;
+  expandedMaxHeight?: number | string;
 }
 
 const TRANSITION_DURATION = DURATION.medium3;
@@ -86,6 +89,9 @@ export const SearchView = ({
   variant = "modal",
   triggerVariant = "default",
   color = "surface",
+  expandedHeight,
+  expandedMinHeight,
+  expandedMaxHeight,
 }: SearchViewProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
@@ -200,14 +206,26 @@ export const SearchView = ({
           height: "100dvh",
           borderRadius: 0,
         };
-      case "docked":
+      case "docked": {
+        const available = window.innerHeight - triggerRect.top - 20;
+        let h = expandedHeight;
+
+        if (h === undefined) {
+          const maxH =
+            typeof expandedMaxHeight === "number" ? expandedMaxHeight : 600;
+          h = Math.min(maxH, available);
+        }
+
         return {
           top: triggerRect.top,
           left: triggerRect.left - 10,
           width: triggerRect.width,
-          height: Math.min(600, window.innerHeight - triggerRect.top - 20),
+          height: h,
+          minHeight: expandedMinHeight,
+          maxHeight: expandedMaxHeight,
           borderRadius: desktopRadius,
         };
+      }
       case "modal":
       default:
         return {
@@ -215,7 +233,9 @@ export const SearchView = ({
           left: "50%",
           x: "-50%",
           width: 680,
-          height: 600,
+          height: expandedHeight ?? expandedMaxHeight ?? 600,
+          minHeight: expandedMinHeight,
+          maxHeight: expandedMaxHeight,
           borderRadius: desktopRadius,
         };
     }
@@ -329,7 +349,7 @@ export const SearchView = ({
               exit={{ opacity: 1 }}
               transition={{ duration: 0.15 }}
             >
-              {triggerVariant === "default" && (
+              {triggerVariant === "default" && dockedLeadingIcon && (
                 <div className="flex h-12 w-12 items-center justify-center text-inherit shrink-0 -ml-2">
                   {dockedLeadingIcon}
                 </div>
@@ -345,7 +365,7 @@ export const SearchView = ({
                 {value || placeholder}
               </div>
 
-              {triggerVariant === "default" && (
+              {triggerVariant === "default" && dockedTrailingIcon && (
                 <div className="flex items-center pl-2 shrink-0">
                   {dockedTrailingIcon}
                 </div>
@@ -430,9 +450,11 @@ export const SearchView = ({
           className,
         )}
       >
-        <div className="flex h-12 w-12 items-center justify-center text-inherit shrink-0 -ml-2">
-          {dockedLeadingIcon}
-        </div>
+        {dockedLeadingIcon && (
+          <div className="flex h-12 w-12 items-center justify-center text-inherit shrink-0 -ml-2">
+            {dockedLeadingIcon}
+          </div>
+        )}
         <div
           className={clsx(
             "flex flex-1 items-center px-2 text-lg truncate select-none",
@@ -441,9 +463,11 @@ export const SearchView = ({
         >
           {value || placeholder}
         </div>
-        <div className="flex items-center pl-2 shrink-0">
-          {dockedTrailingIcon}
-        </div>
+        {dockedTrailingIcon && (
+          <div className="flex items-center pl-2 shrink-0">
+            {dockedTrailingIcon}
+          </div>
+        )}
       </div>
     );
   };

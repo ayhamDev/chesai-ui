@@ -1,12 +1,10 @@
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React from "react";
 
-// MD3 Typography Tokens + Blockquote
 const variants = {
-  // --- MD3 Token Mappings ---
   "display-large": "display-large",
   "display-medium": "display-medium",
   "display-small": "display-small",
@@ -27,7 +25,6 @@ const variants = {
   "label-medium": "label-medium",
   "label-small": "label-small",
 
-  // --- Extras ---
   blockquote:
     "body-large border-l-4 border-primary pl-4 italic my-4 opacity-80",
 };
@@ -79,8 +76,10 @@ type TypographyOwnProps = {
   className?: string;
   highlighted?: boolean;
   muted?: boolean;
-  bold?: boolean; // New Prop
-} & VariantProps<typeof highlightVariants>;
+  bold?: boolean;
+  highlightedVariant?: "primary" | "secondary" | "tertiary" | "error";
+  highlightedShape?: "full" | "minimal" | "sharp";
+};
 
 type PolymorphicComponentProps<
   C extends React.ElementType,
@@ -92,9 +91,6 @@ type TypographyProps<C extends React.ElementType> = PolymorphicComponentProps<
   TypographyOwnProps & { as?: C }
 >;
 
-/**
- * Type definition for the polymorphic Typography component
- */
 type TypographyComponent = <C extends React.ElementType = "p">(
   props: TypographyProps<C> & { ref?: React.ComponentPropsWithRef<C>["ref"] },
 ) => React.ReactElement | null;
@@ -107,7 +103,7 @@ const TypographyInner = (
     children,
     highlighted = false,
     muted = false,
-    bold = false, // Destructure bold
+    bold = false,
     highlightedVariant,
     highlightedShape,
     ...restProps
@@ -123,15 +119,13 @@ const TypographyInner = (
     : "";
 
   const mutedClass = muted ? "opacity-60" : "";
-
-  // Bold override class
   const boldClass = bold ? "font-bold!" : "";
 
   const combinedClassName = clsx(
     variantClass,
     highlightClass,
     mutedClass,
-    boldClass, // Added here; will override weights defined in variantClass
+    boldClass,
     className,
   );
 

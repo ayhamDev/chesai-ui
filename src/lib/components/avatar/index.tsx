@@ -1,7 +1,7 @@
 "use client";
 
 import * as RadixAvatar from "@radix-ui/react-avatar";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { User } from "lucide-react";
 import React, { useState } from "react";
@@ -39,10 +39,11 @@ const getInitials = (name: string) => {
   return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
 };
 
-export interface AvatarProps
-  extends
-    React.ComponentPropsWithoutRef<typeof RadixAvatar.Root>,
-    VariantProps<typeof avatarVariants> {
+export interface AvatarProps extends React.ComponentPropsWithoutRef<
+  typeof RadixAvatar.Root
+> {
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  shape?: "full" | "minimal" | "sharp";
   src?: string;
   fallback?: string;
   variant?: "default" | "count";

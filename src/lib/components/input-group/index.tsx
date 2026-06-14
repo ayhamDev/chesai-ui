@@ -1,6 +1,6 @@
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import * as React from "react";
 import { Input, type InputProps } from "../input";
@@ -34,10 +34,9 @@ const addonVariants = cva(
   },
 );
 
-export interface InputGroupAddonProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof addonVariants> {}
+export interface InputGroupAddonProps extends React.HTMLAttributes<HTMLDivElement> {
+  align?: "start" | "end" | "block-end";
+}
 
 export const InputGroupAddon = React.forwardRef<
   HTMLDivElement,
@@ -72,7 +71,6 @@ export const InputGroupTextarea = React.forwardRef<
     className={className}
     classNames={{
       ...classNames,
-      // Ensure there is padding at the bottom so text doesn't go under the block-end addon
       input: clsx("pb-8", classNames?.input),
     }}
     {...props}

@@ -109,6 +109,11 @@ const meta: Meta<typeof Sidebar> = {
       control: "boolean",
       defaultValue: false,
     },
+    raised: {
+      control: "boolean",
+      defaultValue: true,
+      description: "Controls the active indicator card shadow globally.",
+    },
   },
   decorators: [
     (Story) => (
@@ -215,9 +220,8 @@ const SidebarContentExample = ({
             <Sidebar.Label>Archive</Sidebar.Label>
             {Array.from({ length: 15 }).map((_, i) => (
               // @ts-ignore
-              <Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>
-                Archive Item {i + 1}
-              </Sidebar.Item>
+              (<Sidebar.Item key={i} icon={<Box />} onClick={() => {}}>Archive Item {i + 1}
+              </Sidebar.Item>)
             ))}
           </Sidebar.Group>
         )}
@@ -258,6 +262,7 @@ export const Default: Story = {
     itemVariant: "primary",
     expandOnHover: false,
     indicatorAnimation: "slide",
+    raised: false,
   },
   render: (args) => (
     <Sidebar.Provider>
@@ -271,7 +276,7 @@ export const Default: Story = {
           <Typography variant="title-small">Playground</Typography>
         </header>
         <div className="flex-1 flex flex-col items-center justify-center text-on-surface/50 text-center">
-          <Typography variant="large">Adjust Sidebar Controls</Typography>
+          <Typography variant="title-large">Adjust Sidebar Controls</Typography>
           <Typography variant="body-small" className="mt-2">
             Use the layout toggle in the top right to switch between LTR and
             RTL.
@@ -434,7 +439,7 @@ export const MockupNesting: Story = {
             <Typography variant="title-small">Mockup Showcase</Typography>
           </header>
           <div className="flex-1 flex flex-col items-center justify-center text-on-surface/50 text-center">
-            <Typography variant="large">
+            <Typography variant="title-large">
               Interactive Nesting Component
             </Typography>
             <Typography variant="body-small" className="mt-2">

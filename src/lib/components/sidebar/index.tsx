@@ -1,7 +1,8 @@
+// src/lib/components/sidebar/index.tsx
 "use client";
 
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -71,6 +72,7 @@ interface SidebarContextProps {
   isRtl: boolean;
   indicatorId: string;
   indicatorAnimation: "slide" | "bloom";
+  raised: boolean;
 }
 
 const SidebarContext = createContext<SidebarContextProps | null>(null);
@@ -124,6 +126,7 @@ export const SidebarProvider = ({
         isRtl,
         indicatorId,
         indicatorAnimation: "slide",
+        raised: true,
       }}
     >
       {children}
@@ -295,6 +298,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: SidebarVariant;
   side?: SidebarSide;
   shape?: SidebarShape;
+  raised?: boolean;
 }
 
 const SidebarRoot = forwardRef<HTMLDivElement, SidebarProps>(
@@ -317,6 +321,7 @@ const SidebarRoot = forwardRef<HTMLDivElement, SidebarProps>(
       expandOnHover = false,
       overlay = false,
       indicatorAnimation,
+      raised,
       ...props
     },
     ref,
@@ -375,6 +380,7 @@ const SidebarRoot = forwardRef<HTMLDivElement, SidebarProps>(
       side: side || "left",
       indicatorAnimation:
         indicatorAnimation || context.indicatorAnimation || "slide",
+      raised: raised !== undefined ? raised : context.raised,
     };
 
     if (isMobile) {
@@ -616,10 +622,12 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
       propVariant || (itemVariant === "ghost" ? "secondary" : "primary");
 
     const localRef = useRef<HTMLButtonElement>(null);
+    // @ts-ignore
     React.useImperativeHandle(ref, () => localRef.current!);
 
     const [, event] = useRipple({
-      ref: localRef as React.RefObject<HTMLElement>,
+      // @ts-ignore
+      ref: localRef,
       color:
         variant === "primary"
           ? "var(--color-ripple-dark)"
@@ -764,13 +772,13 @@ const sidebarItemVariants = cva(
       {
         itemVariant: "surface",
         isActive: true,
-        className: "text-on-surface font-bold",
+        className: "text-primary font-bold",
       },
       {
         itemVariant: "surface",
         isActive: false,
         className:
-          "text-on-surface-variant hover:text-on-surface after:bg-surface-container-highest",
+          "text-on-surface-variant hover:text-on-surface after:bg-on-surface/8",
       },
 
       {
@@ -809,6 +817,7 @@ interface SidebarItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
   itemVariant?: SidebarItemVariant;
   size?: SidebarSize;
   shape?: SidebarShape;
+  raised?: boolean;
 }
 
 const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
@@ -822,6 +831,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
       itemVariant,
       size: sizeProp,
       shape,
+      raised: raisedProp,
       ...props
     },
     ref,
@@ -835,6 +845,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
       setOpenMobile,
       indicatorId,
       indicatorAnimation,
+      raised: contextRaised,
     } = useSidebar();
 
     const isCollapsed = !isMobile && state === "collapsed";
@@ -844,6 +855,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
 
     const effectiveVariant = itemVariant || contextItemVariant;
     const effectiveShape = shape || contextShape;
+    const raised = raisedProp !== undefined ? raisedProp : contextRaised;
 
     const isSolidPrimaryActive = isActive && effectiveVariant === "primary";
     const rippleColor = isSolidPrimaryActive
@@ -851,7 +863,8 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
       : "var(--color-ripple-dark)";
 
     const [, event] = useRipple({
-      ref: rippleRef as React.RefObject<HTMLElement>,
+      // @ts-ignore
+      ref: rippleRef,
       color: rippleColor,
       duration: 300,
     });
@@ -867,7 +880,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
       else if (effectiveVariant === "tertiary")
         dotClass = "bg-on-tertiary-container";
       else if (effectiveVariant === "error") dotClass = "bg-on-error-container";
-      else if (effectiveVariant === "surface") dotClass = "bg-on-surface";
+      else if (effectiveVariant === "surface") dotClass = "bg-primary";
     }
 
     const isSlideAnim = indicatorAnimation === "slide";
@@ -882,12 +895,19 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
         : { duration: 0.25, ease: "easeOut" as const },
       className: clsx(
         "absolute inset-0 z-0 pointer-events-none",
-        effectiveVariant === "primary" && "bg-primary shadow-sm",
-        effectiveVariant === "secondary" && "bg-secondary-container shadow-sm",
-        effectiveVariant === "tertiary" && "bg-tertiary-container shadow-sm",
-        effectiveVariant === "error" && "bg-error-container shadow-sm",
+        effectiveVariant === "primary" &&
+          clsx("bg-primary", raised && "shadow-sm"),
+        effectiveVariant === "secondary" &&
+          clsx("bg-secondary-container", raised && "shadow-sm"),
+        effectiveVariant === "tertiary" &&
+          clsx("bg-tertiary-container", raised && "shadow-sm"),
+        effectiveVariant === "error" &&
+          clsx("bg-error-container", raised && "shadow-sm"),
         effectiveVariant === "surface" &&
-          "bg-surface-container-highest shadow-sm",
+          clsx(
+            "bg-surface border border-outline-variant/60",
+            raised && "shadow-sm",
+          ),
         effectiveVariant === "ghost" && "bg-surface-container-highest/50",
         shapeClasses[effectiveShape],
       ),
@@ -953,9 +973,10 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
                 opacity: 1,
                 width: "auto",
                 marginInlineStart: "0.75rem",
+                transition: { delay: 0.05, duration: 0.2 },
               }}
               exit={{ opacity: 0, width: 0, marginInlineStart: 0 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
+              transition={{ duration: 0.15, ease: "easeInOut" }}
               className="flex-1 overflow-hidden whitespace-nowrap text-start min-w-0 relative z-10"
             >
               {children}
@@ -996,7 +1017,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
 );
 SidebarItem.displayName = "Sidebar.Item";
 
-// --- Sidebar Collapse ---
+// --- Sidebar Collapse (Nesting) ---
 export interface SidebarCollapseProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: React.ReactNode;
   label: React.ReactNode;
@@ -1008,6 +1029,7 @@ export interface SidebarCollapseProps extends React.ButtonHTMLAttributes<HTMLBut
   size?: SidebarSize;
   shape?: SidebarShape;
   indicator?: "chevron" | "plus-minus" | React.ReactNode;
+  raised?: boolean;
 }
 
 const SidebarCollapse = React.forwardRef<
@@ -1027,6 +1049,7 @@ const SidebarCollapse = React.forwardRef<
       size: sizeProp,
       shape,
       indicator = "chevron",
+      raised: raisedProp,
       ...props
     },
     ref,
@@ -1039,6 +1062,7 @@ const SidebarCollapse = React.forwardRef<
       isMobile,
       setSidebarState,
       indicatorAnimation,
+      raised: contextRaised,
     } = useSidebar();
 
     const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -1049,6 +1073,7 @@ const SidebarCollapse = React.forwardRef<
 
     const effectiveVariant = itemVariant || contextItemVariant;
     const effectiveShape = shape || contextShape;
+    const raised = raisedProp !== undefined ? raisedProp : contextRaised;
 
     const isSolidPrimaryActive = isActive && effectiveVariant === "primary";
     const rippleColor = isSolidPrimaryActive
@@ -1125,12 +1150,19 @@ const SidebarCollapse = React.forwardRef<
       transition: { duration: 0.25, ease: "easeOut" as const },
       className: clsx(
         "absolute inset-0 z-0 pointer-events-none",
-        effectiveVariant === "primary" && "bg-primary shadow-sm",
-        effectiveVariant === "secondary" && "bg-secondary-container shadow-sm",
-        effectiveVariant === "tertiary" && "bg-tertiary-container shadow-sm",
-        effectiveVariant === "error" && "bg-error-container shadow-sm",
+        effectiveVariant === "primary" &&
+          clsx("bg-primary", raised && "shadow-sm"),
+        effectiveVariant === "secondary" &&
+          clsx("bg-secondary-container", raised && "shadow-sm"),
+        effectiveVariant === "tertiary" &&
+          clsx("bg-tertiary-container", raised && "shadow-sm"),
+        effectiveVariant === "error" &&
+          clsx("bg-error-container", raised && "shadow-sm"),
         effectiveVariant === "surface" &&
-          "bg-surface-container-highest shadow-sm",
+          clsx(
+            "bg-surface border border-outline-variant/60",
+            raised && "shadow-sm",
+          ),
         effectiveVariant === "ghost" && "bg-surface-container-highest/50",
         shapeClasses[effectiveShape],
       ),

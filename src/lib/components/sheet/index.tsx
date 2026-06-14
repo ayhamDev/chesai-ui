@@ -1,13 +1,12 @@
 "use client";
 
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { createContext, forwardRef, useContext, useEffect } from "react";
 import { twMerge } from "tailwind-merge";
 import { Drawer as VaulDrawer } from "vaul";
 
-// --- Types ---
 type SheetVariant =
   | "primary"
   | "secondary"
@@ -21,7 +20,6 @@ type SheetVariant =
   | "surface-container-high"
   | "surface-container-highest";
 
-// --- Context ---
 interface SheetContextProps {
   mode: "normal" | "detached";
   shape: "full" | "minimal" | "sharp";
@@ -44,7 +42,6 @@ const SheetContext = createContext<SheetContextProps>({
 
 const useSheetContext = () => useContext(SheetContext);
 
-// --- Root Component ---
 type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
@@ -104,7 +101,6 @@ const SheetRoot: React.FC<SheetProps> = ({
         direction,
       }}
     >
-      {/* @ts-ignore */}
       <VaulDrawer.Root
         direction={direction}
         open={open}
@@ -119,14 +115,12 @@ const SheetRoot: React.FC<SheetProps> = ({
 };
 SheetRoot.displayName = "Sheet";
 
-// --- RE-EXPORTED PRIMITIVES ---
 const SheetTrigger = VaulDrawer.Trigger;
 const SheetClose = VaulDrawer.Close;
 const SheetPortal = VaulDrawer.Portal;
 const SheetTitle = VaulDrawer.Title;
 const SheetDescription = VaulDrawer.Description;
 
-// --- CVA Variants for Content ---
 const contentVariants = cva(
   "fixed z-50 flex flex-col shadow-lg transition-colors duration-300",
   {
@@ -137,8 +131,6 @@ const contentVariants = cva(
         tertiary: "bg-tertiary-container text-on-tertiary-container",
         "high-contrast": "bg-inverse-surface text-inverse-on-surface",
         ghost: "bg-transparent text-on-surface shadow-none",
-
-        // --- MD3 Surface Container Variants ---
         surface: "bg-surface text-on-surface",
         "surface-container-lowest":
           "bg-surface-container-lowest text-on-surface",
@@ -287,8 +279,6 @@ const contentVariants = cva(
         mode: "detached",
         className: "top-4 bottom-4 right-4 rounded-none",
       },
-
-      // --- Glass Variants ---
       {
         glass: true,
         variant: "primary",
@@ -365,8 +355,16 @@ const contentVariants = cva(
   },
 );
 
-type SheetContentProps = React.ComponentProps<typeof VaulDrawer.Content> &
-  VariantProps<typeof contentVariants>;
+export interface SheetContentProps extends React.ComponentProps<
+  typeof VaulDrawer.Content
+> {
+  variant?: SheetVariant;
+  side?: "top" | "bottom" | "left" | "right";
+  height?: "snap" | "auto";
+  shape?: "full" | "minimal" | "sharp";
+  mode?: "normal" | "detached";
+  glass?: boolean;
+}
 
 const SheetContent = forwardRef<
   React.ElementRef<typeof VaulDrawer.Content>,
