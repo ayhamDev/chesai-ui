@@ -4,6 +4,7 @@ import path from 'node:path'
 import dotenv from 'dotenv'
 
 dotenv.config()
+
 // --- CONFIGURATION ---
 const SOURCE_DIR = 'src/lib'
 const COMPONENTS_DIR = 'src/lib/components'
@@ -88,36 +89,41 @@ export function CustomWidget() {
 }
 \`\`\`
 
-### 2. Tailwind CSS IntelliSense Setup
+### 2. Official Tailwind CSS Plugin Setup
 
-#### Tailwind CSS v4 Projects
-Tailwind CSS v4 automatically parses \`@theme\` directives inside imported dependency stylesheets. Client applications only need to import the stylesheet:
+For complete autocomplete and IDE IntelliSense for design tokens, typography utility classes, and transitions, register the official \`chesaiTailwindPlugin\` in the stylesheet or configurations.
+
+#### For Tailwind CSS v4 Projects
+Under Tailwind v4, register the plugin in the main entry CSS stylesheet with the \`@plugin\` directive:
 \`\`\`css
+/* main.css */
 @import "tailwindcss";
 @import "chesai-ui/styles.css";
+@plugin "chesai-ui";
 \`\`\`
 
-#### Tailwind CSS v3 Projects
-For older projects utilizing a \`tailwind.config.js\`, use the exported \`chesaiColors\` helper to map the design tokens to standard Tailwind utility classes:
+#### For Tailwind CSS v3 Projects
+Under Tailwind v3, import and spread the plugin directly inside the configuration array:
 \`\`\`javascript
-const { chesaiColors } = require("chesai-ui");
+/* tailwind.config.js */
+const { chesaiTailwindPlugin } = require("chesai-ui");
 
 module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        ...chesaiColors,
-      },
-    },
-  },
+  content: [
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./node_modules/chesai-ui/dist/**/*.js"
+  ],
+  plugins: [
+    chesaiTailwindPlugin
+  ],
 };
 \`\`\`
 
 ### 3. Complete Token Reference Mapping
 
-The following keys are available under \`useTheme().palette.*\` and mapped to \`var(--md-sys-color-*)\` CSS variables:
+The following keys are available under \`useTheme().palette.*\` and are automatically made available as Tailwind CSS classes (e.g. \`bg-primary\`, \`text-on-surface-variant\`, \`border-outline-variant\`):
 
-| Palette Key | CSS Variable Name | Tailwind Color Utility | Description |
+| Palette Key | CSS Variable Name | Tailwind Utility | Description |
 | :--- | :--- | :--- | :--- |
 | \`primary\` | \`--md-sys-color-primary\` | \`primary\` | Primary branding color |
 | \`onPrimary\` | \`--md-sys-color-on-primary\` | \`on-primary\` | Text/icons on primary |
@@ -323,6 +329,7 @@ chesai-ui is an expressive, high-performance UI library designed for modern web 
 ## Key Features
 - **Theming:** Multi-level contrast support (Standard, Medium, High) across Light/Dark modes using MD3 tokens.
 - **Palette Access:** Accessible programmatically via \`useTheme().palette.*\` or evaluated dynamically using \`useTheme().getComputedColor('*')\`.
+- **Tailwind CSS Plugin:** Includes an official, cross-version \`chesaiTailwindPlugin\` that registers all design tokens, typography utility classes, keyframes, and animations into your build compiler (supports Tailwind v4 and v3).
 - **Navigation:** Includes a native-like 'StackRouter' (React Navigation style), 'ShallowRouter' for URL-synced UI state, and responsive 'NavigationRail'/'BottomTabs'.
 - **Expressive Motion:** Powered by Framer Motion. Includes 'ElasticScrollArea' (iOS-style rubber-banding), 'MaterialMorph' loading indicators, and shared-layout transitions.
 - **Virtualized Layouts:** Optimized components for large datasets including 'VirtualGrid', 'VirtualFlex', and 'VirtualMasonry' (via TanStack Virtual).
