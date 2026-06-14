@@ -1,5 +1,6 @@
 "use client";
 
+import type { Transition } from "framer-motion";
 import React, {
   createContext,
   useCallback,
@@ -7,16 +8,13 @@ import React, {
   useEffect,
   useRef,
   useState,
-  useMemo,
 } from "react";
-import type { Transition } from "framer-motion";
 import { loadGoogleFont, PRESET_FONTS } from "../utils/font-loader";
 import {
   applyThemeVariables,
-  clearThemeVariables,
-  type ThemeOverrides,
-  type ThemeColorKey,
   CSS_MAPPING,
+  type ThemeColorKey,
+  type ThemeOverrides,
 } from "../utils/theme-generator";
 
 type Theme = "dark" | "light" | "system";
@@ -28,7 +26,6 @@ export interface FontSettings {
   plain: string;
 }
 
-// Define the shape of the palette object mapping keys to CSS variable strings
 export type ThemePalette = Record<ThemeColorKey, string>;
 
 interface ThemeProviderState {
@@ -39,21 +36,13 @@ interface ThemeProviderState {
   resolvedTheme: "light" | "dark";
   fonts: FontSettings;
   setFonts: (fonts: Partial<FontSettings>) => void;
-
-  // Animation Style
   animationStyle: AnimationStyle;
   setAnimationStyle: (style: AnimationStyle) => void;
-
-  // Dynamic Theme
   seedColor: string | null;
   setSeedColor: (color: string | null) => void;
-
-  // Manual Overrides
   overrides: ThemeOverrides;
   setOverride: (key: ThemeColorKey, value: string | null) => void;
   resetOverrides: () => void;
-
-  // Palette Accessors
   palette: ThemePalette;
   getComputedColor: (key: ThemeColorKey) => string;
 }
@@ -63,7 +52,6 @@ const defaultFontSettings: FontSettings = {
   plain: "Manrope",
 };
 
-// Generate static references to CSS variables
 const staticPalette = Object.keys(CSS_MAPPING).reduce((acc, key) => {
   const cssKey = CSS_MAPPING[key as ThemeColorKey];
   acc[key as ThemeColorKey] = `var(--md-sys-color-${cssKey})`;
@@ -190,7 +178,17 @@ export function ThemeProvider({
     return defaultFonts;
   });
 
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+  // Check the document element class list immediately on load to prevent light mode flash
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() => {
+    if (typeof window !== "undefined") {
+      const classList = window.document.documentElement.classList;
+      if (classList.contains("dark") || classList.contains("theme-dark")) {
+        return "dark";
+      }
+    }
+    return "light";
+  });
+
   const isInternalUpdate = useRef(false);
 
   // --- 2. LOGIC ---
@@ -254,7 +252,6 @@ export function ThemeProvider({
     localStorage.removeItem(overridesStorageKey);
   }, [overridesStorageKey]);
 
-  // Evaluates the live computed color value of the given key from the DOM
   const getComputedColor = useCallback((key: ThemeColorKey): string => {
     if (typeof window === "undefined") return "";
     const cssKey = CSS_MAPPING[key];
@@ -291,7 +288,7 @@ export function ThemeProvider({
     localStorage.setItem(animationStorageKey, animationStyle);
   }, [animationStyle, animationStorageKey]);
 
-  // Apply Classes
+  // Apply Classes (Only run on mount or when theme/contrast changes)
   useEffect(() => {
     applyClasses(theme, contrast);
   }, [theme, contrast, applyClasses]);
@@ -344,23 +341,22 @@ export function ThemeProvider({
     return () => observer.disconnect();
   }, []);
 
-  // Initial Mount
+  // Sync state on Mount with what the head script evaluated
   useEffect(() => {
     const root = window.document.documentElement;
     const classList = root.classList;
     if (classList.contains("dark") || classList.contains("theme-dark")) {
-      setThemeState("dark");
+      setThemeState((prev) =>
+        prev !== "dark" && prev !== "system" ? "dark" : prev,
+      );
       setResolvedTheme("dark");
-    } else if (
-      classList.contains("light") ||
-      classList.contains("theme-light")
-    ) {
-      setThemeState("light");
-      setResolvedTheme("light");
     } else {
-      applyClasses(theme, contrast);
+      setThemeState((prev) =>
+        prev !== "light" && prev !== "system" ? "light" : prev,
+      );
+      setResolvedTheme("light");
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const value = {
     theme,
@@ -408,9 +404,6 @@ export const useTheme = () => {
   return context;
 };
 
-/**
- * Hook to elegantly supply the correct Framer Motion transition config based on global theme preference.
- */
 export const useThemeTransition = (
   expressiveTransition: Transition = {
     type: "spring",

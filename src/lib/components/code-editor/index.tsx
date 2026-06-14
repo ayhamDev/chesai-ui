@@ -1,8 +1,7 @@
-// src/lib/components/code-editor/index.tsx
 "use client";
 
 import { DiffEditor, Editor, useMonaco } from "@monaco-editor/react";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -14,7 +13,7 @@ import {
   FileCode2,
   LayoutList,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, forwardRef } from "react";
 import { useTheme } from "../../context/ThemeProvider";
 import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
@@ -79,10 +78,10 @@ export interface CodeEditorAction {
   run: (editor: any, monaco: any) => void;
 }
 
-export interface CodeEditorProps
-  extends
-    Omit<React.HTMLAttributes<HTMLDivElement>, "onChange">,
-    VariantProps<typeof codeEditorVariants> {
+export interface CodeEditorProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "onChange"
+> {
   value?: string;
   original?: string;
   language?: string;
@@ -100,9 +99,12 @@ export interface CodeEditorProps
   hideToolbar?: boolean;
   disableContextMenu?: boolean;
   customActions?: CodeEditorAction[];
+  variant?: "primary" | "secondary" | "surface" | "ghost";
+  shape?: "full" | "minimal" | "sharp";
+  shadow?: "none" | "sm" | "md" | "lg";
 }
 
-export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
+export const CodeEditor = forwardRef<HTMLDivElement, CodeEditorProps>(
   (
     {
       value = "",
@@ -114,9 +116,9 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
       fileName,
       onChange,
       options = {},
-      variant,
-      shape,
-      shadow,
+      variant = "primary",
+      shape = "minimal",
+      shadow = "none",
       className,
       collapsible = false,
       defaultCollapsed = false,
@@ -142,7 +144,6 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
       resolvedTheme === "dark" ? "chesai-dark" : "chesai-light";
 
     const handleBeforeMount = (monacoInstance: any) => {
-      // 1. Define Visual Themes
       monacoInstance.editor.defineTheme("chesai-dark", {
         base: "vs-dark",
         inherit: true,
@@ -166,25 +167,15 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
         },
       });
 
-      // 2. CONFIGURE TYPESCRIPT TO SUPPORT JSX (The fix for the typos/errors)
       monacoInstance.languages.typescript.typescriptDefaults.setCompilerOptions(
         {
-          jsx: monacoInstance.languages.typescript.JsxEmit.React, // Enables JSX parsing
+          jsx: monacoInstance.languages.typescript.JsxEmit.React,
           allowNonTsExtensions: true,
           target: monacoInstance.languages.typescript.ScriptTarget.Latest,
           allowJs: true,
           module: monacoInstance.languages.typescript.ModuleKind.ESNext,
         },
       );
-
-      // Optional: Add basic React types for better intellisense
-      // monacoInstance.languages.typescript.typescriptDefaults.addExtraLib(
-      //   `declare module 'react' {
-      //     export function useState<T>(initial: T): [T, (val: T) => void];
-      //     export default { useState };
-      //   }`,
-      //   "file:///node_modules/@types/react/index.d.ts",
-      // );
     };
 
     useEffect(() => {
@@ -244,9 +235,6 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
       }
     };
 
-    // 3. FORCE .TSX PATH (The secondary fix for JSX errors)
-    // Monaco needs to see a .tsx extension in the virtual file path
-    // to enable the JSX parser for that specific model.
     const path = fileName
       ? fileName.endsWith("x")
         ? fileName
@@ -269,7 +257,7 @@ export const CodeEditor = React.forwardRef<HTMLDivElement, CodeEditorProps>(
       />
     ) : (
       <Editor
-        path={path} // Setting the path ensures TSX mode is active
+        path={path}
         value={value}
         language={language}
         theme={activeTheme}

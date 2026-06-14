@@ -4,21 +4,16 @@ import { useTimeField } from '@react-aria/datepicker'
 import { useLocale } from '@react-aria/i18n'
 import { useTimeFieldState } from '@react-stately/datepicker'
 import type { AriaTimeFieldProps, TimeValue } from '@react-types/datepicker'
-import type { VariantProps } from 'class-variance-authority'
 import { clsx } from 'clsx'
-import { useMemo, useRef, useState } from 'react' // Added useState
-import type { ClassNameValue } from 'tailwind-merge'
+import { useMemo, useRef, useState } from 'react'
 import { dateInputSlots, dateInputStyles, getDateInputSlotClassNames } from './date-input-styles'
 
-// @ts-expect-error
-export interface UseTimeInputProps<T extends TimeValue>
-  extends AriaTimeFieldProps<T>,
-    VariantProps<typeof dateInputStyles> {
+export interface UseTimeInputProps<T extends TimeValue> extends AriaTimeFieldProps<T> {
   startContent?: React.ReactNode
   endContent?: React.ReactNode
   classNames?: Partial<typeof dateInputSlots>
   labelPlacement?: 'inside' | 'outside' | 'outside-left'
-  className: ClassNameValue
+  className?: any
   ref?: React.Ref<HTMLDivElement>
   variant?:
     | 'filled'
@@ -29,6 +24,11 @@ export interface UseTimeInputProps<T extends TimeValue>
     | 'underlined-inverted'
     | 'ghost'
     | 'ghost-inverted'
+  color?: 'primary' | 'secondary' | 'error'
+  size?: 'sm' | 'md' | 'lg'
+  shape?: 'full' | 'minimal' | 'sharp'
+  isInvalid?: boolean
+  isDisabled?: boolean
 }
 
 export function useTimeInput<T extends TimeValue>(props: UseTimeInputProps<T>) {

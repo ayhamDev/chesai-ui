@@ -169,16 +169,13 @@ const WavyLine = ({
 
 // --- MAIN COMPONENT ---
 
-export interface DividerProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    Omit<VariantProps<typeof dividerContainerVariants>, "color"> {
+export interface DividerProps extends React.HTMLAttributes<HTMLDivElement> {
+  orientation?: "horizontal" | "vertical";
   variant?: "solid" | "dashed" | "dotted";
   shape?: "regular" | "wavy";
   size?: "sm" | "md" | "lg";
   waveSize?: "sm" | "md" | "lg";
   textAlign?: "start" | "center" | "end";
-  // Explicitly type color to match the CVA keys, handling nullable from VariantProps
   color?: "default" | "primary" | "secondary" | "tertiary" | "error";
 }
 
@@ -225,7 +222,6 @@ export const Divider = React.forwardRef<HTMLDivElement, DividerProps>(
       );
     };
 
-    // biome-ignore lint/a11y/useFocusableInteractive: This is a static separator, standard practice.
     return (
       <div
         ref={ref}

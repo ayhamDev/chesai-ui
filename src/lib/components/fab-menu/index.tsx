@@ -1,7 +1,6 @@
-// src/lib/components/fab-menu/index.tsx
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion, type HTMLMotionProps } from "framer-motion";
 import React, {
@@ -10,6 +9,7 @@ import React, {
   useState,
   useRef,
   useEffect,
+  forwardRef,
 } from "react";
 import useRipple from "use-ripple-hook";
 
@@ -32,17 +32,14 @@ export const useFABMenu = () => {
 
 // --- ROOT COMPONENT ---
 export interface FABMenuProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** The direction the menu items expand towards. */
   direction?: "up" | "down" | "left" | "right";
-  /** How the menu items align relative to the trigger button. */
   align?: "start" | "center" | "end";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** If true, renders a subtle darkened backdrop behind the menu. */
   overlay?: boolean;
 }
 
-const FABMenuRoot = React.forwardRef<HTMLDivElement, FABMenuProps>(
+const FABMenuRoot = forwardRef<HTMLDivElement, FABMenuProps>(
   (
     {
       direction = "up",
@@ -106,7 +103,7 @@ const FABMenuRoot = React.forwardRef<HTMLDivElement, FABMenuProps>(
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="fixed inset-0 bg-surface/70  -z-10"
+                  className="fixed inset-0 bg-surface/70 -z-10"
                   onClick={(e) => {
                     e.stopPropagation();
                     close();
@@ -129,7 +126,7 @@ const FABMenuRoot = React.forwardRef<HTMLDivElement, FABMenuProps>(
 FABMenuRoot.displayName = "FABMenu";
 
 // --- TRIGGER COMPONENT ---
-const FABMenuTrigger = React.forwardRef<
+const FABMenuTrigger = forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
 >(({ children, asChild, onClick, ...props }, ref) => {
@@ -158,7 +155,7 @@ const FABMenuTrigger = React.forwardRef<
 FABMenuTrigger.displayName = "FABMenu.Trigger";
 
 // --- LIST COMPONENT ---
-const FABMenuList = React.forwardRef<
+const FABMenuList = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ children, className, ...props }, ref) => {
@@ -225,8 +222,8 @@ const fabMenuItemVariants = cva(
       },
       size: {
         sm: "px-4 py-2 [&>span>svg]:w-4 [&>span>svg]:h-4 text-xs",
-        md: "px-5 py-2.5 [&>span>svg]:w-5[&>span>svg]:h-5 text-sm",
-        lg: "px-6 py-3[&>span>svg]:w-6 [&>span>svg]:h-6 text-base",
+        md: "px-5 py-2.5 [&>span>svg]:w-5 [&>span>svg]:h-5 text-sm",
+        lg: "px-6 py-3 [&>span>svg]:w-6 [&>span>svg]:h-6 text-base",
       },
       iconOnly: {
         true: "px-0 aspect-square justify-center",
@@ -246,25 +243,37 @@ const fabMenuItemVariants = cva(
   },
 );
 
-export interface FABMenuItemProps
-  extends
-    Omit<HTMLMotionProps<"button">, "ref">,
-    VariantProps<typeof fabMenuItemVariants> {
+export interface FABMenuItemProps extends Omit<
+  HTMLMotionProps<"button">,
+  "ref"
+> {
   icon?: React.ReactNode;
   label?: React.ReactNode;
+  variant?: "primary" | "secondary" | "tertiary" | "surface";
+  size?: "sm" | "md" | "lg";
+  iconOnly?: boolean;
 }
 
-const FABMenuItem = React.forwardRef<HTMLButtonElement, FABMenuItemProps>(
-  ({ icon, label, className, variant, size, onClick, ...props }, ref) => {
+const FABMenuItem = forwardRef<HTMLButtonElement, FABMenuItemProps>(
+  (
+    {
+      icon,
+      label,
+      className,
+      variant = "secondary",
+      size = "md",
+      onClick,
+      ...props
+    },
+    ref,
+  ) => {
     const { close, direction } = useFABMenu();
-    const localRef = React.useRef<HTMLButtonElement>(null);
-    // @ts-ignore
+    const localRef = useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => localRef.current!);
 
     const rippleColor = "var(--color-ripple-dark)";
     const [, event] = useRipple({
-      // @ts-ignore
-      ref: localRef,
+      ref: localRef as React.RefObject<HTMLElement>,
       color: rippleColor,
       duration: 400,
     });
@@ -274,7 +283,6 @@ const FABMenuItem = React.forwardRef<HTMLButtonElement, FABMenuItemProps>(
       close();
     };
 
-    // Items slide in from the direction of the parent FAB
     const itemVariants = {
       hidden: {
         opacity: 0,

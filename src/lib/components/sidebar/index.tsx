@@ -1,8 +1,7 @@
-// src/lib/components/sidebar/index.tsx
 "use client";
 
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -21,6 +20,7 @@ import React, {
   useEffect,
   useRef,
   useState,
+  forwardRef,
 } from "react";
 import useRipple from "use-ripple-hook";
 import { useLayout } from "../../context/layout-context";
@@ -131,7 +131,6 @@ export const SidebarProvider = ({
   );
 };
 
-// --- Helper for Mobile Sheet Color ---
 const resolveSidebarColor = (v: SidebarVariant) => {
   switch (v) {
     case "surface-container-lowest":
@@ -280,10 +279,7 @@ const sidebarVariants = cva(
   },
 );
 
-interface SidebarProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof sidebarVariants> {
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   collapsible?: boolean;
   width?: string;
   collapsedWidth?: string;
@@ -295,9 +291,13 @@ interface SidebarProps
   expandOnHover?: boolean;
   overlay?: boolean;
   indicatorAnimation?: "slide" | "bloom";
+  layout?: "sidebar" | "floating" | "inset";
+  variant?: SidebarVariant;
+  side?: SidebarSide;
+  shape?: SidebarShape;
 }
 
-const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
+const SidebarRoot = forwardRef<HTMLDivElement, SidebarProps>(
   (
     {
       className,
@@ -325,12 +325,10 @@ const SidebarRoot = React.forwardRef<HTMLDivElement, SidebarProps>(
     const {
       state,
       setSidebarState,
-      toggleSidebar,
       isMobile,
       openMobile,
       setOpenMobile,
       isRtl,
-      indicatorId,
     } = context;
     const isCollapsed = state === "collapsed";
 
@@ -618,12 +616,10 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
       propVariant || (itemVariant === "ghost" ? "secondary" : "primary");
 
     const localRef = useRef<HTMLButtonElement>(null);
-    // @ts-ignore
     React.useImperativeHandle(ref, () => localRef.current!);
 
     const [, event] = useRipple({
-      // @ts-ignore
-      ref: localRef,
+      ref: localRef as React.RefObject<HTMLElement>,
       color:
         variant === "primary"
           ? "var(--color-ripple-dark)"
@@ -646,7 +642,6 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
       <div className={clsx("w-full mb-6 mt-2 flex", className)}>
         {/* @ts-ignore */}
         <motion.button
-          // @ts-ignore
           ref={localRef}
           type="button"
           onPointerDown={event}
@@ -658,7 +653,6 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             variantClasses[variant],
           )}
-          // @ts-ignore
           {...props}
         >
           <div className="flex items-center justify-center shrink-0 w-6 h-6 z-10">
@@ -807,18 +801,29 @@ const shapeClasses = {
 };
 
 // --- Sidebar Item ---
-interface SidebarItemProps
-  extends
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof sidebarItemVariants> {
+interface SidebarItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: React.ReactNode;
   children?: React.ReactNode;
   badge?: React.ReactNode;
+  isActive?: boolean;
+  itemVariant?: SidebarItemVariant;
+  size?: SidebarSize;
+  shape?: SidebarShape;
 }
 
 const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
   (
-    { className, icon, children, isActive, badge, itemVariant, size: sizeProp, shape, ...props },
+    {
+      className,
+      icon,
+      children,
+      isActive,
+      badge,
+      itemVariant,
+      size: sizeProp,
+      shape,
+      ...props
+    },
     ref,
   ) => {
     const {
@@ -840,15 +845,13 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
     const effectiveVariant = itemVariant || contextItemVariant;
     const effectiveShape = shape || contextShape;
 
-    // Determine Ripple based on text color accessibility
     const isSolidPrimaryActive = isActive && effectiveVariant === "primary";
     const rippleColor = isSolidPrimaryActive
       ? "var(--color-ripple-light)"
       : "var(--color-ripple-dark)";
 
     const [, event] = useRipple({
-      // @ts-ignore
-      ref: rippleRef,
+      ref: rippleRef as React.RefObject<HTMLElement>,
       color: rippleColor,
       duration: 300,
     });
@@ -993,7 +996,7 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
 );
 SidebarItem.displayName = "Sidebar.Item";
 
-// --- Sidebar Collapse (Nesting) ---
+// --- Sidebar Collapse ---
 export interface SidebarCollapseProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: React.ReactNode;
   label: React.ReactNode;
@@ -1053,8 +1056,7 @@ const SidebarCollapse = React.forwardRef<
       : "var(--color-ripple-dark)";
 
     const [, event] = useRipple({
-      // @ts-ignore
-      ref: rippleRef,
+      ref: rippleRef as React.RefObject<HTMLElement>,
       color: rippleColor,
       duration: 300,
     });
@@ -1117,7 +1119,6 @@ const SidebarCollapse = React.forwardRef<
     const isSlideAnim = indicatorAnimation === "slide";
 
     const sharedIndicatorProps = {
-      // Intentionally no layoutId for Collapse to prevent collision
       initial: isSlideAnim ? { opacity: 0 } : { opacity: 0, scale: 0.75 },
       animate: isSlideAnim ? { opacity: 1 } : { opacity: 1, scale: 1 },
       exit: isSlideAnim ? { opacity: 0 } : { opacity: 0, scale: 0.75 },

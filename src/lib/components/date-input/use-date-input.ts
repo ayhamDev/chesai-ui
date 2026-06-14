@@ -5,15 +5,11 @@ import { useDateField } from '@react-aria/datepicker'
 import { useLocale } from '@react-aria/i18n'
 import { useDateFieldState } from '@react-stately/datepicker'
 import type { AriaDateFieldProps } from '@react-types/datepicker'
-import type { VariantProps } from 'class-variance-authority'
 import { clsx } from 'clsx'
 import { useMemo, useRef, useState } from 'react'
 import { dateInputSlots, dateInputStyles, getDateInputSlotClassNames } from './date-input-styles'
 
-// @ts-expect-error
-export interface UseDateInputProps<T extends DateValue>
-  extends Omit<AriaDateFieldProps<T>, 'className'>,
-    Omit<VariantProps<typeof dateInputStyles>, 'isDisabled'> {
+export interface UseDateInputProps<T extends DateValue> extends Omit<AriaDateFieldProps<T>, 'className'> {
   startContent?: React.ReactNode
   endContent?: React.ReactNode
   classNames?: Partial<typeof dateInputSlots>
@@ -30,6 +26,11 @@ export interface UseDateInputProps<T extends DateValue>
     | 'underlined-inverted'
     | 'ghost'
     | 'ghost-inverted'
+  color?: 'primary' | 'secondary' | 'error'
+  size?: 'sm' | 'md' | 'lg'
+  shape?: 'full' | 'minimal' | 'sharp'
+  isInvalid?: boolean
+  isDisabled?: boolean
 }
 
 export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {

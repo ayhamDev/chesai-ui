@@ -1,6 +1,6 @@
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { Check, Copy } from "lucide-react";
 import React, { useState, useMemo } from "react";
@@ -36,12 +36,12 @@ const installCommandVariants = cva(
   },
 );
 
-export interface InstallCommandProps
-  extends
-    React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof installCommandVariants> {
+export interface InstallCommandProps extends React.HTMLAttributes<HTMLDivElement> {
   packageName: string;
   isDevDependency?: boolean;
+  variant?: "primary" | "secondary" | "surface" | "ghost";
+  shape?: "full" | "minimal" | "sharp";
+  shadow?: "none" | "sm" | "md" | "lg";
 }
 
 type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
@@ -54,9 +54,9 @@ export const InstallCommand = React.forwardRef<
     {
       packageName,
       isDevDependency = false,
-      variant,
-      shape,
-      shadow,
+      variant = "primary",
+      shape = "minimal",
+      shadow = "none",
       className,
       ...props
     },
@@ -81,11 +81,9 @@ export const InstallCommand = React.forwardRef<
       }
     }, [pm, packageName, isDevDependency]);
 
-    // Fixed Tokenizer using Flex Gap to prevent "npminstall" merging
     const tokens = useMemo(() => {
       return commandString.split(" ").map((part, index) => {
         if (index === 0) {
-          // Package Manager (npm, pnpm)
           return (
             <span key={index} className="text-primary font-bold">
               {part}
@@ -93,7 +91,6 @@ export const InstallCommand = React.forwardRef<
           );
         }
         if (part === "install" || part === "add") {
-          // Action
           return (
             <span key={index} className="text-secondary font-medium">
               {part}
@@ -101,14 +98,12 @@ export const InstallCommand = React.forwardRef<
           );
         }
         if (part.startsWith("-")) {
-          // Flags
           return (
             <span key={index} className="text-on-surface-variant/70 italic">
               {part}
             </span>
           );
         }
-        // Package Name
         return (
           <span
             key={index}
@@ -135,7 +130,6 @@ export const InstallCommand = React.forwardRef<
         )}
         {...props}
       >
-        {/* Header */}
         <div className="flex items-center justify-between bg-surface-container-highest/40 px-3 py-2 border-b border-outline-variant/20">
           <div className="flex gap-1.5">
             {(["npm", "pnpm", "yarn", "bun"] as const).map((p) => (
@@ -168,20 +162,14 @@ export const InstallCommand = React.forwardRef<
           </IconButton>
         </div>
 
-        {/* Terminal Body */}
         <div className="p-5 font-mono bg-black/[0.03] dark:bg-white/[0.03] flex items-baseline gap-4 group">
-          {/* Gutter / Line Number */}
           <span className="text-on-surface-variant/20 select-none text-sm shrink-0">
             1
           </span>
-
           <code className="text-sm sm:text-base flex items-center whitespace-pre shrink-0">
-            {/* Prompt Symbol */}
             <span className="text-primary/40 mr-3 select-none font-bold">
               $
             </span>
-
-            {/* The actual command with spacing handled by gap */}
             <div className="flex flex-wrap gap-x-2.5">{tokens}</div>
           </code>
         </div>

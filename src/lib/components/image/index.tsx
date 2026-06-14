@@ -1,6 +1,6 @@
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import {
   AnimatePresence,
@@ -10,10 +10,9 @@ import {
   useSpring,
 } from "framer-motion";
 import { ImageOff, X } from "lucide-react";
-import React, { useState, useEffect, useId } from "react";
+import React, { useState, useEffect, useId, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { Skeleton } from "../skeleton";
-import { Typography } from "../typography";
 
 // --- VARIANTS ---
 
@@ -73,35 +72,30 @@ const imgVariants = cva(
 
 export type ImageEffect = "inspect" | "zoom";
 
-export interface ImageProps
-  extends
-    React.ImgHTMLAttributes<HTMLImageElement>,
-    VariantProps<typeof containerVariants>,
-    VariantProps<typeof imgVariants> {
+export interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
   placeholderSrc?: string;
   alt: string;
   showSkeleton?: boolean;
   fallback?: React.ReactNode;
-  /**
-   * Enabled visual effects:
-   * - `inspect`: 2x zoom that follows the mouse cursor on hover.
-   * - `zoom`: Click to expand (Medium-style lightbox) using layout transitions.
-   */
   effects?: ImageEffect[];
+  shape?: "none" | "sm" | "md" | "lg" | "full";
+  variant?: "default" | "bordered" | "elevated";
+  aspectRatio?: "auto" | "square" | "video" | "portrait" | "wide";
+  zoomOnHover?: boolean;
 }
 
-export const Image = React.forwardRef<HTMLDivElement, ImageProps>(
+export const Image = forwardRef<HTMLDivElement, ImageProps>(
   (
     {
       src,
       placeholderSrc,
       alt,
       className,
-      shape,
-      variant,
-      aspectRatio,
-      zoomOnHover,
+      shape = "md",
+      variant = "default",
+      aspectRatio = "auto",
+      zoomOnHover = false,
       width,
       height,
       showSkeleton = true,
@@ -157,8 +151,7 @@ export const Image = React.forwardRef<HTMLDivElement, ImageProps>(
       if (hasZoom && status === "loaded") {
         setIsZoomed(true);
       }
-      // @ts-ignore
-      onClick?.(e);
+      onClick?.(e as any);
     };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -183,8 +176,6 @@ export const Image = React.forwardRef<HTMLDivElement, ImageProps>(
     const shouldRenderSkeleton =
       showSkeleton && status === "loading" && !placeholderSrc;
 
-    // -- RENDERERS --
-
     // Shared image element for both inline and modal views
     const renderMainImage = (isModal = false) => (
       // @ts-ignore - motion props compatibility issue with standard HTML attributes
@@ -200,7 +191,6 @@ export const Image = React.forwardRef<HTMLDivElement, ImageProps>(
         initial={{ opacity: 0 }}
         animate={{
           opacity: status === "loaded" ? 1 : 0,
-          // Apply inspect scale only if not in modal
           scale: hasInspect && isHovering && !isModal ? 2 : 1,
         }}
         style={{
@@ -211,7 +201,6 @@ export const Image = React.forwardRef<HTMLDivElement, ImageProps>(
         className={clsx(
           imgVariants({ zoomOnHover: !isModal && zoomOnHover }),
           "relative z-10",
-          // In modal, we constrain size but keep object-contain to prevent cropping
           isModal && "max-h-[90vh] max-w-[90vw] object-contain cursor-default",
         )}
         {...props}
@@ -228,8 +217,6 @@ export const Image = React.forwardRef<HTMLDivElement, ImageProps>(
             hasInspect && "cursor-crosshair",
             hasZoom && "cursor-zoom-in",
             className,
-            // When zoomed, hide the inline container contents to avoid duplication artifacts
-            // but keep the container taking up space
             isZoomed && "invisible",
           )}
           style={{ width, height, ...style }}
@@ -330,7 +317,6 @@ export const Image = React.forwardRef<HTMLDivElement, ImageProps>(
 
 Image.displayName = "Image";
 
-// --- PORTAL HELPER ---
 const Portal = ({ children }: { children: React.ReactNode }) => {
   if (typeof window === "undefined") return null;
   return createPortal(children, document.body);
