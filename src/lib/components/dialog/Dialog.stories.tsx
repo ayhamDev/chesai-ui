@@ -49,9 +49,6 @@ const meta: Meta<StoryComponentProps> = {
       control: "boolean",
       description: "Applies a glassmorphism effect to the dialog background.",
     },
-    // The variant passed here is for the dialog structure, but DialogContent
-    // wraps a Card. We typically rely on the Card's defaults, but if you want
-    // to control the card variant in the story, you'd pass it to DialogContent directly in render.
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
@@ -115,13 +112,73 @@ export const Basic: Story = {
   },
 };
 
+export const Controlled: Story = {
+  name: "Controlled Dialog (State-driven)",
+  args: {
+    variant: "basic",
+    shape: "minimal",
+    animation: "default",
+    glass: false,
+  },
+  parameters: { layout: "centered" },
+  render: (args) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex gap-2">
+          <Button onClick={() => setIsOpen(true)}>
+            Open Dialog (External State)
+          </Button>
+          <Button variant="secondary" onClick={() => setIsOpen(false)}>
+            Force Close (External State)
+          </Button>
+        </div>
+
+        <div className="text-sm text-gray-500">
+          Current state: <strong>{isOpen ? "Open" : "Closed"}</strong>
+        </div>
+
+        <Dialog
+          open={isOpen}
+          onOpenChange={setIsOpen}
+          variant={args.variant}
+          animation={args.animation}
+          glass={args.glass}
+        >
+          {/* We bypass DialogTrigger entirely here and let parent buttons manage state */}
+          <DialogContent shape={args.shape} variant="surface-container-high">
+            <DialogHeader>
+              <DialogTitle>Controlled Dialog</DialogTitle>
+              <DialogDescription>
+                This dialog's open state is managed entirely by the parent
+                component's state.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Typography variant="body-medium">
+                No Trigger component was used to mount this dialog. The state is
+                bound to standard buttons external to the dialog tree.
+              </Typography>
+            </div>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setIsOpen(false)}>
+                Close from Inside
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  },
+};
+
 export const MaterialAnimation: Story = {
   name: "Material Design 3 Animation",
   args: {
     variant: "basic",
     shape: "full",
     animation: "material3",
-    glass: false
+    glass: false,
   },
   parameters: { layout: "centered" },
   render: (args) => {

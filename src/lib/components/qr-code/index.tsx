@@ -78,7 +78,7 @@ interface QRCodeContextValue {
   logo?: string;
   logoSize: number;
   logoBackgroundColor: string;
-  svgRef: React.RefObject<SVGSVGElement>;
+  svgRef: React.RefObject<SVGSVGElement | null>;
   variant?: "primary" | "secondary" | "ghost" | "white" | null;
 }
 
@@ -384,7 +384,6 @@ export const QRCodeCanvas = React.forwardRef<
         className={clsx("w-full h-full overflow-visible", className)}
         initial="hidden"
         animate="visible"
-        {...props}
       >
         <title>QR Code</title>
         <motion.path
@@ -496,7 +495,7 @@ QRCodeContent.displayName = "QRCode.Content";
 
 export const QRCodeToolbar = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
+  Omit<React.HTMLAttributes<HTMLDivElement>, 'dir'>
 >(({ className, ...props }, ref) => {
   const { value, svgRef, size, logo, cornerFrameShape } = useQRCode();
   const [status, setStatus] = useState<"idle" | "copied" | "downloading">(

@@ -42,7 +42,9 @@ const SheetContext = createContext<SheetContextProps>({
 
 const useSheetContext = () => useContext(SheetContext);
 
-type SheetProps = React.ComponentProps<typeof VaulDrawer.Root> & {
+type SheetProps = Omit<React.ComponentProps<typeof VaulDrawer.Root>, 'snapPoints' | 'fadeFromIndex'> & {
+  snapPoints?: (string | number)[];
+  fadeFromIndex?: never;
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
   side?: "left" | "right";

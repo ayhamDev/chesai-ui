@@ -1,7 +1,7 @@
 "use client";
 
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { clsx } from "clsx";
-import FocusTrap from "focus-trap-react";
 import {
   AnimatePresence,
   motion,
@@ -10,21 +10,15 @@ import {
   type Variants,
 } from "framer-motion";
 import {
-  cloneElement,
   createContext,
   forwardRef,
-  isValidElement,
   useContext,
   useEffect,
-  useId,
-  useState,
   type ButtonHTMLAttributes,
   type FC,
   type HTMLAttributes,
-  type MouseEvent,
   type ReactNode,
 } from "react";
-import ReactDOM from "react-dom";
 import { twMerge } from "tailwind-merge";
 import { cardVariants, type CardProps } from "../card";
 import {
@@ -48,9 +42,6 @@ type DialogAnimationType = "default" | "material3";
 interface DialogContextProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  setTriggerRef: (node: HTMLElement | null) => void;
-  titleId: string;
-  descriptionId: string;
   variant: DialogVariant;
   animation: DialogAnimationType;
   isLocked: boolean;
@@ -65,12 +56,6 @@ const useDialogContext = () => {
     throw new Error("Dialog components must be used within a <Dialog>");
   }
   return context;
-};
-
-const Portal: FC<{ children: ReactNode }> = ({ children }) => {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  return mounted ? ReactDOM.createPortal(children, document.body) : null;
 };
 
 // --- ROOT Component ---
@@ -93,24 +78,20 @@ const Dialog: FC<DialogProps> = ({
   isLocked = false,
   glass = false,
 }) => {
-  const [, setTriggerRef] = useState<HTMLElement | null>(null);
-  const titleId = useId();
-  const descriptionId = useId();
   return (
     <DialogContext.Provider
       value={{
         open,
         onOpenChange,
-        setTriggerRef,
-        titleId,
-        descriptionId,
         variant,
         animation,
         isLocked,
         glass,
       }}
     >
-      {children}
+      <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+        {children}
+      </DialogPrimitive.Root>
     </DialogContext.Provider>
   );
 };
@@ -120,26 +101,26 @@ interface DialogTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
 }
 const DialogTrigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(
-  ({ children, asChild = false, onClick, ...props }, ref) => {
-    const { onOpenChange, setTriggerRef, isLocked } = useDialogContext();
-    const handleRef = (node: HTMLButtonElement | null) => {
-      setTriggerRef(node);
-      if (typeof ref === "function") ref(node);
-      else if (ref) ref.current = node;
-    };
-    const triggerProps = {
-      ...props,
-      ref: handleRef,
-      onClick: (e: MouseEvent<HTMLButtonElement>) => {
-        if (isLocked) return;
-        onOpenChange(true);
-        onClick?.(e);
-      },
-    };
-    if (asChild && isValidElement(children)) {
-      return cloneElement(children, triggerProps);
-    }
-    return <button {...triggerProps}>{children}</button>;
+  ({ children, asChild = false, onClick, disabled, ...props }, ref) => {
+    const { isLocked } = useDialogContext();
+
+    return (
+      <DialogPrimitive.Trigger
+        asChild={asChild}
+        ref={ref}
+        disabled={disabled || isLocked}
+        onClick={(e) => {
+          if (isLocked) {
+            e.preventDefault();
+            return;
+          }
+          onClick?.(e as any);
+        }}
+        {...props}
+      >
+        {children}
+      </DialogPrimitive.Trigger>
+    );
   },
 );
 DialogTrigger.displayName = "DialogTrigger";
@@ -266,6 +247,11 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       padding = "md",
       layout,
       glass: glassProp,
+      // Destructure these to avoid conflict with motion's custom types
+      onDrag,
+      onDragStart,
+      onDragEnd,
+      onAnimationStart,
       ...props
     },
     ref,
@@ -273,8 +259,6 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
     const {
       open,
       onOpenChange,
-      titleId,
-      descriptionId,
       variant: dialogVariant,
       animation,
       isLocked,
@@ -284,29 +268,11 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
 
     const glass = glassProp !== undefined ? glassProp : glassContext;
 
-    // --- ESCAPE KEY LOCK ---
     useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Escape" && isLocked) {
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-        }
-      };
-      if (open && isLocked) {
-        window.addEventListener("keydown", handleKeyDown, true);
-      }
-      return () => window.removeEventListener("keydown", handleKeyDown, true);
-    }, [open, isLocked]);
-
-    useEffect(() => {
-      if (open) {
-        document.body.style.overflow = "hidden";
-        if (dialogVariant === "fullscreen")
-          document.body.style.overscrollBehavior = "none";
+      if (open && dialogVariant === "fullscreen") {
+        document.body.style.overscrollBehavior = "none";
       }
       return () => {
-        document.body.style.overflow = "";
         document.body.style.overscrollBehavior = "";
       };
     }, [open, dialogVariant]);
@@ -314,66 +280,55 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
     const isFullscreen = dialogVariant === "fullscreen";
     const isMD3 = animation === "material3";
 
-    const handleDragEnd = (event: any, info: PanInfo) => {
+    const handleDragEndInternal = (
+      _event: MouseEvent | TouchEvent | PointerEvent,
+      info: PanInfo,
+    ) => {
       if (isLocked) return;
       if (info.offset.y > 150 || info.velocity.y > 400) onOpenChange(false);
     };
 
     return (
-      <Portal>
-        <AnimatePresence mode="wait">
-          {open && (
-            <FocusTrap
-              active={open}
-              focusTrapOptions={{
-                onDeactivate: () => !isLocked && onOpenChange(false),
-
-                // 1. CHANGE THIS to false. We let the dark backdrop handle closing instead.
-                clickOutsideDeactivates: false,
-
-                escapeDeactivates: !isLocked,
-
-                // 2. CHANGE THIS to true. This allows clicks to register on portaled elements (Select/DatePicker).
-                allowOutsideClick: true,
-              }}
-            >
-              <div
-                ref={ref}
+      <AnimatePresence mode="wait">
+        {open && (
+          <DialogPrimitive.Portal forceMount>
+            <DialogPrimitive.Overlay asChild forceMount>
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={
+                  isMD3 ? material3ScrimVariants : defaultBackdropVariants
+                }
                 className={clsx(
-                  "fixed inset-0 z-50 flex",
-                  !isFullscreen && "items-center justify-center p-4 sm:p-8",
-                  isFullscreen &&
-                    "items-end sm:items-center sm:justify-center sm:p-8",
+                  "fixed inset-0 z-50 pointer-events-auto",
+                  isMD3 && !isFullscreen ? "bg-black/30" : "bg-black/50",
                 )}
-                {...props}
+                style={{ willChange: "opacity" }}
+              />
+            </DialogPrimitive.Overlay>
+
+            <div
+              className={clsx(
+                "fixed inset-0 z-50 flex pointer-events-none",
+                !isFullscreen && "items-center justify-center p-4 sm:p-8",
+                isFullscreen &&
+                  "items-end sm:items-center sm:justify-center sm:p-8",
+              )}
+            >
+              <DialogPrimitive.Content
+                asChild
+                forceMount
+                onEscapeKeyDown={(e) => {
+                  if (isLocked) e.preventDefault();
+                }}
+                onInteractOutside={(e) => {
+                  if (isLocked) e.preventDefault();
+                }}
               >
                 <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  variants={
-                    isMD3 ? material3ScrimVariants : defaultBackdropVariants
-                  }
-                  className={clsx(
-                    "absolute inset-0",
-                    isMD3 && !isFullscreen ? "bg-black/30" : "bg-black/50",
-                  )}
-                  onClick={() => !isLocked && onOpenChange(false)}
-                  style={{ willChange: "opacity" }}
-                />
-
-                {/* 
-                  THE FIX: We map the Card variants directly onto the motion.div.
-                  Crucially, we add `!transition-none` to prevent standard CSS
-                  transitions from hijacking the Framer Motion animation loop.
-                  This ensures the glass effect is applied to the root rendered container.
-                */}
-                <motion.div
-                  role="dialog"
+                  ref={ref}
                   layout={layout}
-                  aria-modal="true"
-                  aria-labelledby={titleId}
-                  aria-describedby={descriptionId}
                   variants={
                     isFullscreen
                       ? fullscreenDialogVariants
@@ -389,14 +344,14 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   dragListener={false}
                   dragConstraints={{ top: 0, bottom: 0 }}
                   dragElastic={{ top: 0, bottom: 1 }}
-                  onDragEnd={handleDragEnd}
+                  onDragEnd={handleDragEndInternal}
                   style={{
                     willChange: "transform, opacity, height, width",
                     touchAction: isFullscreen && !isLocked ? "none" : "auto",
                   }}
                   className={twMerge(
                     clsx(
-                      "relative z-10 flex flex-col shadow-2xl",
+                      "relative z-10 flex flex-col shadow-2xl pointer-events-auto",
                       isFullscreen
                         ? [
                             "w-full",
@@ -410,7 +365,6 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                           ]
                         : [
                             "w-full max-w-lg",
-                            // Pass cardVariants here directly
                             cardVariants({
                               shape,
                               variant,
@@ -419,12 +373,12 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                               elevation: "none",
                               bordered: false,
                             }),
-                            // Suppress the CSS transition applied by cardVariants
-                            "!transition-none",
+                            "transition-none!",
                           ],
                       className,
                     ),
                   )}
+                  {...props}
                 >
                   {isFullscreen && (
                     <div className="absolute left-1/2 top-2 z-50 -translate-x-1/2 opacity-80 pointer-events-none">
@@ -464,15 +418,14 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                       </div>
                     </motion.div>
                   ) : (
-                    // Since the motion.div IS now the card, we just render children directly!
                     children
                   )}
                 </motion.div>
-              </div>
-            </FocusTrap>
-          )}
-        </AnimatePresence>
-      </Portal>
+              </DialogPrimitive.Content>
+            </div>
+          </DialogPrimitive.Portal>
+        )}
+      </AnimatePresence>
     );
   },
 );
@@ -483,21 +436,27 @@ interface DialogCloseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
 }
 const DialogClose = forwardRef<HTMLButtonElement, DialogCloseProps>(
-  ({ children, asChild = false, onClick, ...props }, ref) => {
-    const { onOpenChange, isLocked } = useDialogContext();
-    const closeProps = {
-      ...props,
-      ref,
-      disabled: props.disabled || isLocked,
-      onClick: (e: MouseEvent<HTMLButtonElement>) => {
-        if (isLocked) return;
-        onOpenChange(false);
-        onClick?.(e);
-      },
-    };
-    if (asChild && isValidElement(children))
-      return cloneElement(children, closeProps);
-    return <button {...closeProps}>{children}</button>;
+  ({ children, asChild = false, onClick, disabled, ...props }, ref) => {
+    const { isLocked } = useDialogContext();
+    const isDisabled = disabled || isLocked;
+
+    return (
+      <DialogPrimitive.Close
+        asChild={asChild}
+        ref={ref}
+        disabled={isDisabled}
+        onClick={(e) => {
+          if (isDisabled) {
+            e.preventDefault();
+            return;
+          }
+          onClick?.(e as any);
+        }}
+        {...props}
+      >
+        {children}
+      </DialogPrimitive.Close>
+    );
   },
 );
 DialogClose.displayName = "DialogClose";
@@ -509,7 +468,7 @@ const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
       className={clsx(
         variant === "basic" && "flex flex-col space-y-1.5 text-left",
         variant === "fullscreen" && [
-          "flex flex-shrink-0 flex-row items-center justify-between",
+          "flex shrink-0 flex-row items-center justify-between",
           "px-6 py-4 sm:px-8 sm:py-6",
           "bg-transparent border-b border-outline-variant",
           "touch-none select-none",
@@ -528,7 +487,7 @@ const DialogFooter = (props: HTMLAttributes<HTMLDivElement>) => {
       className={clsx(
         variant === "basic" && "mt-6 flex justify-end gap-2",
         variant === "fullscreen" && [
-          "flex flex-shrink-0 flex-row gap-3",
+          "flex shrink-0 flex-row gap-3",
           "px-6 py-4 sm:px-8 sm:py-6",
           "bg-transparent border-t border-outline-variant",
         ],
@@ -543,27 +502,30 @@ const DialogTitle = forwardRef<
   HTMLHeadingElement,
   HTMLAttributes<HTMLHeadingElement>
 >((props, ref) => {
-  const { titleId } = useDialogContext();
   return (
-    <Typography ref={ref} id={titleId} variant="headline-small" {...props} />
+    <DialogPrimitive.Title asChild>
+      <Typography ref={ref} variant="headline-small" {...props} />
+    </DialogPrimitive.Title>
   );
 });
+DialogTitle.displayName = "DialogTitle";
 
 const DialogDescription = forwardRef<
   HTMLParagraphElement,
   HTMLAttributes<HTMLParagraphElement>
 >((props, ref) => {
-  const { descriptionId } = useDialogContext();
   return (
-    <Typography
-      variant="body-medium"
-      className="text-on-surface-variant"
-      ref={ref}
-      id={descriptionId}
-      {...props}
-    />
+    <DialogPrimitive.Description asChild>
+      <Typography
+        variant="body-medium"
+        className="text-on-surface-variant"
+        ref={ref}
+        {...props}
+      />
+    </DialogPrimitive.Description>
   );
 });
+DialogDescription.displayName = "DialogDescription";
 
 export interface DialogBodyProps extends ElasticScrollAreaProps {}
 const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
