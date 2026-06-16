@@ -153,7 +153,7 @@ function SortableItem<T extends KanbanItemData>({
   );
 }
 
-interface SortableColumnProps<T> {
+interface SortableColumnProps<T extends KanbanItemData> {
   column: KanbanColumnData<T>;
   renderCard: (item: T, isDragging: boolean) => React.ReactNode;
   renderColumnHeader?: (

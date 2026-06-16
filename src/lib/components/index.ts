@@ -6,6 +6,7 @@ export * from './appbar'
 export * from './avatar'
 export * from './avatar/AvatarGroup'
 export * from './badge'
+export * from "./kanban"
 export * from './bottom-tabs'
 export * from './bouncy-box'
 export * from './breadcrumb'
