@@ -1,13 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
-
+html {
+  scrollbar-gutter: auto !important;
+}
 @layer base {
   /* 
     -----------------------------------------
     Material Design 3 Token Definitions 
     -----------------------------------------
   */
-   /* 
+  /* 
     --- GLOBAL SCROLLBAR STYLING ---
     Matches the look of ElasticScrollArea 
   */
@@ -16,12 +18,13 @@
   * {
     scrollbar-width: thin;
     /* [Thumb Color] [Track Color] */
-    scrollbar-color: rgb(from var(--md-sys-color-primary) r g b / 0.3) transparent;
+    scrollbar-color: rgb(from var(--md-sys-color-primary) r g b / 0.3)
+      transparent;
   }
 
   /* 2. Webkit (Chrome, Safari, Edge) */
   ::-webkit-scrollbar {
-    width: 8px;  /* Width of vertical scrollbar */
+    width: 8px; /* Width of vertical scrollbar */
     height: 8px; /* Height of horizontal scrollbar */
   }
 
@@ -50,9 +53,10 @@
 
   /* Default Light (Standard Contrast) */
   :root {
-    --font-brand: 'Manrope', system-ui, -apple-system, sans-serif;
-    --font-plain: 'Manrope', system-ui, -apple-system, sans-serif;
-    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-brand: "Manrope", system-ui, -apple-system, sans-serif;
+    --font-plain: "Manrope", system-ui, -apple-system, sans-serif;
+    --font-mono:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --font-button: var(--font-plain);
 
     /* --- Global Motion Variables (Expressive by default) --- */
@@ -115,24 +119,22 @@
       -----------------------------------------
     */
     /* Easing Curves */
-    --ease-emphasized: cubic-bezier(0.2, 0.0, 0.0, 1.0);
-    --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1.0);
-    --ease-emphasized-accelerate: cubic-bezier(0.3, 0.0, 0.8, 0.15);
-    --ease-standard: cubic-bezier(0.2, 0.0, 0, 1.0);
+    --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+    --ease-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
     --ease-standard-decelerate: cubic-bezier(0, 0, 0, 1);
     --ease-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
 
-  
-  /* Expressive Spatial Easings */
-  --ease-expressive-fast-spatial: cubic-bezier(0.42, 1.67, 0.21, 0.90);
-  --ease-expressive-default-spatial: cubic-bezier(0.38, 1.21, 0.22, 1.00);
-  --ease-expressive-slow-spatial: cubic-bezier(0.39, 1.29, 0.35, 0.98);
+    /* Expressive Spatial Easings */
+    --ease-expressive-fast-spatial: cubic-bezier(0.42, 1.67, 0.21, 0.9);
+    --ease-expressive-default-spatial: cubic-bezier(0.38, 1.21, 0.22, 1);
+    --ease-expressive-slow-spatial: cubic-bezier(0.39, 1.29, 0.35, 0.98);
 
-  /* Expressive Effects Easings */
-  --ease-expressive-fast-effects: cubic-bezier(0.31, 0.94, 0.34, 1.00);
-  --ease-expressive-default-effects: cubic-bezier(0.34, 0.80, 0.34, 1.00);
-  --ease-expressive-slow-effects: cubic-bezier(0.34, 0.88, 0.34, 1.00);
-
+    /* Expressive Effects Easings */
+    --ease-expressive-fast-effects: cubic-bezier(0.31, 0.94, 0.34, 1);
+    --ease-expressive-default-effects: cubic-bezier(0.34, 0.8, 0.34, 1);
+    --ease-expressive-slow-effects: cubic-bezier(0.34, 0.88, 0.34, 1);
 
     /* Durations */
     --duration-short1: 50ms;
@@ -314,8 +316,8 @@
     --md-sys-color-surface-container-high: rgb(50 40 37);
     --md-sys-color-surface-container-highest: rgb(61 50 47);
 
-  --color-ripple-light:  rgba(0, 0, 0, 0.2);
-  --color-ripple-dark: rgba(255, 255, 255, 0.2);
+    --color-ripple-light: rgba(0, 0, 0, 0.2);
+    --color-ripple-dark: rgba(255, 255, 255, 0.2);
   }
 
   /* Dark Medium Contrast */
@@ -472,11 +474,15 @@
 
   --color-surface-dim: var(--md-sys-color-surface-dim);
   --color-surface-bright: var(--md-sys-color-surface-bright);
-  --color-surface-container-lowest: var(--md-sys-color-surface-container-lowest);
+  --color-surface-container-lowest: var(
+    --md-sys-color-surface-container-lowest
+  );
   --color-surface-container-low: var(--md-sys-color-surface-container-low);
   --color-surface-container: var(--md-sys-color-surface-container);
   --color-surface-container-high: var(--md-sys-color-surface-container-high);
-  --color-surface-container-highest: var(--md-sys-color-surface-container-highest);
+  --color-surface-container-highest: var(
+    --md-sys-color-surface-container-highest
+  );
 
   --color-outline: var(--md-sys-color-outline);
   --color-outline-variant: var(--md-sys-color-outline-variant);
@@ -493,16 +499,20 @@
   */
   --color-graphite-primary: var(--md-sys-color-primary);
   --color-graphite-primaryForeground: var(--md-sys-color-on-primary);
-  
-  --color-graphite-secondary: var(--md-sys-color-secondary-container); /* Mapping secondary to container for lighter bg */
-  --color-graphite-secondaryForeground: var(--md-sys-color-on-secondary-container);
-  
+
+  --color-graphite-secondary: var(
+    --md-sys-color-secondary-container
+  ); /* Mapping secondary to container for lighter bg */
+  --color-graphite-secondaryForeground: var(
+    --md-sys-color-on-secondary-container
+  );
+
   --color-graphite-background: var(--md-sys-color-background);
   --color-graphite-foreground: var(--md-sys-color-on-background);
-  
+
   --color-graphite-card: var(--md-sys-color-surface-container-low);
   --color-graphite-cardForeground: var(--md-sys-color-on-surface);
-  
+
   --color-graphite-border: var(--md-sys-color-outline-variant);
   --color-graphite-ring: var(--md-sys-color-primary);
 
@@ -513,7 +523,7 @@
   --color-sidebar-accent-foreground: var(--md-sys-color-on-secondary-container);
   --color-sidebar-ring: var(--md-sys-color-primary);
 
-  --color-ripple-dark:  rgba(0, 0, 0, 0.2);
+  --color-ripple-dark: rgba(0, 0, 0, 0.2);
   --color-ripple-light: rgba(255, 255, 255, 0.2);
 
   /* 
@@ -521,15 +531,15 @@
     MD3 Motion Mappings
     -----------------------------------------
   */
-  --ease-emphasized: cubic-bezier(0.2, 0.0, 0.0, 1.0);
-  --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1.0);
-  --ease-emphasized-accelerate: cubic-bezier(0.3, 0.0, 0.8, 0.15);
-  --ease-standard: cubic-bezier(0.2, 0.0, 0, 1.0);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-standard-decelerate: cubic-bezier(0, 0, 0, 1);
   --ease-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
 
   /* Mapping legacy 'ease-ios' to emphasized for consistency, or keep it if specifically needed */
-  --ease-ios: var(--ease-emphasized); 
+  --ease-ios: var(--ease-emphasized);
 
   /* Animation Utilities (Preserved from original) */
   --animate-loading-linear: loading-linear-move 1.5s infinite ease-in-out;
@@ -538,22 +548,33 @@
   --animate-loading-circular-wavy-crawl: circular-wavy-crawl 2s linear infinite;
   --animate-loading-circular: loading-circular-rotate 1.4s linear infinite;
   --animate-loading-circular-slow: loading-circular-rotate 4s linear infinite;
-  --animate-progress-indeterminate-1: progress-indeterminate-1 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
-  --animate-progress-indeterminate-2: progress-indeterminate-2 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite 1.15s;
-  --animate-progress-circular-indeterminate: progress-circular-indeterminate 1.4s ease-in-out infinite;
+  --animate-progress-indeterminate-1: progress-indeterminate-1 2.1s
+    cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+  --animate-progress-indeterminate-2: progress-indeterminate-2 2.1s
+    cubic-bezier(0.165, 0.84, 0.44, 1) infinite 1.15s;
+  --animate-progress-circular-indeterminate: progress-circular-indeterminate
+    1.4s ease-in-out infinite;
   --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animate-collapsible-down: collapsible-down 200ms ease-out;
   --animate-collapsible-up: collapsible-up 200ms ease-out;
-  --animate-accordion-down: accordion-down 200ms cubic-bezier(0.87, 0, 0.13, 1) forwards;
-  --animate-accordion-up: accordion-up 200ms cubic-bezier(0.87, 0, 0.13, 1) forwards;
+  --animate-accordion-down: accordion-down 200ms cubic-bezier(0.87, 0, 0.13, 1)
+    forwards;
+  --animate-accordion-up: accordion-up 200ms cubic-bezier(0.87, 0, 0.13, 1)
+    forwards;
   --animate-menu-enter: menu-enter 300ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-menu-exit: menu-exit 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
-  --animate-select-enter: select-enter-clip 200ms cubic-bezier(0.2, 0, 0, 1) forwards;
-  --animate-select-exit: select-exit-clip 1500ms cubic-bezier(0.4, 0, 1, 1) forwards;
-  --animate-submenu-enter-right: submenu-enter-right 250ms cubic-bezier(0.2, 0, 0, 1) forwards;
-  --animate-submenu-enter-left: submenu-enter-left 250ms cubic-bezier(0.2, 0, 0, 1) forwards;
-  --animate-submenu-exit-right: submenu-exit-right 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
-  --animate-submenu-exit-left: submenu-exit-left 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  --animate-select-enter: select-enter-clip 200ms cubic-bezier(0.2, 0, 0, 1)
+    forwards;
+  --animate-select-exit: select-exit-clip 1500ms cubic-bezier(0.4, 0, 1, 1)
+    forwards;
+  --animate-submenu-enter-right: submenu-enter-right 250ms
+    cubic-bezier(0.2, 0, 0, 1) forwards;
+  --animate-submenu-enter-left: submenu-enter-left 250ms
+    cubic-bezier(0.2, 0, 0, 1) forwards;
+  --animate-submenu-exit-right: submenu-exit-right 150ms
+    cubic-bezier(0.4, 0, 1, 1) forwards;
+  --animate-submenu-exit-left: submenu-exit-left 150ms
+    cubic-bezier(0.4, 0, 1, 1) forwards;
   --animate-check-in: check-in 200ms cubic-bezier(0.2, 0, 0, 1) forwards;
   --animate-nav-enter-from-right: enter-from-right 250ms ease;
   --animate-nav-enter-from-left: enter-from-left 250ms ease;
@@ -564,132 +585,300 @@
   --animate-nav-fade-in: fade-in 200ms ease;
   --animate-nav-fade-out: fade-out 200ms ease;
   --animate-caret-blink: caret-blink 1.25s ease-out infinite;
-  
-  
-  
+
   @keyframes loading-wave-translate {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-40px); }
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-40px);
+    }
   }
   @keyframes menu-enter {
-    from { opacity: 0; transform: scale(0.9) translateY(-0.5rem); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(-0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
   @keyframes menu-exit {
-    from { opacity: 1; transform: scale(1) translateY(0); }
-    to { opacity: 0; transform: scale(0.9) translateY(-0.5rem); }
+    from {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.9) translateY(-0.5rem);
+    }
   }
   @keyframes select-enter-clip {
-    from { opacity: 0; clip-path: inset(50% 0 50% 0); }
-    to { opacity: 1; clip-path: inset(0 0 0 0); }
+    from {
+      opacity: 0;
+      clip-path: inset(50% 0 50% 0);
+    }
+    to {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+    }
   }
   @keyframes select-exit-clip {
-    from { opacity: 1; clip-path: inset(0 0 0 0); }
-    to { opacity: 0; clip-path: inset(50% 0 50% 0); }
+    from {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+    }
+    to {
+      opacity: 0;
+      clip-path: inset(50% 0 50% 0);
+    }
   }
   @keyframes submenu-enter-right {
-    from { opacity: 0; transform: scale(0.95) translateX(-0.5rem); }
-    to { opacity: 1; transform: scale(1) translateX(0); }
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateX(-0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+    }
   }
   @keyframes submenu-enter-left {
-    from { opacity: 0; transform: scale(0.95) translateX(0.5rem); }
-    to { opacity: 1; transform: scale(1) translateX(0); }
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateX(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+    }
   }
   @keyframes submenu-exit-right {
-    from { opacity: 1; transform: scale(1) translateX(0); }
-    to { opacity: 0; transform: scale(0.95) translateX(-0.5rem); }
+    from {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.95) translateX(-0.5rem);
+    }
   }
   @keyframes submenu-exit-left {
-    from { opacity: 1; transform: scale(1) translateX(0); }
-    to { opacity: 0; transform: scale(0.95) translateX(0.5rem); }
+    from {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.95) translateX(0.5rem);
+    }
   }
   @keyframes check-in {
-    from { opacity: 0; transform: scale(0.5) rotate(-90deg); }
-    to { opacity: 1; transform: scale(1) rotate(0deg); }
+    from {
+      opacity: 0;
+      transform: scale(0.5) rotate(-90deg);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
   }
   @keyframes enter-from-right {
-    from { opacity: 0; transform: translateX(12.5rem); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(12.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
   @keyframes enter-from-left {
-    from { opacity: 0; transform: translateX(-12.5rem); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(-12.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
   @keyframes caret-blink {
-    0%, 70%, 100% { opacity: 1; }
-    20%, 50% { opacity: 0; }
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    50% {
+      opacity: 0;
+    }
   }
   @keyframes exit-to-right {
-    from { opacity: 1; transform: translateX(0); }
-    to { opacity: 0; transform: translateX(12.5rem); }
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(12.5rem);
+    }
   }
   @keyframes exit-to-left {
-    from { opacity: 1; transform: translateX(0); }
-    to { opacity: 0; transform: translateX(-12.5rem); }
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(-12.5rem);
+    }
   }
   @keyframes scale-in-content {
-    from { opacity: 0; transform: rotateX(-15deg) scale(0.9); }
-    to { opacity: 1; transform: rotateX(0deg) scale(1); }
+    from {
+      opacity: 0;
+      transform: rotateX(-15deg) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: rotateX(0deg) scale(1);
+    }
   }
   @keyframes scale-out-content {
-    from { opacity: 1; transform: rotateX(0deg) scale(1); }
-    to { opacity: 0; transform: rotateX(-10deg) scale(0.95); }
+    from {
+      opacity: 1;
+      transform: rotateX(0deg) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: rotateX(-10deg) scale(0.95);
+    }
   }
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
   @keyframes fade-out {
-    from { opacity: 1; }
-    to { opacity: 0; }
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
   }
   @keyframes accordion-down {
-    from { height: 0; opacity: 0; }
-    to { height: var(--radix-accordion-content-height); opacity: 1; }
+    from {
+      height: 0;
+      opacity: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
   }
   @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); opacity: 1; }
-    to { height: 0; opacity: 0; }
+    from {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+    to {
+      height: 0;
+      opacity: 0;
+    }
   }
   @keyframes pulse {
-    50% { opacity: 0.5; }
+    50% {
+      opacity: 0.5;
+    }
   }
   @keyframes collapsible-down {
-    from { height: 0; }
-    to { height: var(--radix-collapsible-content-height); }
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-collapsible-content-height);
+    }
   }
   @keyframes collapsible-up {
-    from { height: var(--radix-collapsible-content-height); }
-    to { height: 0; }
+    from {
+      height: var(--radix-collapsible-content-height);
+    }
+    to {
+      height: 0;
+    }
   }
   @keyframes loading-linear-move {
-    0% { left: -40%; }
-    100% { left: 100%; }
+    0% {
+      left: -40%;
+    }
+    100% {
+      left: 100%;
+    }
   }
   @keyframes circular-wavy-crawl {
-    from { stroke-dashoffset: 0; }
-    to { stroke-dashoffset: -133; }
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: -133;
+    }
   }
   @keyframes loading-circular-rotate {
-    100% { transform: rotate(360deg); }
+    100% {
+      transform: rotate(360deg);
+    }
   }
   @keyframes loading-wavy-move {
-    from { stroke-dashoffset: 0; }
-    to { stroke-dashoffset: -240; }
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: -240;
+    }
   }
   @keyframes progress-indeterminate-1 {
-    0% { left: -35%; width: 35%; }
-    60%, 100% { left: 100%; width: 10%; }
+    0% {
+      left: -35%;
+      width: 35%;
+    }
+    60%,
+    100% {
+      left: 100%;
+      width: 10%;
+    }
   }
   @keyframes progress-indeterminate-2 {
-    0% { left: -200%; width: 10%; }
-    60% { left: 107%; width: 20%; }
-    100% { left: 107%; width: 10%; }
+    0% {
+      left: -200%;
+      width: 10%;
+    }
+    60% {
+      left: 107%;
+      width: 20%;
+    }
+    100% {
+      left: 107%;
+      width: 10%;
+    }
   }
   @keyframes progress-circular-indeterminate {
-    0% { stroke-dasharray: 1px, 200px; stroke-dashoffset: 0; }
-    50% { stroke-dasharray: 100px, 200px; stroke-dashoffset: -15px; }
-    100% { stroke-dasharray: 100px, 200px; stroke-dashoffset: -125px; }
+    0% {
+      stroke-dasharray: 1px, 200px;
+      stroke-dashoffset: 0;
+    }
+    50% {
+      stroke-dasharray: 100px, 200px;
+      stroke-dashoffset: -15px;
+    }
+    100% {
+      stroke-dasharray: 100px, 200px;
+      stroke-dashoffset: -125px;
+    }
   }
 }
 
