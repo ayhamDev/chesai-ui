@@ -1,7 +1,9 @@
+// src/lib/components/icon-button/Icon-button.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
-import { Plus } from "lucide-react";
+import { Plus, Phone, Video, Search, Moon } from "lucide-react";
 import { useState } from "react";
 import { IconButton } from "./index";
+import { Typography } from "../typography";
 
 const meta: Meta<typeof IconButton> = {
   title: "Components/Buttons/IconButton",
@@ -29,7 +31,12 @@ const meta: Meta<typeof IconButton> = {
       options: ["full", "minimal", "sharp"],
       description: "The border radius of the icon button.",
     },
-    isLoading: { control: "boolean" }, // Added isLoading control
+    containerShape: {
+      control: "select",
+      options: ["normal", "wide-pill"],
+      description: "Controls the aspect ratio width of the container.",
+    },
+    isLoading: { control: "boolean" },
     disabled: { control: "boolean" },
     onClick: { action: "clicked" },
   },
@@ -43,9 +50,77 @@ export const Primary: Story = {
     variant: "primary",
     size: "md",
     shape: "full",
+    containerShape: "normal",
     children: <Plus className="h-6 w-6" />,
     "aria-label": "Add new item",
   },
+};
+
+export const CustomContainerShapes: Story = {
+  name: "Mockup Match (Wide Pill Dial)",
+  render: () => (
+    <div className="flex flex-col items-center gap-6 p-8 bg-[#18181b] rounded-3xl w-[450px]">
+      <Typography
+        variant="title-medium"
+        className="text-[#a1a1aa] font-semibold tracking-wide"
+      >
+        +1 (804) 503-3063
+      </Typography>
+
+      <div className="flex items-center justify-center gap-6">
+        <div className="flex flex-col items-center gap-2">
+          <IconButton
+            variant="secondary"
+            containerShape="wide-pill"
+            size="md"
+            className="!bg-[#3f3f46] !text-[#f4f4f5]"
+          >
+            <Phone className="h-5 w-5" />
+          </IconButton>
+          <Typography
+            variant="label-small"
+            className="text-[#f4f4f5] font-semibold"
+          >
+            Voice
+          </Typography>
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          <IconButton
+            variant="secondary"
+            containerShape="wide-pill"
+            size="md"
+            className="!bg-[#3f3f46] !text-[#f4f4f5]"
+          >
+            <Video className="h-5 w-5" />
+          </IconButton>
+          <Typography
+            variant="label-small"
+            className="text-[#f4f4f5] font-semibold"
+          >
+            Video
+          </Typography>
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          <IconButton
+            variant="secondary"
+            containerShape="wide-pill"
+            size="md"
+            className="!bg-[#3f3f46] !text-[#f4f4f5]"
+          >
+            <Search className="h-5 w-5" />
+          </IconButton>
+          <Typography
+            variant="label-small"
+            className="text-[#f4f4f5] font-semibold"
+          >
+            Search
+          </Typography>
+        </div>
+      </div>
+    </div>
+  ),
 };
 
 export const AllVariants: Story = {
@@ -78,99 +153,75 @@ export const AllVariants: Story = {
 };
 
 export const AllSizes: Story = {
-  name: "All Sizes",
+  name: "All Sizes (Wide Pill)",
   render: () => (
-    <div className="flex flex-wrap items-center gap-4">
-      <IconButton variant="primary" size="lg" aria-label="Large">
+    <div className="flex flex-wrap items-end gap-4">
+      <IconButton
+        variant="primary"
+        containerShape="wide-pill"
+        size="xl"
+        aria-label="Extra Large"
+      >
         <Plus className="h-8 w-8" />
       </IconButton>
-      <IconButton variant="primary" size="md" aria-label="Medium">
+      <IconButton
+        variant="primary"
+        containerShape="wide-pill"
+        size="lg"
+        aria-label="Large"
+      >
         <Plus className="h-6 w-6" />
       </IconButton>
-      <IconButton variant="primary" size="sm" aria-label="Small">
+      <IconButton
+        variant="primary"
+        containerShape="wide-pill"
+        size="md"
+        aria-label="Medium"
+      >
+        <Plus className="h-6 w-6" />
+      </IconButton>
+      <IconButton
+        variant="primary"
+        containerShape="wide-pill"
+        size="sm"
+        aria-label="Small"
+      >
         <Plus className="h-5 w-5" />
       </IconButton>
-      <IconButton variant="primary" size="xs" aria-label="Extra Small">
+      <IconButton
+        variant="primary"
+        containerShape="wide-pill"
+        size="xs"
+        aria-label="Extra Small"
+      >
         <Plus className="h-4 w-4" />
       </IconButton>
     </div>
   ),
 };
 
-export const AllShapes: Story = {
-  name: "All Shapes",
-  render: () => (
-    <div className="flex flex-wrap items-center gap-4">
-      <IconButton
-        variant="primary"
-        size="md"
-        shape="full"
-        aria-label="Full Shape"
-      >
-        <Plus className="h-6 w-6" />
-      </IconButton>
-      <IconButton
-        variant="primary"
-        size="md"
-        shape="minimal"
-        aria-label="Minimal Shape"
-      >
-        <Plus className="h-6 w-6" />
-      </IconButton>
-      <IconButton
-        variant="primary"
-        size="md"
-        shape="sharp"
-        aria-label="Sharp Shape"
-      >
-        <Plus className="h-6 w-6" />
-      </IconButton>
-    </div>
-  ),
-};
-
-// --- NEW STORIES FOR LOADING STATE ---
-
 export const Loading: Story = {
   name: "Loading State",
   render: () => (
     <div className="flex flex-wrap items-center gap-4">
-      <IconButton variant="primary" size="md" aria-label="Loading" isLoading>
+      <IconButton
+        variant="primary"
+        containerShape="wide-pill"
+        size="md"
+        aria-label="Loading"
+        isLoading
+      >
         <Plus className="h-6 w-6" />
       </IconButton>
-      <IconButton variant="secondary" size="md" aria-label="Loading" isLoading>
-        <Plus className="h-6 w-6" />
-      </IconButton>
-      <IconButton variant="outline" size="md" aria-label="Loading" isLoading>
-        <Plus className="h-6 w-6" />
-      </IconButton>
-      <IconButton variant="ghost" size="md" aria-label="Loading" isLoading>
+      <IconButton
+        variant="secondary"
+        containerShape="wide-pill"
+        size="md"
+        aria-label="Loading"
+        isLoading
+      >
         <Plus className="h-6 w-6" />
       </IconButton>
     </div>
   ),
-};
-
-export const InteractiveLoading: Story = {
-  name: "Interactive Loading",
-  render: () => {
-    const [isLoading, setIsLoading] = useState(false);
-    const handleClick = () => {
-      setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 2000);
-    };
-    return (
-      <IconButton
-        variant="primary"
-        size="lg"
-        aria-label="Submit"
-        isLoading={isLoading}
-        onClick={handleClick}
-      >
-        <Plus className="h-8 w-8" />
-      </IconButton>
-    );
-  },
 };

@@ -1,4 +1,6 @@
-import { cva } from "class-variance-authority";
+"use client";
+
+import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useState } from "react";
@@ -28,42 +30,53 @@ export const iconButtonVariants = cva(
         link: "bg-transparent text-primary disabled:opacity-70 hover:text-primary hover:underline !p-1 focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-primary",
       },
       size: {
-        xs: "h-8 w-8",
-        sm: "h-10 w-10",
-        md: "h-12 w-12",
-        lg: "h-14 w-14",
-        xl: "h-20 w-20 [&_svg]:size-8",
+        xs: "h-8 [&_svg]:size-4",
+        sm: "h-10 [&_svg]:size-5",
+        md: "h-12 [&_svg]:size-6",
+        lg: "h-14 [&_svg]:size-6",
+        xl: "h-20 [&_svg]:size-8",
       },
       shape: {
         full: "rounded-full",
         minimal: "rounded-lg",
         sharp: "rounded-none",
       },
+      containerShape: {
+        normal: "",
+        "wide-pill": "",
+      },
       isLoading: {
         true: "cursor-wait pointer-events-none !opacity-100",
       },
     },
+    compoundVariants: [
+      // --- normal containerShape (1:1 aspect ratio) ---
+      { containerShape: "normal", size: "xs", className: "w-8" },
+      { containerShape: "normal", size: "sm", className: "w-10" },
+      { containerShape: "normal", size: "md", className: "w-12" },
+      { containerShape: "normal", size: "lg", className: "w-14" },
+      { containerShape: "normal", size: "xl", className: "w-20" },
+
+      // --- wide-pill containerShape (Wider capsule aspect ratio) ---
+      { containerShape: "wide-pill", size: "xs", className: "w-10" },
+      { containerShape: "wide-pill", size: "sm", className: "w-12" },
+      { containerShape: "wide-pill", size: "md", className: "w-14" },
+      { containerShape: "wide-pill", size: "lg", className: "w-16" },
+      { containerShape: "wide-pill", size: "xl", className: "w-24" },
+    ],
     defaultVariants: {
       variant: "primary",
       size: "md",
       shape: "full",
+      containerShape: "normal",
     },
   },
 );
 
-export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?:
-    | "primary"
-    | "secondary"
-    | "tertiary"
-    | "outline"
-    | "destructive"
-    | "ghost"
-    | "link";
-  size?: "xs" | "sm" | "md" | "lg" | "xl";
-  shape?: "full" | "minimal" | "sharp";
-  isLoading?: boolean;
-}
+export interface IconButtonProps
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof iconButtonVariants> {}
 
 export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
   (
@@ -72,6 +85,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       variant = "primary",
       size = "md",
       shape,
+      containerShape = "normal",
       children,
       disabled,
       isLoading,
@@ -92,7 +106,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       ref: rippleRef,
       color: rippleColor,
       duration: 400,
-      disabled: disabled || isLoading,
+      disabled: disabled || !!isLoading,
     });
 
     const loaderSizeMap = {
@@ -111,6 +125,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           variant,
           size,
           shape,
+          containerShape,
           className,
           isLoading,
         })}
@@ -122,7 +137,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         }}
         onPointerUp={() => setIsPressed(false)}
         onPointerLeave={() => setIsPressed(false)}
-        disabled={disabled || isLoading}
+        disabled={disabled || !!isLoading}
         {...props}
       >
         <AnimatePresence mode="sync" initial={false}>
@@ -139,7 +154,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
                 variant="material-morph"
                 className={clsx(
                   "p-1",
-                  loaderSizeMap[size],
+                  loaderSizeMap[size || "md"],
                   variant === "primary" || variant === "destructive"
                     ? "text-on-primary"
                     : "text-primary",
@@ -156,7 +171,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
               }}
               exit={{ opacity: 0, scale: 0.9 }}
               className="relative z-10 flex items-center justify-center"
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
             >
               {children}
             </motion.span>
