@@ -161,7 +161,7 @@ const InputOTPStyleContext = React.createContext<InputOTPContextValue>({
   isInvalid: false,
 });
 
-export type InputOTPProps = Omit<OTPInputProps, "size"> &
+export type InputOTPProps = Omit<OTPInputProps, "size" | "render"> &
   InputOTPContextValue & {
     containerClassName?: string;
   };
@@ -187,7 +187,7 @@ const InputOTP = React.forwardRef<HTMLInputElement, InputOTPProps>(
           containerClassName,
         )}
         className={clsx("disabled:cursor-not-allowed", className)}
-        {...props}
+        {...(props as any)}
       />
     </InputOTPStyleContext.Provider>
   ),
