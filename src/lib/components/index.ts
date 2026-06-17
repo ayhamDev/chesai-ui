@@ -8,6 +8,7 @@ export * from './avatar/AvatarGroup'
 export * from './badge'
 export * from "./kanban"
 export * from './bottom-tabs'
+export * from "./sortable-list"
 export * from './bouncy-box'
 export * from './breadcrumb'
 export * from './button'

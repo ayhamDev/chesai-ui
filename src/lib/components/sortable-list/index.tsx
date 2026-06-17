@@ -159,7 +159,9 @@ function SortableListInner<T extends { id: string | number }>({
     if (!activeId) return null;
     const childArray = React.Children.toArray(children);
     return childArray.find(
-      (child) => React.isValidElement(child) && child.props.id === activeId,
+      (child) =>
+        React.isValidElement(child) &&
+        (child as React.ReactElement<any>).props.id === activeId,
     );
   }, [activeId, children]);
 
@@ -210,7 +212,10 @@ export const SortableListRoot = SortableListInner as <
 
 // --- ITEM COMPONENTS ---
 
-export interface SortableItemProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface SortableItemProps extends Omit<
+  React.HTMLAttributes<HTMLDivElement>,
+  "id"
+> {
   /** Must match the item's unique id in the data array */
   id: string | number;
   /** Overrides the list's default variant */
