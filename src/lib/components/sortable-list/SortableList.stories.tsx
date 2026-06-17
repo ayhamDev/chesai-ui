@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { GripHorizontal } from "lucide-react";
+import { GripHorizontal, GripVertical } from "lucide-react";
 import { useState } from "react";
 import { Avatar } from "../avatar";
 import { Card } from "../card";
@@ -19,22 +19,8 @@ const meta: Meta<typeof SortableList> = {
     docs: {
       description: {
         component:
-          "A vertical drag-and-drop list built on `@dnd-kit`. It provides a compound architecture, smooth overlay animations, and leverages Chesai UI's semantic surface variants.",
+          "A completely headless drag-and-drop wrapper built on `@dnd-kit`. Apply it to Cards, Grids, or List Items via `asChild` to make your existing UI sortable without fighting built-in styles.",
       },
-    },
-  },
-  argTypes: {
-    variant: {
-      control: "select",
-      options: ["primary", "secondary", "ghost", "surface"],
-    },
-    shape: {
-      control: "select",
-      options: ["full", "minimal", "sharp"],
-    },
-    gap: {
-      control: "select",
-      options: ["none", "sm", "md", "lg"],
     },
   },
 };
@@ -51,57 +37,81 @@ const INITIAL_FRUITS = [
   { id: "5", name: "Elderberry", desc: "A dark purple fruit" },
 ];
 
-const INITIAL_TEAM = [
+const INITIAL_IMAGES = [
   {
-    id: "u1",
-    name: "John Doe",
-    role: "Admin",
-    avatar: "https://i.pravatar.cc/150?u=1",
+    id: "i1",
+    src: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=300&q=80",
+    title: "Architecture",
   },
   {
-    id: "u2",
-    name: "Jane Smith",
-    role: "Editor",
-    avatar: "https://i.pravatar.cc/150?u=2",
+    id: "i2",
+    src: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=300&q=80",
+    title: "Abstract",
   },
   {
-    id: "u3",
-    name: "Alice Johnson",
-    role: "Viewer",
-    avatar: "https://i.pravatar.cc/150?u=3",
+    id: "i3",
+    src: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=300&q=80",
+    title: "Minimal",
   },
   {
-    id: "u4",
-    name: "Bob Builder",
-    role: "Viewer",
-    avatar: "https://i.pravatar.cc/150?u=4",
+    id: "i4",
+    src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=300&q=80",
+    title: "Nature",
   },
 ];
 
-export const Default: Story = {
-  name: "1. Basic Sortable List",
-  args: {
-    variant: "primary",
-    shape: "minimal",
-    gap: "sm",
-  },
-  render: (args) => {
+export const HeadlessList: Story = {
+  name: "1. Vertical List (using Card)",
+  render: () => {
     const [items, setItems] = useState(INITIAL_FRUITS);
 
     return (
       <div className="w-[400px]">
-        <SortableList {...args} items={items} onReorder={setItems}>
+        {/* SortableList wraps the container, providing the context */}
+        <SortableList
+          items={items}
+          onReorder={setItems}
+          className="flex flex-col gap-2"
+          renderOverlay={(item) => (
+            <Card
+              shape="minimal"
+              variant="surface"
+              className="flex items-center p-3 opacity-90 scale-105 shadow-xl"
+            >
+              <GripVertical className="h-5 w-5 text-on-surface-variant opacity-50 mr-3" />
+              <Typography variant="label-large" className="font-bold">
+                {item.name}
+              </Typography>
+            </Card>
+          )}
+        >
           {items.map((item) => (
-            <SortableList.Item key={item.id} id={item.id}>
-              <SortableList.DragHandle />
-              <div className="flex flex-col ml-2">
-                <Typography variant="label-large" className="font-bold">
-                  {item.name}
-                </Typography>
-                <Typography variant="body-small" muted>
-                  {item.desc}
-                </Typography>
-              </div>
+            /* Using asChild seamlessly merges the sortable refs onto our Card */
+            <SortableList.Item key={item.id} id={item.id} asChild>
+              <Card
+                shape="minimal"
+                variant="primary"
+                className="flex items-center p-3 group"
+              >
+                {/* 
+                  The handle can wrap any icon or div.
+                  The touch-none/cursor-grab classes are automatically injected.
+                */}
+                <SortableList.DragHandle asChild>
+                  <div className="p-1 mr-2 rounded-md hover:bg-on-surface/10 opacity-50 group-hover:opacity-100 transition-opacity">
+                    <GripVertical className="h-5 w-5 text-on-surface-variant" />
+                  </div>
+                </SortableList.DragHandle>
+
+                <div className="flex flex-col">
+                  <Typography variant="label-large" className="font-bold">
+                    {item.name}
+                  </Typography>
+                  <Typography variant="body-small" muted>
+                    {item.desc}
+                  </Typography>
+                </div>
+              </Card>
             </SortableList.Item>
           ))}
         </SortableList>
@@ -110,73 +120,68 @@ export const Default: Story = {
   },
 };
 
-export const ComplexItems: Story = {
-  name: "2. Complex Items (Ghost Variant)",
-  args: {
-    variant: "ghost",
-    gap: "none",
-    shape: "sharp",
+export const HeadlessGrid: Story = {
+  name: "2. Sortable Grid (using Rect Strategy)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Because it defaults to `rectSortingStrategy`, the headless component handles multi-column grids flawlessly. In this example, the *entire* image acts as the drag handle.",
+      },
+    },
   },
-  render: (args) => {
-    const [items, setItems] = useState(INITIAL_TEAM);
+  render: () => {
+    const [items, setItems] = useState(INITIAL_IMAGES);
 
     return (
-      <Card className="w-[450px]" padding="none">
-        <Typography variant="title-medium" className="mb-4 pt-6 px-6 font-bold">
-          Prioritize Members
+      <div className="w-[600px] p-6 bg-surface-container-low rounded-3xl border border-outline-variant">
+        <Typography variant="title-medium" className="mb-4 font-bold px-2">
+          Reorder Gallery
         </Typography>
-        <div className="pb-4 px-2">
-          <SortableList {...args} items={items} onReorder={setItems}>
-            {items.map((item) => (
-              <SortableList.Item
-                key={item.id}
-                id={item.id}
-                className="border-b border-outline-variant/30 last:border-0 rounded-none px-4"
+        <SortableList
+          items={items}
+          onReorder={setItems}
+          className="grid grid-cols-2 gap-4"
+          renderOverlay={(item) => (
+            <Card
+              padding="none"
+              shape="minimal"
+              className="overflow-hidden ring-4 ring-primary shadow-2xl scale-105"
+            >
+              <img
+                src={item.src}
+                alt={item.title}
+                className="w-full h-32 object-cover"
+              />
+            </Card>
+          )}
+        >
+          {items.map((item) => (
+            <SortableList.Item key={item.id} id={item.id} asChild>
+              <Card
+                padding="none"
+                shape="minimal"
+                className="overflow-hidden relative group"
               >
-                <SortableList.DragHandle className="mr-2" />
-                <Avatar src={item.avatar} size="md" className="mr-3" />
-                <div className="flex flex-col flex-1">
-                  <Typography variant="label-large" className="font-semibold">
-                    {item.name}
-                  </Typography>
-                  <Typography variant="body-small" muted>
-                    {item.role}
+                {/* The entire card is the drag handle */}
+                <SortableList.DragHandle className="absolute inset-0 w-full h-full z-10" />
+                <img
+                  src={item.src}
+                  alt={item.title}
+                  className="w-full h-32 object-cover pointer-events-none"
+                />
+                <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+                  <Typography
+                    variant="label-medium"
+                    className="text-white font-bold"
+                  >
+                    {item.title}
                   </Typography>
                 </div>
-              </SortableList.Item>
-            ))}
-          </SortableList>
-        </div>
-      </Card>
-    );
-  },
-};
-
-export const CustomHandle: Story = {
-  name: "3. Custom Drag Handle",
-  args: {
-    variant: "surface",
-    shape: "minimal",
-    gap: "md",
-  },
-  render: (args) => {
-    const [items, setItems] = useState(INITIAL_FRUITS.slice(0, 3));
-
-    return (
-      <div className="w-[400px]">
-        <SortableList {...args} items={items} onReorder={setItems}>
-          {items.map((item) => (
-            <SortableList.Item key={item.id} id={item.id}>
-              <div className="flex items-center justify-between w-full pr-2">
-                <Typography variant="label-large" className="font-bold">
-                  {item.name}
-                </Typography>
-
-                {/* Applying custom icon to the handle */}
-                <SortableList.DragHandle
-                  icon={<GripHorizontal className="h-5 w-5" />}
-                />
-              </div>
+                <div className="absolute top-2 right-2 p-1.5 bg-black/40 backdrop-blur-md rounded-md text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <GripHorizontal className="h-4 w-4" />
+                </div>
+              </Card>
             </SortableList.Item>
           ))}
         </SortableList>
