@@ -1,4 +1,5 @@
 "use client";
+import { createPortal } from "react-dom"; // Add this import
 
 import {
   closestCenter,
@@ -46,7 +47,7 @@ export const useSortableItem = () => useContext(SortableItemContext);
 
 export interface SortableListProps<
   T extends { id: string | number },
-> extends React.HTMLAttributes<HTMLDivElement> {
+> extends Omit<React.HTMLAttributes<HTMLDivElement>, "id"> {
   /** Array of items to be rendered. Each must have a unique `id` */
   items: T[];
   /** Callback fired when items are successfully reordered */
@@ -115,26 +116,28 @@ function SortableListInner<T extends { id: string | number }>({
       onDragCancel={handleDragCancel}
     >
       <SortableContext items={items.map((i) => i.id)} strategy={strategy}>
-        <Comp className={className} {...props}>
+        <Comp className={className} {...(props as any)}>
           {children}
         </Comp>
       </SortableContext>
 
-      {typeof window !== "undefined" && (
-        <DragOverlay
-          dropAnimation={{
-            sideEffects: defaultDropAnimationSideEffects({
-              styles: { active: { opacity: "0.4" } },
-            }),
-          }}
-        >
-          {activeItem && renderOverlay ? (
-            <SortableOverlayContext.Provider value={true}>
-              {renderOverlay(activeItem)}
-            </SortableOverlayContext.Provider>
-          ) : null}
-        </DragOverlay>
-      )}
+      {typeof window !== "undefined" &&
+        createPortal(
+          <DragOverlay
+            dropAnimation={{
+              sideEffects: defaultDropAnimationSideEffects({
+                styles: { active: { opacity: "0.4" } },
+              }),
+            }}
+          >
+            {activeItem && renderOverlay ? (
+              <SortableOverlayContext.Provider value={true}>
+                {renderOverlay(activeItem)}
+              </SortableOverlayContext.Provider>
+            ) : null}
+          </DragOverlay>,
+          document.body,
+        )}
     </DndContext>
   );
 }
@@ -182,16 +185,16 @@ const SortableItemWithDnd = React.forwardRef<HTMLElement, SortableItemProps>(
     return (
       <SortableItemContext.Provider
         value={{
-          attributes,
-          listeners,
-          isDragging,
+          attributes: attributes || {},
+          listeners: listeners || {},
+          isDragging: !!isDragging,
         }}
       >
         <Comp
           ref={setNodeRef}
           style={combinedStyle}
           className={clsx("outline-none", className)}
-          {...props}
+          {...(props as any)}
         >
           {children}
         </Comp>
@@ -213,7 +216,7 @@ const SortableItemWrapper = React.forwardRef<HTMLElement, SortableItemProps>(
           ref={ref as any}
           className={clsx("cursor-grabbing shadow-2xl scale-[1.02]", className)}
           style={style}
-          {...props}
+          {...(props as any)}
         >
           {children}
         </Comp>
@@ -257,7 +260,7 @@ const SortableDragHandle = React.forwardRef<
       )}
       {...attributes}
       {...listeners}
-      {...props}
+      {...(props as any)}
     >
       {children}
     </Comp>
