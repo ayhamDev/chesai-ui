@@ -17,11 +17,6 @@ const meta: Meta<typeof InputOTP> = {
       control: "select",
       options: [
         "filled", // mapped from flat
-        "bordered", // wait, InputOTP uses separate mapping logic in its component
-        // InputOTP needs its own update in src/lib/components/otp-field/index.tsx to match new variants
-        // OR we map them here if we updated the component logic.
-        // Assuming InputOTP was updated to use similar variant names:
-        "filled",
         "filled-inverted",
         "outlined",
         "underlined",

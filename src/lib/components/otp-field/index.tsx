@@ -1,6 +1,6 @@
 "use client";
 
-import { OTPInput, OTPInputContext } from "input-otp";
+import { OTPInput, OTPInputContext, type OTPInputProps } from "input-otp";
 import { Dot } from "lucide-react";
 import * as React from "react";
 import { cva } from "class-variance-authority";
@@ -9,38 +9,36 @@ import { clsx } from "clsx";
 // --- VARIANTS ---
 
 const slotVariants = cva(
-  "relative flex items-center justify-center transition-all duration-200 ease-in-out text-sm font-semibold select-none group",
+  "relative flex items-center justify-center transition-all duration-200 ease-out text-sm font-semibold select-none group border-box outline-none",
   {
     variants: {
       variant: {
         filled:
-          "bg-surface-container-highest/60 text-on-surface border-b-2 border-transparent",
+          "bg-surface-container-highest/60 text-on-surface border-b-2 border-transparent hover:bg-surface-container-highest",
         "filled-inverted":
-          "bg-surface-container-low text-on-surface border-b-2 border-transparent",
+          "bg-surface-container-low text-on-surface border-b-2 border-transparent hover:bg-surface-container",
         outlined:
-          "bg-transparent border border-outline-variant text-on-surface first:border-l first:border-l-outline-variant",
+          "bg-transparent border-2 border-outline-variant text-on-surface hover:border-on-surface-variant",
         "outlined-inverted":
-          "bg-transparent border border-primary/50 text-on-surface",
-        faded:
-          "bg-surface-container/30 border-y border-r border-surface-container-highest/50 text-on-surface first:border-l first:border-l-surface-container-highest/50",
+          "bg-transparent border-2 border-primary/50 text-on-surface hover:border-primary",
         underlined:
           "bg-transparent border-b-2 border-outline-variant text-on-surface rounded-none! px-1",
         "underlined-inverted":
-          "bg-surface-container-highest/30 border-b-2 border-primary/50 text-on-surface rounded-t-lg rounded-b-none",
+          "bg-surface-container-highest/30 border-b-2 border-primary/50 text-on-surface rounded-t-lg rounded-b-none hover:bg-surface-container-highest/50",
         ghost:
-          "bg-transparent border border-transparent text-on-surface hover:bg-surface-container-highest/30",
+          "bg-transparent border-2 border-transparent text-on-surface hover:bg-surface-container-highest/30",
         "ghost-inverted":
-          "bg-transparent border border-transparent text-primary hover:bg-primary/10",
+          "bg-transparent border-2 border-transparent text-primary hover:bg-primary/10",
       },
       size: {
-        sm: "h-10 w-8 text-xs",
-        md: "h-12 w-10 text-sm",
-        lg: "h-14 w-12 text-base",
+        sm: "h-12 w-10 text-sm",
+        md: "h-14 w-12 text-base",
+        lg: "h-16 w-14 text-lg",
       },
       shape: {
-        full: "first:rounded-l-full last:rounded-r-full",
-        minimal: "first:rounded-l-2xl last:rounded-r-2xl",
-        sharp: "rounded-none",
+        full: "",
+        minimal: "",
+        sharp: "rounded-none!",
       },
       isInvalid: {
         true: "",
@@ -66,7 +64,7 @@ const slotVariants = cva(
       {
         variant: "outlined",
         isActive: true,
-        className: "border-primary ring-1 ring-primary z-10",
+        className: "border-primary ring-1 ring-primary",
       },
       {
         variant: "outlined-inverted",
@@ -83,17 +81,19 @@ const slotVariants = cva(
         isActive: true,
         className: "bg-surface-container-highest/50",
       },
-      { variant: "ghost-inverted", isActive: true, className: "bg-primary/10" },
+      {
+        variant: "ghost-inverted",
+        isActive: true,
+        className: "bg-primary/10",
+      },
 
-      // --- ERROR STATES UPDATED ---
-      // For filled types, use a ring-inset to create a border inside the background
+      // Error States
       {
         variant: ["filled", "filled-inverted"],
         isInvalid: true,
         className:
           "bg-error-container/20 text-error ring-inset ring-2 ring-error border-transparent",
       },
-      // For outlined types, explicitly color the border
       {
         variant: [
           "outlined",
@@ -102,10 +102,33 @@ const slotVariants = cva(
           "underlined-inverted",
           "ghost",
           "ghost-inverted",
-          "faded",
         ],
         isInvalid: true,
-        className: "border-error text-error z-10",
+        className: "!border-error text-error",
+      },
+
+      // --- Grouped Rounding (Adjacent Slots) ---
+      {
+        shape: "full",
+        variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
+        className: "first:rounded-l-full last:rounded-r-full",
+      },
+      {
+        shape: "minimal",
+        variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
+        className: "first:rounded-l-2xl last:rounded-r-2xl",
+      },
+
+      // --- Separated Rounding (Gapped/Individual Slots) ---
+      {
+        shape: "full",
+        variant: ["ghost", "ghost-inverted"],
+        className: "rounded-full",
+      },
+      {
+        shape: "minimal",
+        variant: ["ghost", "ghost-inverted"],
+        className: "rounded-2xl",
       },
     ],
     defaultVariants: {
@@ -116,8 +139,6 @@ const slotVariants = cva(
   },
 );
 
-// ... (Rest of the file remains unchanged)
-
 interface InputOTPContextValue {
   variant?:
     | "filled"
@@ -127,8 +148,7 @@ interface InputOTPContextValue {
     | "underlined"
     | "underlined-inverted"
     | "ghost"
-    | "ghost-inverted"
-    | "faded";
+    | "ghost-inverted";
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
   isInvalid?: boolean;
@@ -141,15 +161,12 @@ const InputOTPStyleContext = React.createContext<InputOTPContextValue>({
   isInvalid: false,
 });
 
-export type InputOTPProps = React.ComponentPropsWithoutRef<typeof OTPInput> &
+export type InputOTPProps = Omit<OTPInputProps, "size"> &
   InputOTPContextValue & {
     containerClassName?: string;
   };
 
-const InputOTP = React.forwardRef<
-  React.ElementRef<typeof OTPInput>,
-  InputOTPProps
->(
+const InputOTP = React.forwardRef<HTMLInputElement, InputOTPProps>(
   (
     {
       className,
@@ -162,7 +179,6 @@ const InputOTP = React.forwardRef<
     },
     ref,
   ) => (
-    // @ts-ignore
     <InputOTPStyleContext.Provider value={{ variant, size, shape, isInvalid }}>
       <OTPInput
         ref={ref}
@@ -179,8 +195,8 @@ const InputOTP = React.forwardRef<
 InputOTP.displayName = "InputOTP";
 
 const InputOTPGroup = React.forwardRef<
-  React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div">
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
   const { variant } = React.useContext(InputOTPStyleContext);
   const isSeparated =
@@ -191,7 +207,8 @@ const InputOTPGroup = React.forwardRef<
       ref={ref}
       className={clsx(
         "flex items-center",
-        isSeparated ? "gap-2" : "gap-0",
+        // Overlap adjacent 2px borders by applying negative margin to non-first children
+        isSeparated ? "gap-2" : "gap-0 [&>div:not(:first-child)]:-ml-[2px]",
         className,
       )}
       {...props}
@@ -201,8 +218,8 @@ const InputOTPGroup = React.forwardRef<
 InputOTPGroup.displayName = "InputOTPGroup";
 
 const InputOTPSlot = React.forwardRef<
-  React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div"> & { index: number }
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { index: number }
 >(({ index, className, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext);
   const { variant, size, shape, isInvalid } =
@@ -231,8 +248,8 @@ const InputOTPSlot = React.forwardRef<
 InputOTPSlot.displayName = "InputOTPSlot";
 
 const InputOTPSeparator = React.forwardRef<
-  React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div">
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
 >(({ ...props }, ref) => (
   <div ref={ref} role="separator" {...props}>
     <Dot className="text-on-surface-variant" />
