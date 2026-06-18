@@ -1,9 +1,8 @@
 // src/lib/components/full-calendar/FullCalendar.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import React, { useState } from "react";
-import { ThemeProvider } from "../../context/ThemeProvider";
 import { Input } from "../input";
-import { toast, Toaster } from "../toast";
+import { toast } from "../toast";
 import { CalendarEvent, FullCalendar } from "./index";
 
 const meta: Meta<typeof FullCalendar> = {

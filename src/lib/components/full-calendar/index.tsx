@@ -183,11 +183,10 @@ export const PrintPagesLayout = ({
   );
 };
 
-const FullCalendarRootContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({
-  className,
-  children,
-  ...props
-}, ref) => {
+const FullCalendarRootContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => {
   const { setPrintPreviewOpen, printSettings, variant } = useFullCalendar();
 
   useEffect(() => {
@@ -280,6 +279,9 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
       onEventDelete,
       renderEventContent,
       renderPopoverCustomFields,
+      disableCreateOnGridClick,
+      disableEventClick,
+      disableDragAndDrop,
       children,
       ...props
     },
@@ -299,6 +301,9 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
         onEventDelete={onEventDelete}
         renderEventContent={renderEventContent}
         renderPopoverCustomFields={renderPopoverCustomFields}
+        disableCreateOnGridClick={disableCreateOnGridClick}
+        disableEventClick={disableEventClick}
+        disableDragAndDrop={disableDragAndDrop}
       >
         <FullCalendarRootContent ref={ref} className={className} {...props}>
           {children}

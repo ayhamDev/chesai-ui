@@ -46,6 +46,9 @@ export const TimelineView = () => {
     onEventUpdate,
     renderEventContent,
     printSettings,
+    disableCreateOnGridClick,
+    disableEventClick,
+    disableDragAndDrop,
   } = useFullCalendar();
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -216,7 +219,7 @@ export const TimelineView = () => {
   }, [view, isPrintMode]);
 
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>, day: Date) => {
-    if (dragState.current || isPrintMode) return;
+    if (dragState.current || isPrintMode || disableCreateOnGridClick) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top;
 
@@ -248,7 +251,13 @@ export const TimelineView = () => {
     type: "move" | "resize",
     colDay: Date,
   ) => {
-    if (event.isDraft || event.editable === false || isPrintMode) return;
+    if (
+      event.isDraft ||
+      event.editable === false ||
+      isPrintMode ||
+      disableDragAndDrop
+    )
+      return;
     e.stopPropagation();
     e.preventDefault();
 
@@ -479,8 +488,9 @@ export const TimelineView = () => {
             <div
               key={day.toISOString()}
               className={clsx(
-                "flex-1 relative border-r last:border-r-0 cursor-pointer min-h-0",
+                "flex-1 relative border-r last:border-r-0 min-h-0",
                 borderClass,
+                !isPrintMode && !disableCreateOnGridClick && "cursor-pointer",
               )}
               style={isPrintMode ? undefined : { height: "1440px" }}
               onClick={(e) => handleGridClick(e, day)}
@@ -536,6 +546,7 @@ export const TimelineView = () => {
                         "w-full h-full rounded-md border-l-4 p-1.5 overflow-hidden shadow-sm flex flex-col relative group",
                         !isCurrentlyDraft &&
                           !isPrintMode &&
+                          !disableEventClick &&
                           "cursor-pointer hover:shadow-md transition-shadow",
                         isCurrentlyDraft &&
                           "border-dashed shadow-lg ring-2 ring-primary ring-offset-1",
@@ -549,11 +560,17 @@ export const TimelineView = () => {
                         borderColor: event.colorHex,
                         color: event.colorHex,
                       }}
-                      onPointerDown={(e) =>
-                        handlePointerDown(e, event, "move", day)
-                      }
+                      onPointerDown={(e) => {
+                        if (disableDragAndDrop) return;
+                        handlePointerDown(e, event, "move", day);
+                      }}
                       onClick={(e) => {
-                        if (isCurrentlyDraft || isPrintMode) return;
+                        if (
+                          isCurrentlyDraft ||
+                          isPrintMode ||
+                          disableEventClick
+                        )
+                          return;
                         e.stopPropagation();
                         const rect = e.currentTarget.getBoundingClientRect();
                         const originalId = String(event.id).split("-occ-")[0];
@@ -588,7 +605,8 @@ export const TimelineView = () => {
 
                       {event.editable !== false &&
                         !isCurrentlyDraft &&
-                        !isPrintMode && (
+                        !isPrintMode &&
+                        !disableDragAndDrop && (
                           <div
                             className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 flex justify-center items-center"
                             onPointerDown={(e) =>
@@ -737,7 +755,12 @@ export const TimelineView = () => {
                         gridRowStart: row,
                       }}
                       onClick={(e) => {
-                        if (isCurrentlyDraft || isPrintMode) return;
+                        if (
+                          isCurrentlyDraft ||
+                          isPrintMode ||
+                          disableEventClick
+                        )
+                          return;
                         e.stopPropagation();
                         const rect = e.currentTarget.getBoundingClientRect();
                         const originalId = String(event.id).split("-occ-")[0];
@@ -753,6 +776,7 @@ export const TimelineView = () => {
                           "h-full w-full rounded-md px-2 flex items-center overflow-hidden transition-all",
                           !isCurrentlyDraft &&
                             !isPrintMode &&
+                            !disableEventClick &&
                             "cursor-pointer hover:opacity-90",
                           isCurrentlyDraft &&
                             "border-2 border-dashed border-current shadow-lg ring-2 ring-primary ring-offset-1",

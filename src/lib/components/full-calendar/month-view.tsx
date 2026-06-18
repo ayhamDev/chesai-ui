@@ -49,6 +49,8 @@ export const MonthView = () => {
     setView,
     openPopover,
     renderEventContent,
+    disableCreateOnGridClick,
+    disableEventClick,
   } = useFullCalendar();
 
   const isPrintMode = React.useContext(PrintModeContext);
@@ -130,10 +132,12 @@ export const MonthView = () => {
                           (isPrintMode
                             ? "opacity-30"
                             : "bg-black/5 dark:bg-white/5 opacity-50"),
-                        !isPrintMode && "hover:bg-on-surface/5 cursor-pointer",
+                        !isPrintMode &&
+                          !disableCreateOnGridClick &&
+                          "hover:bg-on-surface/5 cursor-pointer",
                       )}
                       onClick={(e) => {
-                        if (isPrintMode) return;
+                        if (isPrintMode || disableCreateOnGridClick) return;
                         const rect = e.currentTarget.getBoundingClientRect();
                         openPopover("create", rect, day);
                       }}
@@ -194,7 +198,12 @@ export const MonthView = () => {
                         height: "22px",
                       }}
                       onClick={(e) => {
-                        if (isCurrentlyDraft || isPrintMode) return;
+                        if (
+                          isCurrentlyDraft ||
+                          isPrintMode ||
+                          disableEventClick
+                        )
+                          return;
                         e.stopPropagation();
                         const rect = e.currentTarget.getBoundingClientRect();
                         const originalId = String(event.id).split("-occ-")[0];
@@ -213,6 +222,7 @@ export const MonthView = () => {
                             "h-full w-full rounded-md px-2 flex items-center overflow-hidden transition-opacity",
                             !isCurrentlyDraft &&
                               !isPrintMode &&
+                              !disableEventClick &&
                               "cursor-pointer hover:opacity-90",
                             isCurrentlyDraft &&
                               "border-2 border-dashed border-current shadow-lg ring-2 ring-primary ring-offset-1",
@@ -238,6 +248,7 @@ export const MonthView = () => {
                             "h-full w-full rounded-md px-1 flex items-center gap-1.5 overflow-hidden transition-colors",
                             !isCurrentlyDraft &&
                               !isPrintMode &&
+                              !disableEventClick &&
                               "cursor-pointer hover:bg-on-surface/10",
                             isCurrentlyDraft &&
                               "border-2 border-dashed border-outline-variant",

@@ -18,6 +18,7 @@ import {
   type DragStartEvent,
   type UniqueIdentifier,
 } from "@dnd-kit/core";
+import { createPortal } from "react-dom";
 import {
   arrayMove,
   horizontalListSortingStrategy,
@@ -31,7 +32,7 @@ import { clsx } from "clsx";
 import { GripVertical } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { twMerge } from "tailwind-merge";
-import { cardVariants } from "../card"; // Leveraging core Card variations
+import { cardVariants } from "../card";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { Typography } from "../typography";
 
@@ -214,7 +215,7 @@ function SortableColumn<T extends KanbanItemData>({
           bordered,
           elevation,
           glass,
-          padding: "none", // Manage inner column structure individually
+          padding: "none",
         }),
         "flex flex-col shrink-0 max-h-full transition-all duration-300 relative overflow-hidden",
         isDragging &&
@@ -530,39 +531,42 @@ export function KanbanBoard<T extends KanbanItemData>({
           </div>
         </ElasticScrollArea>
 
-        {typeof window !== "undefined" && (
-          <DragOverlay
-            dropAnimation={{
-              sideEffects: defaultDropAnimationSideEffects({
-                styles: { active: { opacity: "0.4" } },
-              }),
-            }}
-          >
-            {activeType === "Column" && activeColumn ? (
-              <div className="rotate-2 opacity-95 shadow-2xl scale-[1.02] cursor-grabbing">
-                <SortableColumn
-                  column={activeColumn}
-                  width={columnWidth}
-                  variant={variant}
-                  shape={shape}
-                  bordered={bordered}
-                  elevation={elevation}
-                  glass={glass}
-                  renderCard={renderCard}
-                  renderColumnHeader={renderColumnHeader}
-                  renderColumnFooter={renderColumnFooter}
-                  onCardClick={onCardClick}
-                />
-              </div>
-            ) : null}
+        {/* Portalled DragOverlay for clean visual hierarchies and no overflow layout bugs */}
+        {typeof window !== "undefined" &&
+          createPortal(
+            <DragOverlay
+              dropAnimation={{
+                sideEffects: defaultDropAnimationSideEffects({
+                  styles: { active: { opacity: "0.4" } },
+                }),
+              }}
+            >
+              {activeType === "Column" && activeColumn ? (
+                <div className="opacity-95 shadow-2xl scale-[1.02] cursor-grabbing">
+                  <SortableColumn
+                    column={activeColumn}
+                    width={columnWidth}
+                    variant={variant}
+                    shape={shape}
+                    bordered={bordered}
+                    elevation={elevation}
+                    glass={glass}
+                    renderCard={renderCard}
+                    renderColumnHeader={renderColumnHeader}
+                    renderColumnFooter={renderColumnFooter}
+                    onCardClick={onCardClick}
+                  />
+                </div>
+              ) : null}
 
-            {activeType === "Item" && activeItem ? (
-              <div className="rotate-3 opacity-95 shadow-2xl scale-[1.05] cursor-grabbing pointer-events-none">
-                {renderCard(activeItem, false)}
-              </div>
-            ) : null}
-          </DragOverlay>
-        )}
+              {activeType === "Item" && activeItem ? (
+                <div className="opacity-95 shadow-2xl scale-[1.05] cursor-grabbing pointer-events-none">
+                  {renderCard(activeItem, false)}
+                </div>
+              ) : null}
+            </DragOverlay>,
+            document.body,
+          )}
       </DndContext>
     </div>
   );

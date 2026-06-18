@@ -49,6 +49,10 @@ export interface FullCalendarProps<T = any> {
   initialView?: CalendarView
   variant?: CalendarVariant
 
+  disableCreateOnGridClick?: boolean
+  disableEventClick?: boolean
+  disableDragAndDrop?: boolean
+
   onEventCreate?: (event: Omit<CalendarEvent<T>, 'id' | 'isDraft'>) => void | Promise<void>
   onEventUpdate?: (event: CalendarEvent<T>) => void | Promise<void>
   onEventDelete?: (eventId: string | number) => void | Promise<void>

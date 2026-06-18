@@ -4,8 +4,13 @@
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
 import { format } from "date-fns";
-import { AnimatePresence, motion, useMotionValue, useDragControls } from "framer-motion";
-import { Check, Clock, GripHorizontal, Repeat, Trash2, X } from "lucide-react";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useDragControls,
+} from "framer-motion";
+import { GripHorizontal, Repeat, Trash2, X, Clock } from "lucide-react";
 import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 
@@ -24,18 +29,6 @@ import { useFullCalendar } from "./calendar-context";
 import type { CalendarEvent, RecurrenceRule } from "./types";
 
 const POPOVER_WIDTH = 380;
-
-const COLOR_PALETTE = [
-  { name: "primary", hex: "var(--md-sys-color-primary)" },
-  { name: "secondary", hex: "var(--md-sys-color-secondary)" },
-  { name: "tertiary", hex: "var(--md-sys-color-tertiary)" },
-  { name: "success", hex: "#22c55e" },
-  { name: "error", hex: "var(--md-sys-color-error)" },
-  { name: "gray", hex: "#64748b" },
-  { name: "indigo", hex: "#6366f1" },
-  { name: "teal", hex: "#14b8a6" },
-  { name: "pink", hex: "#ec4899" },
-] as const;
 
 const formatRecurrence = (rule: RecurrenceRule, startDate: Date) => {
   const f = rule.frequency;
@@ -156,7 +149,7 @@ export const EventPopover = () => {
   const y = useMotionValue(0);
 
   const [isRecurrenceOpen, setIsRecurrenceOpen] = useState(false);
-  const [measuredHeight, setMeasuredHeight] = useState(450); // Sensible default fallback
+  const [measuredHeight, setMeasuredHeight] = useState(450);
 
   const [recurrenceDraft, setRecurrenceDraft] = useState<RecurrenceRule>({
     frequency: "weekly",
@@ -201,17 +194,14 @@ export const EventPopover = () => {
         let targetX = popover.anchorRect.right + padding;
         let targetY = popover.anchorRect.top;
 
-        // Boundary constraint X (Avoid right-edge clipping)
         if (targetX + POPOVER_WIDTH > viewportWidth) {
           targetX = popover.anchorRect.left - POPOVER_WIDTH - padding;
         }
 
-        // Boundary constraint Y (Avoid bottom-edge clipping)
         if (targetY + measuredHeight > viewportHeight) {
           targetY = viewportHeight - measuredHeight - padding;
         }
 
-        // Clamp values to guarantee popover remains strictly within viewport
         targetX = Math.max(
           padding,
           Math.min(targetX, viewportWidth - POPOVER_WIDTH - padding),
@@ -224,7 +214,6 @@ export const EventPopover = () => {
         x.set(targetX);
         y.set(targetY);
       } else {
-        // Fallback: Center in viewport if no anchor is supplied
         x.set(viewportWidth / 2 - POPOVER_WIDTH / 2);
         y.set(viewportHeight / 2 - measuredHeight / 2);
       }
@@ -386,45 +375,17 @@ export const EventPopover = () => {
       <div className="pl-10 pr-2">
         <Input
           variant="underlined"
-          placeholder={
-            draftEvent.type === "task" ? "Add task title" : "Add title"
-          }
+          placeholder="Add title"
           value={draftEvent.title}
           onChange={(e) => updateDraft({ title: e.target.value })}
           autoFocus
           className="shadow-none px-0"
           classNames={{
             input: "text-2xl font-normal py-1 px-0",
-            inputWrapper: "px-0 h-auto min-h-0",
+            inputWrapper:
+              "px-0 h-auto min-h-0 border-b-2 focus-within:border-primary",
           }}
         />
-
-        <div className="flex items-center gap-2 mt-4">
-          <Button
-            variant={draftEvent.type === "event" ? "primary" : "ghost"}
-            size="sm"
-            shape="minimal"
-            onClick={() => updateDraft({ type: "event" })}
-            className={clsx(
-              draftEvent.type !== "event" &&
-                "text-on-surface-variant hover:bg-surface-container-highest",
-            )}
-          >
-            Event
-          </Button>
-          <Button
-            variant={draftEvent.type === "task" ? "primary" : "ghost"}
-            size="sm"
-            shape="minimal"
-            onClick={() => updateDraft({ type: "task" })}
-            className={clsx(
-              draftEvent.type !== "task" &&
-                "text-on-surface-variant hover:bg-surface-container-highest",
-            )}
-          >
-            Task
-          </Button>
-        </div>
       </div>
 
       <div className="flex items-start gap-4">
@@ -561,57 +522,16 @@ export const EventPopover = () => {
         </div>
       </div>
 
-      {draftEvent.type === "event" && (
-        <div className="flex flex-col gap-2 pl-9">
-          <Typography variant="label-small" className="font-bold opacity-70">
-            Color
-          </Typography>
-          <div className="flex items-center flex-wrap gap-2.5">
-            {COLOR_PALETTE.map((color) => (
-              <button
-                key={color.name}
-                type="button"
-                onClick={() =>
-                  updateDraft({
-                    colorVariant: color.name as any,
-                    colorHex: undefined,
-                  })
-                }
-                className={clsx(
-                  "w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110",
-                  draftEvent.colorVariant === color.name
-                    ? "ring-2 ring-offset-2 ring-primary"
-                    : "border border-outline-variant/20",
-                )}
-                style={{ backgroundColor: color.hex }}
-                aria-label={`Select color ${color.name}`}
-              >
-                {draftEvent.colorVariant === color.name && (
-                  <Check
-                    className="w-3.5 h-3.5 text-white mix-blend-difference"
-                    strokeWidth={3}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {renderPopoverCustomFields && (
         <div className="mt-2 border-t border-outline-variant/30 pt-4 flex flex-col gap-4">
-          <Typography
-            variant="label-small"
-            className="font-bold opacity-70 uppercase tracking-tighter"
-          >
-            Custom Developer Fields
-          </Typography>
           {renderPopoverCustomFields(draftEvent, (updates) => {
-            if (updates.data !== undefined) {
-              updateDraft({
-                data: { ...(draftEvent.data || {}), ...updates.data },
-              });
-            }
+            // Allows developers to update BOTH top-level properties (colorHex, type) and nested generic data
+            const mergedData =
+              updates.data !== undefined
+                ? { ...(draftEvent.data || {}), ...updates.data }
+                : draftEvent.data;
+
+            updateDraft({ ...updates, data: mergedData });
           })}
         </div>
       )}

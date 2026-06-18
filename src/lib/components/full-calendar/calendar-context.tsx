@@ -120,6 +120,9 @@ export const FullCalendarProvider = ({
   renderPopoverCustomFields,
   renderEventContent,
   className,
+  disableCreateOnGridClick = false,
+  disableEventClick = false,
+  disableDragAndDrop = false,
   ...props
 }: FullCalendarProps & { children: React.ReactNode }) => {
   const [currentDate, setCurrentDate] = useState(initialDate);
@@ -243,6 +246,9 @@ export const FullCalendarProvider = ({
       setPrintPreviewOpen,
       printSettings,
       setPrintSettings,
+      disableCreateOnGridClick,
+      disableEventClick,
+      disableDragAndDrop,
     }),
     [
       props,
@@ -268,6 +274,9 @@ export const FullCalendarProvider = ({
       closePopover,
       isPrintPreviewOpen,
       printSettings,
+      disableCreateOnGridClick,
+      disableEventClick,
+      disableDragAndDrop,
     ],
   );
 
