@@ -44,8 +44,9 @@ export const TimelineView = () => {
     setView,
     openPopover,
     onEventUpdate,
+    onDateClick,
+    onEventClick,
     renderEventContent,
-    printSettings,
     disableCreateOnGridClick,
     disableEventClick,
     disableDragAndDrop,
@@ -53,6 +54,9 @@ export const TimelineView = () => {
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  // Tracks whether an event was just dropped to prevent the click handler from opening the popover
+  const wasDraggedRef = useRef(false);
 
   const bgClass = isPrintMode
     ? "bg-white text-black"
@@ -83,7 +87,6 @@ export const TimelineView = () => {
     return expandEvents(baseEvents, viewStart, viewEnd);
   }, [events, draftEvent, days]);
 
-  // SMART NON-LINEAR PRINT MAP: Identifies hours being used & creates timeline blocks
   const printRange = useMemo(() => {
     if (!isPrintMode) return { hours: HOURS, blocks: [HOURS] };
 
@@ -125,12 +128,10 @@ export const TimelineView = () => {
     });
 
     if (occupiedHours.size === 0) {
-      // Safe defaults 8am - 6pm if there are absolutely no events
       const defaultHours = Array.from({ length: 11 }, (_, i) => i + 8);
       return { hours: defaultHours, blocks: [defaultHours] };
     }
 
-    // Add 1 hour padding around each occupied hour for readability
     const paddedHours = new Set<number>();
     occupiedHours.forEach((h) => {
       if (h > 0) paddedHours.add(h - 1);
@@ -140,7 +141,6 @@ export const TimelineView = () => {
 
     const sortedHours = Array.from(paddedHours).sort((a, b) => a - b);
 
-    // Group the hours into contiguous visual blocks
     const blocks: number[][] = [];
     let currentBlock = [sortedHours[0]];
     for (let i = 1; i < sortedHours.length; i++) {
@@ -157,7 +157,6 @@ export const TimelineView = () => {
   }, [isPrintMode, displayEvents, days]);
 
   const blocksToRender = isPrintMode ? printRange.blocks : [HOURS];
-  // Gap size visually represents 0.5 hours in terms of flex units
   const GAP_VIRTUAL_HOURS = 0.5;
   const totalVirtualHours = isPrintMode
     ? printRange.hours.length +
@@ -165,7 +164,6 @@ export const TimelineView = () => {
     : 24;
   const totalDisplayMins = totalVirtualHours * 60;
 
-  // Calculates Virtual Minutes for Non-linear grids mapping
   const getVirtualMinutes = (absoluteMins: number) => {
     if (!isPrintMode) return absoluteMins;
 
@@ -180,17 +178,14 @@ export const TimelineView = () => {
       const blockStart = block[0];
       const blockEnd = block[block.length - 1];
 
-      // Event falls into the gap preceding this block
       if (h < blockStart) {
         return (virtualH - GAP_VIRTUAL_HOURS / 2) * 60;
       }
 
-      // Event is inside this block
       if (h >= blockStart && h <= blockEnd) {
         return (virtualH + (h - blockStart)) * 60 + m;
       }
 
-      // Move past this block
       virtualH += block.length;
       if (i < printRange.blocks.length - 1) {
         virtualH += GAP_VIRTUAL_HOURS;
@@ -219,7 +214,9 @@ export const TimelineView = () => {
   }, [view, isPrintMode]);
 
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>, day: Date) => {
-    if (dragState.current || isPrintMode || disableCreateOnGridClick) return;
+    // 💡 FIX: Also block the grid click if an event was just dropped
+    if (wasDraggedRef.current || dragState.current || isPrintMode) return;
+
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top;
 
@@ -230,7 +227,40 @@ export const TimelineView = () => {
     const clickDate = new Date(day);
     clickDate.setHours(hour, 0, 0, 0);
 
-    openPopover("create", rect, clickDate);
+    if (onDateClick) {
+      onDateClick(clickDate, e);
+    }
+
+    if (!disableCreateOnGridClick) {
+      openPopover("create", rect, clickDate);
+    }
+  };
+
+  const handleEventClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    event: any,
+  ) => {
+    // Prevent the click event if we just dropped the item
+    if (wasDraggedRef.current) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
+    if (event.isDraft || isPrintMode) return;
+    e.stopPropagation();
+
+    if (onEventClick) {
+      onEventClick(event, e);
+    }
+
+    if (!disableEventClick) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const originalId = String(event.id).split("-occ-")[0];
+      const baseEventObj =
+        events.find((base) => String(base.id) === originalId) || event;
+      openPopover("edit", rect, undefined, baseEventObj);
+    }
   };
 
   const dragState = useRef<{
@@ -304,7 +334,6 @@ export const TimelineView = () => {
       ) {
         dragState.current.hasMoved = true;
         document.body.style.cursor = type === "move" ? "grabbing" : "ns-resize";
-        setDraftEvent({ ...originalEvent, isDraft: true });
       } else {
         return;
       }
@@ -330,13 +359,23 @@ export const TimelineView = () => {
 
       const newStart = addDays(originalEvent.start, dayDelta);
       newStart.setHours(0, newStartMins, 0, 0);
-
       const newEnd = new Date(newStart.getTime() + startHeightMins * 60000);
+
+      let updatedRecurrence = originalEvent.recurrence;
+      if (updatedRecurrence?.daysOfWeek && dayDelta !== 0) {
+        updatedRecurrence = {
+          ...updatedRecurrence,
+          daysOfWeek: updatedRecurrence.daysOfWeek.map(
+            (d: number) => (d + (dayDelta % 7) + 7) % 7,
+          ),
+        };
+      }
 
       setDraftEvent({
         ...originalEvent,
         start: newStart,
         end: newEnd,
+        recurrence: updatedRecurrence,
         isDraft: true,
       });
     } else if (type === "resize") {
@@ -357,6 +396,12 @@ export const TimelineView = () => {
 
     if (dragState.current) {
       if (dragState.current.hasMoved) {
+        // Blocks the immediate subsequent native onClick
+        wasDraggedRef.current = true;
+        setTimeout(() => {
+          wasDraggedRef.current = false;
+        }, 200);
+
         setDraftEvent((currentDraft) => {
           if (currentDraft && onEventUpdate) {
             const finalEvent = { ...currentDraft };
@@ -447,7 +492,7 @@ export const TimelineView = () => {
                 <div
                   key={hour}
                   className={clsx(
-                    "border-b w-full box-border min-h-0", // min-h-0 prevents flex overflow bounds
+                    "border-b w-full box-border min-h-0",
                     isPrintMode
                       ? "flex-1 border-black/20 border-dashed"
                       : "h-[60px] border-outline-variant/20",
@@ -505,7 +550,6 @@ export const TimelineView = () => {
                 const isCurrentlyDraft = event.isDraft;
 
                 if (isPrintMode) {
-                  // Derive exact absolute minutes straight from standard percentage bounds
                   const absoluteStartMins = (top / 100) * 1440;
                   const absoluteEndMins = ((top + height) / 100) * 1440;
 
@@ -516,7 +560,6 @@ export const TimelineView = () => {
                   height =
                     ((endVirtual - startVirtual) / totalDisplayMins) * 100;
 
-                  // Absolute Clamping to prevent ANY overflow outside the grid bounds
                   if (top < 0) {
                     height += top;
                     top = 0;
@@ -561,25 +604,9 @@ export const TimelineView = () => {
                         color: event.colorHex,
                       }}
                       onPointerDown={(e) => {
-                        if (disableDragAndDrop) return;
                         handlePointerDown(e, event, "move", day);
                       }}
-                      onClick={(e) => {
-                        if (
-                          isCurrentlyDraft ||
-                          isPrintMode ||
-                          disableEventClick
-                        )
-                          return;
-                        e.stopPropagation();
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const originalId = String(event.id).split("-occ-")[0];
-                        const baseEventObj =
-                          events.find(
-                            (base) => String(base.id) === originalId,
-                          ) || event;
-                        openPopover("edit", rect, undefined, baseEventObj);
-                      }}
+                      onClick={(e) => handleEventClick(e, event)}
                     >
                       {renderEventContent ? (
                         renderEventContent(event, view)
@@ -754,22 +781,7 @@ export const TimelineView = () => {
                         gridColumnEnd: `span ${colSpan}`,
                         gridRowStart: row,
                       }}
-                      onClick={(e) => {
-                        if (
-                          isCurrentlyDraft ||
-                          isPrintMode ||
-                          disableEventClick
-                        )
-                          return;
-                        e.stopPropagation();
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const originalId = String(event.id).split("-occ-")[0];
-                        const baseEventObj =
-                          events.find(
-                            (base) => String(base.id) === originalId,
-                          ) || event;
-                        openPopover("edit", rect, undefined, baseEventObj);
-                      }}
+                      onClick={(e) => handleEventClick(e, event)}
                     >
                       <div
                         className={clsx(
