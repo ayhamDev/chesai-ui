@@ -1,5 +1,4 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { useState } from "react";
 import { Button } from "../button";
 import { Typography } from "../typography";
 import { Sheet } from "./index";
@@ -40,6 +39,12 @@ const meta: Meta<typeof Sheet> = {
       options: ["left", "right", "top", "bottom"],
       description:
         "Determines which side the sheet appears from on desktop viewports.",
+    },
+    width: {
+      control: "select",
+      options: ["sm", "md", "lg", "xl", "2xl", "full"],
+      description:
+        "Controls the maximum width of the side sheet on desktop viewports.",
     },
     mode: {
       control: "select",
@@ -100,6 +105,7 @@ export const ResponsiveBehavior: Story = {
     mode: "normal",
     shape: "full",
     variant: "surface-container-high",
+    width: "sm",
   },
   render: (args) => (
     <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
@@ -130,6 +136,59 @@ export const ResponsiveBehavior: Story = {
           </Sheet.Footer>
         </Sheet.Content>
       </Sheet>
+    </div>
+  ),
+};
+
+export const WidthSizes: Story = {
+  name: "6. Different Widths (Side Sheet)",
+  args: {
+    side: "right",
+    forceSideSheet: true,
+  },
+  render: (args) => (
+    <div className="flex h-[600px] w-full flex-col items-center justify-center gap-6 bg-graphite-background p-8">
+      <Typography variant="title-medium">Side Sheet Width Options</Typography>
+      <div className="flex gap-4 flex-wrap justify-center">
+        {/* Width: md */}
+        <Sheet {...args} width="md">
+          <Sheet.Trigger asChild>
+            <Button>Medium Width (md)</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="title-medium">Medium Side Sheet</Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+
+        {/* Width: lg */}
+        <Sheet {...args} width="lg">
+          <Sheet.Trigger asChild>
+            <Button>Large Width (lg)</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="title-medium">Large Side Sheet</Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+
+        {/* Width: xl */}
+        <Sheet {...args} width="xl">
+          <Sheet.Trigger asChild>
+            <Button>Extra Large Width (xl)</Button>
+          </Sheet.Trigger>
+          <Sheet.Content>
+            <Sheet.Header>
+              <Typography variant="title-medium">XL Side Sheet</Typography>
+            </Sheet.Header>
+            <DummyContent />
+          </Sheet.Content>
+        </Sheet>
+      </div>
     </div>
   ),
 };
@@ -277,7 +336,10 @@ export const HighContrastSheet: Story = {
             <Typography variant="title-medium" className="text-inherit">
               Inverse Sheet
             </Typography>
-            <Typography body-medium className="text-inherit opacity-80">
+            <Typography
+              variant="body-medium"
+              className="text-inherit opacity-80"
+            >
               This uses the `inverse-surface` token.
             </Typography>
           </Sheet.Header>

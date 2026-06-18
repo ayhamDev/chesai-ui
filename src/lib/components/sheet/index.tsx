@@ -1,7 +1,7 @@
 "use client";
 
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { cva } from "class-variance-authority";
+import { type VariantProps, cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import React, { createContext, forwardRef, useContext, useEffect } from "react";
 import { twMerge } from "tailwind-merge";
@@ -20,6 +20,8 @@ type SheetVariant =
   | "surface-container-high"
   | "surface-container-highest";
 
+type SheetWidth = "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+
 interface SheetContextProps {
   mode: "normal" | "detached";
   shape: "full" | "minimal" | "sharp";
@@ -28,6 +30,7 @@ interface SheetContextProps {
   variant: SheetVariant;
   isLocked: boolean;
   glass: boolean;
+  width: SheetWidth;
 }
 
 const SheetContext = createContext<SheetContextProps>({
@@ -38,16 +41,41 @@ const SheetContext = createContext<SheetContextProps>({
   variant: "primary",
   isLocked: false,
   glass: false,
+  width: "sm",
 });
 
 const useSheetContext = () => useContext(SheetContext);
 
-type SheetProps = Omit<
-  React.ComponentProps<typeof VaulDrawer.Root>,
-  "snapPoints" | "fadeFromIndex"
-> & {
+// Explicitly define Vaul & Radix root props to prevent type-collapse from conditional unions
+export interface SheetProps {
+  // Radix / Vaul Root Props
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  shouldScaleBackground?: boolean;
+  scrollLockTimeout?: number;
+  fixed?: boolean;
+  dismissible?: boolean;
+  onDrag?: (
+    event: React.PointerEvent<HTMLDivElement>,
+    percentageDragged: number,
+  ) => void;
+  onRelease?: (
+    event: React.PointerEvent<HTMLDivElement>,
+    open: boolean,
+  ) => void;
+  modal?: boolean;
+  children?: React.ReactNode;
+  container?: HTMLElement | null | React.RefObject<HTMLElement | null>;
+  onAnimationEnd?: (open: boolean) => void;
+  preventScrollOnFocus?: boolean;
+  noBodyStyles?: boolean;
+  disablePreventScroll?: boolean;
+
+  // Custom Props
   snapPoints?: (string | number)[];
-  fadeFromIndex?: never;
+  activeSnapPoint?: string | number | null;
+  setActiveSnapPoint?: (snapPoint: string | number | null) => void;
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
   side?: "left" | "right";
@@ -56,9 +84,10 @@ type SheetProps = Omit<
   forceSideSheet?: boolean;
   isLocked?: boolean;
   glass?: boolean;
-};
+  width?: SheetWidth;
+}
 
-const SheetRoot: React.FC<SheetProps> = ({
+const SheetRoot = ({
   mode = "normal",
   shape = "full",
   side = "right",
@@ -67,12 +96,13 @@ const SheetRoot: React.FC<SheetProps> = ({
   forceSideSheet = false,
   isLocked = false,
   glass = false,
+  width = "sm",
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
   open,
   ...props
-}) => {
+}: SheetProps) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const renderAsSideSheet = forceSideSheet || (isDesktop && !forceBottomSheet);
@@ -100,6 +130,7 @@ const SheetRoot: React.FC<SheetProps> = ({
         variant,
         isLocked,
         glass,
+        width,
         hasSnapPoints: renderAsSideSheet
           ? false
           : !!snapPoints && snapPoints.length > 0,
@@ -120,11 +151,31 @@ const SheetRoot: React.FC<SheetProps> = ({
 };
 SheetRoot.displayName = "Sheet";
 
-const SheetTrigger = VaulDrawer.Trigger;
-const SheetClose = VaulDrawer.Close;
+const SheetTrigger = forwardRef<
+  React.ElementRef<typeof VaulDrawer.Trigger>,
+  React.ComponentPropsWithoutRef<typeof VaulDrawer.Trigger>
+>((props, ref) => <VaulDrawer.Trigger ref={ref} {...props} />);
+SheetTrigger.displayName = "Sheet.Trigger";
+
+const SheetClose = forwardRef<
+  React.ElementRef<typeof VaulDrawer.Close>,
+  React.ComponentPropsWithoutRef<typeof VaulDrawer.Close>
+>((props, ref) => <VaulDrawer.Close ref={ref} {...props} />);
+SheetClose.displayName = "Sheet.Close";
+
+const SheetTitle = forwardRef<
+  React.ElementRef<typeof VaulDrawer.Title>,
+  React.ComponentPropsWithoutRef<typeof VaulDrawer.Title>
+>((props, ref) => <VaulDrawer.Title ref={ref} {...props} />);
+SheetTitle.displayName = "Sheet.Title";
+
+const SheetDescription = forwardRef<
+  React.ElementRef<typeof VaulDrawer.Description>,
+  React.ComponentPropsWithoutRef<typeof VaulDrawer.Description>
+>((props, ref) => <VaulDrawer.Description ref={ref} {...props} />);
+SheetDescription.displayName = "Sheet.Description";
+
 const SheetPortal = VaulDrawer.Portal;
-const SheetTitle = VaulDrawer.Title;
-const SheetDescription = VaulDrawer.Description;
 
 const contentVariants = cva(
   "fixed z-50 flex flex-col shadow-lg transition-colors duration-300",
@@ -148,8 +199,8 @@ const contentVariants = cva(
       side: {
         top: "inset-x-0 top-0",
         bottom: "inset-x-0 bottom-0 max-h-[96%]",
-        left: "inset-y-0 left-0 w-full max-w-sm",
-        right: "inset-y-0 right-0 w-full max-w-sm",
+        left: "inset-y-0 left-0 w-full",
+        right: "inset-y-0 right-0 w-full",
       },
       height: {
         snap: "h-full",
@@ -167,6 +218,14 @@ const contentVariants = cva(
       glass: {
         true: "",
         false: "",
+      },
+      width: {
+        sm: "",
+        md: "",
+        lg: "",
+        xl: "",
+        "2xl": "",
+        full: "",
       },
     },
     compoundVariants: [
@@ -284,68 +343,80 @@ const contentVariants = cva(
         mode: "detached",
         className: "top-4 bottom-4 right-4 rounded-none",
       },
+      { side: "left", width: "sm", className: "max-w-sm" },
+      { side: "left", width: "md", className: "max-w-md" },
+      { side: "left", width: "lg", className: "max-w-lg" },
+      { side: "left", width: "xl", className: "max-w-xl" },
+      { side: "left", width: "2xl", className: "max-w-2xl" },
+      { side: "left", width: "full", className: "max-w-full" },
+      { side: "right", width: "sm", className: "max-w-sm" },
+      { side: "right", width: "md", className: "max-w-md" },
+      { side: "right", width: "lg", className: "max-w-lg" },
+      { side: "right", width: "xl", className: "max-w-xl" },
+      { side: "right", width: "2xl", className: "max-w-2xl" },
+      { side: "right", width: "full", className: "max-w-full" },
       {
-        glass: "true",
+        glass: true,
         variant: "primary",
         className:
           "bg-surface-container-low/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: "true",
+        glass: true,
         variant: "secondary",
         className:
           "bg-surface-container-highest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: "true",
+        glass: true,
         variant: "tertiary",
         className:
           "bg-tertiary-container/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: "true",
+        glass: true,
         variant: "high-contrast",
         className:
           "bg-inverse-surface/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: "true",
+        glass: true,
         variant: "ghost",
         className:
           "backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: "true",
+        glass: true,
         variant: "surface",
         className:
           "bg-surface/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: "true",
+        glass: true,
         variant: "surface-container-lowest",
         className:
           "bg-surface-container-lowest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: "true",
+        glass: true,
         variant: "surface-container-low",
         className:
           "bg-surface-container-low/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: "true",
+        glass: true,
         variant: "surface-container",
         className:
           "bg-surface-container/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: "true",
+        glass: true,
         variant: "surface-container-high",
         className:
           "bg-surface-container-high/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: "true",
+        glass: true,
         variant: "surface-container-highest",
         className:
           "bg-surface-container-highest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
@@ -355,13 +426,15 @@ const contentVariants = cva(
       variant: "primary",
       shape: "full",
       mode: "normal",
-      glass: "false",
+      glass: false,
+      width: "sm",
     },
   },
 );
 
-export interface SheetContentProps extends React.ComponentProps<
-  typeof VaulDrawer.Content
+export interface SheetContentProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof VaulDrawer.Content>,
+  "variant" | "shape" | "mode" | "glass" | "width"
 > {
   variant?: SheetVariant;
   side?: "top" | "bottom" | "left" | "right";
@@ -369,6 +442,7 @@ export interface SheetContentProps extends React.ComponentProps<
   shape?: "full" | "minimal" | "sharp";
   mode?: "normal" | "detached";
   glass?: boolean;
+  width?: SheetWidth;
 }
 
 const SheetContent = forwardRef<
@@ -381,29 +455,26 @@ const SheetContent = forwardRef<
       shape: shapeProp,
       variant: variantProp,
       glass: glassProp,
-      side: sideProp,
-      height: heightProp,
-      mode: modeProp,
+      width: widthProp,
       ...props
     },
     ref,
   ) => {
     const {
-      mode: modeContext,
+      mode,
       shape: shapeContext,
       variant: variantContext,
       hasSnapPoints,
       direction,
       isLocked,
       glass: glassContext,
+      width: widthContext,
     } = useSheetContext();
 
-    // Prioritize direct props over context values and safely isolate them from `...props`
-    const mode = modeProp || modeContext;
     const shape = shapeProp || shapeContext;
     const variant = variantProp || variantContext;
     const glass = glassProp !== undefined ? glassProp : glassContext;
-    const side = sideProp || direction;
+    const width = widthProp || widthContext;
 
     const style =
       mode === "detached"
@@ -422,14 +493,14 @@ const SheetContent = forwardRef<
           className={twMerge(
             clsx(
               contentVariants({
-                side,
+                side: direction,
                 mode,
                 shape,
                 variant,
-                glass: glass ? "true" : "false",
+                glass,
+                width,
                 height:
-                  heightProp ||
-                  (side === "bottom" && hasSnapPoints ? "snap" : "auto"),
+                  direction === "bottom" && hasSnapPoints ? "snap" : "auto",
               }),
               className,
             ),
@@ -494,7 +565,20 @@ const SheetGrabber = ({
 };
 SheetGrabber.displayName = "Sheet.Grabber";
 
-export const Sheet = Object.assign(SheetRoot, {
+export interface SheetComponentType {
+  (props: SheetProps): React.JSX.Element;
+  displayName?: string;
+  Trigger: typeof SheetTrigger;
+  Content: typeof SheetContent;
+  Close: typeof SheetClose;
+  Title: typeof SheetTitle;
+  Description: typeof SheetDescription;
+  Header: typeof SheetHeader;
+  Footer: typeof SheetFooter;
+  Grabber: typeof SheetGrabber;
+}
+
+export const Sheet: SheetComponentType = Object.assign(SheetRoot, {
   Trigger: SheetTrigger,
   Content: SheetContent,
   Close: SheetClose,
