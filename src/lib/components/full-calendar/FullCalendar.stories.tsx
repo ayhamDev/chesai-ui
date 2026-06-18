@@ -123,6 +123,7 @@ export const GoogleCalendarClone: Story = {
   name: "Google Calendar Clone",
   args: {
     variant: "primary",
+    hidePopoverTitle: true
   },
   render: (args) => <InteractiveCalendarApp {...args} />,
 };

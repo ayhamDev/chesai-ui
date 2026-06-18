@@ -278,7 +278,15 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
       onEventUpdate,
       onEventDelete,
       renderEventContent,
+
+      // Included Customization Props
+      renderPopoverHeader,
+      renderPopoverFooter,
       renderPopoverCustomFields,
+      hidePopoverTitle,
+      hidePopoverTime,
+      hidePopoverRecurrence,
+
       disableCreateOnGridClick,
       disableEventClick,
       disableDragAndDrop,
@@ -300,7 +308,13 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
         onEventUpdate={onEventUpdate}
         onEventDelete={onEventDelete}
         renderEventContent={renderEventContent}
+        // Forwarding to Provider
+        renderPopoverHeader={renderPopoverHeader}
+        renderPopoverFooter={renderPopoverFooter}
         renderPopoverCustomFields={renderPopoverCustomFields}
+        hidePopoverTitle={hidePopoverTitle}
+        hidePopoverTime={hidePopoverTime}
+        hidePopoverRecurrence={hidePopoverRecurrence}
         disableCreateOnGridClick={disableCreateOnGridClick}
         disableEventClick={disableEventClick}
         disableDragAndDrop={disableDragAndDrop}
