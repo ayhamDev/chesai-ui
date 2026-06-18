@@ -1,75 +1,92 @@
 // src/lib/components/full-calendar/types.ts
+import React from 'react';
 
-export type CalendarView = 'day' | 'week' | 'month' | 'year'
-export type EventType = 'event' | 'task' | 'appointment'
-export type CalendarVariant = 'primary' | 'secondary' | 'surface' | 'ghost'
+export type CalendarView = 'day' | 'week' | 'month' | 'year';
+export type EventType = 'event' | 'task' | 'appointment';
+export type CalendarVariant = 'primary' | 'secondary' | 'surface' | 'ghost';
 
 export interface RecurrenceRule {
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
-  interval: number
-  daysOfWeek?: number[] // 0 (Sun) to 6 (Sat)
-  endType: 'never' | 'on_date' | 'after_occurrences'
-  until?: Date
-  count?: number
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  interval: number;
+  daysOfWeek?: number[]; // 0 (Sun) to 6 (Sat)
+  endType: 'never' | 'on_date' | 'after_occurrences';
+  until?: Date;
+  count?: number;
 }
 
 export interface CalendarEvent<T = any> {
-  id: string | number
-  title: string
-  start: Date
-  end: Date
-  isAllDay?: boolean
-  type?: EventType
-  description?: string
-  location?: string
-  guests?: string[]
-  meetLink?: string
-  colorVariant?: 'primary' | 'secondary' | 'tertiary' | 'error' | 'success' | 'gray' | 'indigo' | 'teal' | 'pink'
-  colorHex?: string
-  editable?: boolean
-  isDraft?: boolean
-  data?: T
-  recurrence?: RecurrenceRule
+  id: string | number;
+  title: string;
+  start: Date;
+  end: Date;
+  isAllDay?: boolean;
+  type?: EventType;
+  description?: string;
+  location?: string;
+  guests?: string[];
+  meetLink?: string;
+  colorVariant?: 'primary' | 'secondary' | 'tertiary' | 'error' | 'success' | 'gray' | 'indigo' | 'teal' | 'pink';
+  colorHex?: string;
+  editable?: boolean;
+  isDraft?: boolean;
+  data?: T;
+  recurrence?: RecurrenceRule;
 }
 
 export interface PrintSettings {
-  rangeStart: Date
-  rangeEnd: Date
-  view: 'auto' | 'day' | 'week' | 'month'
-  fontSize: 'normal' | 'small' | 'smallest'
-  orientation: 'auto' | 'portrait' | 'landscape'
-  colorStyle: 'full' | 'bw'
-  showWeekends: boolean
-  showDeclined: boolean
+  rangeStart: Date;
+  rangeEnd: Date;
+  view: 'auto' | 'day' | 'week' | 'month';
+  fontSize: 'normal' | 'small' | 'smallest';
+  orientation: 'auto' | 'portrait' | 'landscape';
+  colorStyle: 'full' | 'bw';
+  showWeekends: boolean;
+  showDeclined: boolean;
 }
 
 export interface FullCalendarProps<T = any> {
-  events: CalendarEvent<T>[]
-  initialDate?: Date
-  initialView?: CalendarView
-  variant?: CalendarVariant
+  events: CalendarEvent<T>[];
+  initialDate?: Date;
+  initialView?: CalendarView;
+  variant?: CalendarVariant;
 
-  disableCreateOnGridClick?: boolean
-  disableEventClick?: boolean
-  disableDragAndDrop?: boolean
+  // --- NEW: Customization Flags ---
+  hidePopoverTitle?: boolean;
+  hidePopoverTime?: boolean;
+  hidePopoverRecurrence?: boolean;
 
-  onEventCreate?: (event: Omit<CalendarEvent<T>, 'id' | 'isDraft'>) => void | Promise<void>
-  onEventUpdate?: (event: CalendarEvent<T>) => void | Promise<void>
-  onEventDelete?: (eventId: string | number) => void | Promise<void>
+  disableCreateOnGridClick?: boolean;
+  disableEventClick?: boolean;
+  disableDragAndDrop?: boolean;
 
-  onViewChange?: (view: CalendarView) => void
-  onDateRangeChange?: (start: Date, end: Date) => void
+  onEventCreate?: (event: Omit<CalendarEvent<T>, 'id' | 'isDraft'>) => void | Promise<void>;
+  onEventUpdate?: (event: CalendarEvent<T>) => void | Promise<void>;
+  onEventDelete?: (eventId: string | number) => void | Promise<void>;
+
+  onViewChange?: (view: CalendarView) => void;
+  onDateRangeChange?: (start: Date, end: Date) => void;
+
+  // --- NEW: Custom Render Injection Points ---
+  renderPopoverHeader?: (
+    eventState: Partial<CalendarEvent<T>>,
+    setEventState: (updates: Partial<CalendarEvent<T>>) => void,
+  ) => React.ReactNode;
+
+  renderPopoverFooter?: (
+    eventState: Partial<CalendarEvent<T>>,
+    setEventState: (updates: Partial<CalendarEvent<T>>) => void,
+  ) => React.ReactNode;
 
   renderPopoverCustomFields?: (
     eventState: Partial<CalendarEvent<T>>,
     setEventState: (updates: Partial<CalendarEvent<T>>) => void,
-  ) => React.ReactNode
+  ) => React.ReactNode;
 
-  renderEventContent?: (event: CalendarEvent<T>, view: CalendarView) => React.ReactNode
+  renderEventContent?: (event: CalendarEvent<T>, view: CalendarView) => React.ReactNode;
 
-  className?: string
+  className?: string;
 
-  onDateClick?: (date: Date) => void
-  onEventClick?: (event: CalendarEvent<T>) => void
-  children?: React.ReactNode
+  onDateClick?: (date: Date, e?: React.MouseEvent<any>) => void;
+  onEventClick?: (event: CalendarEvent<T>, e?: React.MouseEvent<any>) => void;
+  children?: React.ReactNode;
 }

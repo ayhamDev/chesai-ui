@@ -139,6 +139,11 @@ export const EventPopover = () => {
     onEventCreate,
     onEventUpdate,
     onEventDelete,
+    hidePopoverTitle,
+    hidePopoverTime,
+    hidePopoverRecurrence,
+    renderPopoverHeader,
+    renderPopoverFooter,
     renderPopoverCustomFields,
   } = calendar;
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -278,6 +283,18 @@ export const EventPopover = () => {
     setDraftEvent((prev) => (prev ? { ...prev, ...updates } : null));
   };
 
+  // Safe nested state update helper for developers to use inside custom renderers
+  const updateDraftNested = (updates: Partial<CalendarEvent>) => {
+    setDraftEvent((prev) => {
+      if (!prev) return null;
+      const mergedData =
+        updates.data !== undefined
+          ? { ...(prev.data || {}), ...updates.data }
+          : prev.data;
+      return { ...prev, ...updates, data: mergedData };
+    });
+  };
+
   const repeatOptions = draftEvent
     ? [
         { value: "none", label: "Does not repeat" },
@@ -372,167 +389,183 @@ export const EventPopover = () => {
 
   const formContent = (
     <div className="flex flex-col gap-6 p-6 font-manrope text-on-surface min-w-[340px]">
-      <div className="pl-10 pr-2">
-        <Input
-          variant="underlined"
-          placeholder="Add title"
-          value={draftEvent.title}
-          onChange={(e) => updateDraft({ title: e.target.value })}
-          autoFocus
-          className="shadow-none px-0"
-          classNames={{
-            input: "text-2xl font-normal py-1 px-0",
-            inputWrapper:
-              "px-0 h-auto min-h-0 border-b-2 focus-within:border-primary",
-          }}
-        />
-      </div>
+      {/* 1. Injected Header Fields */}
+      {renderPopoverHeader && (
+        <div className="flex flex-col gap-4">
+          {renderPopoverHeader(draftEvent, updateDraftNested)}
+        </div>
+      )}
 
-      <div className="flex items-start gap-4">
-        <Clock className="w-5 h-5 mt-2.5 text-on-surface-variant shrink-0" />
-        <div className="flex flex-col gap-3 w-full min-w-0">
-          <div className="flex items-center gap-1.5 w-full">
-            <DatePicker
-              variant="docked"
-              inputVariant="filled"
-              size="sm"
-              shape="full"
-              value={draftEvent.start}
-              onChange={(d) => {
-                if (!d) return;
-                const newStart = new Date(draftEvent.start);
-                newStart.setFullYear(
-                  d.getFullYear(),
-                  d.getMonth(),
-                  d.getDate(),
-                );
+      {/* 2. Default Title Input */}
+      {!hidePopoverTitle && (
+        <div className="pl-10 pr-2">
+          <Input
+            variant="underlined"
+            placeholder="Add title"
+            value={draftEvent.title}
+            onChange={(e) => updateDraft({ title: e.target.value })}
+            autoFocus
+            className="shadow-none px-0"
+            classNames={{
+              input: "text-2xl font-normal py-1 px-0",
+              inputWrapper:
+                "px-0 h-auto min-h-0 border-b-2 focus-within:border-primary",
+            }}
+          />
+        </div>
+      )}
 
-                let newEnd = new Date(draftEvent.end);
-                if (!draftEvent.isAllDay) {
-                  newEnd.setFullYear(
-                    d.getFullYear(),
-                    d.getMonth(),
-                    d.getDate(),
-                  );
-                } else if (draftEvent.end < newStart) {
-                  newEnd.setFullYear(
-                    d.getFullYear(),
-                    d.getMonth(),
-                    d.getDate(),
-                  );
-                }
-                updateDraft({ start: newStart, end: newEnd });
-              }}
-            />
-            {draftEvent.isAllDay && (
-              <>
-                <span className="text-on-surface-variant shrink-0">-</span>
-                <DatePicker
-                  variant="docked"
-                  inputVariant="filled"
-                  size="sm"
-                  shape="full"
-                  value={draftEvent.end}
-                  onChange={(d) => {
-                    if (!d) return;
-                    const newEnd = new Date(draftEvent.end);
-                    newEnd.setFullYear(
-                      d.getFullYear(),
-                      d.getMonth(),
-                      d.getDate(),
-                    );
-                    updateDraft({ end: newEnd });
-                    if (draftEvent.start > newEnd) {
-                      const newStart = new Date(draftEvent.start);
-                      newStart.setFullYear(
-                        d.getFullYear(),
-                        d.getMonth(),
-                        d.getDate(),
-                      );
-                      updateDraft({ start: newStart });
-                    }
-                  }}
-                />
-              </>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 mt-1 w-fit">
-            <Switch
-              id="all-day-switch"
-              size="sm"
-              checked={!!draftEvent.isAllDay}
-              onCheckedChange={(val) => {
-                if (!val) {
-                  const snappedEnd = new Date(draftEvent.end);
-                  snappedEnd.setFullYear(
-                    draftEvent.start.getFullYear(),
-                    draftEvent.start.getMonth(),
-                    draftEvent.start.getDate(),
-                  );
-                  updateDraft({ isAllDay: val, end: snappedEnd });
-                } else {
-                  updateDraft({ isAllDay: val });
-                }
-              }}
-            />
-            <label
-              htmlFor="all-day-switch"
-              className="font-medium text-on-surface-variant text-sm cursor-pointer select-none"
-            >
-              All day
-            </label>
-          </div>
-
-          {!draftEvent.isAllDay && (
-            <div className="flex items-center gap-1.5 w-full mt-1">
-              <TimePicker
+      {/* 3. Default Time Inputs */}
+      {!hidePopoverTime && (
+        <div className="flex items-start gap-4">
+          <Clock className="w-5 h-5 mt-2.5 text-on-surface-variant shrink-0" />
+          <div className="flex flex-col gap-3 w-full min-w-0">
+            <div className="flex items-center gap-1.5 w-full">
+              <DatePicker
                 variant="docked"
                 inputVariant="filled"
                 size="sm"
                 shape="full"
                 value={draftEvent.start}
-                onChange={(d) => updateDraft({ start: d })}
+                onChange={(d) => {
+                  if (!d) return;
+                  const newStart = new Date(draftEvent.start);
+                  newStart.setFullYear(
+                    d.getFullYear(),
+                    d.getMonth(),
+                    d.getDate(),
+                  );
+
+                  let newEnd = new Date(draftEvent.end);
+                  if (!draftEvent.isAllDay) {
+                    newEnd.setFullYear(
+                      d.getFullYear(),
+                      d.getMonth(),
+                      d.getDate(),
+                    );
+                  } else if (draftEvent.end < newStart) {
+                    newEnd.setFullYear(
+                      d.getFullYear(),
+                      d.getMonth(),
+                      d.getDate(),
+                    );
+                  }
+                  updateDraft({ start: newStart, end: newEnd });
+                }}
               />
-              <span className="text-on-surface-variant shrink-0">-</span>
-              <TimePicker
-                variant="docked"
-                inputVariant="filled"
-                size="sm"
-                shape="full"
-                value={draftEvent.end}
-                onChange={(d) => updateDraft({ end: d })}
-              />
+              {draftEvent.isAllDay && (
+                <>
+                  <span className="text-on-surface-variant shrink-0">-</span>
+                  <DatePicker
+                    variant="docked"
+                    inputVariant="filled"
+                    size="sm"
+                    shape="full"
+                    value={draftEvent.end}
+                    onChange={(d) => {
+                      if (!d) return;
+                      const newEnd = new Date(draftEvent.end);
+                      newEnd.setFullYear(
+                        d.getFullYear(),
+                        d.getMonth(),
+                        d.getDate(),
+                      );
+                      updateDraft({ end: newEnd });
+                      if (draftEvent.start > newEnd) {
+                        const newStart = new Date(draftEvent.start);
+                        newStart.setFullYear(
+                          d.getFullYear(),
+                          d.getMonth(),
+                          d.getDate(),
+                        );
+                        updateDraft({ start: newStart });
+                      }
+                    }}
+                  />
+                </>
+              )}
             </div>
-          )}
-        </div>
-      </div>
 
-      <div className="flex items-center gap-4 mt-2">
-        <Repeat className="w-5 h-5 text-on-surface-variant shrink-0" />
-        <div className="w-full">
-          <Select
-            variant="filled"
-            size="sm"
-            shape="full"
-            value={activeRepeatValue}
-            onValueChange={handleRepeatChange}
-            items={repeatOptions}
-          />
-        </div>
-      </div>
+            <div className="flex items-center gap-2 mt-1 w-fit">
+              <Switch
+                id="all-day-switch"
+                size="sm"
+                checked={!!draftEvent.isAllDay}
+                onCheckedChange={(val) => {
+                  if (!val) {
+                    const snappedEnd = new Date(draftEvent.end);
+                    snappedEnd.setFullYear(
+                      draftEvent.start.getFullYear(),
+                      draftEvent.start.getMonth(),
+                      draftEvent.start.getDate(),
+                    );
+                    updateDraft({ isAllDay: val, end: snappedEnd });
+                  } else {
+                    updateDraft({ isAllDay: val });
+                  }
+                }}
+              />
+              <label
+                htmlFor="all-day-switch"
+                className="font-medium text-on-surface-variant text-sm cursor-pointer select-none"
+              >
+                All day
+              </label>
+            </div>
 
+            {!draftEvent.isAllDay && (
+              <div className="flex items-center gap-1.5 w-full mt-1">
+                <TimePicker
+                  variant="docked"
+                  inputVariant="filled"
+                  size="sm"
+                  shape="full"
+                  value={draftEvent.start}
+                  onChange={(d) => updateDraft({ start: d })}
+                />
+                <span className="text-on-surface-variant shrink-0">-</span>
+                <TimePicker
+                  variant="docked"
+                  inputVariant="filled"
+                  size="sm"
+                  shape="full"
+                  value={draftEvent.end}
+                  onChange={(d) => updateDraft({ end: d })}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 4. Default Recurrence Selector */}
+      {!hidePopoverRecurrence && (
+        <div className="flex items-center gap-4 mt-2">
+          <Repeat className="w-5 h-5 text-on-surface-variant shrink-0" />
+          <div className="w-full">
+            <Select
+              variant="filled"
+              size="sm"
+              shape="full"
+              value={activeRepeatValue}
+              onValueChange={handleRepeatChange}
+              items={repeatOptions}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 5. Legacy Custom Fields (Center) */}
       {renderPopoverCustomFields && (
         <div className="mt-2 border-t border-outline-variant/30 pt-4 flex flex-col gap-4">
-          {renderPopoverCustomFields(draftEvent, (updates) => {
-            // Allows developers to update BOTH top-level properties (colorHex, type) and nested generic data
-            const mergedData =
-              updates.data !== undefined
-                ? { ...(draftEvent.data || {}), ...updates.data }
-                : draftEvent.data;
+          {renderPopoverCustomFields(draftEvent, updateDraftNested)}
+        </div>
+      )}
 
-            updateDraft({ ...updates, data: mergedData });
-          })}
+      {/* 6. Injected Footer Fields */}
+      {renderPopoverFooter && (
+        <div className="mt-2 border-t border-outline-variant/30 pt-4 flex flex-col gap-4">
+          {renderPopoverFooter(draftEvent, updateDraftNested)}
         </div>
       )}
     </div>

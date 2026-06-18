@@ -117,7 +117,15 @@ export const FullCalendarProvider = ({
   onEventDelete,
   onViewChange,
   onDateRangeChange,
+
+  // Customization Props Extracted
+  hidePopoverTitle = false,
+  hidePopoverTime = false,
+  hidePopoverRecurrence = false,
+  renderPopoverHeader,
+  renderPopoverFooter,
   renderPopoverCustomFields,
+
   renderEventContent,
   className,
   disableCreateOnGridClick = false,
@@ -229,7 +237,15 @@ export const FullCalendarProvider = ({
       onEventDelete,
       onViewChange,
       onDateRangeChange,
+
+      // Included new customization props
+      hidePopoverTitle,
+      hidePopoverTime,
+      hidePopoverRecurrence,
+      renderPopoverHeader,
+      renderPopoverFooter,
       renderPopoverCustomFields,
+
       renderEventContent,
       className,
       navigateNext,
@@ -261,6 +277,11 @@ export const FullCalendarProvider = ({
       onEventDelete,
       onViewChange,
       onDateRangeChange,
+      hidePopoverTitle,
+      hidePopoverTime,
+      hidePopoverRecurrence,
+      renderPopoverHeader,
+      renderPopoverFooter,
       renderPopoverCustomFields,
       renderEventContent,
       className,
