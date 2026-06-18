@@ -1,383 +1,578 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { Button } from "../button";
-import { Typography } from "../typography";
-import { Sheet } from "./index";
+"use client";
 
-const meta: Meta<typeof Sheet> = {
-  title: "Components/Sheet",
-  component: Sheet,
-  tags: ["autodocs"],
-  parameters: {
-    layout: "fullscreen",
-    docs: {
-      description: {
-        component:
-          "A versatile and responsive sheet component. It renders as a bottom sheet on mobile viewports and intelligently transitions to a side sheet (drawer) on desktop. Supports full MD3 surface hierarchy.",
+import { useMediaQuery } from "@uidotdev/usehooks";
+import { type VariantProps, cva } from "class-variance-authority";
+import { clsx } from "clsx";
+import React, { createContext, forwardRef, useContext, useEffect } from "react";
+import { twMerge } from "tailwind-merge";
+import { Drawer as VaulDrawer } from "vaul";
+
+type SheetVariant =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "high-contrast"
+  | "ghost"
+  | "surface"
+  | "surface-container-lowest"
+  | "surface-container-low"
+  | "surface-container"
+  | "surface-container-high"
+  | "surface-container-highest";
+
+type SheetWidth = "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+
+interface SheetContextProps {
+  mode: "normal" | "detached";
+  shape: "full" | "minimal" | "sharp";
+  hasSnapPoints: boolean;
+  direction: "top" | "bottom" | "left" | "right";
+  variant: SheetVariant;
+  isLocked: boolean;
+  glass: boolean;
+  width: SheetWidth;
+}
+
+const SheetContext = createContext<SheetContextProps>({
+  mode: "normal",
+  shape: "full",
+  hasSnapPoints: false,
+  direction: "bottom",
+  variant: "primary",
+  isLocked: false,
+  glass: false,
+  width: "sm",
+});
+
+const useSheetContext = () => useContext(SheetContext);
+
+// Omit conflicting conditional unions to let TypeScript simplify the type map
+export interface SheetProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof VaulDrawer.Root>,
+  "direction" | "snapPoints" | "fadeFromIndex"
+> {
+  snapPoints?: (string | number)[];
+  fadeFromIndex?: never;
+  mode?: "normal" | "detached";
+  shape?: "full" | "minimal" | "sharp";
+  side?: "left" | "right";
+  variant?: SheetVariant;
+  forceBottomSheet?: boolean;
+  forceSideSheet?: boolean;
+  isLocked?: boolean;
+  glass?: boolean;
+  width?: SheetWidth;
+}
+
+const SheetRoot = ({
+  mode = "normal",
+  shape = "full",
+  side = "right",
+  variant = "primary",
+  forceBottomSheet = false,
+  forceSideSheet = false,
+  isLocked = false,
+  glass = false,
+  width = "sm",
+  snapPoints,
+  activeSnapPoint,
+  setActiveSnapPoint,
+  open,
+  fadeFromIndex, // Destructured here to prevent forwarding to VaulDrawer.Root
+  ...props
+}: SheetProps) => {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  const renderAsSideSheet = forceSideSheet || (isDesktop && !forceBottomSheet);
+  const direction = renderAsSideSheet ? side : "bottom";
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isLocked) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+    };
+    if (open && isLocked) {
+      window.addEventListener("keydown", handleKeyDown, true);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [open, isLocked]);
+
+  return (
+    <SheetContext.Provider
+      value={{
+        mode,
+        shape,
+        variant,
+        isLocked,
+        glass,
+        width,
+        hasSnapPoints: renderAsSideSheet
+          ? false
+          : !!snapPoints && snapPoints.length > 0,
+        direction,
+      }}
+    >
+      <VaulDrawer.Root
+        direction={direction}
+        open={open}
+        dismissible={isLocked ? false : (props.dismissible ?? true)}
+        {...props}
+        snapPoints={renderAsSideSheet ? undefined : snapPoints}
+        activeSnapPoint={renderAsSideSheet ? undefined : activeSnapPoint}
+        setActiveSnapPoint={renderAsSideSheet ? undefined : setActiveSnapPoint}
+      />
+    </SheetContext.Provider>
+  );
+};
+SheetRoot.displayName = "Sheet";
+
+export interface SheetTriggerProps extends React.ComponentPropsWithoutRef<
+  typeof VaulDrawer.Trigger
+> {}
+const SheetTrigger = forwardRef<
+  React.ElementRef<typeof VaulDrawer.Trigger>,
+  SheetTriggerProps
+>((props, ref) => <VaulDrawer.Trigger ref={ref} {...props} />);
+SheetTrigger.displayName = "Sheet.Trigger";
+
+export interface SheetCloseProps extends React.ComponentPropsWithoutRef<
+  typeof VaulDrawer.Close
+> {}
+const SheetClose = forwardRef<
+  React.ElementRef<typeof VaulDrawer.Close>,
+  SheetCloseProps
+>((props, ref) => <VaulDrawer.Close ref={ref} {...props} />);
+SheetClose.displayName = "Sheet.Close";
+
+export interface SheetTitleProps extends React.ComponentPropsWithoutRef<
+  typeof VaulDrawer.Title
+> {}
+const SheetTitle = forwardRef<
+  React.ElementRef<typeof VaulDrawer.Title>,
+  SheetTitleProps
+>((props, ref) => <VaulDrawer.Title ref={ref} {...props} />);
+SheetTitle.displayName = "Sheet.Title";
+
+export interface SheetDescriptionProps extends React.ComponentPropsWithoutRef<
+  typeof VaulDrawer.Description
+> {}
+const SheetDescription = forwardRef<
+  React.ElementRef<typeof VaulDrawer.Description>,
+  SheetDescriptionProps
+>((props, ref) => <VaulDrawer.Description ref={ref} {...props} />);
+SheetDescription.displayName = "Sheet.Description";
+
+const SheetPortal = VaulDrawer.Portal;
+
+const contentVariants = cva(
+  "fixed z-50 flex flex-col shadow-lg transition-colors duration-300",
+  {
+    variants: {
+      variant: {
+        primary: "bg-surface-container-low text-on-surface",
+        secondary: "bg-surface-container-highest text-on-surface",
+        tertiary: "bg-tertiary-container text-on-tertiary-container",
+        "high-contrast": "bg-inverse-surface text-inverse-on-surface",
+        ghost: "bg-transparent text-on-surface shadow-none",
+        surface: "bg-surface text-on-surface",
+        "surface-container-lowest":
+          "bg-surface-container-lowest text-on-surface",
+        "surface-container-low": "bg-surface-container-low text-on-surface",
+        "surface-container": "bg-surface-container text-on-surface",
+        "surface-container-high": "bg-surface-container-high text-on-surface",
+        "surface-container-highest":
+          "bg-surface-container-highest text-on-surface",
+      },
+      side: {
+        top: "inset-x-0 top-0",
+        bottom: "inset-x-0 bottom-0 max-h-[96%]",
+        left: "inset-y-0 left-0 w-full",
+        right: "inset-y-0 right-0 w-full",
+      },
+      height: {
+        snap: "h-full",
+        auto: "h-auto",
+      },
+      shape: {
+        full: "",
+        minimal: "",
+        sharp: "",
+      },
+      mode: {
+        normal: "",
+        detached: "",
+      },
+      glass: {
+        true: "",
+        false: "",
+      },
+      width: {
+        sm: "",
+        md: "",
+        lg: "",
+        xl: "",
+        "2xl": "",
+        full: "",
       },
     },
+    compoundVariants: [
+      { side: "bottom", mode: "normal", className: "mx-auto max-w-xl" },
+      {
+        side: "bottom",
+        mode: "detached",
+        className: "inset-x-4 bottom-4 mx-auto max-w-lg",
+      },
+      {
+        side: "bottom",
+        mode: "normal",
+        shape: "full",
+        className: "rounded-t-3xl",
+      },
+      {
+        side: "bottom",
+        mode: "normal",
+        shape: "minimal",
+        className: "rounded-t-lg",
+      },
+      {
+        side: "bottom",
+        mode: "normal",
+        shape: "sharp",
+        className: "rounded-t-none",
+      },
+      {
+        side: "bottom",
+        mode: "detached",
+        shape: "full",
+        className: "rounded-2xl",
+      },
+      {
+        side: "bottom",
+        mode: "detached",
+        shape: "minimal",
+        className: "rounded-lg",
+      },
+      {
+        side: "bottom",
+        mode: "detached",
+        shape: "sharp",
+        className: "rounded-none",
+      },
+      {
+        side: "left",
+        shape: "full",
+        mode: "normal",
+        className: "rounded-r-2xl",
+      },
+      {
+        side: "left",
+        shape: "minimal",
+        mode: "normal",
+        className: "rounded-r-lg",
+      },
+      {
+        side: "left",
+        shape: "sharp",
+        mode: "normal",
+        className: "rounded-r-none",
+      },
+      {
+        side: "left",
+        shape: "full",
+        mode: "detached",
+        className: "left-4 rounded-2xl",
+      },
+      {
+        side: "left",
+        shape: "minimal",
+        mode: "detached",
+        className: "left-4 rounded-lg",
+      },
+      {
+        side: "left",
+        shape: "sharp",
+        mode: "detached",
+        className: "left-4 rounded-none",
+      },
+      {
+        side: "right",
+        shape: "full",
+        mode: "normal",
+        className: "rounded-l-2xl",
+      },
+      {
+        side: "right",
+        shape: "minimal",
+        mode: "normal",
+        className: "rounded-l-lg",
+      },
+      {
+        side: "right",
+        shape: "sharp",
+        mode: "normal",
+        className: "rounded-l-none",
+      },
+      {
+        side: "right",
+        shape: "full",
+        mode: "detached",
+        className: "top-4 bottom-4 right-4 rounded-2xl",
+      },
+      {
+        side: "right",
+        shape: "minimal",
+        mode: "detached",
+        className: "top-4 bottom-4 right-4 rounded-lg",
+      },
+      {
+        side: "right",
+        shape: "sharp",
+        mode: "detached",
+        className: "top-4 bottom-4 right-4 rounded-none",
+      },
+      { side: "left", width: "sm", className: "max-w-sm" },
+      { side: "left", width: "md", className: "max-w-md" },
+      { side: "left", width: "lg", className: "max-w-lg" },
+      { side: "left", width: "xl", className: "max-w-xl" },
+      { side: "left", width: "2xl", className: "max-w-2xl" },
+      { side: "left", width: "full", className: "max-w-full" },
+      { side: "right", width: "sm", className: "max-w-sm" },
+      { side: "right", width: "md", className: "max-w-md" },
+      { side: "right", width: "lg", className: "max-w-lg" },
+      { side: "right", width: "xl", className: "max-w-xl" },
+      { side: "right", width: "2xl", className: "max-w-2xl" },
+      { side: "right", width: "full", className: "max-w-full" },
+      {
+        glass: true,
+        variant: "primary",
+        className:
+          "bg-surface-container-low/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "secondary",
+        className:
+          "bg-surface-container-highest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "tertiary",
+        className:
+          "bg-tertiary-container/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "high-contrast",
+        className:
+          "bg-inverse-surface/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "ghost",
+        className:
+          "backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface",
+        className:
+          "bg-surface/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface-container-lowest",
+        className:
+          "bg-surface-container-lowest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface-container-low",
+        className:
+          "bg-surface-container-low/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface-container",
+        className:
+          "bg-surface-container/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface-container-high",
+        className:
+          "bg-surface-container-high/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+      {
+        glass: true,
+        variant: "surface-container-highest",
+        className:
+          "bg-surface-container-highest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
+      },
+    ],
+    defaultVariants: {
+      variant: "primary",
+      shape: "full",
+      mode: "normal",
+      glass: false,
+      width: "sm",
+    },
   },
-  argTypes: {
-    variant: {
-      control: "select",
-      options: [
-        "primary",
-        "secondary",
-        "tertiary",
-        "high-contrast",
-        "ghost",
-        "surface",
-        "surface-container-lowest",
-        "surface-container-low",
-        "surface-container",
-        "surface-container-high",
-        "surface-container-highest",
-      ],
-      description: "The visual style of the sheet.",
-    },
-    side: {
-      control: "select",
-      options: ["left", "right", "top", "bottom"],
-      description:
-        "Determines which side the sheet appears from on desktop viewports.",
-    },
-    width: {
-      control: "select",
-      options: ["sm", "md", "lg", "xl", "2xl", "full"],
-      description:
-        "Controls the maximum width of the side sheet on desktop viewports.",
-    },
-    mode: {
-      control: "select",
-      options: ["normal", "detached"],
-      description:
-        "Controls the visual style ('normal' vs. floating 'detached').",
-    },
-    shape: {
-      control: "select",
-      options: ["full", "minimal", "sharp"],
-      description: "Controls the border-radius of the sheet.",
-    },
-    forceBottomSheet: {
-      control: "boolean",
-    },
-    forceSideSheet: {
-      control: "boolean",
-    },
-    snapPoints: {
-      control: "object",
-    },
-    dismissible: {
-      control: "boolean",
-    },
-  },
-};
-
-export default meta;
-type Story = StoryObj<typeof Sheet>;
-
-// Helper for rich, scrollable content
-const DummyContent = () => (
-  <div className="flex-1 overflow-y-auto p-6">
-    <Typography variant="title-small" className="mb-2">
-      Sheet Content
-    </Typography>
-    <Typography variant="body-medium">
-      This is the main content area. It adapts to the variant colors
-      automatically.
-    </Typography>
-    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={`dummy-item-${i}`}
-          className="h-24 rounded-2xl bg-black/5 dark:bg-white/10"
-        />
-      ))}
-    </div>
-  </div>
 );
 
-// --- STORIES ---
+export interface SheetContentProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof VaulDrawer.Content>,
+  "variant" | "shape" | "mode" | "glass" | "width"
+> {
+  variant?: SheetVariant;
+  side?: "top" | "bottom" | "left" | "right";
+  height?: "snap" | "auto";
+  shape?: "full" | "minimal" | "sharp";
+  mode?: "normal" | "detached";
+  glass?: boolean;
+  width?: SheetWidth;
+}
 
-export const ResponsiveBehavior: Story = {
-  name: "1. Responsive Behavior",
-  args: {
-    side: "right",
-    mode: "normal",
-    shape: "full",
-    variant: "surface-container-high",
-    width: "sm",
-  },
-  render: (args) => (
-    <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
-      <Sheet {...args}>
-        <Sheet.Trigger asChild>
-          <Button>Open Sheet</Button>
-        </Sheet.Trigger>
-        <Sheet.Content>
-          <Sheet.Grabber />
-          <Sheet.Header>
-            <Sheet.Title>
-              <Typography variant="title-medium">Responsive Sheet</Typography>
-            </Sheet.Title>
-            <Sheet.Description>
-              <Typography variant="body-small" muted={true}>
-                Adapts to your screen size.
-              </Typography>
-            </Sheet.Description>
-          </Sheet.Header>
-          <DummyContent />
-          <Sheet.Footer>
-            <Button size="lg">Save Changes</Button>
-            <Sheet.Close asChild>
-              <Button size="lg" variant="secondary">
-                Close
-              </Button>
-            </Sheet.Close>
-          </Sheet.Footer>
-        </Sheet.Content>
-      </Sheet>
-    </div>
-  ),
-};
-
-export const WidthSizes: Story = {
-  name: "6. Different Widths (Side Sheet)",
-  args: {
-    side: "right",
-    forceSideSheet: true,
-  },
-  render: (args) => (
-    <div className="flex h-[600px] w-full flex-col items-center justify-center gap-6 bg-graphite-background p-8">
-      <Typography variant="title-medium">Side Sheet Width Options</Typography>
-      <div className="flex gap-4 flex-wrap justify-center">
-        {/* Width: md */}
-        <Sheet {...args} width="md">
-          <Sheet.Trigger asChild>
-            <Button>Medium Width (md)</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium">Medium Side Sheet</Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
-
-        {/* Width: lg */}
-        <Sheet {...args} width="lg">
-          <Sheet.Trigger asChild>
-            <Button>Large Width (lg)</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium">Large Side Sheet</Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
-
-        {/* Width: xl */}
-        <Sheet {...args} width="xl">
-          <Sheet.Trigger asChild>
-            <Button>Extra Large Width (xl)</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium">XL Side Sheet</Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
-      </div>
-    </div>
-  ),
-};
-
-export const SurfaceVariants: Story = {
-  name: "2. Surface Variants",
-  args: {
-    side: "right",
-    forceSideSheet: true,
-  },
-  render: (args) => (
-    <div className="flex h-[600px] w-full flex-col items-center justify-center gap-6 bg-graphite-background p-8">
-      <Typography variant="title-medium">Semantic Surfaces</Typography>
-      <div className="flex gap-4 flex-wrap justify-center">
-        {/* Surface Low */}
-        <Sheet {...args} variant="surface-container-low">
-          <Sheet.Trigger asChild>
-            <Button variant="secondary">Surface Container Low</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium">
-                Surface Container Low
-              </Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
-
-        {/* Surface Container */}
-        <Sheet {...args} variant="surface-container">
-          <Sheet.Trigger asChild>
-            <Button variant="secondary">Container</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium">Surface Container</Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
-
-        {/* Surface High */}
-        <Sheet {...args} variant="surface-container-high">
-          <Sheet.Trigger asChild>
-            <Button variant="secondary">Surface Container High</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium">
-                Surface Container High
-              </Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
-
-        {/* Surface Highest */}
-        <Sheet {...args} variant="surface-container-highest">
-          <Sheet.Trigger asChild>
-            <Button variant="secondary">Surface Container Highest</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium">
-                Surface Container Highest
-              </Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
-      </div>
-
-      <Typography variant="title-medium">Semantic Roles</Typography>
-      <div className="flex gap-4 flex-wrap justify-center">
-        {/* Primary */}
-        <Sheet {...args} variant="primary">
-          <Sheet.Trigger asChild>
-            <Button variant="primary">Primary</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium">Primary</Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
-
-        {/* Tertiary */}
-        <Sheet {...args} variant="tertiary">
-          <Sheet.Trigger asChild>
-            <Button variant="tertiary">Tertiary</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium">Tertiary</Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
-
-        {/* High Contrast */}
-        <Sheet {...args} variant="high-contrast">
-          <Sheet.Trigger asChild>
-            <Button variant="outline">High Contrast</Button>
-          </Sheet.Trigger>
-          <Sheet.Content>
-            <Sheet.Header>
-              <Typography variant="title-medium" className="text-inherit">
-                High Contrast
-              </Typography>
-            </Sheet.Header>
-            <DummyContent />
-          </Sheet.Content>
-        </Sheet>
-      </div>
-    </div>
-  ),
-};
-
-export const HighContrastSheet: Story = {
-  name: "3. High Contrast (Inverse)",
-  args: {
-    variant: "high-contrast",
-    side: "right",
-    forceBottomSheet: true,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "The `high-contrast` variant uses the inverse surface colors. Note how the grabber handle automatically adjusts its opacity/color to remain visible against the dark background.",
-      },
+const SheetContent = forwardRef<
+  React.ElementRef<typeof VaulDrawer.Content>,
+  SheetContentProps
+>(
+  (
+    {
+      className,
+      shape: shapeProp,
+      variant: variantProp,
+      glass: glassProp,
+      width: widthProp,
+      ...props
     },
-  },
-  render: (args) => (
-    <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
-      <Sheet {...args}>
-        <Sheet.Trigger asChild>
-          <Button variant="primary">Open High Contrast</Button>
-        </Sheet.Trigger>
-        <Sheet.Content>
-          <Sheet.Grabber />
-          <Sheet.Header>
-            <Typography variant="title-medium" className="text-inherit">
-              Inverse Sheet
-            </Typography>
-            <Typography
-              variant="body-medium"
-              className="text-inherit opacity-80"
-            >
-              This uses the `inverse-surface` token.
-            </Typography>
-          </Sheet.Header>
-          <DummyContent />
-        </Sheet.Content>
-      </Sheet>
-    </div>
-  ),
-};
+    ref,
+  ) => {
+    const {
+      mode,
+      shape: shapeContext,
+      variant: variantContext,
+      hasSnapPoints,
+      direction,
+      isLocked,
+      glass: glassContext,
+      width: widthContext,
+    } = useSheetContext();
 
-export const DetachedMode: Story = {
-  name: "4. Detached Mode",
-  args: {
-    ...ResponsiveBehavior.args,
-    mode: "detached",
-    variant: "surface-container",
-  },
-  render: (args) => <ResponsiveBehavior.render {...args} />,
-};
+    const shape = shapeProp || shapeContext;
+    const variant = variantProp || variantContext;
+    const glass = glassProp !== undefined ? glassProp : glassContext;
+    const width = widthProp || widthContext;
 
-export const WithSnappingPoints: Story = {
-  name: "5. With Snapping (Bottom Sheet)",
-  args: {
-    snapPoints: [0.3, 0.6, 1],
-    forceBottomSheet: true,
-    variant: "surface-container-high",
+    const style =
+      mode === "detached"
+        ? ({ "--vaul-after-display": "0" } as React.CSSProperties)
+        : {};
+
+    return (
+      <SheetPortal>
+        <VaulDrawer.Overlay
+          className="fixed inset-0 z-50 bg-black/50"
+          onClick={(e) => isLocked && e.stopPropagation()}
+        />
+        <VaulDrawer.Content
+          ref={ref}
+          style={{ ...props.style, ...style }}
+          className={twMerge(
+            clsx(
+              contentVariants({
+                side: direction,
+                mode,
+                shape,
+                variant,
+                glass,
+                width,
+                height:
+                  direction === "bottom" && hasSnapPoints ? "snap" : "auto",
+              }),
+              className,
+            ),
+          )}
+          {...props}
+        />
+      </SheetPortal>
+    );
   },
-  render: (args) => (
-    <div className="flex h-[500px] w-full items-center justify-center bg-graphite-background p-12">
-      <Sheet {...args}>
-        <Sheet.Trigger asChild>
-          <Button variant="outline">Open Snappable</Button>
-        </Sheet.Trigger>
-        <Sheet.Content>
-          <Sheet.Grabber />
-          <DummyContent />
-        </Sheet.Content>
-      </Sheet>
+);
+SheetContent.displayName = "Sheet.Content";
+
+const SheetHeader = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={clsx(
+      "flex flex-col gap-1 p-6 text-center sm:text-left",
+      className,
+    )}
+    {...props}
+  />
+);
+SheetHeader.displayName = "Sheet.Header";
+
+const SheetFooter = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={clsx("mt-auto flex flex-col gap-2 p-6", className)}
+    {...props}
+  />
+);
+SheetFooter.displayName = "Sheet.Footer";
+
+const SheetGrabber = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => {
+  const { direction, variant, isLocked } = useSheetContext();
+  if (direction !== "bottom" || isLocked) {
+    return null;
+  }
+  return (
+    <div className="shrink-0 p-4">
+      <div
+        className={clsx(
+          "mx-auto h-1.5 w-12 shrink-0 rounded-full opacity-40",
+          variant === "high-contrast"
+            ? "bg-inverse-on-surface"
+            : variant === "tertiary"
+              ? "bg-on-tertiary-container"
+              : "bg-on-surface-variant",
+          className,
+        )}
+        {...props}
+      />
     </div>
-  ),
+  );
+};
+SheetGrabber.displayName = "Sheet.Grabber";
+
+export const Sheet = Object.assign(SheetRoot, {
+  Trigger: SheetTrigger,
+  Content: SheetContent,
+  Close: SheetClose,
+  Title: SheetTitle,
+  Description: SheetDescription,
+  Header: SheetHeader,
+  Footer: SheetFooter,
+  Grabber: SheetGrabber,
+});
+
+export {
+  SheetTrigger,
+  SheetContent,
+  SheetClose,
+  SheetTitle,
+  SheetDescription,
+  SheetHeader,
+  SheetFooter,
+  SheetGrabber,
 };
