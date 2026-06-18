@@ -42,7 +42,10 @@ const SheetContext = createContext<SheetContextProps>({
 
 const useSheetContext = () => useContext(SheetContext);
 
-type SheetProps = Omit<React.ComponentProps<typeof VaulDrawer.Root>, 'snapPoints' | 'fadeFromIndex'> & {
+type SheetProps = Omit<
+  React.ComponentProps<typeof VaulDrawer.Root>,
+  "snapPoints" | "fadeFromIndex"
+> & {
   snapPoints?: (string | number)[];
   fadeFromIndex?: never;
   mode?: "normal" | "detached";
@@ -282,67 +285,67 @@ const contentVariants = cva(
         className: "top-4 bottom-4 right-4 rounded-none",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "primary",
         className:
           "bg-surface-container-low/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "secondary",
         className:
           "bg-surface-container-highest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "tertiary",
         className:
           "bg-tertiary-container/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "high-contrast",
         className:
           "bg-inverse-surface/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "ghost",
         className:
           "backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "surface",
         className:
           "bg-surface/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "surface-container-lowest",
         className:
           "bg-surface-container-lowest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "surface-container-low",
         className:
           "bg-surface-container-low/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "surface-container",
         className:
           "bg-surface-container/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "surface-container-high",
         className:
           "bg-surface-container-high/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
       },
       {
-        glass: true,
+        glass: "true",
         variant: "surface-container-highest",
         className:
           "bg-surface-container-highest/50 backdrop-blur-2xl shadow-2xl border border-white/20 dark:border-white/10",
@@ -352,7 +355,7 @@ const contentVariants = cva(
       variant: "primary",
       shape: "full",
       mode: "normal",
-      glass: false,
+      glass: "false",
     },
   },
 );
@@ -378,12 +381,15 @@ const SheetContent = forwardRef<
       shape: shapeProp,
       variant: variantProp,
       glass: glassProp,
+      side: sideProp,
+      height: heightProp,
+      mode: modeProp,
       ...props
     },
     ref,
   ) => {
     const {
-      mode,
+      mode: modeContext,
       shape: shapeContext,
       variant: variantContext,
       hasSnapPoints,
@@ -392,9 +398,12 @@ const SheetContent = forwardRef<
       glass: glassContext,
     } = useSheetContext();
 
+    // Prioritize direct props over context values and safely isolate them from `...props`
+    const mode = modeProp || modeContext;
     const shape = shapeProp || shapeContext;
     const variant = variantProp || variantContext;
     const glass = glassProp !== undefined ? glassProp : glassContext;
+    const side = sideProp || direction;
 
     const style =
       mode === "detached"
@@ -413,13 +422,14 @@ const SheetContent = forwardRef<
           className={twMerge(
             clsx(
               contentVariants({
-                side: direction,
+                side,
                 mode,
                 shape,
                 variant,
-                glass,
+                glass: glass ? "true" : "false",
                 height:
-                  direction === "bottom" && hasSnapPoints ? "snap" : "auto",
+                  heightProp ||
+                  (side === "bottom" && hasSnapPoints ? "snap" : "auto"),
               }),
               className,
             ),
