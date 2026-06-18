@@ -46,36 +46,11 @@ const SheetContext = createContext<SheetContextProps>({
 
 const useSheetContext = () => useContext(SheetContext);
 
-// Explicitly define Vaul & Radix root props to prevent type-collapse from conditional unions
-export interface SheetProps {
-  // Radix / Vaul Root Props
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  defaultOpen?: boolean;
-  shouldScaleBackground?: boolean;
-  scrollLockTimeout?: number;
-  fixed?: boolean;
-  dismissible?: boolean;
-  onDrag?: (
-    event: React.PointerEvent<HTMLDivElement>,
-    percentageDragged: number,
-  ) => void;
-  onRelease?: (
-    event: React.PointerEvent<HTMLDivElement>,
-    open: boolean,
-  ) => void;
-  modal?: boolean;
-  children?: React.ReactNode;
-  container?: HTMLElement | null | React.RefObject<HTMLElement | null>;
-  onAnimationEnd?: (open: boolean) => void;
-  preventScrollOnFocus?: boolean;
-  noBodyStyles?: boolean;
-  disablePreventScroll?: boolean;
-
-  // Custom Props
-  snapPoints?: (string | number)[];
-  activeSnapPoint?: string | number | null;
-  setActiveSnapPoint?: (snapPoint: string | number | null) => void;
+// 1. Extend the native Vaul drawer root props directly for automatic type-safety
+export interface SheetProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof VaulDrawer.Root>,
+  "direction"
+> {
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
   side?: "left" | "right";
@@ -151,27 +126,40 @@ const SheetRoot = ({
 };
 SheetRoot.displayName = "Sheet";
 
+// 2. Standardized subcomponents with exact, clean types
+export interface SheetTriggerProps extends React.ComponentPropsWithoutRef<
+  typeof VaulDrawer.Trigger
+> {}
 const SheetTrigger = forwardRef<
   React.ElementRef<typeof VaulDrawer.Trigger>,
-  React.ComponentPropsWithoutRef<typeof VaulDrawer.Trigger>
+  SheetTriggerProps
 >((props, ref) => <VaulDrawer.Trigger ref={ref} {...props} />);
 SheetTrigger.displayName = "Sheet.Trigger";
 
+export interface SheetCloseProps extends React.ComponentPropsWithoutRef<
+  typeof VaulDrawer.Close
+> {}
 const SheetClose = forwardRef<
   React.ElementRef<typeof VaulDrawer.Close>,
-  React.ComponentPropsWithoutRef<typeof VaulDrawer.Close>
+  SheetCloseProps
 >((props, ref) => <VaulDrawer.Close ref={ref} {...props} />);
 SheetClose.displayName = "Sheet.Close";
 
+export interface SheetTitleProps extends React.ComponentPropsWithoutRef<
+  typeof VaulDrawer.Title
+> {}
 const SheetTitle = forwardRef<
   React.ElementRef<typeof VaulDrawer.Title>,
-  React.ComponentPropsWithoutRef<typeof VaulDrawer.Title>
+  SheetTitleProps
 >((props, ref) => <VaulDrawer.Title ref={ref} {...props} />);
 SheetTitle.displayName = "Sheet.Title";
 
+export interface SheetDescriptionProps extends React.ComponentPropsWithoutRef<
+  typeof VaulDrawer.Description
+> {}
 const SheetDescription = forwardRef<
   React.ElementRef<typeof VaulDrawer.Description>,
-  React.ComponentPropsWithoutRef<typeof VaulDrawer.Description>
+  SheetDescriptionProps
 >((props, ref) => <VaulDrawer.Description ref={ref} {...props} />);
 SheetDescription.displayName = "Sheet.Description";
 
@@ -547,10 +535,10 @@ const SheetGrabber = ({
     return null;
   }
   return (
-    <div className="flex-shrink-0 p-4">
+    <div className="shrink-0 p-4">
       <div
         className={clsx(
-          "mx-auto h-1.5 w-12 flex-shrink-0 rounded-full opacity-40",
+          "mx-auto h-1.5 w-12 shrink-0 rounded-full opacity-40",
           variant === "high-contrast"
             ? "bg-inverse-on-surface"
             : variant === "tertiary"
@@ -565,20 +553,8 @@ const SheetGrabber = ({
 };
 SheetGrabber.displayName = "Sheet.Grabber";
 
-export interface SheetComponentType {
-  (props: SheetProps): React.JSX.Element;
-  displayName?: string;
-  Trigger: typeof SheetTrigger;
-  Content: typeof SheetContent;
-  Close: typeof SheetClose;
-  Title: typeof SheetTitle;
-  Description: typeof SheetDescription;
-  Header: typeof SheetHeader;
-  Footer: typeof SheetFooter;
-  Grabber: typeof SheetGrabber;
-}
-
-export const Sheet: SheetComponentType = Object.assign(SheetRoot, {
+// 3. Let TypeScript natively infer the compound types without a complex manual interface
+export const Sheet = Object.assign(SheetRoot, {
   Trigger: SheetTrigger,
   Content: SheetContent,
   Close: SheetClose,
