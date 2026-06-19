@@ -46,11 +46,13 @@ const SheetContext = createContext<SheetContextProps>({
 
 const useSheetContext = () => useContext(SheetContext);
 
-// 1. Extend the native Vaul drawer root props directly for automatic type-safety
+// Omit conflicting conditional unions to let TypeScript simplify the type map
 export interface SheetProps extends Omit<
   React.ComponentPropsWithoutRef<typeof VaulDrawer.Root>,
-  "direction"
+  "direction" | "snapPoints" | "fadeFromIndex"
 > {
+  snapPoints?: (string | number)[];
+  fadeFromIndex?: never;
   mode?: "normal" | "detached";
   shape?: "full" | "minimal" | "sharp";
   side?: "left" | "right";
@@ -76,6 +78,7 @@ const SheetRoot = ({
   activeSnapPoint,
   setActiveSnapPoint,
   open,
+  fadeFromIndex, // Destructured here to prevent forwarding to VaulDrawer.Root
   ...props
 }: SheetProps) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -126,7 +129,6 @@ const SheetRoot = ({
 };
 SheetRoot.displayName = "Sheet";
 
-// 2. Standardized subcomponents with exact, clean types
 export interface SheetTriggerProps extends React.ComponentPropsWithoutRef<
   typeof VaulDrawer.Trigger
 > {}
@@ -553,7 +555,6 @@ const SheetGrabber = ({
 };
 SheetGrabber.displayName = "Sheet.Grabber";
 
-// 3. Let TypeScript natively infer the compound types without a complex manual interface
 export const Sheet = Object.assign(SheetRoot, {
   Trigger: SheetTrigger,
   Content: SheetContent,

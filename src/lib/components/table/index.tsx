@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-table";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
+import { AnimatePresence, motion } from "framer-motion"; // Add Framer Motion
 import React, { createContext, useContext, useMemo } from "react";
 import { ContextMenu } from "../context-menu";
 import { Skeleton } from "../skeleton";
@@ -20,6 +21,7 @@ export interface TableContextProps {
   density: TableDensity;
   variant: TableVariant;
   renderContextMenu?: (row: Row<any>) => React.ReactNode;
+  renderExpandedRow?: (row: Row<any>) => React.ReactNode; // Add prop
 }
 
 const TableContext = createContext<TableContextProps | null>(null);
@@ -151,7 +153,7 @@ export const TableRow = <TData extends {}>({
   row: Row<TData>;
   [key: string]: any;
 }) => {
-  const { renderContextMenu, variant } = useTableContext();
+  const { renderContextMenu, variant, renderExpandedRow } = useTableContext();
 
   const RowContent = (
     <tr
@@ -167,16 +169,48 @@ export const TableRow = <TData extends {}>({
     </tr>
   );
 
-  if (renderContextMenu) {
-    return (
-      <ContextMenu>
-        <ContextMenu.Trigger asChild>{RowContent}</ContextMenu.Trigger>
-        {renderContextMenu(row)}
-      </ContextMenu>
-    );
-  }
+  const WrappedMainRow = renderContextMenu ? (
+    <ContextMenu>
+      <ContextMenu.Trigger asChild>{RowContent}</ContextMenu.Trigger>
+      {renderContextMenu(row)}
+    </ContextMenu>
+  ) : (
+    RowContent
+  );
 
-  return RowContent;
+  const isExpanded = row.getIsExpanded();
+
+  return (
+    <React.Fragment>
+      {WrappedMainRow}
+      <AnimatePresence initial={false}>
+        {renderExpandedRow && isExpanded && (
+          <motion.tr
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className={clsx(
+              "bg-surface-container-lowest",
+              variant !== "ghost" && "border-b border-outline-variant",
+            )}
+          >
+            <td colSpan={row.getVisibleCells().length} className="p-0">
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: "auto" }}
+                exit={{ height: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                {renderExpandedRow(row)}
+              </motion.div>
+            </td>
+          </motion.tr>
+        )}
+      </AnimatePresence>
+    </React.Fragment>
+  );
 };
 TableRow.displayName = "Table.Row";
 
@@ -188,6 +222,7 @@ export interface TableRootProps<
   density?: TableDensity;
   variant?: TableVariant;
   renderContextMenu?: (row: Row<TData>) => React.ReactNode;
+  renderExpandedRow?: (row: Row<TData>) => React.ReactNode; // Add prop
   isLoading?: boolean;
   skeletonCount?: number;
 }
@@ -198,6 +233,7 @@ export const TableRoot = <TData extends {}>({
   density = "default",
   variant = "primary",
   renderContextMenu,
+  renderExpandedRow, // Accept prop
   isLoading = false,
   skeletonCount = 10,
   ...props
@@ -208,8 +244,9 @@ export const TableRoot = <TData extends {}>({
       density,
       variant,
       renderContextMenu,
+      renderExpandedRow, // Provide prop
     }),
-    [table, density, variant, renderContextMenu],
+    [table, density, variant, renderContextMenu, renderExpandedRow],
   );
 
   return (

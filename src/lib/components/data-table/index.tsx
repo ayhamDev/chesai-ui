@@ -7,9 +7,11 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  getExpandedRowModel,
   useReactTable,
   type ColumnDef,
   type ColumnFiltersState,
+  type ExpandedState,
   type OnChangeFn,
   type PaginationState,
   type SortingState,
@@ -33,7 +35,7 @@ export {
   DataTableFacetedFilter,
   advancedFilterFn,
   advancedFilterFn as numericFilterFn,
-  DataTableContext, // <--- ADDED THIS EXPORT
+  DataTableContext,
 };
 
 interface DataTableProps<TData> extends Omit<TableRootProps<TData>, "table"> {
@@ -51,12 +53,12 @@ interface DataTableProps<TData> extends Omit<TableRootProps<TData>, "table"> {
   globalFilter?: string;
   onGlobalFilterChange?: OnChangeFn<string>;
 
-  // New Prop
   isLoading?: boolean;
 
   // UI Props
   toolbarChildren?: React.ReactNode;
   renderContextMenu?: (row: Row<TData>) => React.ReactNode;
+  renderExpandedRow?: (row: Row<TData>) => React.ReactNode;
   bulkActions?: (table: TanstackTable<TData>) => React.ReactNode;
 }
 
@@ -76,6 +78,7 @@ export function DataTable<TData>({
   toolbarChildren,
   density = "default",
   renderContextMenu,
+  renderExpandedRow,
   bulkActions,
   variant = "primary",
   ...tableProps
@@ -95,6 +98,10 @@ export function DataTable<TData>({
       pageSize: 10,
     });
 
+  const [internalExpanded, setInternalExpanded] = React.useState<ExpandedState>(
+    {},
+  );
+
   const isManualPagination = !!onPaginationChange;
   const isManualSorting = !!onSortingChange;
   const isManualFiltering = !!onColumnFiltersChange || !!onGlobalFilterChange;
@@ -110,6 +117,7 @@ export function DataTable<TData>({
       pagination: isManualPagination ? pagination : internalPagination,
       columnVisibility: internalColumnVisibility,
       rowSelection: internalRowSelection,
+      expanded: internalExpanded,
     },
     onRowSelectionChange: setInternalRowSelection,
     onColumnVisibilityChange: setInternalColumnVisibility,
@@ -123,15 +131,20 @@ export function DataTable<TData>({
     onPaginationChange: isManualPagination
       ? onPaginationChange
       : setInternalPagination,
+    onExpandedChange: setInternalExpanded,
     manualPagination: isManualPagination,
     manualSorting: isManualSorting,
     manualFiltering: isManualFiltering,
+    // --- THIS IS THE MISSING PIECE ---
+    getRowCanExpand: renderExpandedRow ? () => true : undefined,
+    // ---------------------------------
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    getExpandedRowModel: getExpandedRowModel(),
     defaultColumn: {
       filterFn: advancedFilterFn,
     },
@@ -148,6 +161,7 @@ export function DataTable<TData>({
           table={table}
           density={density}
           renderContextMenu={renderContextMenu}
+          renderExpandedRow={renderExpandedRow}
           isLoading={isLoading}
           {...tableProps}
         />

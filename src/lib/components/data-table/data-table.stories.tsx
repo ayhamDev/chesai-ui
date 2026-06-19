@@ -4,6 +4,8 @@ import {
   type ColumnFiltersState,
   type PaginationState,
   type SortingState,
+  getCoreRowModel, // Imported for sub-table
+  useReactTable, // Imported for sub-table
 } from "@tanstack/react-table";
 import {
   CheckCircle2,
@@ -15,13 +17,15 @@ import {
   Timer,
   Trash2,
   XCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "../badge";
 import { Button } from "../button";
 import { Card } from "../card";
 import { Checkbox } from "../checkbox";
-import { ContextMenu } from "../context-menu"; // Import ContextMenu
+import { ContextMenu } from "../context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +33,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "../dropdown-menu";
+import { Table } from "../table"; // Imported base Table component
+import { Typography } from "../typography";
 import { DataTableColumnHeader } from "./column-header";
 import { type AdvancedFilterValue } from "./filter-utils";
 import { DataTable, advancedFilterFn } from "./index";
@@ -206,9 +212,7 @@ export const Default: Story = {
   args: {
     variant: "secondary",
   },
-
   name: "1. Default Table",
-
   render: (args) => (
     <DataTable data={sampleData} columns={columns} density={args.density} />
   ),
@@ -266,7 +270,6 @@ export const WithContextMenu: Story = {
       data={sampleData}
       columns={columns}
       density={args.density}
-      // Provide the content of the menu. The trigger is handled by the Table row.
       renderContextMenu={(row) => (
         <ContextMenu.Content>
           <ContextMenu.Item
@@ -311,7 +314,6 @@ export const ServerSideSimulation: Story = {
       const timer = setTimeout(() => {
         let filteredData = [...sampleData];
 
-        // 1. Global Search (Server-side)
         if (globalFilter) {
           const lowerFilter = globalFilter.toLowerCase();
           filteredData = filteredData.filter(
@@ -321,12 +323,10 @@ export const ServerSideSimulation: Story = {
           );
         }
 
-        // 2. Column Filtering (Server-side)
         if (columnFilters.length > 0) {
           columnFilters.forEach((filter) => {
             const { id, value } = filter;
             const filterVal = value as AdvancedFilterValue;
-
             const op = filterVal.operator || "contains";
             const val = filterVal.value ?? filterVal;
 
@@ -342,7 +342,6 @@ export const ServerSideSimulation: Story = {
           });
         }
 
-        // 3. Sorting
         if (sorting.length > 0) {
           const { id, desc } = sorting[0];
           filteredData.sort((a, b) => {
@@ -354,21 +353,17 @@ export const ServerSideSimulation: Story = {
           });
         }
 
-        // 4. Pagination
         const totalRows = filteredData.length;
         const start = pagination.pageIndex * pagination.pageSize;
         const end = start + pagination.pageSize;
-
         const safeStart = Math.min(start, totalRows);
         const safeEnd = Math.min(end, totalRows);
-
         const slicedData = filteredData.slice(safeStart, safeEnd);
 
         setData(slicedData);
         setPageCount(Math.ceil(totalRows / pagination.pageSize));
         setIsLoading(false);
       }, 600);
-
       return () => clearTimeout(timer);
     }, [pagination, sorting, columnFilters, globalFilter]);
 
@@ -385,7 +380,6 @@ export const ServerSideSimulation: Story = {
         onColumnFiltersChange={setColumnFilters}
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}
-        // Just to demonstrate smooth transitions between states
         isLoading={isLoading && data.length === 0}
       />
     );
@@ -408,13 +402,11 @@ export const ServerSideSimulationWithSkeleton: Story = {
 
     useEffect(() => {
       setIsLoading(true);
-      // Forcing empty data briefly to ensure skeleton shows during "fetch"
       setData([]);
 
       const timer = setTimeout(() => {
         let filteredData = [...sampleData];
 
-        // Logic mirroring backend...
         if (globalFilter) {
           const lowerFilter = globalFilter.toLowerCase();
           filteredData = filteredData.filter(
@@ -465,7 +457,6 @@ export const ServerSideSimulationWithSkeleton: Story = {
         setPageCount(Math.ceil(totalRows / pagination.pageSize));
         setIsLoading(false);
       }, 1500);
-
       return () => clearTimeout(timer);
     }, [pagination, sorting, columnFilters, globalFilter]);
 
@@ -486,4 +477,189 @@ export const ServerSideSimulationWithSkeleton: Story = {
       />
     );
   },
+};
+
+// ==========================================
+// COLLAPSIBLE ROWS IMPLEMENTATION
+// ==========================================
+
+// --- Collapsible Mock Data ---
+type HistoryEntry = {
+  date: string;
+  customerId: string;
+  amount: number;
+  price: number;
+};
+
+type Dessert = {
+  id: string;
+  name: string;
+  calories: number;
+  fat: number;
+  carbs: number;
+  protein: number;
+  price: number;
+  history: HistoryEntry[];
+};
+
+const dessertData: Dessert[] = [
+  {
+    id: "1",
+    name: "Frozen yoghurt",
+    calories: 159,
+    fat: 6.0,
+    carbs: 24,
+    protein: 4.0,
+    price: 3.99,
+    history: [
+      { date: "2020-01-05", customerId: "11091700", amount: 3, price: 11.97 },
+      { date: "2020-01-02", customerId: "Anonymous", amount: 1, price: 3.99 },
+    ],
+  },
+  {
+    id: "2",
+    name: "Ice cream sandwich",
+    calories: 237,
+    fat: 9.0,
+    carbs: 37,
+    protein: 4.3,
+    price: 4.99,
+    history: [
+      { date: "2020-01-02", customerId: "Anonymous", amount: 1, price: 4.99 },
+    ],
+  },
+  {
+    id: "3",
+    name: "Eclair",
+    calories: 262,
+    fat: 16.0,
+    carbs: 24,
+    protein: 6.0,
+    price: 3.79,
+    history: [
+      { date: "2020-01-02", customerId: "11091700", amount: 2, price: 7.58 },
+    ],
+  },
+];
+
+const dessertColumns: ColumnDef<Dessert>[] = [
+  {
+    id: "expander",
+    header: () => null,
+    cell: ({ row }) => {
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={row.getToggleExpandedHandler()}
+        >
+          {row.getIsExpanded() ? (
+            <ChevronUp className="h-4 w-4 text-on-surface-variant" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-on-surface-variant" />
+          )}
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: "name",
+    header: "Dessert (100g serving)",
+  },
+  {
+    accessorKey: "calories",
+    header: () => <div className="text-right">Calories</div>,
+    cell: ({ row }) => (
+      <div className="text-right">{row.getValue("calories")}</div>
+    ),
+  },
+  {
+    accessorKey: "fat",
+    header: () => <div className="text-right">Fat (g)</div>,
+    cell: ({ row }) => <div className="text-right">{row.getValue("fat")}</div>,
+  },
+  {
+    accessorKey: "carbs",
+    header: () => <div className="text-right">Carbs (g)</div>,
+    cell: ({ row }) => (
+      <div className="text-right">{row.getValue("carbs")}</div>
+    ),
+  },
+  {
+    accessorKey: "protein",
+    header: () => <div className="text-right">Protein (g)</div>,
+    cell: ({ row }) => (
+      <div className="text-right">{row.getValue("protein")}</div>
+    ),
+  },
+];
+
+// Sub-Component to render the internal Table utilizing your existing Table component
+const HistorySubTable = ({ data }: { data: HistoryEntry[] }) => {
+  const columns = useMemo<ColumnDef<HistoryEntry>[]>(
+    () => [
+      {
+        accessorKey: "date",
+        header: "Date",
+      },
+      {
+        accessorKey: "customerId",
+        header: "Customer",
+      },
+      {
+        accessorKey: "amount",
+        header: () => <div className="text-right">Amount</div>,
+        cell: ({ row }) => (
+          <div className="text-right">{row.getValue("amount")}</div>
+        ),
+      },
+      {
+        accessorKey: "price",
+        header: () => <div className="text-right">Total price ($)</div>,
+        cell: ({ row }) => {
+          const amount = parseFloat(row.getValue("price"));
+          return <div className="text-right">{amount.toFixed(2)}</div>;
+        },
+      },
+    ],
+    [],
+  );
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  return (
+    <div className="w-full">
+      <Table table={table} variant="ghost" density="compact" />
+    </div>
+  );
+};
+
+export const CollapsibleRows: Story = {
+  name: "6. Collapsible Rows",
+  parameters: {
+    docs: {
+      description: {
+        story: "Replicating the Material-UI collapsible table experience.",
+      },
+    },
+  },
+  render: (args) => (
+    <DataTable
+      data={dessertData}
+      columns={dessertColumns}
+      density={args.density}
+      variant="primary"
+      renderExpandedRow={(row) => (
+        <div className="bg-surface-container-lowest border-x border-outline-variant/30 mb-2 rounded-lg">
+          {/* Replaced raw HTML table with your custom Table component */}
+          <HistorySubTable data={row.original.history} />
+        </div>
+      )}
+    />
+  ),
 };
