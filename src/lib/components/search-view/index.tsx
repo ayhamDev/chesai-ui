@@ -3,7 +3,7 @@
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Mic, Search, X } from "lucide-react";
+import { ArrowLeft, Search, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ElasticScrollArea } from "../elastic-scroll-area";
@@ -30,6 +30,7 @@ export interface SearchViewProps {
   expandedHeight?: number | string;
   expandedMinHeight?: number | string;
   expandedMaxHeight?: number | string;
+  showOverlay?: boolean; // Prop added here
 }
 
 const TRANSITION_DURATION = DURATION.medium3;
@@ -92,6 +93,7 @@ export const SearchView = ({
   expandedHeight,
   expandedMinHeight,
   expandedMaxHeight,
+  showOverlay = true, // Defaulting to true
 }: SearchViewProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
@@ -171,7 +173,6 @@ export const SearchView = ({
   // Focus & Scroll Lock Logic
   useEffect(() => {
     if (isOpen) {
-      // FIX: Do NOT lock scroll if variant is 'docked' to prevent layout shift
       if (effectiveVariant !== "docked") {
         document.body.style.overflow = "hidden";
       }
@@ -218,7 +219,7 @@ export const SearchView = ({
 
         return {
           top: triggerRect.top,
-          left: triggerRect.left - 10,
+          left: triggerRect.left,
           width: triggerRect.width,
           height: h,
           minHeight: expandedMinHeight,
@@ -250,15 +251,17 @@ export const SearchView = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
-        className="absolute inset-0 bg-black/40"
+        className={clsx(
+          "absolute inset-0 transition-colors",
+          showOverlay ? "bg-black/40" : "bg-transparent", // Switches background style based on prop
+        )}
         onClick={handleClose}
       />
 
       <motion.div
         initial={{
           top: triggerRect.top,
-          // FIX: Nudge left slightly on enter to correct visual alignment
-          left: triggerRect.left - 10,
+          left: triggerRect.left,
           width: triggerRect.width,
           height: triggerRect.height,
           borderRadius: triggerVariant === "icon" ? 999 : triggerBorderRadius,
@@ -271,8 +274,7 @@ export const SearchView = ({
           width: triggerRect.width,
           height: triggerRect.height,
           borderRadius: triggerVariant === "icon" ? 999 : triggerBorderRadius,
-          // FIX: Nudge left slightly on exit to correct visual alignment
-          x: effectiveVariant === "fullscreen" ? -10 : -10,
+          x: 0,
           transition: { duration: 0.3, ease: "easeInOut" },
         }}
         transition={{
@@ -280,7 +282,7 @@ export const SearchView = ({
           ease: EASING.expressiveDefaultEffects,
         }}
         className={clsx(
-          "absolute flex flex-col shadow-2xl  overflow-hidden transform-3d",
+          "absolute flex flex-col shadow-2xl overflow-hidden transform-3d",
           effectiveVariant === "docked" && "shadow-3xl",
           colors.expandedHeader,
         )}

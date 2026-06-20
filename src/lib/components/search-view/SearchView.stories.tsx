@@ -20,6 +20,12 @@ const meta: Meta<typeof SearchView> = {
     },
   },
   argTypes: {
+    showOverlay: {
+      control: "boolean",
+      description:
+        "Whether the dark background overlay displays in the expanded state.",
+    },
+
     variant: {
       control: "select",
       options: ["modal", "docked", "fullscreen"],
