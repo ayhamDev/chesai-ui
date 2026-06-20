@@ -59,6 +59,7 @@ export interface MultiSelectProps {
   description?: React.ReactNode;
   errorMessage?: React.ReactNode;
   mobileLayout?: "default" | "bottom-sheet" | "dialog";
+  portal?: boolean;
 }
 
 export const MultiSelect = React.forwardRef<
@@ -87,6 +88,7 @@ export const MultiSelect = React.forwardRef<
       description,
       errorMessage,
       mobileLayout = "bottom-sheet",
+      portal = true,
       ...props
     },
     ref,
@@ -413,6 +415,21 @@ export const MultiSelect = React.forwardRef<
       );
     }
 
+    const popoverContent = (
+      <PopoverPrimitive.Content
+        className={clsx(
+          "z-50 w-[var(--radix-popover-trigger-width)] min-w-48 overflow-hidden p-0",
+          "max-h-80 flex flex-col",
+          "rounded-xl border border-outline-variant bg-surface-container text-on-surface shadow-md",
+          "data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit",
+        )}
+        align="start"
+        sideOffset={4}
+      >
+        {renderListContent()}
+      </PopoverPrimitive.Content>
+    );
+
     return (
       <PopoverPrimitive.Root
         open={internalOpen}
@@ -423,20 +440,13 @@ export const MultiSelect = React.forwardRef<
             {triggerElement}
           </PopoverPrimitive.Trigger>
         </BaseWrapper>
-        <PopoverPrimitive.Portal>
-          <PopoverPrimitive.Content
-            className={clsx(
-              "z-50 w-[var(--radix-popover-trigger-width)] min-w-48 overflow-hidden p-0",
-              "max-h-80 flex flex-col",
-              "rounded-xl border border-outline-variant bg-surface-container text-on-surface shadow-md",
-              "data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit",
-            )}
-            align="start"
-            sideOffset={4}
-          >
-            {renderListContent()}
-          </PopoverPrimitive.Content>
-        </PopoverPrimitive.Portal>
+        {portal ? (
+          <PopoverPrimitive.Portal>
+            {popoverContent}
+          </PopoverPrimitive.Portal>
+        ) : (
+          popoverContent
+        )}
       </PopoverPrimitive.Root>
     );
   },
