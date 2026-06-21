@@ -5,7 +5,7 @@ import { useMediaQuery } from "@uidotdev/usehooks";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Archive, // Added import for Tag
+  Archive,
   Bold,
   ChevronLeft,
   Forward,
@@ -31,17 +31,17 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "../button";
-// Library Imports
 import { Avatar } from "../avatar";
 import { Badge } from "../badge";
 import { BottomTabs } from "../bottom-tabs";
+import { Card } from "../card";
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../dialog"; // Added DialogFooter, DialogHeader, DialogTitle
+} from "../dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,6 +70,7 @@ import { Textarea } from "../textarea";
 import { toast } from "../toast";
 import { Typography } from "../typography";
 import { Resizable } from "./index";
+
 const meta: Meta = {
   title: "Showcase/Dynamic Split View (Gmail)",
   parameters: { layout: "fullscreen" },
@@ -205,20 +206,18 @@ const ComposeModal = ({
 
         <div className="flex-1 flex flex-col bg-graphite-card">
           <div className="border-b border-graphite-border/50">
-            {/* UPDATED INPUT */}
             <Input
               variant="filled"
               shape="sharp"
               placeholder="Recipients"
-              className="bg-transparent shadow-none" // Remove default background/shadow
+              className="bg-transparent shadow-none"
               classNames={{
                 input: "text-sm",
-                inputWrapper: "bg-transparent shadow-none px-4 py-3", // Padding moves to wrapper
+                inputWrapper: "bg-transparent shadow-none px-4 py-3",
               }}
             />
           </div>
           <div className="border-b border-graphite-border/50">
-            {/* UPDATED INPUT */}
             <Input
               variant="filled"
               shape="sharp"
@@ -230,7 +229,6 @@ const ComposeModal = ({
               }}
             />
           </div>
-          {/* UPDATED TEXTAREA */}
           <Textarea
             variant="filled"
             shape="sharp"
@@ -617,7 +615,6 @@ const MobileHomeScreen = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-graphite-background">
-      {/* Content Area */}
       <div className="flex-1 relative overflow-hidden">
         {activeTab === "inbox" && (
           <MobileInboxContent
@@ -652,7 +649,6 @@ const MobileHomeScreen = ({
         )}
       </div>
 
-      {/* --- BOTTOM TABS --- */}
       <BottomTabs.Navigator
         activeTab={activeTab}
         onTabPress={setActiveTab}
@@ -680,13 +676,12 @@ const MobileHomeScreen = ({
         />
       </BottomTabs.Navigator>
 
-      {/* Shared Compose Modal */}
       <ComposeModal open={isComposeOpen} onOpenChange={setIsComposeOpen} />
     </div>
   );
 };
 
-// 2. Mobile Detail Screen Wrapper
+// Mobile Detail Screen Wrapper
 const MobileDetailScreen = () => {
   const navigation = useNavigation<MobileStackParamList>();
   const route = useRoute<MobileStackParamList, "Detail">();
@@ -697,17 +692,13 @@ const MobileDetailScreen = () => {
   return <DetailView mail={mail} onClose={() => navigation.goBack()} />;
 };
 
-// --- MAIN STORY ---
-
 export const GmailReplica: StoryObj = {
   render: () => {
-    // --- Shared State ---
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [query, setQuery] = useState("");
     const [isOpen, setIsOpen] = useState(false);
-    const [isComposeOpen, setIsComposeOpen] = useState(false); // For Desktop
+    const [isComposeOpen, setIsComposeOpen] = useState(false);
 
-    // Filter logic shared between views
     const filteredEmails = useMemo(
       () =>
         EMAILS.filter(
@@ -723,10 +714,8 @@ export const GmailReplica: StoryObj = {
       [selectedId],
     );
 
-    // --- Responsive Check ---
     const isMobile = useMediaQuery("(max-width: 768px)");
 
-    // --- RENDER: MOBILE VIEW (StackRouter + BottomTabs) ---
     if (isMobile) {
       return (
         <div className="h-screen w-full bg-graphite-background">
@@ -734,7 +723,7 @@ export const GmailReplica: StoryObj = {
             initialRouteName="Home"
             screenOptions={{
               headerShown: false,
-              animation: "slide-from-bottom", // Native-like slide transition
+              animation: "slide-from-bottom",
             }}
           >
             <MobileStack.Screen name="Home">
@@ -757,7 +746,6 @@ export const GmailReplica: StoryObj = {
       );
     }
 
-    // --- RENDER: DESKTOP VIEW (Resizable + NavRail) ---
     const isSearching = query.length > 0;
     const filteredResults = RESULTS.filter((r) =>
       r.text.toLowerCase().includes(query.toLowerCase()),
@@ -765,7 +753,6 @@ export const GmailReplica: StoryObj = {
 
     return (
       <div className="flex h-screen w-full bg-graphite-background">
-        {/* 1. LEFT NAV RAIL */}
         <NavigationRail.Navigator
           activeTab="inbox"
           onTabPress={() => {}}
@@ -798,13 +785,11 @@ export const GmailReplica: StoryObj = {
           />
         </NavigationRail.Navigator>
 
-        {/* 2. MAIN RESIZABLE AREA */}
         <Resizable className="flex-1">
-          {/* LEFT PANE (LIST) */}
           <Resizable.Pane
             id="list-view"
             defaultWidth={380}
-            collapseAt={600} // RESPONSIVE HIDING
+            collapseAt={600}
             className="flex flex-col bg-graphite-background/50  border-outline-variant"
           >
             <div className="p-4">
@@ -986,10 +971,8 @@ export const GmailReplica: StoryObj = {
             </ElasticScrollArea>
           </Resizable.Pane>
 
-          {/* HANDLE */}
           <Resizable.Handle target="list-view" variant="pill" />
 
-          {/* RIGHT PANE (DETAIL) */}
           <Resizable.Pane id="details" flex className="bg-graphite-card">
             <AnimatePresence mode="wait">
               {activeMail ? (
@@ -1013,8 +996,140 @@ export const GmailReplica: StoryObj = {
           </Resizable.Pane>
         </Resizable>
 
-        {/* Desktop Compose Modal */}
         <ComposeModal open={isComposeOpen} onOpenChange={setIsComposeOpen} />
+      </div>
+    );
+  },
+};
+
+// --- NEW STORY: SEPARATED FLOATING CARD LAYOUT WITH GAPS ---
+
+export const SeparatedCardLayout: StoryObj = {
+  name: "2. Separated Floating Cards (MD3 Style)",
+  render: () => {
+    const [selectedId, setSelectedId] = useState<string | null>("1");
+    const activeMail = EMAILS.find((m) => m.id === selectedId);
+
+    return (
+      <div className="flex h-screen w-full bg-surface-container-low p-4 gap-4">
+        {/* Container styled using Resizable with gap and non-divided handle */}
+        <Resizable gap="md" className="flex-1 h-full">
+          <Resizable.Pane
+            id="separated-list"
+            defaultWidth={350}
+            className="h-full"
+          >
+            <Card
+              shape="minimal"
+              variant="surface-container-lowest"
+              className="h-full flex flex-col p-2"
+            >
+              <Typography
+                variant="label-small"
+                className="px-4 py-3 font-bold opacity-60 uppercase tracking-widest text-xs"
+              >
+                Comments & Feeds
+              </Typography>
+              <ElasticScrollArea className="flex-1 px-1">
+                <div className="flex flex-col gap-2">
+                  {EMAILS.map((mail) => (
+                    <Item
+                      key={mail.id}
+                      variant="ghost"
+                      shape="minimal"
+                      padding="sm"
+                      className={clsx(
+                        "cursor-pointer transition-all",
+                        selectedId === mail.id
+                          ? "bg-surface-container-highest"
+                          : "hover:bg-surface-container-high/40",
+                      )}
+                      onClick={() => setSelectedId(mail.id)}
+                    >
+                      <ItemMedia>
+                        <Avatar src={mail.avatar} size="md" />
+                      </ItemMedia>
+                      <ItemContent>
+                        <div className="flex items-center justify-between">
+                          <ItemTitle className="text-sm font-bold">
+                            {mail.author}
+                          </ItemTitle>
+                          <Typography
+                            variant="body-small"
+                            className="text-[10px] opacity-40"
+                          >
+                            {mail.time}
+                          </Typography>
+                        </div>
+                        <ItemDescription className="line-clamp-2 mt-0.5 text-xs">
+                          {mail.preview}
+                        </ItemDescription>
+                      </ItemContent>
+                    </Item>
+                  ))}
+                </div>
+              </ElasticScrollArea>
+            </Card>
+          </Resizable.Pane>
+
+          {/* Floating Pill Handle without Divider line */}
+          <Resizable.Handle
+            indicatorColor="secondary"
+            target="separated-list"
+            variant="pill"
+            divided={false}
+            showIndicator={true}
+            alwaysShowIndicator={true}
+            indicatorHeight={100}
+            indicatorWidth={15}
+          />
+
+          <Resizable.Pane id="separated-detail" flex className="h-full">
+            <Card
+              shape="minimal"
+              variant="surface-container-lowest"
+              className="h-full overflow-hidden flex flex-col p-0"
+            >
+              {activeMail ? (
+                <div className="flex-1 flex flex-col">
+                  {/* Internal Mail Details */}
+                  <div className="p-6 border-b border-outline-variant/30 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar src={activeMail.avatar} size="lg" />
+                      <div>
+                        <Typography
+                          variant="title-medium"
+                          className="font-bold"
+                        >
+                          {activeMail.author}
+                        </Typography>
+                        <Typography variant="body-small" className="opacity-50">
+                          {activeMail.time}
+                        </Typography>
+                      </div>
+                    </div>
+                  </div>
+                  <ElasticScrollArea className="flex-1 p-6">
+                    <Typography
+                      variant="title-large"
+                      className="font-bold mb-4"
+                    >
+                      {activeMail.subject}
+                    </Typography>
+                    <Typography
+                      variant="body-medium"
+                      className="leading-relaxed opacity-85"
+                    >
+                      {activeMail.preview}
+                    </Typography>
+                  </ElasticScrollArea>
+                </div>
+              ) : (
+                <EmptyState />
+              )}
+            </Card>
+          </Resizable.Pane>
+        </Resizable>
       </div>
     );
   },

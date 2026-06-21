@@ -14,6 +14,21 @@ import React, {
 
 // --- TYPES ---
 
+type ResizableGap = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
+
+type IndicatorColor =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "high-contrast"
+  | "ghost"
+  | "surface"
+  | "surface-container-lowest"
+  | "surface-container-low"
+  | "surface-container"
+  | "surface-container-high"
+  | "surface-container-highest";
+
 interface ResizableContextProps {
   /** Map of pane IDs to their current width in pixels */
   sizes: Record<string, number>;
@@ -54,10 +69,22 @@ interface ResizableRootProps extends React.HTMLAttributes<HTMLDivElement> {
    * Key is the Pane ID, value is width in px.
    */
   defaultSizes?: Record<string, number>;
+  gap?: ResizableGap;
 }
 
+const GAP_CLASSES: Record<ResizableGap, string> = {
+  none: "gap-0",
+  xs: "gap-1",
+  sm: "gap-2",
+  md: "gap-4",
+  lg: "gap-6",
+  xl: "gap-8",
+  "2xl": "gap-12",
+  "3xl": "gap-16",
+};
+
 const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
-  ({ children, className, defaultSizes = {}, ...props }, ref) => {
+  ({ children, className, defaultSizes = {}, gap = "none", ...props }, ref) => {
     const [sizes, setSizes] = useState<Record<string, number>>(defaultSizes);
     const [containerWidth, setContainerWidth] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
@@ -72,11 +99,10 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
       invert: boolean;
     } | null>(null);
 
-    // --- 1. Measure Container Width (Responsive Logic) ---
+    // Measure Container Width (Responsive Logic)
     useEffect(() => {
       if (!containerRef.current) return;
       const observer = new ResizeObserver((entries) => {
-        // Wrap in RAF to prevent "ResizeObserver loop limit exceeded"
         requestAnimationFrame(() => {
           if (!entries[0]) return;
           setContainerWidth(entries[0].contentRect.width);
@@ -86,7 +112,7 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
       return () => observer.disconnect();
     }, []);
 
-    // --- 2. Register Panes ---
+    // Register Panes
     const registerPane = useCallback((id: string, size: number) => {
       setSizes((prev) => {
         if (prev[id] !== undefined) return prev;
@@ -94,7 +120,7 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
       });
     }, []);
 
-    // --- 3. Resize Logic ---
+    // Resize Logic
     const resize = useCallback((id: string, delta: number) => {
       setSizes((prev) => {
         const current = prev[id] || 0;
@@ -135,7 +161,7 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
       [sizes],
     );
 
-    // --- 4. Global Event Listeners for Drag ---
+    // Global Event Listeners for Drag
     useEffect(() => {
       if (!isDragging) return;
 
@@ -144,11 +170,7 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
         const { startX, startWidth, targetId, invert } = dragInfo.current;
 
         const rawDelta = clientX - startX;
-        // If inverted (e.g. right sidebar), dragging left (negative delta) increases width
         const adjustedDelta = invert ? -rawDelta : rawDelta;
-
-        // We don't use setSizes directly here to avoid stale closures,
-        // instead we calculate the absolute new width
         const newWidth = Math.max(0, startWidth + adjustedDelta);
 
         setSizes((prev) => ({
@@ -200,7 +222,11 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
       >
         <div
           ref={handleRef}
-          className={clsx("flex h-full w-full overflow-hidden", className)}
+          className={clsx(
+            "flex h-full w-full overflow-hidden",
+            GAP_CLASSES[gap],
+            className,
+          )}
           {...props}
         >
           {children}
@@ -214,22 +240,9 @@ ResizableRoot.displayName = "Resizable.Root";
 // --- PANE COMPONENT ---
 
 interface PaneProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Unique ID for the pane. Required if the pane is resizable. */
   id: string;
-  /**
-   * Initial width in pixels.
-   * Ignored if `flex` is true.
-   */
   defaultWidth?: number;
-  /**
-   * If true, this pane will take up remaining space.
-   * It cannot be directly resized by a handle, but will shrink/grow as others resize.
-   */
   flex?: boolean;
-  /**
-   * The container width (in pixels) below which this pane will be hidden.
-   * Useful for responsive layouts (e.g., hide sidebar on mobile).
-   */
   collapseAt?: number;
 }
 
@@ -270,11 +283,10 @@ const Pane = React.forwardRef<HTMLDivElement, PaneProps>(
       <div
         ref={ref}
         className={clsx(
-          "relative overflow-hidden transition-[flex-basis] duration-75 ease-out",
+          "relative overflow-hidden transition-[flex-basis] duration-75 ease-out shrink-0",
           className,
         )}
         style={{
-          // If flex, grow to fill space. If not, fixed width.
           flex: flex ? "1 1 0%" : "0 0 auto",
           width: flex ? undefined : (currentWidth ?? defaultWidth),
           ...style,
@@ -287,12 +299,12 @@ const Pane = React.forwardRef<HTMLDivElement, PaneProps>(
     );
   },
 );
-Pane.displayName = "Resizable.Pane";
+Pane.displayName = "Pane";
 
 // --- HANDLE COMPONENT ---
 
 const handleVariants = cva(
-  "relative z-10 flex w-1 h-full cursor-col-resize items-center justify-center outline-none group select-none touch-none",
+  "relative z-10 flex w-2 h-full cursor-col-resize items-center justify-center outline-none group select-none touch-none shrink-0",
   {
     variants: {
       isDragging: {
@@ -315,30 +327,97 @@ const visibleLineVariants = cva(
         true: "!bg-primary/50 !w-1 !h-full opacity-100",
         false: "",
       },
+      divided: {
+        true: "opacity-100",
+        false: "opacity-0",
+      },
     },
     defaultVariants: {
       variant: "default",
+      divided: true,
+    },
+  },
+);
+
+const indicatorVariants = cva(
+  "absolute flex items-center justify-center rounded-full shadow-sm transition-all duration-200 transform",
+  {
+    variants: {
+      color: {
+        primary: "bg-primary text-on-primary",
+        secondary: "bg-secondary-container text-on-secondary-container",
+        tertiary: "bg-tertiary-container text-on-tertiary-container",
+        "high-contrast": "bg-inverse-surface text-inverse-on-surface",
+        ghost:
+          "bg-surface-container-low/50 backdrop-blur-md border border-outline-variant/30 text-on-surface",
+        surface: "bg-surface border border-outline-variant/30 text-on-surface",
+        "surface-container-lowest":
+          "bg-surface-container-lowest border border-outline-variant/20 text-on-surface",
+        "surface-container-low":
+          "bg-surface-container-low border border-outline-variant/30 text-on-surface",
+        "surface-container":
+          "bg-surface-container border border-outline-variant/40 text-on-surface",
+        "surface-container-high": "bg-surface-container-high text-on-surface",
+        "surface-container-highest":
+          "bg-surface-container-highest text-on-surface",
+      },
+    },
+    defaultVariants: {
+      color: "secondary",
     },
   },
 );
 
 interface HandleProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** The ID of the pane this handle resizes. */
   target: string;
-  /**
-   * If true, dragging LEFT increases the target pane's width.
-   * Use this for handles placed to the left of their target pane (e.g. Right Sidebar).
-   */
   invert?: boolean;
   variant?: "default" | "pill";
+  divided?: boolean;
+  showIndicator?: boolean;
+  indicatorHeight?: string | number;
+  alwaysShowIndicator?: boolean;
+  showIcon?: boolean;
+  indicatorWidth?: string | number;
+  indicatorColor?: IndicatorColor;
 }
 
 const Handle = React.forwardRef<HTMLDivElement, HandleProps>(
   (
-    { className, target, invert = false, variant = "default", ...props },
+    {
+      className,
+      target,
+      invert = false,
+      variant = "default",
+      divided = true,
+      showIndicator = true,
+      indicatorHeight,
+      alwaysShowIndicator = false,
+      showIcon = true,
+      indicatorWidth,
+      indicatorColor = "secondary",
+      ...props
+    },
     ref,
   ) => {
     const { startDrag, isDragging } = useResizable();
+
+    const isTailwindHeight =
+      typeof indicatorHeight === "string" && indicatorHeight.startsWith("h-");
+
+    const isTailwindWidth =
+      typeof indicatorWidth === "string" && indicatorWidth.startsWith("w-");
+
+    const indicatorStyle: React.CSSProperties = {
+      height:
+        indicatorHeight && !isTailwindHeight ? indicatorHeight : undefined,
+      width: indicatorWidth && !isTailwindWidth ? indicatorWidth : undefined,
+    };
+
+    const visibilityClasses = alwaysShowIndicator
+      ? "opacity-100 scale-100"
+      : isDragging
+        ? "opacity-100 scale-100"
+        : "opacity-0 scale-75 pointer-events-none group-hover:opacity-100 group-hover:scale-90";
 
     return (
       <div
@@ -350,19 +429,28 @@ const Handle = React.forwardRef<HTMLDivElement, HandleProps>(
         className={clsx(handleVariants({ isDragging }), className)}
         {...props}
       >
-        <div className={clsx(visibleLineVariants({ isDragging, variant }))} />
-
-        {/* Floating Handle Indicator */}
         <div
           className={clsx(
-            "absolute flex items-center justify-center w-6 h-12 rounded-full bg-secondary-container text-on-secondary-container shadow-sm transition-all duration-200 transform",
-            isDragging
-              ? "opacity-100 scale-100"
-              : "opacity-0 scale-75 pointer-events-none group-hover:opacity-100 group-hover:scale-90",
+            visibleLineVariants({ isDragging, variant, divided }),
           )}
-        >
-          <GripVertical className="h-4 w-4 opacity-50" />
-        </div>
+        />
+
+        {/* Floating Handle Indicator */}
+        {showIndicator && (
+          <div
+            className={clsx(
+              indicatorVariants({ color: indicatorColor }),
+              !indicatorHeight && "h-12",
+              isTailwindHeight && indicatorHeight,
+              !indicatorWidth && "w-6",
+              isTailwindWidth && indicatorWidth,
+              visibilityClasses,
+            )}
+            style={indicatorStyle}
+          >
+            {showIcon && <GripVertical className="h-4 w-4 opacity-70" />}
+          </div>
+        )}
       </div>
     );
   },
