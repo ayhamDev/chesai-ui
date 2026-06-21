@@ -11,6 +11,8 @@ import { IconButton } from "../icon-button";
 import { Separator } from "../separator";
 import { DURATION, EASING } from "../stack-router/transitions";
 
+export type SearchViewShape = "full" | "minimal" | "sharp";
+
 export interface SearchViewProps {
   value: string;
   onChange: (value: string) => void;
@@ -30,10 +32,11 @@ export interface SearchViewProps {
   expandedHeight?: number | string;
   expandedMinHeight?: number | string;
   expandedMaxHeight?: number | string;
-  showOverlay?: boolean; // Prop added here
+  showOverlay?: boolean;
+  shape?: SearchViewShape;
+  duration?: number;
+  easing?: string | number[];
 }
-
-const TRANSITION_DURATION = DURATION.medium3;
 
 const COLOR_VARIANTS = {
   surface: {
@@ -74,6 +77,12 @@ const COLOR_VARIANTS = {
   },
 };
 
+const TRIGGER_SHAPE_CLASSES: Record<SearchViewShape, string> = {
+  full: "rounded-full",
+  minimal: "rounded-xl",
+  sharp: "rounded-none",
+};
+
 export const SearchView = ({
   value,
   onChange,
@@ -85,7 +94,7 @@ export const SearchView = ({
   children,
   open: controlledOpen,
   onOpenChange,
-  desktopRadius = "28px",
+  desktopRadius,
   className,
   variant = "modal",
   triggerVariant = "default",
@@ -93,7 +102,10 @@ export const SearchView = ({
   expandedHeight,
   expandedMinHeight,
   expandedMaxHeight,
-  showOverlay = true, // Defaulting to true
+  showOverlay = true,
+  shape = "full",
+  duration = DURATION.medium3,
+  easing = EASING.expressiveDefaultEffects,
 }: SearchViewProps) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
@@ -103,8 +115,10 @@ export const SearchView = ({
 
   const triggerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const effectiveVariant = isMobile ? "fullscreen" : variant;
   const colors = COLOR_VARIANTS[color];
 
@@ -170,7 +184,108 @@ export const SearchView = ({
     inputRef.current?.blur();
   };
 
-  // Focus & Scroll Lock Logic
+  // Helper to retrieve all focusable elements inside the portal container
+  const getFocusableElements = (): HTMLElement[] => {
+    if (!containerRef.current) return [];
+    const selector = "input, button, [role='button'], a, [tabindex='0']";
+    const elements =
+      containerRef.current.querySelectorAll<HTMLElement>(selector);
+    return Array.from(elements).filter((el) => {
+      const style = window.getComputedStyle(el);
+      return (
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        el.getAttribute("tabindex") !== "-1" &&
+        !el.hasAttribute("disabled")
+      );
+    });
+  };
+
+  // Helper to retrieve result items specifically for Arrow Key cycling
+  const getResultElements = (): HTMLElement[] => {
+    if (!bodyRef.current) return [];
+    const selector = "button, [role='button'], a, [tabindex='0']";
+    const elements = bodyRef.current.querySelectorAll<HTMLElement>(selector);
+    return Array.from(elements).filter((el) => {
+      const style = window.getComputedStyle(el);
+      return (
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        el.getAttribute("tabindex") !== "-1" &&
+        !el.hasAttribute("disabled")
+      );
+    });
+  };
+
+  // Focus trap and search results selection keydown handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      if (e.key === "Escape") {
+        handleClose();
+        return;
+      }
+
+      const focusable = getFocusableElements();
+      const results = getResultElements();
+      const active = document.activeElement as HTMLElement;
+
+      if (e.key === "Tab" && focusable.length > 0) {
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (active === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (active === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      } else if (e.key === "ArrowDown" && results.length > 0) {
+        e.preventDefault();
+        if (active === inputRef.current) {
+          results[0].focus();
+        } else {
+          const idx = results.indexOf(active);
+          if (idx !== -1 && idx < results.length - 1) {
+            results[idx + 1].focus();
+          } else {
+            inputRef.current?.focus();
+          }
+        }
+      } else if (e.key === "ArrowUp" && results.length > 0) {
+        e.preventDefault();
+        if (active === inputRef.current) {
+          results[results.length - 1].focus();
+        } else {
+          const idx = results.indexOf(active);
+          if (idx > 0) {
+            results[idx - 1].focus();
+          } else {
+            inputRef.current?.focus();
+          }
+        }
+      } else if (e.key === "Enter") {
+        const idx = results.indexOf(active);
+        if (idx !== -1) {
+          e.preventDefault();
+          active.click();
+        }
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
+  // Lock scroll background and manage input focus relative to transition duration
   useEffect(() => {
     if (isOpen) {
       if (effectiveVariant !== "docked") {
@@ -179,21 +294,29 @@ export const SearchView = ({
 
       const timer = setTimeout(() => {
         inputRef.current?.focus();
-      }, TRANSITION_DURATION * 1000);
+      }, duration * 1000);
 
       return () => {
         document.body.style.overflow = "";
+        clearTimeout(timer);
       };
     }
-  }, [isOpen, effectiveVariant]);
+  }, [isOpen, effectiveVariant, duration]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) handleClose();
-    };
-    if (isOpen) window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
+  const getResolvedExpandedRadius = () => {
+    if (effectiveVariant === "fullscreen") return 0;
+    if (desktopRadius !== undefined) return desktopRadius;
+
+    switch (shape) {
+      case "sharp":
+        return 0;
+      case "minimal":
+        return 12;
+      case "full":
+      default:
+        return 28;
+    }
+  };
 
   const getAnimationTarget = () => {
     if (!triggerRect) return {};
@@ -224,7 +347,7 @@ export const SearchView = ({
           height: h,
           minHeight: expandedMinHeight,
           maxHeight: expandedMaxHeight,
-          borderRadius: desktopRadius,
+          borderRadius: getResolvedExpandedRadius(),
         };
       }
       case "modal":
@@ -237,12 +360,23 @@ export const SearchView = ({
           height: expandedHeight ?? expandedMaxHeight ?? 600,
           minHeight: expandedMinHeight,
           maxHeight: expandedMaxHeight,
-          borderRadius: desktopRadius,
+          borderRadius: getResolvedExpandedRadius(),
         };
     }
   };
 
-  const triggerBorderRadius = triggerRect ? triggerRect.height / 2 : 28;
+  const getUnexpandedBorderRadius = () => {
+    if (triggerVariant === "icon") return 999;
+    switch (shape) {
+      case "sharp":
+        return 0;
+      case "minimal":
+        return 12;
+      case "full":
+      default:
+        return triggerRect ? triggerRect.height / 2 : 28;
+    }
+  };
 
   const ExpandedView = triggerRect && (
     <div className="fixed inset-0 z-[9999]" style={{ pointerEvents: "auto" }}>
@@ -250,21 +384,22 @@ export const SearchView = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: duration, ease: easing }}
         className={clsx(
           "absolute inset-0 transition-colors",
-          showOverlay ? "bg-black/40" : "bg-transparent", // Switches background style based on prop
+          showOverlay ? "bg-black/40" : "bg-transparent",
         )}
         onClick={handleClose}
       />
 
       <motion.div
+        ref={containerRef}
         initial={{
           top: triggerRect.top,
           left: triggerRect.left,
           width: triggerRect.width,
           height: triggerRect.height,
-          borderRadius: triggerVariant === "icon" ? 999 : triggerBorderRadius,
+          borderRadius: getUnexpandedBorderRadius(),
           x: 0,
         }}
         animate={getAnimationTarget() as any}
@@ -273,13 +408,13 @@ export const SearchView = ({
           left: triggerRect.left,
           width: triggerRect.width,
           height: triggerRect.height,
-          borderRadius: triggerVariant === "icon" ? 999 : triggerBorderRadius,
+          borderRadius: getUnexpandedBorderRadius(),
           x: 0,
-          transition: { duration: 0.3, ease: "easeInOut" },
+          transition: { duration: duration, ease: easing },
         }}
         transition={{
-          duration: TRANSITION_DURATION,
-          ease: EASING.expressiveDefaultEffects,
+          duration: duration,
+          ease: easing,
         }}
         className={clsx(
           "absolute flex flex-col shadow-2xl overflow-hidden transform-3d",
@@ -382,12 +517,14 @@ export const SearchView = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
+          transition={{ duration: duration, delay: 0.1 }}
           className={clsx("flex-1 relative min-h-0", colors.expandedBody)}
         >
-          <ElasticScrollArea className="h-full w-full">
-            {children}
-          </ElasticScrollArea>
+          <div ref={bodyRef} className="h-full w-full">
+            <ElasticScrollArea className="h-full w-full">
+              {children}
+            </ElasticScrollArea>
+          </div>
         </motion.div>
       </motion.div>
     </div>
@@ -419,7 +556,8 @@ export const SearchView = ({
           ref={triggerRef}
           onClick={handleOpen}
           className={clsx(
-            "relative flex h-[56px] w-full cursor-pointer items-center justify-center rounded-full px-4 transition-all duration-200",
+            "relative flex h-[56px] w-full cursor-pointer items-center justify-center px-4 transition-all duration-200",
+            TRIGGER_SHAPE_CLASSES[shape],
             colors.trigger,
             isOpen
               ? "opacity-0 pointer-events-none"
@@ -444,7 +582,8 @@ export const SearchView = ({
         ref={triggerRef}
         onClick={handleOpen}
         className={clsx(
-          "relative flex h-[56px] w-full cursor-pointer items-center rounded-full px-4 transition-all duration-200",
+          "relative flex h-[56px] w-full cursor-pointer items-center px-4 transition-all duration-200",
+          TRIGGER_SHAPE_CLASSES[shape],
           colors.trigger,
           isOpen
             ? "opacity-0 pointer-events-none"

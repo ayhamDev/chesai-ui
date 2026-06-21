@@ -24,6 +24,8 @@ import { ShallowRouter, useRouter } from "../shallow-router";
 
 type TabVariant = "primary" | "secondary";
 type PageTransition = "slide" | "fade";
+type TabShape = "full" | "minimal" | "sharp";
+type TabSize = "sm" | "md" | "lg";
 
 interface TabsContextProps {
   activeTab: string;
@@ -31,6 +33,9 @@ interface TabsContextProps {
   variant: TabVariant;
   pageTransition: PageTransition;
   indicatorId: string;
+  shape: TabShape;
+  size: TabSize;
+  stretch: boolean;
 }
 
 const TabsContext = createContext<TabsContextProps | null>(null);
@@ -51,6 +56,9 @@ interface TabsProps {
   routingMode?: "search" | "pathname" | "memory";
   routingParamName?: string;
   initialTab?: string;
+  shape?: TabShape;
+  size?: TabSize;
+  stretch?: boolean;
 }
 
 const TabsRoot: React.FC<TabsProps> = ({
@@ -61,6 +69,9 @@ const TabsRoot: React.FC<TabsProps> = ({
   routingMode = "memory",
   routingParamName = "tab",
   initialTab,
+  shape = "minimal",
+  size = "md",
+  stretch = true,
 }) => {
   const uniqueId = useId();
   return (
@@ -71,6 +82,9 @@ const TabsRoot: React.FC<TabsProps> = ({
         pageTransition={pageTransition}
         indicatorId={uniqueId}
         initialTab={initialTab}
+        shape={shape}
+        size={size}
+        stretch={stretch}
       >
         {children}
       </TabsProvider>
@@ -92,6 +106,9 @@ const TabsProvider: React.FC<TabsProviderProps> = ({
   pageTransition = "fade",
   indicatorId,
   initialTab,
+  shape = "minimal",
+  size = "md",
+  stretch = true,
 }) => {
   const { path, push, replace } = useRouter();
 
@@ -110,7 +127,16 @@ const TabsProvider: React.FC<TabsProviderProps> = ({
 
   return (
     <TabsContext.Provider
-      value={{ activeTab, setActiveTab, variant, pageTransition, indicatorId }}
+      value={{
+        activeTab,
+        setActiveTab,
+        variant,
+        pageTransition,
+        indicatorId,
+        shape,
+        size,
+        stretch,
+      }}
     >
       {children}
     </TabsContext.Provider>
@@ -209,27 +235,83 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
 TabsList.displayName = "Tabs.List";
 
 const triggerVariants = cva(
-  "relative flex px-6 flex-col items-center justify-center gap-1.5 flex-1 min-h-14 max-auto pb-2 pt-2 font-semibold text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+  "relative flex items-center justify-center gap-1.5 min-h-14 pb-2 pt-2 font-semibold text-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
   {
     variants: {
-      variant: { primary: "pt-1", secondary: "" },
+      variant: {
+        primary: "pt-1",
+        secondary: "",
+      },
       isActive: {
         true: "text-primary",
         false: "text-on-surface-variant hover:text-on-surface",
       },
+      shape: {
+        full: "rounded-full",
+        minimal: "rounded-lg",
+        sharp: "rounded-none",
+      },
+      size: {
+        sm: "min-h-10 text-xs px-4 py-1.5",
+        md: "min-h-14 text-sm px-6 py-2",
+        lg: "min-h-16 text-base px-8 py-3",
+      },
+      stretch: {
+        true: "flex-1",
+        false: "flex-initial min-w-max",
+      },
+      iconPosition: {
+        top: "flex-col",
+        bottom: "flex-col-reverse",
+        start: "flex-row",
+        end: "flex-row-reverse",
+      },
     },
-    defaultVariants: { variant: "primary", isActive: false },
+    defaultVariants: {
+      variant: "primary",
+      isActive: false,
+      shape: "minimal",
+      size: "md",
+      stretch: true,
+      iconPosition: "top",
+    },
   },
 );
 
 interface TabsTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   value: string;
   icon?: React.ReactNode;
+  iconPosition?: "top" | "start" | "end" | "bottom";
+  stretch?: boolean;
+  shape?: TabShape;
+  size?: TabSize;
 }
 
 const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
-  ({ value, children, icon, className, ...props }, ref) => {
-    const { activeTab, setActiveTab, variant, indicatorId } = useTabs();
+  (
+    {
+      value,
+      children,
+      icon,
+      iconPosition,
+      stretch,
+      shape,
+      size,
+      className,
+      ...props
+    },
+    ref,
+  ) => {
+    const {
+      activeTab,
+      setActiveTab,
+      variant,
+      indicatorId,
+      shape: contextShape,
+      size: contextSize,
+      stretch: contextStretch,
+    } = useTabs();
+
     const isActive = activeTab === value;
     const localRef = React.useRef<HTMLButtonElement>(null);
     const [, event] = useRipple({
@@ -237,7 +319,6 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
       ref: localRef,
       color: "var(--color-ripple-dark)",
       duration: 400,
-      // Fix: Removed opacity
     });
     // @ts-ignore
     React.useImperativeHandle(ref, () => localRef.current!);
@@ -252,6 +333,12 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
       }
     }, [isActive]);
 
+    const resolvedShape = shape ?? contextShape;
+    const resolvedSize = size ?? contextSize;
+    const resolvedStretch = stretch ?? contextStretch;
+    const resolvedIconPosition =
+      iconPosition ?? (variant === "primary" ? "top" : "start");
+
     return (
       <button
         ref={localRef}
@@ -260,10 +347,24 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
         data-state={isActive ? "active" : "inactive"}
         onClick={() => setActiveTab(value)}
         onPointerDown={event}
-        className={clsx(triggerVariants({ variant, isActive }), className)}
+        className={clsx(
+          triggerVariants({
+            variant,
+            isActive,
+            shape: resolvedShape,
+            size: resolvedSize,
+            stretch: resolvedStretch,
+            iconPosition: resolvedIconPosition,
+          }),
+          className,
+        )}
         {...props}
       >
-        {variant === "primary" && icon}
+        {icon && (
+          <span className="flex items-center justify-center shrink-0">
+            {icon}
+          </span>
+        )}
         <span className="relative z-10">{children}</span>
         {isActive && (
           <motion.div

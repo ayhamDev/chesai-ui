@@ -16,6 +16,7 @@ import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
 import { Tabs } from "./index";
 import { ElasticScrollArea } from "../elastic-scroll-area/index";
+
 const meta: Meta<typeof Tabs> = {
   title: "Components/Navigators/Tabs",
   component: Tabs,
@@ -55,10 +56,26 @@ const meta: Meta<typeof Tabs> = {
     },
     routingMode: {
       control: "select",
-      options: ["search", "pathname"],
+      options: ["search", "pathname", "memory"],
     },
     routingParamName: {
       control: "text",
+    },
+    shape: {
+      control: "select",
+      options: ["full", "minimal", "sharp"],
+      description:
+        "Applies layout container shape standards from MD3 design system.",
+    },
+    size: {
+      control: "select",
+      options: ["sm", "md", "lg"],
+      description: "Standard layout density controls.",
+    },
+    stretch: {
+      control: "boolean",
+      description:
+        "Whether trigger elements stretch to occupy 100% equal width of the list container.",
     },
   },
 };
@@ -73,6 +90,9 @@ export const Primary: Story = {
     variant: "primary",
     pageTransition: "fade",
     routingParamName: "view",
+    stretch: true,
+    shape: "minimal",
+    size: "md",
   },
   render: (args) => (
     <Card className="w-96" shape="minimal">
@@ -113,12 +133,125 @@ export const Primary: Story = {
   ),
 };
 
+export const AutoWidthStartIcon: Story = {
+  name: "2. Content Width (Icon Beside Text)",
+  args: {
+    defaultValue: "categories",
+    variant: "secondary",
+    stretch: false,
+    shape: "minimal",
+    size: "md",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Setting `stretch={false}` allows the tabs to fit exactly to their contents. You can also override the `iconPosition` on individual triggers to place the icon on the side.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card className="w-[500px]" shape="minimal">
+      <Tabs {...args}>
+        <Tabs.List className="gap-2">
+          <Tabs.Trigger
+            value="categories"
+            icon={<Package size={16} />}
+            iconPosition="start"
+          >
+            Categories & Items
+          </Tabs.Trigger>
+          <Tabs.Trigger
+            value="modifiers"
+            icon={<Menu size={16} />}
+            iconPosition="start"
+          >
+            Modifier Groups
+          </Tabs.Trigger>
+          <Tabs.Trigger
+            value="dietary"
+            icon={<LocateIcon size={16} />}
+            iconPosition="start"
+          >
+            Dietary Tags
+          </Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content>
+          <Tabs.Panel value="categories">
+            <Typography variant="title-small">
+              Categories & Items Settings
+            </Typography>
+          </Tabs.Panel>
+          <Tabs.Panel value="modifiers">
+            <Typography variant="title-small">
+              Modifier Groups Configuration
+            </Typography>
+          </Tabs.Panel>
+          <Tabs.Panel value="dietary">
+            <Typography variant="title-small">
+              Dietary Tags Management
+            </Typography>
+          </Tabs.Panel>
+        </Tabs.Content>
+      </Tabs>
+    </Card>
+  ),
+};
+
+export const AllShapesAndSizes: Story = {
+  name: "3. Shapes and Sizing variations",
+  args: {
+    defaultValue: "tab1",
+    stretch: false,
+  },
+  render: (args) => (
+    <div className="flex flex-col gap-6 w-[550px]">
+      <div>
+        <Typography variant="label-small" className="mb-2 block opacity-60">
+          Small Size + Full Shape
+        </Typography>
+        <Card shape="minimal" padding="sm">
+          <Tabs {...args} size="sm" shape="full">
+            <Tabs.List className="gap-1 border-none">
+              <Tabs.Trigger value="tab1">Small Tab 1</Tabs.Trigger>
+              <Tabs.Trigger value="tab2">Small Tab 2</Tabs.Trigger>
+              <Tabs.Trigger value="tab3">Small Tab 3</Tabs.Trigger>
+            </Tabs.List>
+          </Tabs>
+        </Card>
+      </div>
+
+      <div>
+        <Typography variant="label-small" className="mb-2 block opacity-60">
+          Large Size + Sharp Shape
+        </Typography>
+        <Card shape="sharp" padding="none">
+          <Tabs {...args} size="lg" shape="sharp">
+            <Tabs.List className="border-b-0">
+              <Tabs.Trigger value="tab1" className="flex-1">
+                Large Tab 1
+              </Tabs.Trigger>
+              <Tabs.Trigger value="tab2" className="flex-1">
+                Large Tab 2
+              </Tabs.Trigger>
+              <Tabs.Trigger value="tab3" className="flex-1">
+                Large Tab 3
+              </Tabs.Trigger>
+            </Tabs.List>
+          </Tabs>
+        </Card>
+      </div>
+    </div>
+  ),
+};
+
 export const Secondary: Story = {
-  name: "2. Secondary Variant (Text Only)",
+  name: "4. Secondary Variant (Text Only)",
   args: {
     defaultValue: "overview",
     variant: "secondary",
     pageTransition: "fade",
+    stretch: true,
   },
   render: (args) => (
     <Card className="w-96" shape="minimal">
@@ -149,7 +282,7 @@ export const Secondary: Story = {
 };
 
 export const SwipeableCarousel: Story = {
-  name: "3. Swipeable Carousel (Slide Transition)",
+  name: "5. Swipeable Carousel (Slide Transition)",
   args: {
     ...Primary.args,
     pageTransition: "slide",
@@ -165,35 +298,18 @@ export const SwipeableCarousel: Story = {
   render: (args) => <Primary.render {...args} />,
 };
 
-export const PathnameRouting: Story = {
-  name: "4. Pathname Routing Mode",
-  args: {
-    ...Secondary.args,
-    routingMode: "pathname",
-    initialTab: "overview", // This is now the recommended way
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "When `routingMode='pathname'`, the `initialTab` prop is used to set the URL correctly on the first render, ensuring the UI and the URL are in sync.",
-      },
-    },
-  },
-  render: (args) => <Secondary.render {...args} />,
-};
-
 export const Scrollable: Story = {
-  name: "5. Scrollable Tabs",
+  name: "6. Scrollable Tabs",
   args: {
     ...Primary.args,
     defaultValue: "flights",
+    stretch: false,
   },
   parameters: {
     docs: {
       description: {
         story:
-          "When there are too many tabs to fit in the container, the list becomes horizontally scrollable with faded edges to indicate more content is available.",
+          "When there are too many tabs to fit in the container, setting `stretch={false}` allows the list to be horizontally scrollable with faded edges.",
       },
     },
   },
@@ -243,141 +359,4 @@ export const Scrollable: Story = {
       </Tabs>
     </Card>
   ),
-};
-
-export const ScrollableWithSwipe: Story = {
-  name: "6. Scrollable Tabs With Swipe",
-  args: {
-    ...Primary.args,
-    defaultValue: "flights",
-    pageTransition: "slide",
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "When there are too many tabs to fit in the container, the list becomes horizontally scrollable with faded edges to indicate more content is available.",
-      },
-    },
-  },
-  render: (args) => (
-    <Card className="w-[450px]" shape="minimal">
-      <Tabs {...args}>
-        <Tabs.List>
-          <Tabs.Trigger value="flights" icon={<Plane size={20} />}>
-            Flights
-          </Tabs.Trigger>
-          <Tabs.Trigger value="trips" icon={<LocateIcon size={20} />}>
-            Trips
-          </Tabs.Trigger>
-          <Tabs.Trigger value="explore" icon={<Compass size={20} />}>
-            Explore
-          </Tabs.Trigger>
-          <Tabs.Trigger value="hotels" icon={<Hotel size={20} />}>
-            Hotels
-          </Tabs.Trigger>
-          <Tabs.Trigger value="cars" icon={<Car size={20} />}>
-            Car Rentals
-          </Tabs.Trigger>
-          <Tabs.Trigger value="packages" icon={<Package size={20} />}>
-            Packages
-          </Tabs.Trigger>
-        </Tabs.List>
-        <Tabs.Content>
-          <Tabs.Panel value="flights">
-            <Typography variant="title-small">Find Your Next Flight</Typography>
-          </Tabs.Panel>
-          <Tabs.Panel value="trips">
-            <Typography variant="title-small">Manage Your Trips</Typography>
-          </Tabs.Panel>
-          <Tabs.Panel value="explore">
-            <Typography variant="title-small">Explore Destinations</Typography>
-          </Tabs.Panel>
-          <Tabs.Panel value="hotels">
-            <Typography variant="title-small">Book a Hotel</Typography>
-          </Tabs.Panel>
-          <Tabs.Panel value="cars">
-            <Typography variant="title-small">Rent a Car</Typography>
-          </Tabs.Panel>
-          <Tabs.Panel value="packages">
-            <Typography variant="title-small">Vacation Packages</Typography>
-          </Tabs.Panel>
-        </Tabs.Content>
-      </Tabs>
-    </Card>
-  ),
-};
-
-export const WithAppBar: Story = {
-  name: "2. With AppBar Integration",
-  args: {
-    defaultValue: "flights",
-    variant: "secondary",
-  },
-  parameters: {
-    layout: "fullscreen",
-  },
-  render: (args) => {
-    const scrollRef = useRef<HTMLDivElement>(null);
-
-    const DummyScrollContent = ({ title }: { title: string }) => (
-      <main className="p-6">
-        <Typography variant="title-medium">{title}</Typography>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 30 }).map((_, i) => (
-            <div key={i} className="h-48 rounded-2xl bg-black/5" />
-          ))}
-        </div>
-      </main>
-    );
-
-    return (
-      <div className="h-screen bg-graphite-background overflow-hidden relative">
-        <Tabs {...args}>
-          <AppBar
-            variant="large"
-            color="surface-container"
-            scrollContainerRef={scrollRef}
-            leadingIcon={
-              <IconButton variant="ghost" aria-label="Menu" size="sm">
-                <Menu />
-              </IconButton>
-            }
-            trailingIcons={
-              <IconButton variant="ghost" aria-label="Search" size="sm">
-                <Search />
-              </IconButton>
-            }
-            title="My App"
-            bottomContent={
-              <div className="border-b border-outline-variant">
-                <Tabs.List className="!border-b-0">
-                  <Tabs.Trigger value="flights">Flights</Tabs.Trigger>
-                  <Tabs.Trigger value="hotels">Hotels</Tabs.Trigger>
-                  <Tabs.Trigger value="cars">Cars</Tabs.Trigger>
-                </Tabs.List>
-              </div>
-            }
-          />
-          <ElasticScrollArea
-            ref={scrollRef}
-            className="h-full overflow-y-auto bg-graphite-background"
-          >
-            {/* AppBar large (152) + Tabs height (~48) = 200px padding top */}
-            <Tabs.Content className="overflow-hidden pt-[200px]">
-              <Tabs.Panel value="flights">
-                <DummyScrollContent title="Search for Flights" />
-              </Tabs.Panel>
-              <Tabs.Panel value="hotels">
-                <DummyScrollContent title="Find Hotel Deals" />
-              </Tabs.Panel>
-              <Tabs.Panel value="cars">
-                <DummyScrollContent title="Rent a Car" />
-              </Tabs.Panel>
-            </Tabs.Content>
-          </ElasticScrollArea>
-        </Tabs>
-      </div>
-    );
-  },
 };
