@@ -281,7 +281,11 @@ export const ShapeVariations: Story = {
 
 export const DockedVariant: Story = {
   name: "3. Docked (In-Place)",
-  args: { variant: "docked", shape: "minimal" },
+  args: {
+    variant: "docked",
+    shape: "full",
+    triggerVariant: "default"
+  },
   render: (args) => {
     const [query, setQuery] = useState("");
     const [isOpen, setIsOpen] = useState(false);

@@ -1,20 +1,22 @@
-'use client'
+"use client";
 
-import type { Table } from '@tanstack/react-table'
-import { createContext, useContext } from 'react'
+import type { Table } from "@tanstack/react-table";
+import { createContext, useContext } from "react";
+import { type SearchViewProps } from "../search-view";
 
 interface DataTableContextProps<TData> {
-  table: Table<TData>
+  table: Table<TData>;
+  searchViewProps?: Partial<Omit<SearchViewProps, "value" | "onChange">>;
 }
 
-const DataTableContext = createContext<DataTableContextProps<any> | null>(null)
+const DataTableContext = createContext<DataTableContextProps<any> | null>(null);
 
 export function useDataTable<TData>() {
-  const context = useContext(DataTableContext)
+  const context = useContext(DataTableContext);
   if (!context) {
-    throw new Error('useDataTable must be used within a DataTable provider')
+    throw new Error("useDataTable must be used within a DataTable provider");
   }
-  return context as DataTableContextProps<TData>
+  return context as DataTableContextProps<TData>;
 }
 
-export { DataTableContext }
+export { DataTableContext };

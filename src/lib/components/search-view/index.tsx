@@ -2,14 +2,21 @@
 
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
-import { AnimatePresence, motion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useSpring,
+  useTransform,
+  useMotionValue,
+  useMotionTemplate,
+} from "framer-motion";
 import { ArrowLeft, Search, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
-import { Separator } from "../separator";
 import { DURATION, EASING } from "../stack-router/transitions";
+import { Divider } from "../divider";
 
 export type SearchViewShape = "full" | "minimal" | "sharp";
 
@@ -140,7 +147,6 @@ export const SearchView = ({
     }
   }, []);
 
-  // Live Re-measurement
   useEffect(() => {
     if (isOpen) {
       window.addEventListener("resize", updateRect);
@@ -184,7 +190,6 @@ export const SearchView = ({
     inputRef.current?.blur();
   };
 
-  // Helper to retrieve all focusable elements inside the portal container
   const getFocusableElements = (): HTMLElement[] => {
     if (!containerRef.current) return [];
     const selector = "input, button, [role='button'], a, [tabindex='0']";
@@ -201,7 +206,6 @@ export const SearchView = ({
     });
   };
 
-  // Helper to retrieve result items specifically for Arrow Key cycling
   const getResultElements = (): HTMLElement[] => {
     if (!bodyRef.current) return [];
     const selector = "button, [role='button'], a, [tabindex='0']";
@@ -217,7 +221,6 @@ export const SearchView = ({
     });
   };
 
-  // Focus trap and search results selection keydown handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
@@ -285,7 +288,6 @@ export const SearchView = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
-  // Lock scroll background and manage input focus relative to transition duration
   useEffect(() => {
     if (isOpen) {
       if (effectiveVariant !== "docked") {
@@ -423,12 +425,13 @@ export const SearchView = ({
         )}
       >
         <div className="relative h-[56px] shrink-0">
+          {/* 1. INTERACTIVE HEADER LAYER (Fades in slightly delayed) */}
           <motion.div
             className="absolute inset-0 flex items-center px-2 gap-2 z-10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, delay: 0.1 }}
+            transition={{ duration: 0.15, delay: 0.1 }}
           >
             <div className="flex h-12 w-12 items-center justify-center shrink-0">
               <IconButton
@@ -478,20 +481,25 @@ export const SearchView = ({
             </div>
           </motion.div>
 
-          {triggerVariant !== "icon" && (
-            <motion.div
-              className="absolute inset-0 flex items-center px-4 z-0 pointer-events-none"
-              initial={{ opacity: 1 }}
-              animate={{ opacity: 0 }}
-              exit={{ opacity: 1 }}
-              transition={{ duration: 0.15 }}
-            >
-              {triggerVariant === "default" && dockedLeadingIcon && (
-                <div className="flex h-12 w-12 items-center justify-center text-inherit shrink-0 -ml-2">
-                  {dockedLeadingIcon}
-                </div>
-              )}
+          {/* 2. MOCK TRIGGER LAYER (Contains both Icons AND Text, fades out perfectly aligned) */}
+          <motion.div
+            className="absolute inset-0 flex items-center px-4 pointer-events-none z-0"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
+          >
+            {triggerVariant !== "icon" && dockedLeadingIcon ? (
+              <div className="flex h-12 w-12 items-center justify-center text-inherit shrink-0 -ml-2">
+                {dockedLeadingIcon}
+              </div>
+            ) : triggerVariant === "icon" ? (
+              <div className="flex h-12 w-12 items-center justify-center text-inherit shrink-0">
+                {dockedLeadingIcon || <Search className="h-6 w-6" />}
+              </div>
+            ) : null}
 
+            {triggerVariant !== "icon" ? (
               <div
                 className={clsx(
                   "flex-1 text-lg px-2 truncate",
@@ -501,17 +509,19 @@ export const SearchView = ({
               >
                 {value || placeholder}
               </div>
+            ) : (
+              <div className="flex-1" />
+            )}
 
-              {triggerVariant === "default" && dockedTrailingIcon && (
-                <div className="flex items-center pl-2 shrink-0">
-                  {dockedTrailingIcon}
-                </div>
-              )}
-            </motion.div>
-          )}
+            {triggerVariant !== "icon" && dockedTrailingIcon && (
+              <div className="flex items-center pl-2 shrink-0">
+                {dockedTrailingIcon}
+              </div>
+            )}
+          </motion.div>
         </div>
 
-        <Separator className="shrink-0 opacity-20" />
+        <Divider className="my-0!" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -534,13 +544,12 @@ export const SearchView = ({
     if (triggerVariant === "icon") {
       return (
         <IconButton
-          // @ts-ignore
-          ref={triggerRef}
+          ref={triggerRef as any}
           onClick={handleOpen}
           variant="ghost"
           className={clsx(
             "text-on-surface hover:bg-surface-container-highest",
-            isOpen && "opacity-0",
+            isOpen ? "opacity-0 pointer-events-none" : "opacity-100",
             className,
           )}
           aria-label={placeholder}
@@ -553,7 +562,7 @@ export const SearchView = ({
     if (triggerVariant === "minimal") {
       return (
         <div
-          ref={triggerRef}
+          ref={triggerRef as any}
           onClick={handleOpen}
           className={clsx(
             "relative flex h-[56px] w-full cursor-pointer items-center justify-center px-4 transition-all duration-200",
@@ -579,7 +588,7 @@ export const SearchView = ({
 
     return (
       <div
-        ref={triggerRef}
+        ref={triggerRef as any}
         onClick={handleOpen}
         className={clsx(
           "relative flex h-[56px] w-full cursor-pointer items-center px-4 transition-all duration-200",

@@ -37,6 +37,7 @@ import {
 import { Grid, type GridProps } from "../layouts/grid";
 import { Masonry, type MasonryProps } from "../layouts/masonry";
 import { LoadingIndicator } from "../loadingIndicator";
+import { type SearchViewProps } from "../search-view";
 
 // --- Types ---
 
@@ -75,10 +76,10 @@ export interface DataDisplayProps<TData> {
    * since column headers aren't visible.
    */
   enableSortControl?: boolean;
+  searchViewProps?: Partial<Omit<SearchViewProps, "value" | "onChange">>;
 }
 
 // --- Sort Control Helper ---
-// Since we don't have table headers in a Grid/List view, we need a way to sort.
 function DataDisplaySortControl<TData>({
   table,
 }: {
@@ -113,7 +114,6 @@ function DataDisplaySortControl<TData>({
         <DropdownMenuLabel>Sort by</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {sortableColumns.map((column) => {
-          // Helper to get a nice label
           const header =
             typeof column.columnDef.header === "string"
               ? column.columnDef.header
@@ -164,8 +164,9 @@ export function DataDisplay<TData>({
   toolbarChildren,
   bulkActions,
   enableSortControl = true,
+  searchViewProps,
 }: DataDisplayProps<TData>) {
-  // --- Table State Management (Same as DataTable) ---
+  // --- Table State Management ---
   const [internalRowSelection, setInternalRowSelection] = React.useState({});
   const [internalColumnVisibility, setInternalColumnVisibility] =
     React.useState<VisibilityState>({});
@@ -178,7 +179,7 @@ export function DataDisplay<TData>({
   const [internalPagination, setInternalPagination] =
     React.useState<PaginationState>({
       pageIndex: 0,
-      pageSize: 12, // Default slightly higher for grids
+      pageSize: 12,
     });
 
   const isManualPagination = !!onPaginationChange;
@@ -268,17 +269,12 @@ export function DataDisplay<TData>({
           className={itemContainerClassName}
         >
           {rows.map((row) => (
-            // We don't wrap in GridItem automatically to give user full control over spans in their renderItem,
-            // BUT normally renderItem returns a Card. Grid expects children.
-            // If the user wants specific spans, they should wrap their return in GridItem.
-            // We simply render the result of the function.
             <React.Fragment key={row.id}>{renderItem(row)}</React.Fragment>
           ))}
         </Grid>
       );
     }
 
-    // Default: List
     return (
       <div className={`flex flex-col gap-4 ${itemContainerClassName}`}>
         {rows.map((row) => (
@@ -289,14 +285,13 @@ export function DataDisplay<TData>({
   };
 
   return (
-    <DataTableContext.Provider value={{ table }}>
+    <DataTableContext.Provider value={{ table, searchViewProps }}>
       <div className="flex flex-col w-full space-y-6">
         <DataTableToolbar bulkActions={bulkActions}>
           {toolbarChildren}
           {enableSortControl && <DataDisplaySortControl table={table} />}
         </DataTableToolbar>
 
-        {/* Main Content Area */}
         <div className="min-h-[200px]">{renderContent()}</div>
 
         <DataTablePagination />

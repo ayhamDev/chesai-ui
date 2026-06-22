@@ -27,6 +27,7 @@ import { DataTableFacetedFilter } from "./faceted-filter";
 import { advancedFilterFn } from "./filter-utils";
 import { DataTablePagination } from "./pagination";
 import { DataTableToolbar } from "./toolbar";
+import { type SearchViewProps } from "../search-view";
 
 export {
   DataTableColumnHeader,
@@ -60,6 +61,7 @@ interface DataTableProps<TData> extends Omit<TableRootProps<TData>, "table"> {
   renderContextMenu?: (row: Row<TData>) => React.ReactNode;
   renderExpandedRow?: (row: Row<TData>) => React.ReactNode;
   bulkActions?: (table: TanstackTable<TData>) => React.ReactNode;
+  searchViewProps?: Partial<Omit<SearchViewProps, "value" | "onChange">>;
 }
 
 export function DataTable<TData>({
@@ -81,6 +83,7 @@ export function DataTable<TData>({
   renderExpandedRow,
   bulkActions,
   variant = "primary",
+  searchViewProps,
   ...tableProps
 }: DataTableProps<TData>) {
   const [internalRowSelection, setInternalRowSelection] = React.useState({});
@@ -135,9 +138,7 @@ export function DataTable<TData>({
     manualPagination: isManualPagination,
     manualSorting: isManualSorting,
     manualFiltering: isManualFiltering,
-    // --- THIS IS THE MISSING PIECE ---
     getRowCanExpand: renderExpandedRow ? () => true : undefined,
-    // ---------------------------------
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -151,7 +152,7 @@ export function DataTable<TData>({
   });
 
   return (
-    <DataTableContext.Provider value={{ table }}>
+    <DataTableContext.Provider value={{ table, searchViewProps }}>
       <div className="flex flex-col w-full space-y-4">
         <DataTableToolbar bulkActions={bulkActions}>
           {toolbarChildren}

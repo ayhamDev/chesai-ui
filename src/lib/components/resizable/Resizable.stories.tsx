@@ -69,7 +69,7 @@ import { createStackNavigator, useNavigation, useRoute } from "../stack-router";
 import { Textarea } from "../textarea";
 import { toast } from "../toast";
 import { Typography } from "../typography";
-import { Resizable } from "./index";
+import { Resizable, useResizableState } from "./index";
 
 const meta: Meta = {
   title: "Showcase/Dynamic Split View (Gmail)",
@@ -341,10 +341,7 @@ const DetailView = ({
         </div>
 
         <div className="prose dark:prose-invert">
-          <Typography
-            body-medium
-            className="leading-relaxed text-graphite-foreground/80"
-          >
+          <Typography className="leading-relaxed text-graphite-foreground/80">
             {mail.preview}
             <br />
             <br />
@@ -1002,23 +999,109 @@ export const GmailReplica: StoryObj = {
   },
 };
 
-// --- NEW STORY: SEPARATED FLOATING CARD LAYOUT WITH GAPS ---
+// --- STORY 2: SEPARATED FLOATING CARD LAYOUT WITH GAPS ---
 
 export const SeparatedCardLayout: StoryObj = {
   name: "2. Separated Floating Cards (MD3 Style)",
   render: () => {
-    const [selectedId, setSelectedId] = useState<string | null>("1");
+    const [selectedId, setSelectedId] = useState<string | null>(null);
     const activeMail = EMAILS.find((m) => m.id === selectedId);
+
+    // List view helper utilizing the Resizable context state
+    const MailList = () => {
+      const { setWidth, isCollapsed } = useResizableState("separated-detail");
+
+      const handleSelect = (id: string) => {
+        setSelectedId(id);
+        if (isCollapsed) {
+          // Open details view smoothly via the Resizable State API
+          setWidth(450);
+        }
+      };
+
+      return (
+        <div className="flex flex-col gap-2">
+          {EMAILS.map((mail) => (
+            <Item
+              key={mail.id}
+              variant="ghost"
+              shape="minimal"
+              padding="sm"
+              className={clsx(
+                "cursor-pointer transition-all",
+                selectedId === mail.id
+                  ? "bg-surface-container-highest"
+                  : "hover:bg-surface-container-high/40",
+              )}
+              onClick={() => handleSelect(mail.id)}
+            >
+              <ItemMedia>
+                <Avatar src={mail.avatar} size="md" />
+              </ItemMedia>
+              <ItemContent>
+                <div className="flex items-center justify-between">
+                  <ItemTitle className="text-sm font-bold">
+                    {mail.author}
+                  </ItemTitle>
+                  <Typography
+                    variant="body-small"
+                    className="text-[10px] opacity-40"
+                  >
+                    {mail.time}
+                  </Typography>
+                </div>
+                <ItemDescription className="line-clamp-2 mt-0.5 text-xs">
+                  {mail.preview}
+                </ItemDescription>
+              </ItemContent>
+            </Item>
+          ))}
+        </div>
+      );
+    };
+
+    // Header helper utilizing the Resizable context state to collapse the pane
+    const DetailHeader = () => {
+      const { setWidth } = useResizableState("separated-detail");
+      if (!activeMail) return null;
+
+      return (
+        <div className="p-6 border-b border-outline-variant/30 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Avatar src={activeMail.avatar} size="lg" />
+            <div>
+              <Typography variant="title-medium" className="font-bold">
+                {activeMail.author}
+              </Typography>
+              <Typography variant="body-small" className="opacity-50">
+                {activeMail.time}
+              </Typography>
+            </div>
+          </div>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setWidth(0);
+              setSelectedId(null); // Clear selected item so open becomes false cleanly
+            }}
+          >
+            <X className="h-4 w-4" />
+          </IconButton>
+        </div>
+      );
+    };
 
     return (
       <div className="flex h-screen w-full bg-surface-container-low p-4 gap-4">
-        {/* Container styled using Resizable with gap and non-divided handle */}
-        <Resizable gap="md" className="flex-1 h-full">
-          <Resizable.Pane
-            id="separated-list"
-            defaultWidth={350}
-            className="h-full"
-          >
+        {/* Set storageKey to enable layout persistence */}
+        <Resizable
+          gap="md"
+          className="flex-1 h-full"
+          defaultSizes={{ "separated-detail": 0 }}
+          storageKey="separated-card-layout-story"
+        >
+          <Resizable.Pane id="separated-list" flex className="h-full">
             <Card
               shape="minimal"
               variant="surface-container-lowest"
@@ -1031,51 +1114,15 @@ export const SeparatedCardLayout: StoryObj = {
                 Comments & Feeds
               </Typography>
               <ElasticScrollArea className="flex-1 px-1">
-                <div className="flex flex-col gap-2">
-                  {EMAILS.map((mail) => (
-                    <Item
-                      key={mail.id}
-                      variant="ghost"
-                      shape="minimal"
-                      padding="sm"
-                      className={clsx(
-                        "cursor-pointer transition-all",
-                        selectedId === mail.id
-                          ? "bg-surface-container-highest"
-                          : "hover:bg-surface-container-high/40",
-                      )}
-                      onClick={() => setSelectedId(mail.id)}
-                    >
-                      <ItemMedia>
-                        <Avatar src={mail.avatar} size="md" />
-                      </ItemMedia>
-                      <ItemContent>
-                        <div className="flex items-center justify-between">
-                          <ItemTitle className="text-sm font-bold">
-                            {mail.author}
-                          </ItemTitle>
-                          <Typography
-                            variant="body-small"
-                            className="text-[10px] opacity-40"
-                          >
-                            {mail.time}
-                          </Typography>
-                        </div>
-                        <ItemDescription className="line-clamp-2 mt-0.5 text-xs">
-                          {mail.preview}
-                        </ItemDescription>
-                      </ItemContent>
-                    </Item>
-                  ))}
-                </div>
+                <MailList />
               </ElasticScrollArea>
             </Card>
           </Resizable.Pane>
 
-          {/* Floating Pill Handle without Divider line */}
           <Resizable.Handle
             indicatorColor="secondary"
-            target="separated-list"
+            target="separated-detail"
+            invert
             variant="pill"
             divided={false}
             showIndicator={true}
@@ -1084,7 +1131,20 @@ export const SeparatedCardLayout: StoryObj = {
             indicatorWidth={15}
           />
 
-          <Resizable.Pane id="separated-detail" flex className="h-full">
+          {/* Bound open state cleanly with React state to ensure it never loads as an empty, open pane */}
+          <Resizable.Pane
+            id="separated-detail"
+            defaultWidth={450}
+            className="h-full"
+            adaptTo="docked"
+            collapseAt={800}
+            open={selectedId !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setSelectedId(null);
+              }
+            }}
+          >
             <Card
               shape="minimal"
               variant="surface-container-lowest"
@@ -1092,23 +1152,7 @@ export const SeparatedCardLayout: StoryObj = {
             >
               {activeMail ? (
                 <div className="flex-1 flex flex-col">
-                  {/* Internal Mail Details */}
-                  <div className="p-6 border-b border-outline-variant/30 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Avatar src={activeMail.avatar} size="lg" />
-                      <div>
-                        <Typography
-                          variant="title-medium"
-                          className="font-bold"
-                        >
-                          {activeMail.author}
-                        </Typography>
-                        <Typography variant="body-small" className="opacity-50">
-                          {activeMail.time}
-                        </Typography>
-                      </div>
-                    </div>
-                  </div>
+                  <DetailHeader />
                   <ElasticScrollArea className="flex-1 p-6">
                     <Typography
                       variant="title-large"
