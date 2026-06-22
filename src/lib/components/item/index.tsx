@@ -409,8 +409,8 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
     const rightUnderlayWidth = useTransform(x, [-1000, 0, 1000], [1000, 0, 0]);
 
     // Opacities fade in over the first 20px so they don't pop instantly at 1px
-    const leftOpacity = useTransform(x, [0, 20], [0, 1]);
-    const rightOpacity = useTransform(x, [0, -20], [0, 1]);
+    const leftOpacity = useTransform(x, [0, 50], [0, 1]);
+    const rightOpacity = useTransform(x, [0, -50], [0, 1]);
 
     const stableConstraints = {
       left:
@@ -590,7 +590,7 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
           {/* Left Action Underlay (Revealed on Swipe Right) */}
           {swipeRightAction && (
             <motion.div
-              style={{ width: leftUnderlayWidth, opacity: leftOpacity }}
+              style={{ width: leftUnderlayWidth }}
               className={twMerge(
                 clsx(
                   "absolute inset-y-0 left-0 flex items-center justify-center overflow-hidden z-0 transform-gpu will-change-[width,opacity]",
@@ -600,21 +600,24 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
                 ),
               )}
             >
-              <div className="flex flex-col items-center justify-center gap-1.5 px-6 text-center select-none min-w-max shrink-0 overflow-hidden">
+              <motion.div
+                style={{ opacity: leftOpacity }}
+                className="flex flex-col items-center justify-center gap-1.5 px-6  text-center select-none min-w-max shrink-0 overflow-hidden"
+              >
                 <div className="shrink-0">{swipeRightAction.icon}</div>
                 {swipeRightAction.label && (
                   <span className="text-[10px] font-bold uppercase tracking-wider leading-none">
                     {swipeRightAction.label}
                   </span>
                 )}
-              </div>
+              </motion.div>
             </motion.div>
           )}
 
           {/* Right Action Underlay (Revealed on Swipe Left) */}
           {swipeLeftAction && (
             <motion.div
-              style={{ width: rightUnderlayWidth, opacity: rightOpacity }}
+              style={{ width: rightUnderlayWidth }}
               className={twMerge(
                 clsx(
                   "absolute inset-y-0 right-0 flex items-center justify-center overflow-hidden z-0 transform-gpu will-change-[width,opacity]",
@@ -624,14 +627,17 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
                 ),
               )}
             >
-              <div className="flex flex-col items-center justify-center gap-1.5 px-6 text-center select-none min-w-max shrink-0 overflow-hidden">
+              <motion.div
+                style={{ opacity: rightOpacity }}
+                className="flex flex-col items-center justify-center gap-1.5 px-6 text-center select-none min-w-max shrink-0 overflow-hidden"
+              >
                 <div className="shrink-0">{swipeLeftAction.icon}</div>
                 {swipeLeftAction.label && (
                   <span className="text-[10px] font-bold uppercase tracking-wider leading-none">
                     {swipeLeftAction.label}
                   </span>
                 )}
-              </div>
+              </motion.div>
             </motion.div>
           )}
 
