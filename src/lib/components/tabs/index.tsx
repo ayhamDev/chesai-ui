@@ -2,13 +2,7 @@
 
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
-import {
-  animate,
-  AnimatePresence,
-  motion,
-  type PanInfo,
-  useMotionValue,
-} from "framer-motion";
+import { animate, motion, type PanInfo, useMotionValue } from "framer-motion";
 import React, {
   createContext,
   useCallback,
@@ -21,6 +15,33 @@ import React, {
 } from "react";
 import useRipple from "use-ripple-hook";
 import { ShallowRouter, useRouter } from "../shallow-router";
+
+// Safely access unstable_Activity from React with support for fallback
+// @ts-ignore
+const Activity = (React as any).unstable_Activity;
+
+interface ActivityContainerProps {
+  mode: "visible" | "hidden";
+  children: React.ReactNode;
+}
+
+const ActivityContainer: React.FC<ActivityContainerProps> = ({
+  mode,
+  children,
+}) => {
+  if (Activity) {
+    return <Activity mode={mode}>{children}</Activity>;
+  }
+  return (
+    <div
+      style={{
+        display: mode === "hidden" ? "none" : "contents",
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 
 type TabVariant = "primary" | "secondary";
 type PageTransition = "slide" | "fade";
@@ -36,6 +57,9 @@ interface TabsContextProps {
   shape: TabShape;
   size: TabSize;
   stretch: boolean;
+  displayTab: string;
+  exitingTab: string | null;
+  onExitComplete: (value: string) => void;
 }
 
 const TabsContext = createContext<TabsContextProps | null>(null);
@@ -125,6 +149,30 @@ const TabsProvider: React.FC<TabsProviderProps> = ({
     push(value);
   };
 
+  const [displayTab, setDisplayTab] = useState(activeTab);
+  const [exitingTab, setExitingTab] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (pageTransition === "fade") {
+      if (activeTab !== displayTab && exitingTab === null) {
+        setExitingTab(displayTab);
+        setDisplayTab("");
+      }
+    } else {
+      setDisplayTab(activeTab);
+    }
+  }, [activeTab, displayTab, exitingTab, pageTransition]);
+
+  const onExitComplete = useCallback(
+    (value: string) => {
+      if (exitingTab === value) {
+        setExitingTab(null);
+        setDisplayTab(activeTab);
+      }
+    },
+    [exitingTab, activeTab],
+  );
+
   return (
     <TabsContext.Provider
       value={{
@@ -136,6 +184,9 @@ const TabsProvider: React.FC<TabsProviderProps> = ({
         shape,
         size,
         stretch,
+        displayTab,
+        exitingTab,
+        onExitComplete,
       }}
     >
       {children}
@@ -395,21 +446,17 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
     const x = useMotionValue(0);
 
     if (pageTransition === "fade") {
-      const activeChild = React.Children.toArray(children).find(
-        (child) =>
-          // @ts-ignore
-          React.isValidElement(child) && child.props?.value === activeTab,
-      );
+      const panels = React.Children.toArray(children).filter(
+        React.isValidElement,
+      ) as React.ReactElement<TabsPanelProps>[];
 
       return (
-        <div ref={ref} className={clsx("relative", className)} {...props}>
-          <AnimatePresence mode="wait">
-            {activeChild && React.isValidElement(activeChild)
-              ? React.cloneElement(activeChild, {
-                  key: activeTab,
-                })
-              : null}
-          </AnimatePresence>
+        <div
+          ref={ref}
+          className={clsx("relative grid grid-cols-1 grid-rows-1", className)}
+          {...props}
+        >
+          {panels}
         </div>
       );
     }
@@ -497,23 +544,54 @@ interface TabsPanelProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const TabsPanel = React.forwardRef<HTMLDivElement, TabsPanelProps>(
   ({ value, children, className, ...props }, ref) => {
-    const { activeTab, pageTransition } = useTabs();
+    const { pageTransition, displayTab, exitingTab, onExitComplete } =
+      useTabs();
+
+    const isDisplayed = displayTab === value;
+    const isExiting = exitingTab === value;
+
+    const [activityMode, setActivityMode] = useState<"visible" | "hidden">(
+      isDisplayed ? "visible" : "hidden",
+    );
+
+    useEffect(() => {
+      if (isDisplayed || isExiting) {
+        setActivityMode("visible");
+      } else {
+        setActivityMode("hidden");
+      }
+    }, [isDisplayed, isExiting]);
 
     if (pageTransition === "fade") {
+      const opacityTarget = isDisplayed ? 1 : 0;
+      const transitionDuration = isExiting ? 0.1 : 0.2;
+
       return (
-        // @ts-ignore
-        <motion.div
-          ref={ref}
-          role="tabpanel"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.1 } }}
-          transition={{ duration: 0.2 }}
-          className={clsx("p-4", className)}
-          {...props}
-        >
-          {children}
-        </motion.div>
+        <ActivityContainer mode={activityMode}>
+          <motion.div
+            ref={ref}
+            role="tabpanel"
+            initial={false}
+            animate={{
+              opacity: opacityTarget,
+            }}
+            transition={{
+              duration: transitionDuration,
+            }}
+            onAnimationComplete={() => {
+              if (isExiting) {
+                onExitComplete(value);
+              }
+            }}
+            className={clsx("p-4 col-start-1 row-start-1", className)}
+            style={{
+              pointerEvents: isDisplayed ? "auto" : "none",
+            }}
+            {...props}
+          >
+            {children}
+          </motion.div>
+        </ActivityContainer>
       );
     }
 
@@ -522,7 +600,7 @@ const TabsPanel = React.forwardRef<HTMLDivElement, TabsPanelProps>(
         ref={ref}
         role="tabpanel"
         className={clsx("w-full flex-shrink-0 p-4 min-h-[100px]", className)}
-        aria-hidden={activeTab !== value}
+        aria-hidden={!isDisplayed}
         {...props}
       >
         {children}
