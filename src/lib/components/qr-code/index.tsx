@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: <explanation> */
 "use client";
 
 import { cva } from "class-variance-authority";
@@ -236,9 +235,10 @@ const generateQRBlob = (
     const url = URL.createObjectURL(svgBlob);
 
     const canvas = document.createElement("canvas");
-    const scale = 2;
-    canvas.width = size * scale;
-    canvas.height = size * scale;
+    // Enhanced 2K canvas resolution bounds (2048 x 2048) for high-fidelity vector preservation
+    const targetSize = 2048;
+    canvas.width = targetSize;
+    canvas.height = targetSize;
     const ctx = canvas.getContext("2d");
 
     if (!ctx) {
@@ -246,8 +246,8 @@ const generateQRBlob = (
       return;
     }
 
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Keep background transparent of any fill operations
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const img = new Image();
     img.onload = () => {
@@ -263,14 +263,14 @@ const generateQRBlob = (
           const dx = (canvas.width - logoW) / 2;
           const dy = (canvas.height - logoH) / 2;
           ctx.drawImage(logoImg, dx, dy, logoW, logoH);
-          canvas.toBlob((blob) => resolve(blob));
+          canvas.toBlob((blob) => resolve(blob), "image/png");
         };
         logoImg.onerror = () => {
-          canvas.toBlob((blob) => resolve(blob));
+          canvas.toBlob((blob) => resolve(blob), "image/png");
         };
         logoImg.src = logoSrc;
       } else {
-        canvas.toBlob((blob) => resolve(blob));
+        canvas.toBlob((blob) => resolve(blob), "image/png");
       }
     };
     img.src = url;
@@ -495,7 +495,7 @@ QRCodeContent.displayName = "QRCode.Content";
 
 export const QRCodeToolbar = React.forwardRef<
   HTMLDivElement,
-  Omit<React.HTMLAttributes<HTMLDivElement>, 'dir'>
+  Omit<React.HTMLAttributes<HTMLDivElement>, "dir">
 >(({ className, ...props }, ref) => {
   const { value, svgRef, size, logo, cornerFrameShape } = useQRCode();
   const [status, setStatus] = useState<"idle" | "copied" | "downloading">(
