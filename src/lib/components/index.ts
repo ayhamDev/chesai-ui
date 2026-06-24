@@ -1,5 +1,5 @@
 // src/lib/components/index.ts
-
+export * from "./popover"
 export * from './accordion'
 export * from './alert'
 export * from './appbar'
