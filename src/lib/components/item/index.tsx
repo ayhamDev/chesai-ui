@@ -4,7 +4,13 @@ import { Slot } from "@radix-ui/react-slot";
 import { useLongPress } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import {
+  animate,
+  cubicBezier,
+  motion,
+  useMotionValue,
+  useTransform,
+} from "framer-motion";
 import * as React from "react";
 import { twMerge } from "tailwind-merge";
 import useRipple from "use-ripple-hook";
@@ -439,9 +445,9 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
       // Replaced with an O(1) evaluated cubic-bezier matching the exact MD3 deceleration visual profiles.
       const tweenAnimationOptions = {
         type: "tween",
-        ease: [0.05, 0.7, 0.1, 1], // MD3 Emphasized Decelerate (smooth mathematical curve)
+        ease: cubicBezier(0.05, 0.7, 0.1, 1), // MD3 Emphasized Decelerate (smooth mathematical curve)
         duration: 0.28,
-      };
+      } as const;
 
       if (swipeType === "dismiss") {
         if (offsetX > swipeThreshold && swipeRightAction) {

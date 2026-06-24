@@ -1,11 +1,13 @@
 "use client";
 
 import { clsx } from "clsx";
-import { UploadCloud, File as FileIcon, X } from "lucide-react";
+import { UploadCloud, File as FileIcon, X, DownloadCloud } from "lucide-react";
 import React, { useCallback, useRef, useState } from "react";
 import { Typography } from "../typography";
 import { IconButton } from "../icon-button";
+import { AnimatePresence, motion } from "framer-motion";
 
+// --- EXISTING DROPZONE ---
 export interface DropzoneProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "onDrop"
@@ -97,7 +99,6 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files ? Array.from(e.target.files) : [];
       if (files.length > 0) processFiles(files);
-      // Reset input so the same file can be selected again if removed
       if (inputRef.current) inputRef.current.value = "";
     };
 
@@ -203,3 +204,125 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
   },
 );
 Dropzone.displayName = "Dropzone";
+
+// --- VIRTUAL DROPZONE ---
+
+export interface VirtualDropzoneProps extends React.HTMLAttributes<HTMLDivElement> {
+  onDropFiles: (files: File[]) => void;
+  disabled?: boolean;
+  overlayLabel?: string;
+  overlayIcon?: React.ReactNode;
+}
+
+export const VirtualDropzone = React.forwardRef<
+  HTMLDivElement,
+  VirtualDropzoneProps
+>(
+  (
+    {
+      children,
+      onDropFiles,
+      disabled = false,
+      overlayLabel = "Drop files here to upload",
+      overlayIcon = <DownloadCloud className="w-12 h-12 mb-4 text-primary" />,
+      className,
+      ...props
+    },
+    ref,
+  ) => {
+    const [isDragging, setIsDragging] = useState(false);
+    // Counter prevents flicker when dragging over child elements
+    const dragCounter = useRef(0);
+
+    const handleDragEnter = useCallback(
+      (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (disabled) return;
+
+        // Only trigger if files are being dragged (not text/links)
+        if (e.dataTransfer.types.includes("Files")) {
+          dragCounter.current += 1;
+          if (dragCounter.current === 1) {
+            setIsDragging(true);
+          }
+        }
+      },
+      [disabled],
+    );
+
+    const handleDragLeave = useCallback(
+      (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (disabled) return;
+
+        dragCounter.current -= 1;
+        if (dragCounter.current === 0) {
+          setIsDragging(false);
+        }
+      },
+      [disabled],
+    );
+
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, []);
+
+    const handleDrop = useCallback(
+      (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter.current = 0;
+        setIsDragging(false);
+
+        if (disabled) return;
+
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+          onDropFiles(files);
+        }
+      },
+      [disabled, onDropFiles],
+    );
+
+    return (
+      <div
+        ref={ref}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className={clsx("relative h-full w-full", className)}
+        {...props}
+      >
+        {children}
+
+        {/* DRAG OVERLAY */}
+        <AnimatePresence>
+          {isDragging && !disabled && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 z-50 p-4 pointer-events-none"
+            >
+              <div className="w-full h-full rounded-2xl border-4 border-dashed border-primary bg-surface/80 backdrop-blur-sm flex flex-col items-center justify-center shadow-2xl">
+                {overlayIcon}
+                <Typography
+                  variant="title-large"
+                  className="font-bold text-primary"
+                >
+                  {overlayLabel}
+                </Typography>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  },
+);
+VirtualDropzone.displayName = "VirtualDropzone";

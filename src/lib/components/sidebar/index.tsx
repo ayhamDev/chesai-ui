@@ -440,7 +440,7 @@ const SidebarRoot = forwardRef<HTMLDivElement, SidebarProps>(
                 }}
                 transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
                 className={clsx(
-                  "fixed top-0 bottom-0 z-50 flex flex-col overflow-hidden shadow-2xl",
+                  "fixed top-0 bottom-0 z-50 select-none flex flex-col overflow-hidden shadow-2xl",
                   isStart ? "start-0" : "end-0",
                   resolveSidebarColor(variant || "surface-container-low"),
                   variant !== "ghost" && "border-e border-outline-variant/50",
@@ -459,7 +459,7 @@ const SidebarRoot = forwardRef<HTMLDivElement, SidebarProps>(
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   onClick={() => setOpenMobile(false)}
-                  className="fixed inset-0 z-40 bg-black/10 backdrop-blur-[1px] lg:hidden"
+                  className="fixed inset-0 select-none z-40 bg-black/10 backdrop-blur-[1px] lg:hidden"
                   aria-hidden="true"
                 />
               )}

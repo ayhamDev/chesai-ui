@@ -129,17 +129,27 @@ export const Image = forwardRef<HTMLDivElement, ImageProps>(
       setStatus("loading");
     }, [src]);
 
-    // Scroll Lock when Zoomed
+    // Scroll Lock & Esc listener when Zoomed
     useEffect(() => {
       if (isZoomed) {
+        const originalOverflow = document.body.style.overflow;
         document.body.style.overflow = "hidden";
+
         const handleEsc = (e: KeyboardEvent) => {
-          if (e.key === "Escape") setIsZoomed(false);
+          if (e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            setIsZoomed(false);
+          }
         };
-        window.addEventListener("keydown", handleEsc);
+
+        // Use capture phase to intercept before Radix/Vaul captures the escape key
+        window.addEventListener("keydown", handleEsc, true);
+
         return () => {
-          document.body.style.overflow = "";
-          window.removeEventListener("keydown", handleEsc);
+          document.body.style.overflow = originalOverflow;
+          window.removeEventListener("keydown", handleEsc, true);
         };
       }
     }, [isZoomed]);
@@ -286,22 +296,29 @@ export const Image = forwardRef<HTMLDivElement, ImageProps>(
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm cursor-zoom-out"
+                  // 'pointer-events-auto' overrides the body-level pointer-events block from Sheet/Dialog
+                  className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm cursor-zoom-out pointer-events-auto"
                   onClick={() => setIsZoomed(false)}
+                  // Stop pointer down event so underlying Sheet doesn't think you clicked outside of it
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
                   <button
-                    className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors z-50"
+                    className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors z-50 cursor-pointer pointer-events-auto"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       setIsZoomed(false);
                     }}
+                    onPointerDown={(e) => e.stopPropagation()}
                   >
                     <X size={24} />
                   </button>
 
                   <div
-                    className="relative w-full h-full flex items-center justify-center p-4 md:p-12"
+                    className="relative w-full h-full flex items-center justify-center p-4 md:p-12 pointer-events-auto"
+                    // Prevent closing when clicking the image itself
                     onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
                   >
                     {renderMainImage(true)}
                   </div>

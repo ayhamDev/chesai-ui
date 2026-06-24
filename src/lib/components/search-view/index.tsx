@@ -9,6 +9,7 @@ import {
   useTransform,
   useMotionValue,
   useMotionTemplate,
+  Easing,
 } from "framer-motion";
 import { ArrowLeft, Search, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -42,7 +43,7 @@ export interface SearchViewProps {
   showOverlay?: boolean;
   shape?: SearchViewShape;
   duration?: number;
-  easing?: string | number[];
+  easing?: Easing;
 }
 
 const COLOR_VARIANTS = {

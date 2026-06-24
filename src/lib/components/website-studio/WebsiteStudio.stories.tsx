@@ -38,7 +38,7 @@ import { toast, Toaster } from "../toast";
 import { Typography } from "../typography";
 
 const meta: Meta<typeof WebsiteStudio.Renderer> = {
-  title: "Website Studio/Chesai UI Landing Page",
+  title: "Website Studio/1.Chesai UI Landing Page",
   component: WebsiteStudio.Renderer,
   parameters: {
     layout: "fullscreen",

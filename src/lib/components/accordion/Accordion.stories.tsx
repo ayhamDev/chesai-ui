@@ -26,9 +26,27 @@ const meta: Meta<typeof Accordion> = {
       options: ["integrated", "separated"],
       description: "The structural layout of the items.",
     },
+    gap: {
+      control: "select",
+      options: ["none", "xs", "sm", "md", "lg"],
+      description:
+        "Controls the spacing and corner rounding between accordion items in separated layout.",
+    },
     variant: {
       control: "select",
-      options: ["primary", "secondary"],
+      options: [
+        "primary",
+        "secondary",
+        "tertiary",
+        "high-contrast",
+        "ghost",
+        "surface",
+        "surface-container-lowest",
+        "surface-container-low",
+        "surface-container",
+        "surface-container-high",
+        "surface-container-highest",
+      ],
       description: "The visual style of the accordion items.",
     },
     shape: {
@@ -103,6 +121,7 @@ export const SeparatedLayout: Story = {
     type: "single",
     collapsible: true,
     layout: "separated",
+    gap: "md",
     variant: "secondary",
     shape: "minimal",
   },
@@ -110,7 +129,7 @@ export const SeparatedLayout: Story = {
     docs: {
       description: {
         story:
-          "The `separated` layout renders each item as a distinct, card-like element, separated by a gap.",
+          "The `separated` layout renders each item as a distinct element, separated by a gap controlled by the `gap` prop. Its corner styling automatically adapts when a gap is present.",
       },
     },
   },
@@ -129,29 +148,46 @@ export const VariantCombinations: Story = {
     type: "single",
     collapsible: true,
     layout: "separated",
+    gap: "md",
     shape: "minimal",
   },
   render: (args) => (
-    <div className="flex items-start gap-8">
-      <div className="w-80">
-        <Typography variant="title-small" className="mb-4 text-center">
-          Layout: Separated
-          <br />
-          Variant: Primary
-        </Typography>
-        <Accordion {...args} variant="primary">
-          <AccordionItems />
-        </Accordion>
+    <div className="flex flex-col gap-8">
+      <div className="flex items-start gap-8">
+        <div className="w-80">
+          <Typography variant="title-small" className="mb-4 text-center">
+            Variant: Tertiary
+          </Typography>
+          <Accordion {...args} variant="tertiary">
+            <AccordionItems />
+          </Accordion>
+        </div>
+        <div className="w-80">
+          <Typography variant="title-small" className="mb-4 text-center">
+            Variant: High Contrast
+          </Typography>
+          <Accordion {...args} variant="high-contrast">
+            <AccordionItems />
+          </Accordion>
+        </div>
       </div>
-      <div className="w-80">
-        <Typography variant="title-small" className="mb-4 text-center">
-          Layout: Separated
-          <br />
-          Variant: Secondary
-        </Typography>
-        <Accordion {...args} variant="secondary">
-          <AccordionItems />
-        </Accordion>
+      <div className="flex items-start gap-8">
+        <div className="w-80">
+          <Typography variant="title-small" className="mb-4 text-center">
+            Variant: Surface Container Lowest
+          </Typography>
+          <Accordion {...args} variant="surface-container-lowest">
+            <AccordionItems />
+          </Accordion>
+        </div>
+        <div className="w-80">
+          <Typography variant="title-small" className="mb-4 text-center">
+            Variant: Ghost
+          </Typography>
+          <Accordion {...args} variant="ghost">
+            <AccordionItems />
+          </Accordion>
+        </div>
       </div>
     </div>
   ),

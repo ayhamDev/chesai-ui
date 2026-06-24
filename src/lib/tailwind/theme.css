@@ -922,3 +922,6 @@ input[type="number"] {
 textarea {
   resize: none;
 }
+[data-rmiz-portal] {
+  pointer-events: auto !important;
+}

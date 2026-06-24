@@ -29,7 +29,7 @@ import type {
 } from "../types";
 
 const meta: Meta<typeof WebsiteStudio.Renderer> = {
-  title: "Website Studio/Digital Agency (Composable Primitives)",
+  title: "Website Studio/2.Digital Agency (Composable Primitives)",
   component: WebsiteStudio.Renderer,
   parameters: {
     layout: "fullscreen",
@@ -456,7 +456,7 @@ const agencyRegistry: ComponentRegistry = {
       color = "ink",
       align = "left",
       className,
-      children="lorem ipsum",
+      children = "lorem ipsum",
       ...props
     }) => {
       const vClass = textVariants[variant] || textVariants["body-md"];
