@@ -168,7 +168,7 @@ const arrowVariants = cva("fill-current [&>polygon]:fill-current", {
   },
 });
 
-interface PopoverRootProps extends RadixPopover.PopoverProps {
+export interface PopoverProps extends RadixPopover.PopoverProps {
   shape?: PopoverShape;
   variant?: PopoverVariant;
   glass?: boolean;
@@ -179,7 +179,7 @@ const PopoverRoot = ({
   variant = "secondary",
   glass = false,
   ...props
-}: PopoverRootProps) => {
+}: PopoverProps) => {
   return (
     <PopoverContext.Provider value={{ shape, variant, glass }}>
       <RadixPopover.Root {...props} />
@@ -188,14 +188,52 @@ const PopoverRoot = ({
 };
 PopoverRoot.displayName = "Popover";
 
-const PopoverTrigger = RadixPopover.Trigger;
-const PopoverAnchor = RadixPopover.Anchor;
-const PopoverPortal = RadixPopover.Portal;
-const PopoverClose = RadixPopover.Close;
+export interface PopoverTriggerProps extends React.ComponentPropsWithoutRef<
+  typeof RadixPopover.Trigger
+> {}
+
+const PopoverTrigger = React.forwardRef<
+  React.ElementRef<typeof RadixPopover.Trigger>,
+  PopoverTriggerProps
+>((props, ref) => <RadixPopover.Trigger ref={ref} {...props} />);
+PopoverTrigger.displayName = "Popover.Trigger";
+
+export interface PopoverAnchorProps extends React.ComponentPropsWithoutRef<
+  typeof RadixPopover.Anchor
+> {}
+
+const PopoverAnchor = React.forwardRef<
+  React.ElementRef<typeof RadixPopover.Anchor>,
+  PopoverAnchorProps
+>((props, ref) => <RadixPopover.Anchor ref={ref} {...props} />);
+PopoverAnchor.displayName = "Popover.Anchor";
+
+export interface PopoverPortalProps extends React.ComponentPropsWithoutRef<
+  typeof RadixPopover.Portal
+> {}
+
+const PopoverPortal = (props: PopoverPortalProps) => (
+  <RadixPopover.Portal {...props} />
+);
+PopoverPortal.displayName = "Popover.Portal";
+
+export interface PopoverCloseProps extends React.ComponentPropsWithoutRef<
+  typeof RadixPopover.Close
+> {}
+
+const PopoverClose = React.forwardRef<
+  React.ElementRef<typeof RadixPopover.Close>,
+  PopoverCloseProps
+>((props, ref) => <RadixPopover.Close ref={ref} {...props} />);
+PopoverClose.displayName = "Popover.Close";
+
+export interface PopoverContentProps extends React.ComponentPropsWithoutRef<
+  typeof RadixPopover.Content
+> {}
 
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof RadixPopover.Content>,
-  React.ComponentPropsWithoutRef<typeof RadixPopover.Content>
+  PopoverContentProps
 >(({ className, align = "center", sideOffset = 8, ...props }, ref) => {
   const { shape, variant, glass } = usePopoverContext();
 
@@ -216,11 +254,15 @@ const PopoverContent = React.forwardRef<
     </RadixPopover.Portal>
   );
 });
-PopoverContent.displayName = RadixPopover.Content.displayName;
+PopoverContent.displayName = "Popover.Content";
+
+export interface PopoverArrowProps extends React.ComponentPropsWithoutRef<
+  typeof RadixPopover.Arrow
+> {}
 
 const PopoverArrow = React.forwardRef<
   React.ElementRef<typeof RadixPopover.Arrow>,
-  React.ComponentPropsWithoutRef<typeof RadixPopover.Arrow>
+  PopoverArrowProps
 >(({ className, width = 14, height = 7, ...props }, ref) => {
   const { variant } = usePopoverContext();
 
@@ -234,7 +276,7 @@ const PopoverArrow = React.forwardRef<
     />
   );
 });
-PopoverArrow.displayName = RadixPopover.Arrow.displayName;
+PopoverArrow.displayName = "Popover.Arrow";
 
 export const Popover = Object.assign(PopoverRoot, {
   Trigger: PopoverTrigger,
@@ -242,10 +284,21 @@ export const Popover = Object.assign(PopoverRoot, {
   Anchor: PopoverAnchor,
   Portal: PopoverPortal,
   Close: PopoverClose,
+  Arrow: PopoverArrow,
 }) as typeof PopoverRoot & {
   Trigger: typeof PopoverTrigger;
   Content: typeof PopoverContent;
   Anchor: typeof PopoverAnchor;
   Portal: typeof PopoverPortal;
   Close: typeof PopoverClose;
+  Arrow: typeof PopoverArrow;
+};
+
+export {
+  PopoverTrigger,
+  PopoverContent,
+  PopoverAnchor,
+  PopoverPortal,
+  PopoverClose,
+  PopoverArrow,
 };
