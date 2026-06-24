@@ -566,6 +566,15 @@ const TabsPanel = React.forwardRef<HTMLDivElement, TabsPanelProps>(
       const opacityTarget = isDisplayed ? 1 : 0;
       const transitionDuration = isExiting ? 0.1 : 0.2;
 
+      // Extract conflicting Framer Motion standard event types from spread props
+      const {
+        onDrag,
+        onDragStart,
+        onDragEnd,
+        onAnimationStart,
+        ...motionProps
+      } = props;
+
       return (
         <ActivityContainer mode={activityMode}>
           <motion.div
@@ -587,7 +596,7 @@ const TabsPanel = React.forwardRef<HTMLDivElement, TabsPanelProps>(
             style={{
               pointerEvents: isDisplayed ? "auto" : "none",
             }}
-            {...props}
+            {...motionProps}
           >
             {children}
           </motion.div>
