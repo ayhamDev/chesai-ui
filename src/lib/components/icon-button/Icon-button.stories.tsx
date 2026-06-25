@@ -206,7 +206,7 @@ export const Loading: Story = {
     <div className="flex flex-wrap items-center gap-4">
       <IconButton
         variant="primary"
-        containerShape="wide-pill"
+        containerShape="normal"
         size="md"
         aria-label="Loading"
         isLoading

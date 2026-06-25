@@ -1,6 +1,6 @@
 "use client";
 
-import { cva, type VariantProps } from "class-variance-authority";
+import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { useState } from "react";
@@ -30,11 +30,12 @@ export const iconButtonVariants = cva(
         link: "bg-transparent text-primary disabled:opacity-70 hover:text-primary hover:underline !p-1 focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-primary",
       },
       size: {
-        xs: "h-8 [&_svg]:size-4",
-        sm: "h-10 [&_svg]:size-5",
-        md: "h-12 [&_svg]:size-6",
-        lg: "h-14 [&_svg]:size-6",
-        xl: "h-20 [&_svg]:size-8",
+        // FIXED: Changed [&_svg] to [&>span_svg] to protect the LoadingIndicator
+        xs: "h-8 [&>span_svg]:size-4",
+        sm: "h-10 [&>span_svg]:size-5",
+        md: "h-12 [&>span_svg]:size-6",
+        lg: "h-14 [&>span_svg]:size-6",
+        xl: "h-20 [&>span_svg]:size-8",
       },
       shape: {
         full: "rounded-full",
@@ -50,14 +51,12 @@ export const iconButtonVariants = cva(
       },
     },
     compoundVariants: [
-      // --- normal containerShape (1:1 aspect ratio) ---
       { containerShape: "normal", size: "xs", className: "w-8" },
       { containerShape: "normal", size: "sm", className: "w-10" },
       { containerShape: "normal", size: "md", className: "w-12" },
       { containerShape: "normal", size: "lg", className: "w-14" },
       { containerShape: "normal", size: "xl", className: "w-20" },
 
-      // --- wide-pill containerShape (Wider capsule aspect ratio) ---
       { containerShape: "wide-pill", size: "xs", className: "w-10" },
       { containerShape: "wide-pill", size: "sm", className: "w-12" },
       { containerShape: "wide-pill", size: "md", className: "w-14" },
@@ -73,10 +72,29 @@ export const iconButtonVariants = cva(
   },
 );
 
-export interface IconButtonProps
-  extends
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof iconButtonVariants> {}
+export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?:
+    | "primary"
+    | "secondary"
+    | "tertiary"
+    | "outline"
+    | "destructive"
+    | "ghost"
+    | "link";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  shape?: "full" | "minimal" | "sharp";
+  containerShape?: "normal" | "wide-pill";
+  isLoading?: boolean;
+}
+
+// FIXED: Use !important to override the hardcoded w-12 h-12 in LoadingIndicator
+const loaderSizeMap = {
+  xs: "!w-5 !h-5",
+  sm: "!w-6 !h-6",
+  md: "!w-7 !h-7",
+  lg: "!w-8 !h-8",
+  xl: "!w-10 !h-10",
+};
 
 export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
   (
@@ -109,14 +127,6 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       disabled: disabled || !!isLoading,
     });
 
-    const loaderSizeMap = {
-      xs: "h-4 w-4",
-      sm: "h-5 w-5",
-      md: "h-6 w-6",
-      lg: "h-8 w-8",
-      xl: "h-12 w-12",
-    };
-
     const [isPressed, setIsPressed] = useState(false);
 
     return (
@@ -140,8 +150,8 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         disabled={disabled || !!isLoading}
         {...props}
       >
-        <AnimatePresence mode="sync" initial={false}>
-          {isLoading ? (
+        <AnimatePresence>
+          {isLoading && (
             <motion.div
               key="spinner"
               initial={{ opacity: 0, scale: 0.5 }}
@@ -153,30 +163,28 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
               <LoadingIndicator
                 variant="material-morph"
                 className={clsx(
-                  "p-1",
-                  loaderSizeMap[size || "md"],
+                  loaderSizeMap[size || "md"], // Injects strictly enforced sizes
                   variant === "primary" || variant === "destructive"
                     ? "text-on-primary"
                     : "text-primary",
                 )}
               />
             </motion.div>
-          ) : (
-            <motion.span
-              key="content"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{
-                opacity: 1,
-                scale: isPressed ? 0.85 : 1,
-              }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="relative z-10 flex items-center justify-center"
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            >
-              {children}
-            </motion.span>
           )}
         </AnimatePresence>
+
+        <motion.span
+          key="content"
+          initial={false}
+          animate={{
+            opacity: isLoading ? 0 : 1,
+            scale: isLoading ? 0.5 : isPressed ? 0.85 : 1,
+          }}
+          transition={{ duration: 0.2 }}
+          className="relative z-10 flex items-center justify-center"
+        >
+          {children}
+        </motion.span>
       </button>
     );
   },
