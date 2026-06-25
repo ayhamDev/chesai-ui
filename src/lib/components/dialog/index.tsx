@@ -245,7 +245,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       shape = "minimal",
       variant = "primary",
       padding = "md",
-      layout,
+      layout = true, // Default to true so spatial dimensions (width/height/border-radius) animate dynamically
       glass: glassProp,
       // Destructure these to avoid conflict with motion's custom types
       onDrag,
@@ -359,6 +359,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                             "rounded-none",
                             smShapeStyles[shape as keyof typeof smShapeStyles],
                             "overflow-hidden",
+                            "transition-colors! duration-300!",
                             glass
                               ? "bg-surface-container-high/6 backdrop-blur-xl border border-white/20 dark:border-white/10"
                               : "bg-surface-container-high",
@@ -373,7 +374,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                               elevation: "none",
                               bordered: false,
                             }),
-                            "transition-none!",
+                            "transition-colors! duration-300!",
                           ],
                       className,
                     ),
