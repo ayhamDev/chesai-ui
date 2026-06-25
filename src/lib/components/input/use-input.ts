@@ -67,7 +67,7 @@ export function useInput(props: UseInputProps) {
   const isControlled = propValue !== undefined
   const value = isControlled ? propValue : internalValue
 
-  const isFilled = !!value || !!placeholder || isFocused
+  const isFilled = !!value || isFocused
 
   React.useImperativeHandle(ref, () => domRef.current!)
 

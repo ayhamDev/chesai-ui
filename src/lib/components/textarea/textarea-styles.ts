@@ -45,7 +45,8 @@ export const textareaSlots = {
   ],
   innerWrapper: 'inline-flex flex-col items-start w-full gap-1.5 box-border h-full',
   input: [
-    'w-full h-full font-normal !bg-transparent outline-none placeholder:text-on-surface-variant/50 text-on-surface bg-clip-text resize-none',
+    'w-full h-full font-normal !bg-transparent outline-none bg-clip-text resize-none',
+    '[&::placeholder]:transition-opacity [&::placeholder]:duration-200 [&::placeholder]:ease-out',
     'file:bg-transparent file:border-0 file:bg-transparent file:text-sm file:font-medium',
     'border-none focus:ring-0 shadow-none appearance-none',
   ],
@@ -143,7 +144,14 @@ export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaSty
     py = 'py-4'
   }
 
-  if (labelPlacement === 'inside') {
+  const inputColor = isInvalid ? 'text-error' : 'text-on-surface'
+  let placeholderColor = isInvalid ? 'placeholder:text-error/50' : 'placeholder:text-on-surface-variant/50'
+
+  if (labelPlacement === 'inside' && props.hasLabel !== false) {
+    placeholderColor = isInvalid
+      ? 'placeholder:text-error/50 placeholder:opacity-0 focus:placeholder:opacity-100'
+      : 'placeholder:text-on-surface-variant/50 placeholder:opacity-0 focus:placeholder:opacity-100'
+
     labelClasses += ' absolute top-3 font-normal'
     const filledLabelState = [
       'group-data-[filled=true]:-translate-y-[calc(50%_-_4px)]',
@@ -172,6 +180,6 @@ export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaSty
       labelClasses,
     ].join(' '),
     inputWrapper: [wrapperClasses.join(' '), minHeight, py, px].join(' '),
-    input: [isInvalid ? 'text-error placeholder:text-error/50' : 'text-on-surface', inputPadding].join(' '),
+    input: [inputColor, placeholderColor, inputPadding].join(' '),
   }
 }

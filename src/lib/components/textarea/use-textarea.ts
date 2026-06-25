@@ -74,7 +74,7 @@ export function useTextarea(props: UseTextareaProps) {
     // biome-ignore lint/correctness/useExhaustiveDependencies: value/defaultValue changes affect DOM scrollHeight
   }, [minRows, maxRows, disableAutosize, props.value, props.defaultValue])
 
-  const isFilled = !!props.value || !!props.placeholder || isFocused
+  const isFilled = !!props.value || isFocused
 
   const dynamicStyles = getTextareaSlotClassNames({
     variant: props.variant,

@@ -127,7 +127,8 @@ export const inputSlots = {
   inputWrapper: [],
   innerWrapper: 'inline-flex h-full items-center w-full gap-1.5 box-border',
   input: [
-    'w-full h-full font-normal !bg-transparent outline-none placeholder:text-on-surface-variant/50 text-on-surface bg-clip-text',
+    'w-full h-full font-normal !bg-transparent outline-none bg-clip-text',
+    '[&::placeholder]:transition-opacity [&::placeholder]:duration-200 [&::placeholder]:ease-out',
     'file:bg-transparent file:border-0 file:bg-transparent file:text-sm file:font-medium',
     '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
     'border-none focus:ring-0 shadow-none',
@@ -162,7 +163,16 @@ export const getInputSlotClassNames = (
   const labelColor = isInvalid
     ? 'text-error border-error border-2'
     : 'group-focus-within:text-primary text-on-surface-variant/70 '
-  const inputColor = isInvalid ? 'text-error placeholder:text-error/50' : 'text-on-surface'
+  const inputColor = isInvalid ? 'text-error' : 'text-on-surface'
+  let placeholderColor = isInvalid ? 'placeholder:text-error/50' : 'placeholder:text-on-surface-variant/50'
+
+  if (labelPlacement === 'inside' && hasLabel) {
+    placeholderColor = isInvalid
+      ? 'placeholder:text-error/50 placeholder:opacity-0 focus:placeholder:opacity-100'
+      : 'placeholder:text-on-surface-variant/50 placeholder:opacity-0 focus:placeholder:opacity-100'
+  } else {
+    placeholderColor += ' placeholder:opacity-100'
+  }
 
   let height = 'h-14'
   let py = 'py-2'
@@ -226,6 +236,6 @@ export const getInputSlotClassNames = (
     base: '',
     label: [labelColor, labelClasses].join(' '),
     inputWrapper: [wrapperClasses.join(' '), height, py, px].join(' '),
-    input: [inputColor, inputPadding].join(' '),
+    input: [inputColor, placeholderColor, inputPadding].join(' '),
   }
 }

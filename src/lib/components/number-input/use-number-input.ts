@@ -78,7 +78,7 @@ export function useNumberInput(props: UseNumberInputProps) {
 
   const isControlled = propValue !== undefined
   const value = isControlled ? propValue : internalValue
-  const isFilled = (value !== '' && value !== undefined && value !== null) || !!placeholder || isFocused
+  const isFilled = (value !== '' && value !== undefined && value !== null) || isFocused
 
   React.useImperativeHandle(ref, () => domRef.current!)
 
