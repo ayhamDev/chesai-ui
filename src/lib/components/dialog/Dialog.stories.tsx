@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { X } from "lucide-react";
 import { useRef, useState } from "react";
+import { clsx } from "clsx";
 import { AppBar } from "../appbar";
 import { Button } from "../button";
 import { IconButton } from "../icon-button";
@@ -31,7 +32,7 @@ const meta: Meta<StoryComponentProps> = {
     docs: {
       description: {
         component:
-          "A fully accessible, custom-built dialog component with support for basic and fullscreen variants. Automatically animates container dimension changes (width/height), corner shapes (border-radius), and surface variation colors smoothly when configuration state transitions.",
+          "A fully accessible, custom-built dialog component with support for basic and fullscreen variants. Smoothly transitions styling and dimensions natively, bypassing any scaling artifacts.",
       },
     },
   },
@@ -60,7 +61,6 @@ const meta: Meta<StoryComponentProps> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Mock refresh function for the story
 const simulateRefresh = () => {
   return new Promise((resolve) => setTimeout(resolve, 2000));
 };
@@ -86,21 +86,29 @@ export const MorphingTransitions: Story = {
           className="text-gray-500 max-w-sm text-center"
         >
           Open the dialog below and use the inner controls to watch dimensions,
-          border-radius, and theme colors transition in real-time.
+          border-radius, and theme colors transition natively.
         </Typography>
         <Button onClick={() => setIsOpen(true)}>Open Morphing Dialog</Button>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent shape={shape} variant={variant}>
+          <DialogContent
+            shape={shape}
+            variant={variant}
+            className={clsx(
+              size === "small" && "max-w-sm",
+              size === "medium" && "max-w-md",
+              size === "large" && "max-w-2xl",
+            )}
+          >
             <DialogHeader>
               <DialogTitle>Morphing Dialog</DialogTitle>
               <DialogDescription>
-                Test smooth transitions for layout configurations.
+                Testing clean, seamless size adjustments.
               </DialogDescription>
             </DialogHeader>
 
             <div className="py-4 flex flex-col gap-5">
-              {/* Variation / Colors */}
+              {/* Color Selection */}
               <div className="flex flex-col gap-1.5">
                 <Typography
                   variant="label-small"
@@ -151,7 +159,7 @@ export const MorphingTransitions: Story = {
                 </div>
               </div>
 
-              {/* Size / Height & Width */}
+              {/* Dynamic Height Controls */}
               <div className="flex flex-col gap-1.5">
                 <Typography
                   variant="label-small"
@@ -175,7 +183,7 @@ export const MorphingTransitions: Story = {
 
               {/* Simulating custom inner content dimensions */}
               <div
-                className="overflow-hidden border border-dashed border-outline-variant/30 rounded-lg bg-surface-container-lowest transition-all"
+                className="overflow-hidden border border-dashed border-outline-variant/30 rounded-lg bg-surface-container-lowest transition-all duration-300"
                 style={{
                   height:
                     size === "small"
@@ -196,8 +204,8 @@ export const MorphingTransitions: Story = {
                       variant="body-small"
                       className="opacity-60 mt-1 max-w-xs"
                     >
-                      Framer Motion calculates dynamic layout bounds of
-                      container content on size changes.
+                      The outer framework adjusts smoothly alongside dynamic
+                      content layout changes.
                     </Typography>
                   )}
                 </div>
@@ -238,7 +246,11 @@ export const Basic: Story = {
         <DialogTrigger asChild>
           <Button>Open Basic Dialog</Button>
         </DialogTrigger>
-        <DialogContent shape={args.shape} variant="surface-container-high">
+        <DialogContent
+          shape={args.shape}
+          variant="surface-container-high"
+          className="max-w-lg"
+        >
           <DialogHeader>
             <DialogTitle>Basic Dialog Title</DialogTitle>
             <DialogDescription>
@@ -296,7 +308,11 @@ export const Controlled: Story = {
           animation={args.animation}
           glass={args.glass}
         >
-          <DialogContent shape={args.shape} variant="surface-container-high">
+          <DialogContent
+            shape={args.shape}
+            variant="surface-container-high"
+            className="max-w-lg"
+          >
             <DialogHeader>
               <DialogTitle>Controlled Dialog</DialogTitle>
               <DialogDescription>
@@ -344,7 +360,11 @@ export const MaterialAnimation: Story = {
         <DialogTrigger asChild>
           <Button variant="secondary">Open Material Dialog</Button>
         </DialogTrigger>
-        <DialogContent shape={args.shape} variant="surface-container-highest">
+        <DialogContent
+          shape={args.shape}
+          variant="surface-container-highest"
+          className="max-w-lg"
+        >
           <DialogHeader>
             <DialogTitle>Material Design 3</DialogTitle>
             <DialogDescription>

@@ -245,8 +245,9 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       shape = "minimal",
       variant = "primary",
       padding = "md",
-      layout = true, // Default to true so spatial dimensions (width/height/border-radius) animate dynamically
+      layout = false, // Default to false to handle dimension changes purely through CSS transition transitions
       glass: glassProp,
+      style,
       // Destructure these to avoid conflict with motion's custom types
       onDrag,
       onDragStart,
@@ -346,8 +347,16 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                   dragElastic={{ top: 0, bottom: 1 }}
                   onDragEnd={handleDragEndInternal}
                   style={{
-                    willChange: "transform, opacity, height, width",
+                    willChange: "transform, opacity",
                     touchAction: isFullscreen && !isLocked ? "none" : "auto",
+                    // Custom layout-safe transitions targeting only styling and bounds updates
+                    transitionProperty:
+                      "max-width, max-height, background-color, border-color, color, border-radius, box-shadow",
+                    transitionDuration:
+                      "var(--theme-transition-duration, 300ms)",
+                    transitionTimingFunction:
+                      "var(--theme-transition-ease, cubic-bezier(0.2, 0, 0, 1))",
+                    ...style,
                   }}
                   className={twMerge(
                     clsx(
@@ -359,13 +368,12 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                             "rounded-none",
                             smShapeStyles[shape as keyof typeof smShapeStyles],
                             "overflow-hidden",
-                            "transition-colors! duration-300!",
                             glass
                               ? "bg-surface-container-high/6 backdrop-blur-xl border border-white/20 dark:border-white/10"
                               : "bg-surface-container-high",
                           ]
                         : [
-                            "w-full max-w-lg",
+                            "w-full",
                             cardVariants({
                               shape,
                               variant,
@@ -374,7 +382,6 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                               elevation: "none",
                               bordered: false,
                             }),
-                            "transition-colors! duration-300!",
                           ],
                       className,
                     ),
