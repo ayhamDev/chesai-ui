@@ -28,12 +28,13 @@ const wavyConfig = {
 
 // --- VARIANTS ---
 
-const dividerContainerVariants = cva("flex items-center shrink-0 w-full", {
+const dividerContainerVariants = cva("flex items-center shrink-0", {
   variants: {
     orientation: {
-      horizontal: "flex-row my-4",
+      horizontal: "w-full flex-row my-4", // <-- Moved w-full here
       vertical: "flex-col mx-4 self-stretch h-auto min-h-[1em]",
     },
+
     color: {
       default: "text-outline-variant",
       primary: "text-primary",
