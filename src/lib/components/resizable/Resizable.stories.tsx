@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
+// Near the top of src/lib/components/resizable/Resizable.stories.tsx
 import {
   Archive,
   Bold,
@@ -28,7 +29,13 @@ import {
   Users,
   Video,
   X,
+  // Added icons for the new side panel apps:
+  Calendar,
+  Lightbulb,
+  CheckSquare,
+  HardDrive,
 } from "lucide-react";
+
 import { useMemo, useState } from "react";
 import { Button } from "../button";
 import { Avatar } from "../avatar";
@@ -1174,6 +1181,488 @@ export const SeparatedCardLayout: StoryObj = {
             </Card>
           </Resizable.Pane>
         </Resizable>
+      </div>
+    );
+  },
+};
+
+// --- STORY 3: THREE-PANE GMAIL WITH SIDE APPS PANEL ---
+
+export const ThreePaneGmailWithApps: StoryObj = {
+  name: "3. Three-Pane Layout (Gmail with Calendar & Keep)",
+  render: () => {
+    const [selectedId, setSelectedId] = useState<string | null>("1");
+    const [query, setQuery] = useState("");
+    const [isOpen, setIsOpen] = useState(false);
+    const [isComposeOpen, setIsComposeOpen] = useState(false);
+
+    // Side panel apps state
+    const [activeApp, setActiveApp] = useState<"calendar" | "keep" | "drive">(
+      "calendar",
+    );
+    const [isAppsOpen, setIsAppsOpen] = useState(true);
+
+    const filteredEmails = useMemo(
+      () =>
+        EMAILS.filter(
+          (m) =>
+            m.subject.toLowerCase().includes(query.toLowerCase()) ||
+            m.author.toLowerCase().includes(query.toLowerCase()),
+        ),
+      [query],
+    );
+
+    const activeMail = useMemo(
+      () => EMAILS.find((m) => m.id === selectedId),
+      [selectedId],
+    );
+
+    const handleAppToggle = (app: "calendar" | "keep" | "drive") => {
+      if (activeApp === app && isAppsOpen) {
+        setIsAppsOpen(false);
+      } else {
+        setActiveApp(app);
+        setIsAppsOpen(true);
+      }
+    };
+
+    // Sub-components for side app contents
+    const CalendarWidget = () => (
+      <div className="flex flex-col gap-4">
+        <Typography variant="title-small" className="font-semibold px-1">
+          Schedule
+        </Typography>
+        <div className="flex flex-col gap-2">
+          <div className="p-3 rounded-xl bg-primary-container/30 border-l-4 border-primary">
+            <Typography
+              variant="label-small"
+              className="text-primary font-bold"
+            >
+              10:00 AM - 11:00 AM
+            </Typography>
+            <Typography variant="body-medium" className="font-medium mt-0.5">
+              Design Sync & PR Reviews
+            </Typography>
+          </div>
+          <div className="p-3 rounded-xl bg-secondary-container/20 border-l-4 border-secondary">
+            <Typography
+              variant="label-small"
+              className="text-secondary font-bold"
+            >
+              1:30 PM - 2:00 PM
+            </Typography>
+            <Typography variant="body-medium" className="font-medium mt-0.5">
+              Lunch with Design Team
+            </Typography>
+          </div>
+          <div className="p-3 rounded-xl bg-outline-variant/10 border-l-4 border-outline-variant">
+            <Typography variant="label-small" className="opacity-60 font-bold">
+              4:00 PM - 4:45 PM
+            </Typography>
+            <Typography
+              variant="body-medium"
+              className="font-medium mt-0.5 opacity-80"
+            >
+              Weekly Standup
+            </Typography>
+          </div>
+        </div>
+      </div>
+    );
+
+    const KeepWidget = () => (
+      <div className="flex flex-col gap-4">
+        <Typography variant="title-small" className="font-semibold px-1">
+          My Notes
+        </Typography>
+        <div className="flex flex-col gap-3">
+          <Card
+            variant="surface-container"
+            shape="minimal"
+            className="p-3 border-none shadow-sm bg-yellow-100/10 dark:bg-yellow-950/10"
+          >
+            <Typography variant="body-medium" className="font-bold">
+              Resizable Features
+            </Typography>
+            <Typography variant="body-small" className="opacity-80 mt-1">
+              Add persistent width storage to the multi-pane panel before
+              shipping.
+            </Typography>
+          </Card>
+          <Card
+            variant="surface-container"
+            shape="minimal"
+            className="p-3 border-none shadow-sm"
+          >
+            <Typography variant="body-medium" className="font-bold">
+              Grocery List
+            </Typography>
+            <Typography variant="body-small" className="opacity-80 mt-1">
+              Coffee beans, oat milk, sparkling water.
+            </Typography>
+          </Card>
+        </div>
+      </div>
+    );
+
+    const DriveWidget = () => (
+      <div className="flex flex-col gap-4">
+        <Typography variant="title-small" className="font-semibold px-1">
+          Recent Files
+        </Typography>
+        <div className="flex flex-col gap-2">
+          {[
+            { name: "design-spec-v2.pdf", size: "4.2 MB" },
+            { name: "workspace-layout.png", size: "1.8 MB" },
+            { name: "feedback-notes.docx", size: "124 KB" },
+          ].map((file, i) => (
+            <Item
+              key={i}
+              variant="ghost"
+              shape="minimal"
+              padding="sm"
+              className="cursor-pointer"
+            >
+              <ItemMedia>
+                <HardDrive className="h-4 w-4 opacity-70" />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle className="text-xs font-medium truncate max-w-[140px]">
+                  {file.name}
+                </ItemTitle>
+                <Typography
+                  variant="body-small"
+                  className="text-[10px] opacity-40"
+                >
+                  {file.size}
+                </Typography>
+              </ItemContent>
+            </Item>
+          ))}
+        </div>
+      </div>
+    );
+
+    const isSearching = query.length > 0;
+    const filteredResults = RESULTS.filter((r) =>
+      r.text.toLowerCase().includes(query.toLowerCase()),
+    );
+
+    return (
+      <div className="flex h-screen w-full bg-graphite-background">
+        {/* Leftmost primary navigation rail */}
+        <NavigationRail.Navigator
+          activeTab="inbox"
+          onTabPress={() => {}}
+          variant="ghost"
+          shape="full"
+          width="4.5rem"
+          expandedWidth="12rem"
+          bordered={false}
+        >
+          <NavigationRail.FAB
+            icon={<Plus />}
+            variant="primary"
+            label="Compose"
+            onClick={() => setIsComposeOpen(true)}
+          />
+          <NavigationRail.Screen
+            name="inbox"
+            label="Inbox"
+            icon={() => <Inbox />}
+          />
+          <NavigationRail.Screen
+            name="chat"
+            label="Chat"
+            icon={() => <MessageSquare />}
+          />
+          <NavigationRail.Screen
+            name="meet"
+            label="Meet"
+            icon={() => <Video />}
+          />
+        </NavigationRail.Navigator>
+
+        {/* Outer Split Pane Structure */}
+        <Resizable className="flex-1">
+          {/* Pane 1: Inbox List view */}
+          <Resizable.Pane
+            id="list-view-3p"
+            defaultWidth={340}
+            collapseAt={600}
+            className="flex flex-col bg-graphite-background/50 border-outline-variant"
+          >
+            <div className="p-4">
+              <SearchView
+                variant="docked"
+                value={query}
+                onChange={setQuery}
+                open={isOpen}
+                onOpenChange={setIsOpen}
+                placeholder="Search mail"
+                dockedLeadingIcon={<Search className="h-6 w-6" />}
+                dockedTrailingIcon={
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <IconButton size="xs" variant="ghost">
+                        <Avatar
+                          src="https://i.pravatar.cc/150?u=8"
+                          size="sm"
+                          className="cursor-pointer hover:opacity-80"
+                        />
+                      </IconButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem>
+                          <User className="mr-2 h-4 w-4" />
+                          <span>Profile</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Settings</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                }
+              >
+                <div className="py-2">
+                  {!isSearching && (
+                    <>
+                      <div className="px-4 py-3">
+                        <Typography
+                          variant="body-small"
+                          className="font-bold opacity-70"
+                        >
+                          Recent Searches
+                        </Typography>
+                      </div>
+                      {HISTORY.map((item) => (
+                        <Item
+                          key={item.id}
+                          variant="ghost"
+                          className="cursor-pointer rounded-none px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5"
+                          onClick={() => setQuery(item.text)}
+                        >
+                          <ItemMedia className="text-graphite-foreground/70 mr-4">
+                            {item.icon}
+                          </ItemMedia>
+                          <ItemContent>
+                            <ItemTitle className="font-normal text-base">
+                              {item.text}
+                            </ItemTitle>
+                          </ItemContent>
+                        </Item>
+                      ))}
+                    </>
+                  )}
+                  {isSearching && (
+                    <>
+                      <div className="px-4 py-3">
+                        <Typography
+                          variant="body-small"
+                          className="font-bold opacity-70"
+                        >
+                          Contacts
+                        </Typography>
+                      </div>
+                      {filteredResults.map((item) => (
+                        <Item
+                          key={item.id}
+                          variant="ghost"
+                          className="cursor-pointer rounded-none px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5"
+                        >
+                          <ItemMedia className="mr-4">
+                            <Avatar src={item.avatar} />
+                          </ItemMedia>
+                          <ItemContent>
+                            <ItemTitle className="font-normal text-base">
+                              {item.text}
+                            </ItemTitle>
+                            <Typography
+                              variant="body-small"
+                              muted
+                              className="text-sm"
+                            >
+                              {item.sub}
+                            </Typography>
+                          </ItemContent>
+                        </Item>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </SearchView>
+            </div>
+
+            <ElasticScrollArea className="flex-1 px-2">
+              <div className="flex flex-col gap-1 py-2">
+                <Typography
+                  variant="body-small"
+                  className="px-4 py-2 font-bold opacity-50 uppercase tracking-wider text-xs"
+                >
+                  Today
+                </Typography>
+                {filteredEmails.map((mail) => (
+                  <Item
+                    key={mail.id}
+                    variant="ghost"
+                    shape="minimal"
+                    padding="sm"
+                    className={clsx(
+                      "cursor-pointer transition-all",
+                      selectedId === mail.id &&
+                        "dark:bg-surface-container-highest bg-black/5",
+                    )}
+                    onClick={() => setSelectedId(mail.id)}
+                  >
+                    <ItemMedia>
+                      <Avatar src={mail.avatar} size="md" />
+                    </ItemMedia>
+                    <ItemContent>
+                      <div className="flex items-center justify-between">
+                        <ItemTitle className="text-sm font-bold">
+                          {mail.author}
+                        </ItemTitle>
+                        <Typography
+                          variant="body-small"
+                          className="text-[10px] opacity-50"
+                        >
+                          {mail.time}
+                        </Typography>
+                      </div>
+                      <Typography
+                        variant="body-small"
+                        className="font-semibold line-clamp-1"
+                      >
+                        {mail.subject}
+                      </Typography>
+                      <ItemDescription className="line-clamp-2">
+                        {mail.preview}
+                      </ItemDescription>
+                    </ItemContent>
+                  </Item>
+                ))}
+              </div>
+            </ElasticScrollArea>
+          </Resizable.Pane>
+
+          <Resizable.Handle target="list-view-3p" variant="pill" />
+
+          {/* Pane 2: Primary Email Detail View (Flexible Middle Pane) */}
+          <Resizable.Pane id="details-3p" flex className="bg-graphite-card">
+            <AnimatePresence mode="wait">
+              {activeMail ? (
+                <DetailView
+                  key={activeMail.id}
+                  mail={activeMail}
+                  onClose={() => setSelectedId(null)}
+                />
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="h-full"
+                >
+                  <EmptyState />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Resizable.Pane>
+
+          <Resizable.Handle target="apps-panel" invert variant="pill" />
+
+          {/* Pane 3: Right side adaptive Utility Apps Panel */}
+          <Resizable.Pane
+            id="apps-panel"
+            defaultWidth={280}
+            minWidth={200}
+            dismissible={true}
+            open={isAppsOpen}
+            onOpenChange={setIsAppsOpen}
+            className="bg-graphite-background/40 border-l border-outline-variant/30"
+          >
+            <div className="flex flex-col h-full">
+              {/* Header inside utility pane */}
+              <div className="h-14 px-4 flex items-center justify-between border-b border-outline-variant/20 bg-graphite-background/20">
+                <Typography
+                  variant="label-medium"
+                  className="font-bold opacity-60 uppercase tracking-widest text-[11px]"
+                >
+                  Side Panel
+                </Typography>
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => setIsAppsOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </IconButton>
+              </div>
+
+              {/* Utility content switchboard */}
+              <div className="flex-1 p-4 overflow-hidden">
+                <ElasticScrollArea className="h-full">
+                  {activeApp === "calendar" && <CalendarWidget />}
+                  {activeApp === "keep" && <KeepWidget />}
+                  {activeApp === "drive" && <DriveWidget />}
+                </ElasticScrollArea>
+              </div>
+            </div>
+          </Resizable.Pane>
+        </Resizable>
+
+        {/* Persistent Side App Bar to switch or restore panel widgets */}
+        <div className="w-12 bg-graphite-background border-l border-outline-variant/20 flex flex-col items-center py-4 gap-4 z-10 shrink-0">
+          <IconButton
+            variant={isAppsOpen && activeApp === "calendar" ? "tonal" : "ghost"}
+            size="sm"
+            onClick={() => handleAppToggle("calendar")}
+            className={clsx(
+              "rounded-full transition-all",
+              isAppsOpen &&
+                activeApp === "calendar" &&
+                "bg-primary-container text-on-primary-container",
+            )}
+          >
+            <Calendar className="h-5 w-5" />
+          </IconButton>
+
+          <IconButton
+            variant={isAppsOpen && activeApp === "keep" ? "tonal" : "ghost"}
+            size="sm"
+            onClick={() => handleAppToggle("keep")}
+            className={clsx(
+              "rounded-full transition-all",
+              isAppsOpen &&
+                activeApp === "keep" &&
+                "bg-primary-container text-on-primary-container",
+            )}
+          >
+            <Lightbulb className="h-5 w-5" />
+          </IconButton>
+
+          <IconButton
+            variant={isAppsOpen && activeApp === "drive" ? "tonal" : "ghost"}
+            size="sm"
+            onClick={() => handleAppToggle("drive")}
+            className={clsx(
+              "rounded-full transition-all",
+              isAppsOpen &&
+                activeApp === "drive" &&
+                "bg-primary-container text-on-primary-container",
+            )}
+          >
+            <HardDrive className="h-5 w-5" />
+          </IconButton>
+        </div>
+
+        <ComposeModal open={isComposeOpen} onOpenChange={setIsComposeOpen} />
       </div>
     );
   },

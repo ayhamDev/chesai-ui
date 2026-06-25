@@ -245,10 +245,9 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       shape = "minimal",
       variant = "primary",
       padding = "md",
-      layout = false, // Default to false to handle dimension changes purely through CSS transition transitions
+      layout = false, // Default to false to handle dimension changes purely through CSS transitions
       glass: glassProp,
       style,
-      // Destructure these to avoid conflict with motion's custom types
       onDrag,
       onDragStart,
       onDragEnd,
@@ -373,7 +372,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
                               : "bg-surface-container-high",
                           ]
                         : [
-                            "w-full",
+                            "w-full max-w-lg", // FIXED: Added standard max-w-md as fallback base style for basic dialogs
                             cardVariants({
                               shape,
                               variant,

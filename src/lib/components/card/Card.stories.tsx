@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { CreditCard, Eye, ShieldAlert, Star, TrendingUp } from "lucide-react";
+import React from "react";
 import { Button } from "../button";
 import { Typography } from "../typography";
-import { Card } from "./index";
+import { Card, CardGroup } from "./index";
 
 const meta: Meta<typeof Card> = {
   title: "Components/Card",
   component: Card,
+  subcomponents: { CardGroup },
   tags: ["autodocs"],
   argTypes: {
     variant: {
@@ -270,7 +273,7 @@ export const HighContrast: Story = {
         <Typography variant="title-large" className="text-inherit!">
           High Contrast Card
         </Typography>
-        <Typography body-medium className="text-inherit! opacity-80">
+        <Typography className="text-inherit! opacity-80 text-sm">
           In Light Mode, I am dark. In Dark Mode, I am light/white. I use the
           MD3 Inverse Surface tokens.
         </Typography>
@@ -345,6 +348,141 @@ export const GlassEffect: Story = {
           </Button>
         </div>
       </Card>
+    </div>
+  ),
+};
+
+// ============================================================================
+// NEW CARD GROUP STORIES
+// ============================================================================
+
+export const GroupedVertical: StoryObj = {
+  name: "Group: Vertical Stack (Settings Menu)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Demonstrates a vertical stacked list of cards grouped under a single continuous capsule context. If `gap='none'` is specified, double overlapping borders are automatically resolved.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-96 flex flex-col gap-4">
+      <Typography variant="title-medium" className="px-1 font-bold">
+        Account Settings
+      </Typography>
+      <CardGroup shape="sharp" direction="vertical" gap="none">
+        <Card
+          variant="surface-container"
+          bordered
+          padding="sm"
+          className="cursor-pointer hover:bg-surface-container-high transition-colors flex items-center gap-4"
+        >
+          <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+            <CreditCard size={20} />
+          </div>
+          <div className="flex-1">
+            <Typography variant="title-small">Payment Methods</Typography>
+            <Typography variant="body-small" muted>
+              Manage your cards and billing details.
+            </Typography>
+          </div>
+        </Card>
+
+        <Card
+          variant="surface-container"
+          bordered
+          padding="sm"
+          className="cursor-pointer hover:bg-surface-container-high transition-colors flex items-center gap-4"
+        >
+          <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+            <Eye size={20} />
+          </div>
+          <div className="flex-1">
+            <Typography variant="title-small">Privacy & Visibility</Typography>
+            <Typography variant="body-small" muted>
+              Control who sees your activity.
+            </Typography>
+          </div>
+        </Card>
+
+        <Card
+          variant="surface-container"
+          bordered
+          padding="sm"
+          className="cursor-pointer hover:bg-surface-container-high transition-colors flex items-center gap-4"
+        >
+          <div className="p-2.5 rounded-xl bg-error/10 text-error shrink-0">
+            <ShieldAlert size={20} />
+          </div>
+          <div className="flex-1">
+            <Typography variant="title-small" className="text-error">
+              Security Center
+            </Typography>
+            <Typography variant="body-small" muted>
+              Review authentication logs.
+            </Typography>
+          </div>
+        </Card>
+      </CardGroup>
+    </div>
+  ),
+};
+
+export const GroupedHorizontal: StoryObj = {
+  name: "Group: Horizontal Stack (Grid Metrics)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Demonstrates standard card grouping inside a horizontal block. Custom corner-radii are inherited seamlessly from the card's own definitions.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-[600px] flex flex-col gap-4">
+      <Typography variant="title-medium" className="font-bold">
+        Performance Overview
+      </Typography>
+      <CardGroup shape="full" direction="horizontal" gap="sm">
+        <Card
+          variant="surface-container-low"
+          bordered
+          className="flex-1 flex flex-col gap-2 p-5"
+        >
+          <div className="flex justify-between items-center text-primary">
+            <Typography variant="label-large" className="font-bold">
+              Total Revenue
+            </Typography>
+            <TrendingUp size={18} />
+          </div>
+          <Typography variant="headline-medium" className="font-extrabold">
+            $45,231
+          </Typography>
+          <Typography variant="body-small" muted>
+            +12.4% from last month
+          </Typography>
+        </Card>
+
+        <Card
+          variant="surface-container-low"
+          bordered
+          className="flex-1 flex flex-col gap-2 p-5"
+        >
+          <div className="flex justify-between items-center text-tertiary">
+            <Typography variant="label-large" className="font-bold">
+              Subscribers
+            </Typography>
+            <Star size={18} />
+          </div>
+          <Typography variant="headline-medium" className="font-extrabold">
+            1,204
+          </Typography>
+          <Typography variant="body-small" muted>
+            +4.3% from last week
+          </Typography>
+        </Card>
+      </CardGroup>
     </div>
   ),
 };

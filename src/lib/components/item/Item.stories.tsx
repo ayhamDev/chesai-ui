@@ -1,12 +1,24 @@
+// src/lib/components/item/Item.stories.tsx
+
 import type { Meta, StoryObj } from "@storybook/react";
-import { ChevronRight, File, MoreVertical, Star } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  File,
+  MoreVertical,
+  Star,
+} from "lucide-react";
 import React from "react";
+import { Avatar } from "../avatar";
+import { Button } from "../button";
 import { IconButton } from "../icon-button";
+import { Typography } from "../typography";
 import {
   Item,
   ItemActions,
   ItemContent,
   ItemDescription,
+  ItemExpandedContent,
   ItemFooter,
   ItemGroup,
   ItemHeader,
@@ -26,6 +38,7 @@ const meta: Meta<typeof Item> = {
     ItemTitle,
     ItemDescription,
     ItemActions,
+    ItemExpandedContent,
     ItemHeader,
     ItemFooter,
   },
@@ -35,7 +48,7 @@ const meta: Meta<typeof Item> = {
     docs: {
       description: {
         component:
-          "A versatile compound component for building list items, profiles, notifications, and more complex layouts. Items support a ripple effect on click and long press actions.",
+          "A versatile compound component for building lists, notifications, and modular action layers. Supports custom swipe states, ripple triggers, long-press callbacks, and Material-inspired vertical expansion grids.",
       },
     },
   },
@@ -171,8 +184,112 @@ export const AllSizes: Story = {
   ),
 };
 
+// State-enabled wrapper story validating the Android 16 expandable shade logic.
+// Strictly uses MD3 classes for theming consistency and prevents capsule warping.
+const ExpandableNotificationHelper = ({
+  sender,
+  time,
+  avatar,
+  message,
+}: {
+  sender: string;
+  time: string;
+  avatar: string;
+  message: string;
+}) => {
+  const [expanded, setExpanded] = React.useState(false);
+
+  return (
+    <Item
+      expandable
+      expanded={expanded}
+      onExpandedChange={setExpanded}
+      shape="full"
+      variant="surface-container"
+      padding="md"
+    >
+      <ItemMedia variant="avatar" className="self-start mt-1">
+        <Avatar src={avatar} fallback={sender[0]} />
+      </ItemMedia>
+      <ItemContent>
+        <div className="flex justify-between items-center mb-0.5">
+          <ItemTitle className="text-sm font-bold text-on-surface">
+            {sender}
+          </ItemTitle>
+          <div className="flex items-center gap-1 opacity-60 text-on-surface-variant">
+            <Typography variant="body-small" className="text-xs font-semibold">
+              {time}
+            </Typography>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform duration-300 ${
+                expanded ? "rotate-180" : ""
+              }`}
+            />
+          </div>
+        </div>
+        <ItemDescription collapsedLines={1} className="text-on-surface-variant">
+          {message}
+        </ItemDescription>
+
+        <ItemExpandedContent>
+          <div className="flex items-center gap-2 mt-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                alert(`Marked ${sender}'s message as read`);
+              }}
+            >
+              Mark as read
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                alert(`Replying to ${sender}`);
+              }}
+            >
+              Reply
+            </Button>
+          </div>
+        </ItemExpandedContent>
+      </ItemContent>
+    </Item>
+  );
+};
+
+export const ExpandableShadeNotification: Story = {
+  name: "4. Android 16 Shade (Expandable)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Demonstrates the expandable Material notification card shaded within an outer platform container. Note that clicking the overall notification triggers a clean, smooth transition that avoids oval capsule distortion, and button triggers stop event bubbles natively.",
+      },
+    },
+  },
+  render: () => (
+    <div className="w-[420px] bg-surface-container-low p-4 rounded-[36px] border border-outline-variant/30 flex flex-col gap-2 shadow-xl">
+      <ExpandableNotificationHelper
+        sender="Matt"
+        time="now"
+        avatar="https://i.pravatar.cc/150?u=matt"
+        message="Hey! Are we still down for meeting up on Saturday? I think Tyler wanted to as well."
+      />
+      <ExpandableNotificationHelper
+        sender="Rebecca"
+        time="5m"
+        avatar="https://i.pravatar.cc/150?u=rebecca"
+        message="Are you coming over? I'm making a bunch of food for everyone and want to make sure I have enough."
+      />
+    </div>
+  ),
+};
+
 export const VerticalProductCard: Story = {
-  name: "4. Vertical (Product Card Style)",
+  name: "5. Vertical (Product Card Style)",
   args: {
     direction: "vertical",
     shape: "minimal",
@@ -203,7 +320,7 @@ export const VerticalProductCard: Story = {
 };
 
 export const AsLink: Story = {
-  name: "5. Polymorphic (as link)",
+  name: "6. Polymorphic (as link)",
   parameters: {
     docs: {
       description: {
@@ -224,7 +341,10 @@ export const AsLink: Story = {
             <ItemDescription>Click to view the document.</ItemDescription>
           </ItemContent>
           <ItemActions>
-            <ChevronRight size={20} className="text-graphite-foreground/50" />
+            <ChevronRight
+              size={20}
+              className="text-on-surface-variant opacity-60"
+            />
           </ItemActions>
         </a>
       </Item>
@@ -233,7 +353,7 @@ export const AsLink: Story = {
 };
 
 export const RippleControl: Story = {
-  name: "6. Ripple Control",
+  name: "7. Ripple Control",
   parameters: {
     docs: {
       description: {
@@ -271,7 +391,7 @@ export const RippleControl: Story = {
 };
 
 export const WithLongPress: Story = {
-  name: "7. With Long Press",
+  name: "8. With Long Press",
   parameters: {
     docs: {
       description: {

@@ -48,6 +48,7 @@ interface ResizableContextProps {
   ) => void;
   containerWidth: number;
   isDragging: boolean;
+  activeTargetId: string | null;
   startDrag: (
     e: React.MouseEvent | React.TouchEvent,
     handleId: string,
@@ -147,6 +148,7 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
     const [sizes, setSizes] = useState<Record<string, number>>(defaultSizes);
     const [containerWidth, setContainerWidth] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
+    const [activeTargetId, setActiveTargetId] = useState<string | null>(null);
     const [collapsedPanes, setCollapsedPanes] = useState<Set<string>>(
       new Set(),
     );
@@ -353,6 +355,7 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
         if (!targetId) return;
         e.preventDefault();
         setIsDragging(true);
+        setActiveTargetId(targetId);
 
         const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
         const currentWidth = sizes[targetId] || 0;
@@ -402,6 +405,7 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
 
       const onEnd = () => {
         setIsDragging(false);
+        setActiveTargetId(null);
         if (dragInfo.current) {
           const { targetId } = dragInfo.current;
           const config = paneConfigs.current[targetId];
@@ -460,6 +464,7 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
           containerWidth,
           registerPane,
           isDragging,
+          activeTargetId,
           startDrag,
           collapsedPanes,
           setPaneCollapsed,
@@ -736,7 +741,7 @@ Pane.displayName = "Pane";
 // --- HANDLE COMPONENT ---
 
 const handleVariants = cva(
-  "relative z-10 flex w-2 h-full cursor-col-resize items-center justify-center outline-none group select-none touch-none shrink-0",
+  "relative z-10 flex w-[5px] h-full cursor-col-resize items-center justify-center outline-none group select-none touch-none shrink-0",
   {
     variants: {
       isDragging: {
@@ -832,10 +837,13 @@ const Handle = React.forwardRef<HTMLDivElement, HandleProps>(
     },
     ref,
   ) => {
-    const { startDrag, isDragging, collapsedPanes, sizes } = useResizable();
+    const { startDrag, isDragging, activeTargetId, collapsedPanes, sizes } =
+      useResizable();
 
     // If target is collapsed or has a width of 0, hide handle
     if (collapsedPanes.has(target) || sizes[target] === 0) return null;
+
+    const isThisHandleDragging = isDragging && activeTargetId === target;
 
     const isTailwindHeight =
       typeof indicatorHeight === "string" && indicatorHeight.startsWith("h-");
@@ -850,7 +858,7 @@ const Handle = React.forwardRef<HTMLDivElement, HandleProps>(
 
     const visibilityClasses = alwaysShowIndicator
       ? "opacity-100 scale-100"
-      : isDragging
+      : isThisHandleDragging
         ? "opacity-100 scale-100"
         : "opacity-0 scale-75 pointer-events-none group-hover:opacity-100 group-hover:scale-90";
 
@@ -861,12 +869,19 @@ const Handle = React.forwardRef<HTMLDivElement, HandleProps>(
         tabIndex={0}
         onMouseDown={(e) => startDrag(e, `handle-${target}`, target, invert)}
         onTouchStart={(e) => startDrag(e, `handle-${target}`, target, invert)}
-        className={clsx(handleVariants({ isDragging }), className)}
+        className={clsx(
+          handleVariants({ isDragging: isThisHandleDragging }),
+          className,
+        )}
         {...props}
       >
         <div
           className={clsx(
-            visibleLineVariants({ isDragging, variant, divided }),
+            visibleLineVariants({
+              isDragging: isThisHandleDragging,
+              variant,
+              divided,
+            }),
           )}
         />
 

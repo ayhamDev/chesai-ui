@@ -1,10 +1,13 @@
 "use client";
 
+import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
-import React, { useImperativeHandle, useRef } from "react";
+import * as React from "react";
 import { twMerge } from "tailwind-merge";
 import useRipple from "use-ripple-hook";
+
+// --- Card Variants Definition ---
 
 export const cardVariants = cva(
   "transition-all duration-300 ease-out relative z-0 overflow-hidden",
@@ -30,9 +33,9 @@ export const cardVariants = cva(
         false: "",
       },
       shape: {
-        full: "rounded-3xl",
-        minimal: "rounded-xl",
-        sharp: "rounded-none",
+        full: "rounded-3xl", // 24px
+        minimal: "rounded-xl", // 12px
+        sharp: "rounded-none", // 0px
       },
       padding: {
         none: "p-0",
@@ -195,6 +198,18 @@ export const cardVariants = cva(
   },
 );
 
+// --- Types ---
+
+export type CardGroupShape = "full" | "minimal" | "sharp";
+export type CardGroupDirection = "horizontal" | "vertical";
+export type CardGroupGap = "none" | "xs" | "sm" | "md" | "lg";
+
+export interface CardGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+  shape?: CardGroupShape;
+  direction?: CardGroupDirection;
+  gap?: CardGroupGap;
+}
+
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?:
     | "primary"
@@ -217,6 +232,132 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   glass?: boolean;
 }
 
+// --- CardGroup Shape Helper Implementation ---
+
+const cardGapMap: Record<CardGroupGap, string> = {
+  none: "gap-0",
+  xs: "gap-0.5",
+  sm: "gap-1",
+  md: "gap-2",
+  lg: "gap-4",
+};
+
+/**
+ * Resolves outer group corners using the Card component's own design tokens
+ * ("full" -> rounded-3xl / rounded-md, "minimal" -> rounded-xl / rounded-sm)
+ */
+const getCardGroupShapeClasses = (
+  index: number,
+  total: number,
+  shape: CardGroupShape,
+  direction: CardGroupDirection,
+) => {
+  const isFirst = index === 0;
+  const isLast = index === total - 1;
+  const isOnly = total === 1;
+
+  if (shape === "sharp") return "!rounded-none";
+
+  if (isOnly) {
+    if (shape === "full") return "!rounded-3xl";
+    if (shape === "minimal") return "!rounded-xl";
+  }
+
+  if (direction === "vertical") {
+    if (shape === "full") {
+      if (isFirst) return "!rounded-t-3xl !rounded-b-md";
+      if (isLast) return "!rounded-t-md !rounded-b-3xl";
+      return "!rounded-t-md !rounded-b-md";
+    }
+    if (shape === "minimal") {
+      if (isFirst) return "!rounded-t-xl !rounded-b-sm";
+      if (isLast) return "!rounded-t-sm !rounded-b-xl";
+      return "!rounded-t-sm !rounded-b-sm";
+    }
+  } else {
+    if (shape === "full") {
+      if (isFirst) return "!rounded-l-3xl !rounded-r-md";
+      if (isLast) return "!rounded-l-md !rounded-r-3xl";
+      return "!rounded-l-md !rounded-r-md";
+    }
+    if (shape === "minimal") {
+      if (isFirst) return "!rounded-l-xl !rounded-r-sm";
+      if (isLast) return "!rounded-l-sm !rounded-r-xl";
+      return "!rounded-l-sm !rounded-r-sm";
+    }
+  }
+  return "";
+};
+
+// --- CardGroup Component ---
+
+export const CardGroup = React.forwardRef<HTMLDivElement, CardGroupProps>(
+  (
+    {
+      className,
+      children,
+      shape = "minimal",
+      direction = "vertical",
+      gap = "xs",
+      ...props
+    },
+    ref,
+  ) => {
+    const childArray = React.Children.toArray(children).filter(
+      React.isValidElement,
+    );
+
+    return (
+      <div
+        ref={ref}
+        role="group"
+        data-slot="card-group"
+        className={twMerge(
+          clsx(
+            "flex",
+            direction === "vertical" ? "flex-col" : "flex-row",
+            cardGapMap[gap],
+            className,
+          ),
+        )}
+        {...props}
+      >
+        {childArray.map((child, index) => {
+          const shapeClass = getCardGroupShapeClasses(
+            index,
+            childArray.length,
+            shape,
+            direction,
+          );
+
+          // If gap is 'none', add a negative margin on subsequent items
+          // to cleanly collapse contiguous card borders and prevent double-line heaviness
+          const borderOverlapClass =
+            gap === "none" && index > 0
+              ? direction === "vertical"
+                ? "-mt-px"
+                : "-ml-px"
+              : "";
+
+          return React.cloneElement(child as React.ReactElement<any>, {
+            className: twMerge(
+              clsx(
+                (child as React.ReactElement<any>).props.className,
+                shapeClass,
+                borderOverlapClass,
+                "focus-visible:z-10",
+              ),
+            ),
+          });
+        })}
+      </div>
+    );
+  },
+);
+CardGroup.displayName = "CardGroup";
+
+// --- Card Component ---
+
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
   (
     {
@@ -234,8 +375,8 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     },
     ref,
   ) => {
-    const localRef = useRef<HTMLDivElement>(null);
-    useImperativeHandle(ref, () => localRef.current!);
+    const localRef = React.useRef<HTMLDivElement>(null);
+    React.useImperativeHandle(ref, () => localRef.current!);
 
     const rippleColor =
       variant === "high-contrast" || variant === "tertiary"
@@ -252,7 +393,6 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     return (
       <div
         ref={localRef}
-        // Use twMerge to ensure /50 background colors cleanly override solid variant defaults
         className={twMerge(
           clsx(
             cardVariants({
@@ -276,5 +416,4 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     );
   },
 );
-
 Card.displayName = "Card";

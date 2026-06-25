@@ -1,8 +1,11 @@
+// src/lib/components/item/ItemSwipe.stories.tsx
+
 import type { Meta, StoryObj } from "@storybook/react";
 import {
   Archive,
   Check,
   CheckCircle2,
+  ChevronDown,
   FolderArchive,
   Inbox,
   Pin,
@@ -12,12 +15,14 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import { Avatar } from "../avatar";
+import { Button } from "../button";
 import { Toaster, toast } from "../toast";
 import { Typography } from "../typography";
 import {
   Item,
   ItemContent,
   ItemDescription,
+  ItemExpandedContent,
   ItemGroup,
   ItemMedia,
   ItemTitle,
@@ -165,7 +170,6 @@ export const GmailInboxStyle: StoryObj<typeof Item> = {
                 color: "primary",
                 onClick: () => archiveMail(mail.id),
               }}
-              // Utilizes twMerge to safely enforce the white card surface and dividers
               className="bg-surface-container-lowest border-b border-outline-variant/10 last:border-0 cursor-pointer"
             >
               <ItemMedia variant="avatar" className="self-start mt-1">
@@ -379,6 +383,170 @@ export const SwipeToRevealOptions: StoryObj<typeof Item> = {
             </ItemDescription>
           </ItemContent>
         </Item>
+      </div>
+    );
+  },
+};
+
+// ============================================================================
+// 4. COMBINED ACTION: SWIPE-TO-DISMISS + EXPANSIBLE DRAWER
+// ============================================================================
+interface CombinedMessage {
+  id: string;
+  sender: string;
+  time: string;
+  avatar: string;
+  message: string;
+}
+
+const initialCombined: CombinedMessage[] = [
+  {
+    id: "msg-1",
+    sender: "Matt",
+    time: "now",
+    avatar: "https://i.pravatar.cc/150?u=matt",
+    message:
+      "Hey! Are we still down for meeting up on Saturday? I think Tyler wanted to as well.",
+  },
+  {
+    id: "msg-2",
+    sender: "Rebecca",
+    time: "5m",
+    avatar: "https://i.pravatar.cc/150?u=rebecca",
+    message:
+      "Are you coming over? I'm making a bunch of food for everyone and want to make sure I have enough.",
+  },
+];
+
+const StatefulSwipeExpandItem = ({
+  item,
+  onDismiss,
+}: {
+  item: CombinedMessage;
+  onDismiss: (id: string) => void;
+}) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <Item
+      expandable
+      expanded={expanded}
+      onExpandedChange={setExpanded}
+      shape="full"
+      variant="surface-container"
+      swipeType="dismiss"
+      swipeThreshold={120}
+      swipeLeftAction={{
+        icon: <Trash2 className="h-5 w-5" />,
+        label: "Clear",
+        color: "error",
+        onClick: () => onDismiss(item.id),
+      }}
+    >
+      <ItemMedia variant="avatar" className="self-start mt-1">
+        <Avatar src={item.avatar} fallback={item.sender[0]} />
+      </ItemMedia>
+      <ItemContent>
+        <div className="flex justify-between items-center mb-0.5">
+          <ItemTitle className="text-sm font-bold text-on-surface">
+            {item.sender}
+          </ItemTitle>
+          <div className="flex items-center gap-1 opacity-60 text-on-surface-variant">
+            <Typography variant="body-small" className="text-xs font-semibold">
+              {item.time}
+            </Typography>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform duration-300 ${
+                expanded ? "rotate-180" : ""
+              }`}
+            />
+          </div>
+        </div>
+        <ItemDescription collapsedLines={1} className="text-on-surface-variant">
+          {item.message}
+        </ItemDescription>
+
+        <ItemExpandedContent>
+          <div className="flex items-center gap-2 mt-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation(); // Stop expansion toggle
+                toast.success(`Marked message from ${item.sender} as read`);
+              }}
+            >
+              Mark as read
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation(); // Stop expansion toggle
+                toast.success(`Opening inline reply to ${item.sender}`);
+              }}
+            >
+              Reply
+            </Button>
+          </div>
+        </ItemExpandedContent>
+      </ItemContent>
+    </Item>
+  );
+};
+
+export const ExpandableWithSwipe: StoryObj<typeof Item> = {
+  name: "4. Combined Expand + Swipe Dismiss",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Multi-Feature Combo: Clicking toggles the card's expanded height and triggers the border radius transition from a full capsule pill down to squircle corners. Swiping left seamlessly throws the card off-screen and triggers a height collapse.",
+      },
+    },
+  },
+  render: () => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [messages, setMessages] =
+      useState<CombinedMessage[]>(initialCombined);
+
+    const handleDismiss = (id: string) => {
+      toast("Notification cleared");
+      setTimeout(() => {
+        setMessages((prev) => prev.filter((msg) => msg.id !== id));
+      }, 250);
+    };
+
+    return (
+      <div className="relative w-[420px] bg-surface-container-low p-4 rounded-[36px] border border-outline-variant/30 flex flex-col gap-2 shadow-xl font-sans">
+        <Toaster />
+
+        {/* Header */}
+        <div className="px-4 py-2 flex items-center justify-between">
+          <Typography
+            variant="title-medium"
+            className="font-extrabold text-on-surface"
+          >
+            Active Notifications
+          </Typography>
+          {messages.length === 0 && (
+            <button
+              onClick={() => setMessages(initialCombined)}
+              className="text-xs text-primary font-bold hover:underline flex items-center gap-1"
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Restore
+            </button>
+          )}
+        </div>
+
+        {/* Message shade list */}
+        {messages.map((msg) => (
+          <StatefulSwipeExpandItem
+            key={msg.id}
+            item={msg}
+            onDismiss={handleDismiss}
+          />
+        ))}
       </div>
     );
   },

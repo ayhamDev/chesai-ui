@@ -1,3 +1,5 @@
+// src/lib/components/item/index.tsx
+
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
@@ -5,6 +7,7 @@ import { useLongPress } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import {
+  AnimatePresence,
   animate,
   cubicBezier,
   motion,
@@ -38,10 +41,6 @@ export interface SwipeActionConfig {
   icon: React.ReactNode;
   label?: string;
   onClick: () => void | Promise<void>;
-  /**
-   * Standard theme colors.
-   * Autocomplete is preserved via (string & {}).
-   */
   color?:
     | "primary"
     | "secondary"
@@ -49,12 +48,7 @@ export interface SwipeActionConfig {
     | "error"
     | "destructive"
     | (string & {});
-  /**
-   * Optionally override the shape of the swipe button container.
-   * Defaults to inheriting the parent Item's shape.
-   */
   shape?: "full" | "minimal" | "sharp";
-  /** Optional custom classes for the swipe container */
   className?: string;
 }
 
@@ -62,15 +56,17 @@ interface ItemContextProps {
   variant: ItemVariant;
   size: ItemSize;
   direction: ItemDirection;
+  expanded?: boolean;
 }
 
 const ItemContext = React.createContext<ItemContextProps>({
   variant: "primary",
   size: "md",
   direction: "horizontal",
+  expanded: false,
 });
 
-const useItemContext = () => React.useContext(ItemContext);
+export const useItem = () => React.useContext(ItemContext);
 
 // --- CVA Variants ---
 
@@ -87,8 +83,6 @@ const itemVariants = cva(
           "bg-transparent text-on-surface " +
           "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-250 after:ease-out " +
           "hover:after:opacity-100 hover:after:scale-100",
-
-        // --- MD3 Surface Container Variants ---
         surface: "bg-surface text-on-surface",
         "surface-container-lowest":
           "bg-surface-container-lowest text-on-surface",
@@ -204,14 +198,14 @@ const getShapeClasses = (
   if (shape === "sharp") return "!rounded-none";
 
   if (isOnly) {
-    if (shape === "full") return "!rounded-[30px]";
+    if (shape === "full") return "!rounded-[32px]";
     if (shape === "minimal") return "!rounded-xl";
   }
 
   if (direction === "vertical") {
     if (shape === "full") {
-      if (isFirst) return "!rounded-t-[30px] !rounded-b-md";
-      if (isLast) return "!rounded-t-md !rounded-b-[30px]";
+      if (isFirst) return "!rounded-t-[32px] !rounded-b-md";
+      if (isLast) return "!rounded-t-md !rounded-b-[32px]";
       return "!rounded-t-md !rounded-b-md";
     }
     if (shape === "minimal") {
@@ -221,9 +215,9 @@ const getShapeClasses = (
     }
   } else {
     if (shape === "full") {
-      if (isFirst) return "!rounded-l-[30px] !rounded-r-md";
-      if (isLast) return "!rounded-l-md !rounded-r-[30px]";
-      return "!rounded-l-md !rounded-r-md";
+      if (isFirst) return "!rounded-l-[32px] !rounded-r-md";
+      if (isLast) return "!rounded-l-md !rounded-r-[32px]";
+      return "!rounded-l-md !rounded-r-[32px]";
     }
     if (shape === "minimal") {
       if (isFirst) return "!rounded-l-xl !rounded-r-sm";
@@ -317,6 +311,13 @@ export interface ItemProps extends React.HTMLAttributes<HTMLDivElement> {
   disableRipple?: boolean;
   onLongPress?: (e: any) => void;
 
+  // Expansion Feature
+  expandable?: boolean;
+  expanded?: boolean;
+  defaultExpanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
+
+  // Swipe Features
   swipeType?: SwipeType;
   swipeThreshold?: number;
   swipeRightAction?: SwipeActionConfig;
@@ -328,7 +329,7 @@ export interface ItemProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const shapeClassesMap = {
-  full: "rounded-full",
+  full: "rounded-[32px]",
   minimal: "rounded-xl",
   sharp: "rounded-none",
 };
@@ -366,6 +367,11 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
       onLongPress,
       onPointerDown,
 
+      expandable = false,
+      expanded,
+      defaultExpanded = false,
+      onExpandedChange,
+
       swipeType = "trigger",
       swipeThreshold = 100,
       swipeRightAction,
@@ -387,9 +393,21 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
     const effectiveSize = (size || "md") as ItemSize;
     const effectiveDirection = (direction || "horizontal") as ItemDirection;
 
-    const rippleColor = "var(--color-ripple-dark)";
+    // --- Expansion State ---
+    const [internalExpanded, setInternalExpanded] =
+      React.useState(defaultExpanded);
+    const isExpanded = expanded !== undefined ? expanded : internalExpanded;
 
-    // Bind useRipple to localRef (which is attached directly to the sliding card)
+    const toggleExpand = () => {
+      if (disabled) return;
+      const nextState = !isExpanded;
+      if (expanded === undefined) {
+        setInternalExpanded(nextState);
+      }
+      onExpandedChange?.(nextState);
+    };
+
+    const rippleColor = "var(--color-ripple-dark)";
     const [, event] = useRipple({
       ref: localRef as React.RefObject<HTMLElement>,
       color: rippleColor,
@@ -410,11 +428,8 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
     const x = useMotionValue(0);
     const [isDismissed, setIsDismissed] = React.useState(false);
 
-    // Dynamic underlay widths matching exactly to the swipe distance
     const leftUnderlayWidth = useTransform(x, [-1000, 0, 1000], [0, 0, 1000]);
     const rightUnderlayWidth = useTransform(x, [-1000, 0, 1000], [1000, 0, 0]);
-
-    // Opacities fade in over the first 20px so they don't pop instantly at 1px
     const leftOpacity = useTransform(x, [0, 50], [0, 1]);
     const rightOpacity = useTransform(x, [0, -50], [0, 1]);
 
@@ -440,12 +455,9 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
       const currentX = x.get();
       let targetX = 0;
 
-      // EXTREMELY OPTIMIZED TWEEN SPEC:
-      // Physics spring calculations (stiffness/damping) are entirely bypassed to save low-end CPU ticks.
-      // Replaced with an O(1) evaluated cubic-bezier matching the exact MD3 deceleration visual profiles.
       const tweenAnimationOptions = {
         type: "tween",
-        ease: cubicBezier(0.05, 0.7, 0.1, 1), // MD3 Emphasized Decelerate (smooth mathematical curve)
+        ease: cubicBezier(0.05, 0.7, 0.1, 1),
         duration: 0.28,
       } as const;
 
@@ -494,15 +506,23 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
     };
 
     const handleItemClick = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (isSwipeable && swipeType === "reveal" && Math.abs(x.get()) > 10) {
-        e.stopPropagation();
-        e.preventDefault();
-        animate(x, 0, {
-          type: "tween",
-          ease: [0.05, 0.7, 0.1, 1],
-          duration: 0.25,
-        });
+      // FIX: Disable expanding while actively swiping/dragging.
+      // If pointer has dragged the card horizontally (> 5px), early return.
+      if (isSwipeable && Math.abs(x.get()) > 5) {
+        if (swipeType === "reveal" && Math.abs(x.get()) > 10) {
+          e.stopPropagation();
+          e.preventDefault();
+          animate(x, 0, {
+            type: "tween",
+            ease: [0.05, 0.7, 0.1, 1],
+            duration: 0.25,
+          });
+        }
         return;
+      }
+
+      if (expandable) {
+        toggleExpand();
       }
       props.onClick?.(e);
     };
@@ -515,24 +535,38 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
       onClick: handleItemClick,
     };
 
-    const currentShapeClass = shapeClassesMap[shape || "minimal"];
+    const currentShapeClass =
+      shape === "full"
+        ? isExpanded
+          ? "rounded-[16px]"
+          : "rounded-[32px]"
+        : shapeClassesMap[shape || "minimal"];
 
-    // innerContent represents the dragged card itself. It holds the core variant styles.
+    const contextValue = {
+      variant: effectiveVariant,
+      size: effectiveSize,
+      direction: effectiveDirection,
+      expanded: isExpanded,
+    };
+
     const innerContent = (
       <Comp
-        ref={isSwipeable ? undefined : localRef} // Non-swipeable binds direct
+        ref={isSwipeable ? undefined : localRef}
         data-slot="item"
         className={twMerge(
           clsx(
             itemVariants({
               variant: effectiveVariant,
               size: effectiveSize,
-              shape,
+              shape: shape === "full" ? undefined : shape,
               direction: effectiveDirection,
               padding,
               bordered,
               elevation,
             }),
+            shape === "full" &&
+              (isExpanded ? "rounded-[16px]" : "rounded-[32px]"),
+            expandable && "cursor-pointer",
             className,
             disabled && "opacity-50 cursor-not-allowed pointer-events-none",
           ),
@@ -543,19 +577,12 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
 
     if (!isSwipeable) {
       return (
-        <ItemContext.Provider
-          value={{
-            variant: effectiveVariant,
-            size: effectiveSize,
-            direction: effectiveDirection,
-          }}
-        >
+        <ItemContext.Provider value={contextValue}>
           {innerContent}
         </ItemContext.Provider>
       );
     }
 
-    // Dynamic extraction of Action Rounded Shapes
     const leftActionShapeClass = swipeRightAction?.shape
       ? shapeClassesMap[swipeRightAction.shape]
       : "rounded-[inherit]";
@@ -565,17 +592,10 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
       : "rounded-[inherit]";
 
     return (
-      <ItemContext.Provider
-        value={{
-          variant: effectiveVariant,
-          size: effectiveSize,
-          direction: effectiveDirection,
-        }}
-      >
+      <ItemContext.Provider value={contextValue}>
         <motion.div
-          // Added GPU acceleration layer composition hooks to keep hardware execution constant
           className={clsx(
-            "relative w-full overflow-hidden z-0 bg-transparent transform-gpu will-change-[height,opacity]",
+            "relative w-full overflow-hidden z-0 bg-transparent transform-gpu will-change-[height,opacity] transition-all duration-200 ease-out",
             currentShapeClass,
           )}
           animate={
@@ -591,9 +611,8 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
                 }
               : {}
           }
-          transition={{ duration: 0.22, ease: [0.4, 0, 1, 1] }} // Swift acceleration curve for collapse reflow
+          transition={{ duration: 0.22, ease: [0.4, 0, 1, 1] }}
         >
-          {/* Left Action Underlay (Revealed on Swipe Right) */}
           {swipeRightAction && (
             <motion.div
               style={{ width: leftUnderlayWidth }}
@@ -620,7 +639,6 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
             </motion.div>
           )}
 
-          {/* Right Action Underlay (Revealed on Swipe Left) */}
           {swipeLeftAction && (
             <motion.div
               style={{ width: rightUnderlayWidth }}
@@ -647,14 +665,13 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
             </motion.div>
           )}
 
-          {/* Draggable Card Surface */}
           <motion.div
-            ref={localRef} // Attached localRef here so ripple and clicks trigger natively on the active surface!
+            ref={localRef}
             style={{ x }}
             drag={disabled ? false : "x"}
             dragDirectionLock
             dragConstraints={stableConstraints}
-            dragElastic={swipeType === "reveal" ? 0.2 : 0.3} // Slightly tightened to keep layout friction O(1) on lower CPUs
+            dragElastic={swipeType === "reveal" ? 0.2 : 0.3}
             onDragEnd={handleDragEnd}
             className="relative z-10 w-full rounded-[inherit] cursor-pointer transform-gpu will-change-transform"
           >
@@ -673,7 +690,7 @@ const ItemMedia = React.forwardRef<
     shape?: "full" | "minimal" | "sharp";
   }
 >(({ className, variant, shape = "minimal", ...props }, ref) => {
-  const { size: contextSize, direction } = useItemContext();
+  const { size: contextSize, direction } = useItem();
   return (
     <div
       ref={ref}
@@ -699,7 +716,7 @@ const ItemContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { direction } = useItemContext();
+  const { direction } = useItem();
   return (
     <div
       ref={ref}
@@ -721,7 +738,7 @@ const ItemTitle = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { direction } = useItemContext();
+  const { direction } = useItem();
   return (
     <div
       ref={ref}
@@ -739,29 +756,54 @@ const ItemTitle = React.forwardRef<
 });
 ItemTitle.displayName = "ItemTitle";
 
+export interface ItemDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {
+  collapsedLines?: number;
+}
+
 const ItemDescription = React.forwardRef<
   HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    data-slot="item-description"
-    className={twMerge(
-      clsx(
-        "opacity-80 line-clamp-2 text-sm font-normal leading-normal text-inherit",
-        className,
-      ),
-    )}
-    {...props}
-  />
-));
+  ItemDescriptionProps
+>(({ className, collapsedLines = 2, ...props }, ref) => {
+  const { expanded } = useItem();
+
+  const clampClass = expanded
+    ? ""
+    : collapsedLines === 1
+      ? "line-clamp-1"
+      : collapsedLines === 2
+        ? "line-clamp-2"
+        : collapsedLines === 3
+          ? "line-clamp-3"
+          : collapsedLines === 4
+            ? "line-clamp-4"
+            : collapsedLines === 5
+              ? "line-clamp-5"
+              : collapsedLines === 6
+                ? "line-clamp-6"
+                : "";
+
+  return (
+    <p
+      ref={ref}
+      data-slot="item-description"
+      className={twMerge(
+        clsx(
+          "opacity-80 text-sm font-normal leading-normal text-inherit transition-all duration-200",
+          clampClass,
+          className,
+        ),
+      )}
+      {...props}
+    />
+  );
+});
 ItemDescription.displayName = "ItemDescription";
 
 const ItemActions = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { direction } = useItemContext();
+  const { direction } = useItem();
   return (
     <div
       ref={ref}
@@ -778,6 +820,32 @@ const ItemActions = React.forwardRef<
   );
 });
 ItemActions.displayName = "ItemActions";
+
+const ItemExpandedContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => {
+  const { expanded } = useItem();
+
+  return (
+    <AnimatePresence initial={false}>
+      {expanded && (
+        <motion.div
+          ref={ref}
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
+          className={twMerge("overflow-hidden w-full", className)}
+          {...(props as any)}
+        >
+          <div className="pt-2 pb-1">{children}</div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+});
+ItemExpandedContent.displayName = "ItemExpandedContent";
 
 const ItemHeader = React.forwardRef<
   HTMLDivElement,
@@ -817,6 +885,7 @@ export {
   ItemActions,
   ItemContent,
   ItemDescription,
+  ItemExpandedContent,
   ItemFooter,
   ItemGroup,
   ItemHeader,
