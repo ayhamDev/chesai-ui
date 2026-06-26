@@ -1,3 +1,4 @@
+// src/lib/components/icon-button/index.tsx
 "use client";
 
 import { cva } from "class-variance-authority";
@@ -39,12 +40,13 @@ export const iconButtonVariants = cva(
       },
       shape: {
         full: "rounded-full",
-        minimal: "rounded-lg",
+        minimal: "rounded-2xl",
         sharp: "rounded-none",
       },
       containerShape: {
         normal: "",
         "wide-pill": "",
+        "pill-long": "",
       },
       isLoading: {
         true: "cursor-wait pointer-events-none !opacity-100",
@@ -62,6 +64,12 @@ export const iconButtonVariants = cva(
       { containerShape: "wide-pill", size: "md", className: "w-14" },
       { containerShape: "wide-pill", size: "lg", className: "w-16" },
       { containerShape: "wide-pill", size: "xl", className: "w-24" },
+
+      { containerShape: "pill-long", size: "xs", className: "w-6" },
+      { containerShape: "pill-long", size: "sm", className: "w-8" },
+      { containerShape: "pill-long", size: "md", className: "w-10" },
+      { containerShape: "pill-long", size: "lg", className: "w-12" },
+      { containerShape: "pill-long", size: "xl", className: "w-16" },
     ],
     defaultVariants: {
       variant: "primary",
@@ -83,7 +91,7 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
     | "link";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   shape?: "full" | "minimal" | "sharp";
-  containerShape?: "normal" | "wide-pill";
+  containerShape?: "normal" | "wide-pill" | "pill-long";
   isLoading?: boolean;
 }
 

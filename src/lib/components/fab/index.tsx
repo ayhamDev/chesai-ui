@@ -8,7 +8,6 @@ import {
 } from "framer-motion";
 import React from "react";
 import useRipple from "use-ripple-hook";
-import { EASING } from "../stack-router/transitions";
 
 const fabVariants = cva(
   "font-semibold select-none active:scale-95 focus-visible:outline-none flex transition-all duration-200 items-center justify-start relative overflow-hidden group shadow-lg hover:shadow-xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary",
@@ -55,6 +54,7 @@ export interface FABProps extends Omit<
 
 const transition = {
   ease: "linear",
+  duration: 0.1,
 } as Transition;
 
 export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(

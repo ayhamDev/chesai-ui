@@ -252,3 +252,49 @@ export const ChartShowcase: StoryObj = {
     </div>
   ),
 };
+
+// ... inside src/lib/components/charts/Charts.stories.tsx ...
+
+const stepsData = [
+  { day: "M", steps: 6200, reachedGoal: false },
+  { day: "T", steps: 8400, reachedGoal: false },
+  { day: "W", steps: 11200, reachedGoal: true },
+  { day: "T", steps: 3500, reachedGoal: false },
+  { day: "F", steps: 14100, reachedGoal: true },
+  { day: "S", steps: 7200, reachedGoal: false },
+  { day: "S", steps: 10800, reachedGoal: true },
+];
+
+export const WeeklyStepsTracker: StoryObj = {
+  name: "Highlight Feature (Steps Tracker)",
+  render: () => (
+    <div className="w-full max-w-md mx-auto">
+      <Card className="p-6 bg-slate-50 dark:bg-zinc-900 border-none shadow-md">
+        <div className="mb-6">
+          <Typography variant="display-small" className="font-bold">
+            8,350
+          </Typography>
+          <Typography variant="body-small" className="font-medium opacity-70">
+            steps per day (avg)
+          </Typography>
+          <Typography variant="body-small" muted className="mt-2 block">
+            You hit your goal on 3 days, and took a total of 49,798 steps
+          </Typography>
+        </div>
+
+        <BarChart
+          data={stepsData}
+          index="day"
+          categories={["steps"]}
+          colors={["var(--md-sys-color-primary, #6366F1)"]} // standard columns (purple / primary)
+          shape="full" // Round column pill shape
+          height={260}
+          valueFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+          highlightKey="reachedGoal" // Tells chart to inspect reachedGoal parameter
+          highlightColor="#4ADE80" // Luminous green for achievers
+          highlightShape="clover8" // Overlays flower shape from shapes paths
+        />
+      </Card>
+    </div>
+  ),
+};

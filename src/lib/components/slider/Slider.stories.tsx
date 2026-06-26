@@ -301,7 +301,7 @@ export const DiscreteSteps: Story = {
     defaultValue: [30],
     withTicks: true,
     withLabel: true,
-    gap: 3
+    gap: 3,
   },
   render: (args) => (
     <div className="w-80">

@@ -436,6 +436,55 @@ html {
   --font-plain: var(--font-plain);
   --font-mono: var(--font-mono);
   --font-button: var(--font-button);
+  --animate-popover-in-expressive: popover-scale-in-expressive 400ms
+    var(--ease-expressive-fast-spatial) forwards;
+  --animate-popover-out-expressive: popover-scale-out-expressive 300ms
+    var(--ease-standard-accelerate) forwards;
+  --animate-popover-in-standard: popover-scale-in-standard 200ms
+    var(--ease-standard-decelerate) forwards;
+  --animate-popover-out-standard: popover-scale-out-standard 150ms
+    var(--ease-standard-accelerate) forwards;
+  /* NEW: Popover Keyframes */
+  @keyframes popover-scale-in-expressive {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes popover-scale-out-expressive {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+  }
+  @keyframes popover-scale-in-standard {
+    0% {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes popover-scale-out-standard {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
 
   /* 
     -----------------------------------------

@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { useEffect, useState } from "react";
 import { Avatar } from "./index";
-import { AvatarGroup } from "./AvatarGroup"; // Import AvatarGroup
+import { AvatarGroup } from "./AvatarGroup";
+import { SHAPE_PATHS, type ShapeType } from "../shape/paths"; // Import ShapeType
 
 const meta: Meta<typeof Avatar> = {
-  title: "Components/Avatar", // Changed title to be more general
+  title: "Components/Avatar",
   component: Avatar,
   tags: ["autodocs"],
   argTypes: {
@@ -14,6 +16,10 @@ const meta: Meta<typeof Avatar> = {
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
+    },
+    shapeStyle: {
+      control: "select",
+      options: Object.keys(SHAPE_PATHS),
     },
     src: { control: "text" },
     fallback: { control: "text" },
@@ -34,7 +40,6 @@ export const Default: Story = {
 export const LoadingSkeleton: Story = {
   name: "2. Loading Skeleton",
   args: {
-    // This URL will delay the image load by 2 seconds
     src: "https://www.deelay.me/2000/https://i.pravatar.cc/150?img=1",
     fallback: "User",
     shape: "full",
@@ -76,7 +81,7 @@ export const AllSizes: Story = {
 };
 
 export const AllShapes: Story = {
-  name: "6. All Shapes",
+  name: "6. Standard Box Shapes",
   render: () => (
     <div className="flex items-center gap-4">
       <Avatar shape="full" src="https://i.pravatar.cc/150?img=3" />
@@ -86,13 +91,14 @@ export const AllShapes: Story = {
   ),
 };
 
-// --- NEW AVATAR GROUP STORY ---
 export const Group: Story = {
   name: "7. Avatar Group",
   render: () => (
     <div className="flex flex-col items-start gap-8">
       <div>
-        <h3 className="mb-2 font-semibold">Default Group (md)</h3>
+        <h3 className="mb-2 text-sm font-semibold text-gray-500">
+          Default Group (md)
+        </h3>
         <AvatarGroup>
           <Avatar src="https://i.pravatar.cc/150?img=1" fallback="A" />
           <Avatar src="https://i.pravatar.cc/150?img=2" fallback="B" />
@@ -101,7 +107,9 @@ export const Group: Story = {
         </AvatarGroup>
       </div>
       <div>
-        <h3 className="mb-2 font-semibold">With Max Count (lg)</h3>
+        <h3 className="mb-2 text-sm font-semibold text-gray-500">
+          With Max Count (lg)
+        </h3>
         <AvatarGroup max={3}>
           <Avatar
             size="lg"
@@ -132,4 +140,83 @@ export const Group: Story = {
       </div>
     </div>
   ),
+};
+
+// --- NEW STORIES ADDED FOR SHAPE SUPPORT ---
+
+export const CustomShapes: Story = {
+  name: "8. Custom Shapes (shapeStyle)",
+  render: () => (
+    <div className="flex items-center gap-4">
+      <Avatar
+        size="xl"
+        shapeStyle="flower"
+        src="https://i.pravatar.cc/150?img=10"
+      />
+      <Avatar
+        size="xl"
+        shapeStyle="burst"
+        src="https://i.pravatar.cc/150?img=11"
+      />
+      <Avatar
+        size="xl"
+        shapeStyle="hexagon"
+        src="https://i.pravatar.cc/150?img=12"
+      />
+      <Avatar
+        size="xl"
+        shapeStyle="cookie4"
+        src="https://i.pravatar.cc/150?img=13"
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Using the `shapeStyle` prop automatically shifts the avatar from using standard CSS radius to SVG clip-paths, allowing integration with the media shape paths.",
+      },
+    },
+  },
+};
+
+export const MorphingAvatar: Story = {
+  name: "9. Morphing Avatar Loop",
+  render: () => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [shape, setShape] = useState<ShapeType>("circle");
+    const morphSequence: ShapeType[] = [
+      "circle",
+      "flower",
+      "cookie4",
+      "hexagon",
+      "clamshell",
+    ];
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setShape((prev) => {
+          const nextIndex =
+            (morphSequence.indexOf(prev) + 1) % morphSequence.length;
+          return morphSequence[nextIndex];
+        });
+      }, 2000);
+      return () => clearInterval(interval);
+    }, []);
+
+    return (
+      <div className="flex flex-col items-center gap-4 py-8">
+        <Avatar
+          size="3xl"
+          shapeStyle={shape}
+          src="https://i.pravatar.cc/150?img=33"
+          fallback="AM"
+        />
+        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider bg-gray-100 px-3 py-1 rounded-full">
+          {shape}
+        </p>
+      </div>
+    );
+  },
 };

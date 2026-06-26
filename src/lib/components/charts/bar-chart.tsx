@@ -9,6 +9,7 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  Cell,
 } from "recharts";
 import { ChartTooltip } from "./chart-tooltip";
 import {
@@ -18,6 +19,21 @@ import {
 } from "./chart-utils";
 import { ChartProps } from "./area-chart";
 import { clsx } from "clsx";
+import { motion } from "framer-motion"; // Added Framer Motion import
+
+// Import custom shapes subsystem paths
+import { SHAPE_PATHS, type ShapeType } from "../shape/paths";
+
+export interface BarChartProps extends ChartProps {
+  /** The key in your data that flags if a bar should be highlighted (e.g. 'reachedGoal') */
+  highlightKey?: string;
+  /** Custom color for highlighted bars. Defaults to tertiary green. */
+  highlightColor?: string;
+  /** Shape to render on top of highlighted bars. Defaults to 'flower'. */
+  highlightShape?: ShapeType;
+  /** Custom overlay icon centered in the badge. Defaults to a checkmark. */
+  highlightIcon?: React.ReactNode;
+}
 
 export const BarChart = ({
   data,
@@ -31,7 +47,11 @@ export const BarChart = ({
   valueFormatter = (value) => `${value}`,
   scrollable = false,
   minWidth = 500,
-}: ChartProps) => {
+  highlightKey,
+  highlightColor = "var(--md-sys-color-tertiary, #4ADE80)",
+  highlightShape = "flower",
+  highlightIcon,
+}: BarChartProps) => {
   const isGhost = variant === "ghost";
   const isSecondary = variant === "secondary";
 
@@ -39,6 +59,73 @@ export const BarChart = ({
     if (shape === "sharp") return [0, 0, 0, 0];
     if (shape === "full") return [999, 999, 999, 999]; // Pill
     return [4, 4, 4, 4]; // Minimal default
+  };
+
+  // Custom label renderer to overlay the decorative shape & inner checkmark at the top of the bar
+  const renderCustomLabel = (props: any) => {
+    const { x, y, width, index: barIndex } = props;
+    const entry = data[barIndex];
+    const isHighlighted = highlightKey ? !!entry[highlightKey] : false;
+
+    if (!isHighlighted || isGhost) return null;
+
+    // Responsive badge size relative to bar width
+    const badgeSize = Math.min(width * 0.75, 32);
+    const bx = x + width / 2 - badgeSize / 2;
+
+    // Nestle the badge slightly down inside the top curved capsule boundary of the bar
+    const by = y + 6;
+
+    const shapePath = highlightShape
+      ? SHAPE_PATHS[highlightShape]
+      : SHAPE_PATHS.flower;
+
+    return (
+      <motion.g
+        key={`badge-${barIndex}`}
+        className="pointer-events-none"
+        initial={{ opacity: 0, scale: 0.3 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{
+          duration: 0.45,
+          ease: [0.34, 1.56, 0.64, 1], // Elegant spring-like elastic ease-out
+        }}
+        // Ensures the scale animation expands perfectly outward from the center of the badge
+        style={{
+          transformOrigin: `${x + width / 2}px ${by + badgeSize / 2}px`,
+        }}
+      >
+        <svg
+          x={bx}
+          y={by}
+          width={badgeSize}
+          height={badgeSize}
+          viewBox="0 0 380 380"
+        >
+          {/* Decorative Shape Background */}
+          <path d={shapePath} fill="rgba(255, 255, 255, 0.6)" />
+
+          {/* Centered Checkmark Icon matching the local 380x380 coordinates */}
+          {highlightIcon ? (
+            <g transform="translate(95, 95) scale(0.5)">
+              <foreignObject width="380" height="380">
+                {highlightIcon}
+              </foreignObject>
+            </g>
+          ) : (
+            <path
+              d="M130 195L170 235L250 155"
+              fill="none"
+              stroke="currentColor"
+              className="text-emerald-950 dark:text-emerald-900"
+              strokeWidth={36}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+        </svg>
+      </motion.g>
+    );
   };
 
   return (
@@ -62,7 +149,7 @@ export const BarChart = ({
             margin={
               isGhost
                 ? { top: 0, right: 0, bottom: 0, left: 0 }
-                : { top: 10, right: 10, bottom: 0, left: 0 }
+                : { top: 20, right: 10, bottom: 0, left: 0 }
             }
             barGap={2}
           >
@@ -86,23 +173,40 @@ export const BarChart = ({
                 content={<ChartTooltip />}
                 cursor={{
                   fill: "var(--md-sys-color-surface-container-highest)",
-                  opacity: 0.4,
+                  opacity: 0.25,
                 }}
               />
             )}
 
             {categories.map((category, i) => {
-              const color = colors?.[i] || getColorForIndex(i);
+              const baseColor = colors?.[i] || getColorForIndex(i);
               return (
                 <Bar
                   key={category}
                   dataKey={category}
-                  fill={color}
                   radius={getRadius() as any}
                   animationDuration={1500}
                   animationEasing="ease-out"
                   maxBarSize={isGhost ? undefined : 60}
-                />
+                  label={highlightKey ? renderCustomLabel : undefined}
+                >
+                  {data.map((entry, entryIdx) => {
+                    const isHighlighted = highlightKey
+                      ? !!entry[highlightKey]
+                      : false;
+                    const finalColor = isHighlighted
+                      ? highlightColor
+                      : baseColor;
+
+                    return (
+                      <Cell
+                        key={`cell-${entryIdx}`}
+                        fill={finalColor}
+                        className="transition-colors duration-300"
+                      />
+                    );
+                  })}
+                </Bar>
               );
             })}
           </RechartsBarChart>

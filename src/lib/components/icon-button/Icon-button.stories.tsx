@@ -1,7 +1,6 @@
 // src/lib/components/icon-button/Icon-button.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
-import { Plus, Phone, Video, Search, Moon } from "lucide-react";
-import { useState } from "react";
+import { Plus, Phone, Video, Search } from "lucide-react";
 import { IconButton } from "./index";
 import { Typography } from "../typography";
 
@@ -33,7 +32,7 @@ const meta: Meta<typeof IconButton> = {
     },
     containerShape: {
       control: "select",
-      options: ["normal", "wide-pill"],
+      options: ["normal", "wide-pill", "pill-long"],
       description: "Controls the aspect ratio width of the container.",
     },
     isLoading: { control: "boolean" },
@@ -48,8 +47,8 @@ type Story = StoryObj<typeof meta>;
 export const Primary: Story = {
   args: {
     variant: "primary",
-    size: "md",
-    shape: "full",
+    size: "lg",
+    shape: "minimal",
     containerShape: "normal",
     children: <Plus className="h-6 w-6" />,
     "aria-label": "Add new item",
@@ -152,7 +151,7 @@ export const AllVariants: Story = {
   ),
 };
 
-export const AllSizes: Story = {
+export const AllSizesWidePill: Story = {
   name: "All Sizes (Wide Pill)",
   render: () => (
     <div className="flex flex-wrap items-end gap-4">
@@ -191,6 +190,54 @@ export const AllSizes: Story = {
       <IconButton
         variant="primary"
         containerShape="wide-pill"
+        size="xs"
+        aria-label="Extra Small"
+      >
+        <Plus className="h-4 w-4" />
+      </IconButton>
+    </div>
+  ),
+};
+
+export const AllSizesPillLong: Story = {
+  name: "All Sizes (Pill Long - Tall)",
+  render: () => (
+    <div className="flex flex-wrap items-end gap-4">
+      <IconButton
+        variant="primary"
+        containerShape="pill-long"
+        size="xl"
+        aria-label="Extra Large"
+      >
+        <Plus className="h-8 w-8" />
+      </IconButton>
+      <IconButton
+        variant="primary"
+        containerShape="pill-long"
+        size="lg"
+        aria-label="Large"
+      >
+        <Plus className="h-6 w-6" />
+      </IconButton>
+      <IconButton
+        variant="primary"
+        containerShape="pill-long"
+        size="md"
+        aria-label="Medium"
+      >
+        <Plus className="h-6 w-6" />
+      </IconButton>
+      <IconButton
+        variant="primary"
+        containerShape="pill-long"
+        size="sm"
+        aria-label="Small"
+      >
+        <Plus className="h-5 w-5" />
+      </IconButton>
+      <IconButton
+        variant="primary"
+        containerShape="pill-long"
         size="xs"
         aria-label="Extra Small"
       >

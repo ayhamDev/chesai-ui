@@ -38,7 +38,7 @@ export const buttonVariants = cva(
       },
       shape: {
         full: "rounded-full",
-        minimal: "rounded-lg",
+        minimal: "rounded-2xl",
         sharp: "rounded-none",
       },
       isLoading: {
