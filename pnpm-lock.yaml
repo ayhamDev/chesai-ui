@@ -14,9 +14,6 @@ importers:
       '@capacitor/core':
         specifier: ^8.0.1
         version: 8.3.4
-      '@chesai-ui/playlist':
-        specifier: ../chesai-ui-playlist_player
-        version: link:../chesai-ui-playlist_player
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)

@@ -1,17 +1,16 @@
-// src/lib/components/playlist-studio/PlaylistPlayer.stories.tsx
+// src/lib/components/playlist-studio/PlaylistStudio.Player.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
-import { PlaylistPlayer, PlaylistSchema } from "@chesai-ui/playlist";
-
-const meta: Meta<typeof PlaylistPlayer> = {
+import { PlaylistSchema, PlaylistStudio } from "./index";
+const meta: Meta<typeof PlaylistStudio.Player> = {
   title: "PlayLists/Digital Menu Board (Playlist Player)",
-  component: PlaylistPlayer,
+  component: PlaylistStudio.Player,
   parameters: {
     layout: "fullscreen",
   },
 };
 
 export default meta;
-type Story = StoryObj<typeof PlaylistPlayer>;
+type Story = StoryObj<typeof PlaylistStudio.Player>;
 
 const PORTRAIT_SIGNAGE_SCHEMA: PlaylistSchema = {
   id: "portrait-signage-loop",
@@ -189,7 +188,7 @@ export const PortraitSignageDisplay: Story = {
         overflow: "hidden",
       }}
     >
-      <PlaylistPlayer
+      <PlaylistStudio.Player
         schema={PORTRAIT_SIGNAGE_SCHEMA}
         playing={true}
         outerBackgroundColor="#111111"
@@ -209,7 +208,7 @@ export const LandscapeSignageDisplay: Story = {
         overflow: "hidden",
       }}
     >
-      <PlaylistPlayer
+      <PlaylistStudio.Player
         schema={LANDSCAPE_SIGNAGE_SCHEMA}
         playing={true}
         outerBackgroundColor="#1a1c1e"
