@@ -121,6 +121,7 @@ const thumbVariants = cva(
     variants: {
       visual: {
         line: "h-5 w-5 hover:scale-110 after:absolute after:inset-0 after:z-[-1] after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out hover:after:opacity-20 hover:after:scale-150",
+        bar: "",
       },
       color: {
         primary: "bg-primary focus:ring-primary after:bg-primary",

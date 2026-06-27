@@ -233,8 +233,8 @@ const AccordionTrigger: React.ForwardRefExoticComponent<
 
     const rippleColor =
       variant === "high-contrast" || variant === "tertiary"
-        ? "var(--color-ripple-dark)"
-        : "var(--color-ripple-light)";
+        ? "var(--color-ripple-light)"
+        : "var(--color-ripple-dark)";
 
     const [, event] = useRipple({
       ref: localRef as React.RefObject<HTMLElement>,

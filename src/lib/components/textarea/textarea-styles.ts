@@ -60,7 +60,7 @@ export const textareaSlots = {
   errorMessage: 'text-xs text-error',
 }
 
-export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaStyles> & { isFilled?: boolean }) => {
+export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaStyles> & { isFilled?: boolean; hasLabel?: boolean }) => {
   const { variant, size, labelPlacement, isInvalid, shape } = props
 
   let rounding = 'rounded-2xl'

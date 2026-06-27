@@ -33,6 +33,8 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
     md: "-14px",
     lg: "-26px",
     xl: "-38px",
+    "2xl": "-50px",
+    "3xl": "-62px",
   }[avatarSize];
 
   const hoverEffectClasses =
