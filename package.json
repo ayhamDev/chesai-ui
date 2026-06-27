@@ -7,16 +7,20 @@
     "type": "git",
     "url": "https://github.com/ayhamdev/chesai-ui"
   },
-  "main": "./dist/chesai-ui.umd.js",
-  "module": "./dist/chesai-ui.es.js",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/chesai-ui.es.js",
-      "require": "./dist/chesai-ui.umd.js"
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
     },
-    "./styles.css": "./dist/chesai-ui.css"
+    "./styles.css": "./dist/chesai-ui.css",
+    "./*": "./dist/*"
   },
   "engines": {
     "node": ">=22"

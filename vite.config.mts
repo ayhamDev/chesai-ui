@@ -4,39 +4,44 @@ import react from '@vitejs/plugin-react'
 import type { UserConfigExport } from 'vite'
 import dts from 'vite-plugin-dts'
 import { configDefaults, defineConfig } from 'vitest/config'
-import { name } from './package.json'
+import pkg from './package.json'
 
 const app = async (): Promise<UserConfigExport> => {
-  /**
-   * Removes everything before the last
-   * @octocat/library-repo -> library-repo
-   * vite-component-library-template -> vite-component-library-template
-   */
-  const formattedName = name.match(/[^/]+$/)?.[0] ?? name
-
   return defineConfig({
     plugins: [
       react(),
       dts({
         insertTypesEntry: true,
+        exclude: ['**/*.stories.tsx', '**/*.test.tsx']
       }),
       tailwindcss(),
     ],
     build: {
       lib: {
         entry: path.resolve(__dirname, 'src/lib/index.ts'),
-        name: formattedName,
-        formats: ['es', 'umd'],
-        fileName: format => `${formattedName}.${format}.js`,
+        formats: ['es'],
       },
       rollupOptions: {
-        external: ['react', 'react/jsx-runtime', 'react-dom', 'tailwindcss'],
+        external: (id) => {
+          // Externalize all dependencies to prevent bundling them into the library.
+          const deps = [
+            ...Object.keys(pkg.dependencies || {}),
+            ...Object.keys(pkg.peerDependencies || {}),
+            'react/jsx-runtime',
+            'tailwindcss'
+          ];
+          return deps.some(dep => id === dep || id.startsWith(`${dep}/`));
+        },
         output: {
-          globals: {
-            react: 'React',
-            'react/jsx-runtime': 'react/jsx-runtime',
-            'react-dom': 'ReactDOM',
-            tailwindcss: 'tailwindcss',
+          // Preserves the file/folder structure for impeccable tree-shaking
+          preserveModules: true,
+          preserveModulesRoot: 'src/lib',
+          entryFileNames: '[name].mjs',
+          assetFileNames: (assetInfo) => {
+            if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+              return 'chesai-ui.css';
+            }
+            return 'assets/[name]-[hash][extname]';
           },
         },
       },
