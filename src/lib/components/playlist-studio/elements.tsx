@@ -6,6 +6,7 @@ import type { PlaylistComponentProps } from "./types";
 import { clsx } from "clsx";
 import Hls from "hls.js";
 import { useMotionValueEvent } from "framer-motion";
+import { LoadingIndicator } from "../loadingIndicator";
 
 /**
  * Universal compatible Video Engine supporting standard MP4/WebM formats
@@ -25,11 +26,19 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
 
   const { src, muted = true, objectFit = "cover", volume = 1 } = data;
 
+  // Track if we have completed the initial load sync for this source
+  const hasInitialSynced = useRef(false);
+
+  // Monitor buffering progress before triggering playback
+  const [isBufferReady, setIsBufferReady] = useState(false);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
 
     setLoadError(null);
+    hasInitialSynced.current = false; // Reset sync status on src change
+    setIsBufferReady(false);
 
     if (hlsInstanceRef.current) {
       hlsInstanceRef.current.destroy();
@@ -68,6 +77,12 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
     }
 
     return () => {
+      // RELEASE HARDWARE DECODER PIPELINE TO PREVENT MEMORY LEAKS
+      if (video) {
+        video.pause();
+        video.src = "";
+        video.load();
+      }
       if (hlsInstanceRef.current) {
         hlsInstanceRef.current.destroy();
         hlsInstanceRef.current = null;
@@ -75,11 +90,45 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
     };
   }, [src]);
 
+  // Buffer Reservation System: Listen to frame loader updates
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const checkReadiness = () => {
+      // HAVE_FUTURE_DATA (3) or HAVE_ENOUGH_DATA (4) guarantees a solid initial play buffer
+      if (video.readyState >= 3) {
+        setIsBufferReady(true);
+      }
+    };
+
+    const handleLoadStart = () => {
+      setIsBufferReady(false);
+    };
+
+    video.addEventListener("canplay", checkReadiness);
+    video.addEventListener("canplaythrough", checkReadiness);
+    video.addEventListener("progress", checkReadiness);
+    video.addEventListener("loadstart", handleLoadStart);
+    video.addEventListener("emptied", handleLoadStart);
+
+    checkReadiness();
+
+    return () => {
+      video.removeEventListener("canplay", checkReadiness);
+      video.removeEventListener("canplaythrough", checkReadiness);
+      video.removeEventListener("progress", checkReadiness);
+      video.removeEventListener("loadstart", handleLoadStart);
+      video.removeEventListener("emptied", handleLoadStart);
+    };
+  }, [src]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video || loadError) return;
 
-    const shouldPlay = isActive && isTimelinePlaying;
+    // Only allow native playback to start if the timeline is playing AND our buffer is fully prepared
+    const shouldPlay = isActive && isTimelinePlaying && isBufferReady;
 
     if (shouldPlay) {
       video.muted = muted;
@@ -103,27 +152,53 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
         haltPlayback();
       }
     }
-  }, [isActive, isTimelinePlaying, muted, volume, loadError]);
+  }, [isActive, isTimelinePlaying, isBufferReady, muted, volume, loadError]);
 
-  // --- STRICT TIME SYNCHRONIZATION ---
-  // Actively monitors the timeline's position. If the timeline loops (jumps back to 0)
-  // or the editor scrubs, we force the video's internal clock to match instantly.
+  // --- HARDWARE-SAFE TIME SYNCHRONIZATION ---
+  const lastPlayheadRef = useRef(0);
+
   useMotionValueEvent(playhead, "change", (latest) => {
     const video = videoRef.current;
-    if (!video || !isActive || video.readyState < 1) return;
+    // CRITICAL: Prevent write operations while browser is actively seeking to avoid decoder freezes
+    if (!video || !isActive || video.readyState < 1 || video.seeking) {
+      lastPlayheadRef.current = latest;
+      return;
+    }
 
     const expectedTimeS = Math.max(0, (latest - startTime) / 1000);
-    const timeDiff = Math.abs(video.currentTime - expectedTimeS);
+    const playheadDelta = Math.abs(latest - lastPlayheadRef.current);
 
-    // If the video's actual time differs from the timeline by more than 0.3s, snap it.
-    // This catches loops (diff will be ~10s) and editor scrubbing.
-    if (timeDiff > 0.3) {
-      try {
+    if (!isTimelinePlaying) {
+      // 1. Paused scrubbing: sync continuously for responsive preview feedback
+      const timeDiff = Math.abs(video.currentTime - expectedTimeS);
+      if (timeDiff > 0.15) {
         video.currentTime = expectedTimeS;
-      } catch (e) {
-        // Suppress DOMExceptions if HLS is unseekable during a live buffering state
+      }
+    } else {
+      // 2. Active playback:
+      // A. Initial Sync: Sync once when the video loads to catch up to the current playhead
+      if (!hasInitialSynced.current && isBufferReady) {
+        try {
+          video.currentTime = expectedTimeS;
+          hasInitialSynced.current = true;
+        } catch (e) {
+          // ignore
+        }
+      } else if (hasInitialSynced.current) {
+        // B. Dynamic Jumps: Only seek if a discrete playhead jump or loop is detected
+        const didPlayheadJump =
+          playheadDelta > 1000 || latest < lastPlayheadRef.current;
+        if (didPlayheadJump) {
+          try {
+            video.currentTime = expectedTimeS;
+          } catch (e) {
+            // ignore
+          }
+        }
       }
     }
+
+    lastPlayheadRef.current = latest;
   });
 
   const handleMediaError = (
@@ -151,6 +226,9 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
     setLoadError(message);
   };
 
+  const showLoader =
+    isActive && isTimelinePlaying && !isBufferReady && !loadError;
+
   return (
     <div className="relative w-full h-full bg-surface-container-low flex items-center justify-center overflow-hidden">
       {loadError && (
@@ -161,6 +239,14 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
           <span className="text-[10px] text-on-error-container opacity-80 max-w-[80%] leading-normal">
             {loadError}
           </span>
+        </div>
+      )}
+      {showLoader && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/15">
+          <LoadingIndicator
+            variant="material-morph"
+            className="!w-20vw !h-20vh text-primary"
+          />
         </div>
       )}
       <video
@@ -194,18 +280,62 @@ export const PlaylistAudio: React.FC<PlaylistComponentProps> = ({
   const playPromiseRef = useRef<Promise<void> | null>(null);
 
   const { src, muted = false, volume = 1 } = data;
+  const hasInitialSynced = useRef(false);
+  const [isBufferReady, setIsBufferReady] = useState(false);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !src) return;
     audio.src = src;
+    hasInitialSynced.current = false;
+    setIsBufferReady(false);
+
+    return () => {
+      // Release decoder resources on unmount
+      if (audio) {
+        audio.pause();
+        audio.src = "";
+        audio.load();
+      }
+    };
   }, [src]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const shouldPlay = isActive && isTimelinePlaying;
+    const checkReadiness = () => {
+      if (audio.readyState >= 3) {
+        setIsBufferReady(true);
+      }
+    };
+
+    const handleLoadStart = () => {
+      setIsBufferReady(false);
+    };
+
+    audio.addEventListener("canplay", checkReadiness);
+    audio.addEventListener("canplaythrough", checkReadiness);
+    audio.addEventListener("progress", checkReadiness);
+    audio.addEventListener("loadstart", handleLoadStart);
+    audio.addEventListener("emptied", handleLoadStart);
+
+    checkReadiness();
+
+    return () => {
+      audio.removeEventListener("canplay", checkReadiness);
+      audio.removeEventListener("canplaythrough", checkReadiness);
+      audio.removeEventListener("progress", checkReadiness);
+      audio.removeEventListener("loadstart", handleLoadStart);
+      audio.removeEventListener("emptied", handleLoadStart);
+    };
+  }, [src]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const shouldPlay = isActive && isTimelinePlaying && isBufferReady;
 
     if (shouldPlay) {
       audio.muted = muted;
@@ -229,24 +359,52 @@ export const PlaylistAudio: React.FC<PlaylistComponentProps> = ({
         haltPlayback();
       }
     }
-  }, [isActive, isTimelinePlaying, muted, volume]);
+  }, [isActive, isTimelinePlaying, isBufferReady, muted, volume]);
 
-  // --- STRICT TIME SYNCHRONIZATION ---
+  // --- HARDWARE-SAFE TIME SYNCHRONIZATION ---
+  const lastPlayheadRef = useRef(0);
+
   useMotionValueEvent(playhead, "change", (latest) => {
     const audio = audioRef.current;
-    if (!audio || !isActive || audio.readyState < 1) return;
+    if (!audio || !isActive || audio.readyState < 1 || audio.seeking) {
+      lastPlayheadRef.current = latest;
+      return;
+    }
 
     const expectedTimeS = Math.max(0, (latest - startTime) / 1000);
-    const timeDiff = Math.abs(audio.currentTime - expectedTimeS);
+    const playheadDelta = Math.abs(latest - lastPlayheadRef.current);
 
-    // Snap audio to the timeline if it desyncs by more than 0.3s (e.g. on loop)
-    if (timeDiff > 0.3) {
-      try {
+    if (!isTimelinePlaying) {
+      // 1. Paused scrubbing: sync continuously for responsive preview feedback
+      const timeDiff = Math.abs(audio.currentTime - expectedTimeS);
+      if (timeDiff > 0.15) {
         audio.currentTime = expectedTimeS;
-      } catch (e) {
-        // Ignore seek errors during loading
+      }
+    } else {
+      // 2. Active playback:
+      // A. Initial Sync
+      if (!hasInitialSynced.current && isBufferReady) {
+        try {
+          audio.currentTime = expectedTimeS;
+          hasInitialSynced.current = true;
+        } catch (e) {
+          // ignore
+        }
+      } else if (hasInitialSynced.current) {
+        // B. Dynamic Jumps only
+        const didPlayheadJump =
+          playheadDelta > 1000 || latest < lastPlayheadRef.current;
+        if (didPlayheadJump) {
+          try {
+            audio.currentTime = expectedTimeS;
+          } catch (e) {
+            // Ignore seek errors during loading
+          }
+        }
       }
     }
+
+    lastPlayheadRef.current = latest;
   });
 
   return (

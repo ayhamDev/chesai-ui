@@ -209,8 +209,9 @@ export const LandscapeSignageDisplay: Story = {
       }}
     >
       <PlaylistStudio.Player
-        schema={LANDSCAPE_SIGNAGE_SCHEMA}
+        schemas={[LANDSCAPE_SIGNAGE_SCHEMA, PORTRAIT_SIGNAGE_SCHEMA]}
         playing={true}
+        showControls={true}
         outerBackgroundColor="#1a1c1e"
       />
     </div>
