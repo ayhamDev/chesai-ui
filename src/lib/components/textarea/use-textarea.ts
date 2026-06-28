@@ -23,6 +23,8 @@ export function useTextarea(props: UseTextareaProps) {
     disableAutosize = false,
     onChange,
     onValueChange,
+    onFocus,
+    onBlur,
     classNames,
     className,
     isInvalid: isInvalidProp,
@@ -50,6 +52,11 @@ export function useTextarea(props: UseTextareaProps) {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [isFocused, setIsFocused] = useState(false)
+  const [internalValue, setInternalValue] = useState(props.defaultValue || '')
+
+  const isControlled = props.value !== undefined
+  const value = isControlled ? props.value : internalValue
+  const isFilled = !!value || isFocused
 
   React.useImperativeHandle(ref, () => textareaRef.current as HTMLTextAreaElement)
 
@@ -74,8 +81,6 @@ export function useTextarea(props: UseTextareaProps) {
     // biome-ignore lint/correctness/useExhaustiveDependencies: value/defaultValue changes affect DOM scrollHeight
   }, [minRows, maxRows, disableAutosize, props.value, props.defaultValue])
 
-  const isFilled = !!props.value || isFocused
-
   const dynamicStyles = getTextareaSlotClassNames({
     variant: props.variant,
     color: props.color,
@@ -84,22 +89,23 @@ export function useTextarea(props: UseTextareaProps) {
     labelPlacement: props.labelPlacement,
     isInvalid: isInvalidProp,
     isFilled,
+    hasLabel: !!label,
   })
 
   const handleFocus = useCallback(
     (e: React.FocusEvent<HTMLTextAreaElement>) => {
       setIsFocused(true)
-      props.onFocus?.(e)
+      onFocus?.(e)
     },
-    [props.onFocus],
+    [onFocus],
   )
 
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLTextAreaElement>) => {
       setIsFocused(false)
-      props.onBlur?.(e)
+      onBlur?.(e)
     },
-    [props.onBlur],
+    [onBlur],
   )
 
   const getBaseProps = () => {
@@ -154,6 +160,9 @@ export function useTextarea(props: UseTextareaProps) {
     onFocus: handleFocus,
     onBlur: handleBlur,
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      if (!isControlled) {
+        setInternalValue(e.target.value)
+      }
       onChange?.(e)
       onValueChange?.(e.target.value)
     },

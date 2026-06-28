@@ -98,12 +98,12 @@ export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaSty
       break
     case 'ghost':
       wrapperClasses.push(
-        'bg-transparent border-2 border-transparent hover:bg-surface-container-highest/30 group-data-[focus=true]:bg-surface-container-highest/50',
+        'bg-transparent border-2 border-transparent group-data-[focus=true]:bg-surface-container-highest/50',
       )
       break
     case 'ghost-inverted':
       wrapperClasses.push(
-        'bg-transparent border-2 border-transparent hover:bg-primary/10 group-data-[focus=true]:bg-primary/10 text-primary',
+        'bg-transparent border-2 border-transparent group-data-[focus=true]:bg-primary/10 text-primary',
       )
       break
   }
