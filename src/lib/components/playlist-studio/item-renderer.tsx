@@ -19,6 +19,7 @@ interface ItemRendererProps {
   playhead: any; // MotionValue<number>
   components: PlaylistComponentRegistry;
   isTimelinePlaying: boolean;
+  isSeeking?: boolean;
 }
 
 const PRELOAD_MS = 2000;
@@ -122,14 +123,13 @@ const getAnimProps = (
   }
 };
 
-// --- PREMIUM EASING CURVES (Converted to actual executable functions for useTransform) ---
-const easeLinear = (t: number) => t; // Identity function for linear
-const easeEntry = cubicBezier(0.05, 0.7, 0.1, 1); // Emphasized Decelerate
-const easeExit = cubicBezier(0.3, 0, 0.8, 0.15); // Emphasized Accelerate
-const easeOutFunc = cubicBezier(0.0, 0.0, 0.2, 1); // Standard ease-out
-const easeInFunc = cubicBezier(0.4, 0.0, 1, 1); // Standard ease-in
+// --- PREMIUM EASING CURVES ---
+const easeLinear = (t: number) => t;
+const easeEntry = cubicBezier(0.05, 0.7, 0.1, 1);
+const easeExit = cubicBezier(0.3, 0, 0.8, 0.15);
+const easeOutFunc = cubicBezier(0.0, 0.0, 0.2, 1);
+const easeInFunc = cubicBezier(0.4, 0.0, 1, 1);
 
-// 5 easing segments mapping to the 5 gaps between our 6 keyframes
 const segmentEasings = [
   easeLinear,
   easeEntry,
@@ -146,7 +146,13 @@ const opacityEasings = [
 ];
 
 export const ItemRenderer = React.memo(
-  ({ item, playhead, components, isTimelinePlaying }: ItemRendererProps) => {
+  ({
+    item,
+    playhead,
+    components,
+    isTimelinePlaying,
+    isSeeking,
+  }: ItemRendererProps) => {
     const Component = components[item.type];
 
     if (!Component) {
@@ -159,7 +165,11 @@ export const ItemRenderer = React.memo(
     const { startTime, duration, layout, transitions } = item;
     const endTime = startTime + duration;
 
-    const [isActive, setIsActive] = useState(false);
+    // Dynamically initialize active state relative to the starting position of the playhead
+    const [isActive, setIsActive] = useState(() => {
+      const initialTime = playhead.get();
+      return initialTime >= startTime && initialTime < endTime;
+    });
 
     useMotionValueEvent(playhead, "change", (latest: number) => {
       const active = latest >= startTime && latest < endTime;
@@ -205,7 +215,6 @@ export const ItemRenderer = React.memo(
       baseOpacity,
     );
 
-    // Factory helper applying our function-based easing arrays
     const createTransform = (
       inVal: number,
       outVal: number,
@@ -231,7 +240,6 @@ export const ItemRenderer = React.memo(
       0,
     ];
 
-    // Opacity uses standard ease-in/out to look natural
     const opacity = useTransform(playhead, timeInputs, opacityOutput, {
       clamp: true,
       ease: opacityEasings,
@@ -284,18 +292,21 @@ export const ItemRenderer = React.memo(
         }}
       >
         <Component
+          id={item.id}
           data={item.props}
           playhead={playhead}
           isActive={isActive}
           startTime={startTime}
           endTime={endTime}
           isTimelinePlaying={isTimelinePlaying}
+          isSeeking={isSeeking}
         />
       </motion.div>
     );
   },
   (prev, next) =>
     prev.isTimelinePlaying === next.isTimelinePlaying &&
+    prev.isSeeking === next.isSeeking &&
     prev.item.id === next.item.id &&
     prev.item.startTime === next.item.startTime &&
     prev.item.duration === next.item.duration &&

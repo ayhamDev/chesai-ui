@@ -16,6 +16,7 @@ import { Sheet } from "../sheet";
 import { IconButton } from "../icon-button";
 import { Slider } from "../slider";
 import { Typography } from "../typography";
+import { LoadingIndicator } from "../loadingIndicator";
 import {
   Play,
   Pause,
@@ -29,6 +30,7 @@ import type { PlaylistSchema, PlaylistComponentRegistry } from "./types";
 import { usePlayhead } from "./use-playhead";
 import { ItemRenderer } from "./item-renderer";
 import { defaultPlaylistRegistry } from "./elements";
+import { PreloadContext } from "./preload-context";
 
 // --- Time Formatting Helper ---
 const formatTime = (ms: number) => {
@@ -41,7 +43,6 @@ const formatTime = (ms: number) => {
   return `${m}:${s}`;
 };
 
-// --- Sub-Component: HUD Overlay ---
 interface HUDControlsProps {
   isPlaying: boolean;
   onTogglePlay: () => void;
@@ -50,6 +51,7 @@ interface HUDControlsProps {
   playhead: MotionValue<number>;
   duration: number;
   onSeek: (ms: number) => void;
+  onSeekingChange: (seeking: boolean) => void;
   onPrev: () => void;
   onNext: () => void;
   isVisible: boolean;
@@ -68,6 +70,7 @@ const HUDControls: React.FC<HUDControlsProps> = ({
   playhead,
   duration,
   onSeek,
+  onSeekingChange,
   onPrev,
   onNext,
   isVisible,
@@ -91,6 +94,9 @@ const HUDControls: React.FC<HUDControlsProps> = ({
     }
   });
 
+  // Clamp the scale so the physical controls are always legible and easy to click
+  const adjustedScale = Math.max(0.85, Math.min(1.1, scale));
+
   return (
     <div
       className={clsx(
@@ -106,7 +112,7 @@ const HUDControls: React.FC<HUDControlsProps> = ({
       <div
         className="absolute bottom-6 left-1/2 w-[90%] max-w-3xl pointer-events-auto"
         style={{
-          transform: `translateX(-50%) scale(${scale})`,
+          transform: `translateX(-50%) scale(${adjustedScale})`,
           transformOrigin: "bottom center",
         }}
       >
@@ -159,10 +165,12 @@ const HUDControls: React.FC<HUDControlsProps> = ({
             className="flex-1 flex items-center px-2 cursor-pointer"
             onPointerDown={() => {
               isDragging.current = true;
+              onSeekingChange(true);
             }}
             onPointerUp={() => {
               isDragging.current = false;
               onSeek(sliderVal[0]);
+              onSeekingChange(false);
             }}
           >
             <Slider
@@ -240,6 +248,83 @@ const PlaylistPlayerCore: React.FC<PlaylistPlayerCoreProps> = ({
     activeSchema.settings.loop ?? true,
   );
 
+  const [isSeeking, setIsSeeking] = useState(false);
+  const wasPlayingRef = useRef(false);
+
+  // Pause playlist automatically during manual seeking
+  const handleSeekingChange = useCallback(
+    (seeking: boolean) => {
+      setIsSeeking(seeking);
+      if (seeking) {
+        wasPlayingRef.current = isPlaying;
+        setIsPlaying(false);
+      } else {
+        if (wasPlayingRef.current) {
+          setIsPlaying(true);
+        }
+      }
+    },
+    [isPlaying],
+  );
+
+  // Asset readiness tracking states
+  const [assetsStatus, setAssetsStatus] = useState<
+    Record<
+      string,
+      { type: "Video" | "Audio" | "Image"; ready: boolean; isActive: boolean }
+    >
+  >({});
+
+  const registerAsset = useCallback(
+    (id: string, type: "Video" | "Audio" | "Image") => {
+      setAssetsStatus((prev) => {
+        if (prev[id]) return prev;
+        return { ...prev, [id]: { type, ready: false, isActive: false } };
+      });
+    },
+    [],
+  );
+
+  const unregisterAsset = useCallback((id: string) => {
+    setAssetsStatus((prev) => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
+  const setAssetReady = useCallback(
+    (id: string, ready: boolean, isActive: boolean) => {
+      setAssetsStatus((prev) => {
+        if (!prev[id]) return prev;
+        if (prev[id].ready === ready && prev[id].isActive === isActive)
+          return prev;
+        return {
+          ...prev,
+          [id]: { ...prev[id], ready, isActive },
+        };
+      });
+    },
+    [],
+  );
+
+  // Block playback ONLY if an asset currently visible on-screen is not ready
+  const isPlaybackBlocked = useMemo(() => {
+    const statuses = Object.values(assetsStatus);
+    if (statuses.length === 0) return false;
+    return statuses.some((a) => a.isActive && !a.ready);
+  }, [assetsStatus]);
+
+  const preloadContextValue = useMemo(
+    () => ({
+      registerAsset,
+      unregisterAsset,
+      setAssetReady,
+    }),
+    [registerAsset, unregisterAsset, setAssetReady],
+  );
+
   // Keep internal playing state synced with parent props
   useEffect(() => {
     setIsPlaying(playing);
@@ -256,10 +341,11 @@ const PlaylistPlayerCore: React.FC<PlaylistPlayerCoreProps> = ({
     return maxTime || 1000;
   }, [activeSchema]);
 
+  // Pause playhead timeline progression if blocked by active asset load state
   const { playhead, seek } = usePlayhead({
     duration: calculatedDuration,
     loop: isLooping,
-    playing: isPlaying,
+    playing: isPlaying && !isPlaybackBlocked,
     onComplete: () => {
       onLoop?.();
     },
@@ -271,28 +357,51 @@ const PlaylistPlayerCore: React.FC<PlaylistPlayerCoreProps> = ({
     onTimeUpdate?.(latest as number);
   });
 
-  // Calculate layout fitting scale
+  // Calculate layout scale cleanly using requestAnimationFrame & contentRect to prevent reflow bottlenecks
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const calculateScale = () => {
-      const containerW = container.clientWidth;
-      const containerH = container.clientHeight;
+    let animationFrameId: number | null = null;
+
+    const calculateScale = (width: number, height: number) => {
       const schemaW = activeSchema.settings.width;
       const schemaH = activeSchema.settings.height;
 
-      const scaleX = containerW / schemaW;
-      const scaleY = containerH / schemaH;
+      const scaleX = width / schemaW;
+      const scaleY = height / schemaH;
 
       setScale(Math.min(scaleX, scaleY));
     };
 
-    const resizeObserver = new ResizeObserver(calculateScale);
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+
+      // Extract bounding coordinates directly without forcing synchronous page recalculation
+      const { width, height } = entry.contentRect;
+
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+
+      animationFrameId = requestAnimationFrame(() => {
+        calculateScale(width, height);
+      });
+    });
+
     resizeObserver.observe(container);
 
-    calculateScale();
-    return () => resizeObserver.disconnect();
+    // Initial measurement
+    const rect = container.getBoundingClientRect();
+    calculateScale(rect.width, rect.height);
+
+    return () => {
+      resizeObserver.disconnect();
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
   }, [activeSchema]);
 
   // --- HUD Auto-Hide Logic ---
@@ -317,7 +426,7 @@ const PlaylistPlayerCore: React.FC<PlaylistPlayerCoreProps> = ({
   }, [isPlaying, showControls, isHUDLocked]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showControls || isHUDLocked) return;
+    if (!showControls || isHUDLocked || isPlaybackBlocked) return;
     if (e.key === " ") {
       e.preventDefault();
       setIsPlaying((p) => !p);
@@ -376,71 +485,100 @@ const PlaylistPlayerCore: React.FC<PlaylistPlayerCoreProps> = ({
     activeSchema.settings.backgroundColor.startsWith("#") ||
     activeSchema.settings.backgroundColor.startsWith("rgb");
 
-  return (
-    <div
-      ref={containerRef}
-      className="relative w-full h-full flex items-center justify-center overflow-hidden outline-none"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      onMouseMove={triggerHUD}
-      onClick={triggerHUD}
-    >
-      {/* Interactive HUD Controls */}
-      {showControls && (
-        <HUDControls
-          isPlaying={isPlaying}
-          onTogglePlay={() => setIsPlaying(!isPlaying)}
-          isLooping={isLooping}
-          onToggleLoop={() => setIsLooping(!isLooping)}
-          playhead={playhead}
-          duration={calculatedDuration}
-          onSeek={seek}
-          onPrev={handlePrev}
-          onNext={handleNext}
-          isVisible={isHUDVisible}
-          onMouseEnter={() => {
-            if (hudTimeout.current) clearTimeout(hudTimeout.current);
-            setIsHUDVisible(true);
-          }}
-          onMouseLeave={() => {
-            if (isPlaying && !isHUDLocked) triggerHUD();
-          }}
-          onOpenSheet={onOpenSheet}
-          scale={scale}
-        />
-      )}
+  // Only show backdrop loading screen if the user is actively trying to run the playhead
+  const showLoadingOverlay = isPlaying && isPlaybackBlocked;
 
-      {/* Scaled Signage Canvas */}
+  return (
+    <PreloadContext.Provider value={preloadContextValue}>
       <div
-        className={clsx(
-          "relative origin-center overflow-hidden shadow-2xl transition-transform ease-out duration-100 shrink-0 z-0",
-          !hasHexColor && bgClass,
-        )}
-        style={{
-          width: activeSchema.settings.width,
-          height: activeSchema.settings.height,
-          transform: `scale(${scale})`,
-          backgroundColor: hasHexColor
-            ? activeSchema.settings.backgroundColor
-            : undefined,
-          boxSizing: "content-box",
-        }}
+        ref={containerRef}
+        className="relative w-full h-full flex items-center justify-center overflow-hidden outline-none"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        onMouseMove={triggerHUD}
+        onClick={triggerHUD}
       >
-        {activeSchema.layers.map((layer) => (
-          <div key={layer.id} className="absolute inset-0 pointer-events-none">
-            {layer.items.map((item) => (
-              <ItemRenderer
-                key={item.id}
-                item={item}
-                playhead={playhead}
-                components={components}
-                isTimelinePlaying={isPlaying}
-              />
-            ))}
+        {/* Buffering/Preloading Overlay Indicator */}
+        {showLoadingOverlay && (
+          <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm text-white select-none transition-all duration-300">
+            <LoadingIndicator
+              variant="material-morph"
+              className="!w-16 !h-16 text-primary mb-4"
+            />
+            <Typography
+              variant="title-medium"
+              className="font-semibold text-white tracking-wide"
+            >
+              Preparing Playlist...
+            </Typography>
+            <Typography variant="body-small" className="opacity-70 mt-1">
+              Buffering active media track
+            </Typography>
           </div>
-        ))}
+        )}
+
+        {/* Interactive HUD Controls */}
+        {showControls && (
+          <HUDControls
+            isPlaying={isPlaying}
+            onTogglePlay={() => setIsPlaying(!isPlaying)}
+            isLooping={isLooping}
+            onToggleLoop={() => setIsLooping(!isLooping)}
+            playhead={playhead}
+            duration={calculatedDuration}
+            onSeek={seek}
+            onSeekingChange={handleSeekingChange}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            isVisible={isHUDVisible}
+            onMouseEnter={() => {
+              if (hudTimeout.current) clearTimeout(hudTimeout.current);
+              setIsHUDVisible(true);
+            }}
+            onMouseLeave={() => {
+              if (isPlaying && !isHUDLocked) triggerHUD();
+            }}
+            onOpenSheet={onOpenSheet}
+            scale={scale}
+          />
+        )}
+
+        {/* Scaled Signage Canvas (Compensated to eliminate CSS transform fight lag) */}
+        <div
+          className={clsx(
+            "relative origin-center overflow-hidden shadow-2xl shrink-0 z-0",
+            !hasHexColor && bgClass,
+          )}
+          style={{
+            width: activeSchema.settings.width,
+            height: activeSchema.settings.height,
+            transform: `scale(${scale})`,
+            backgroundColor: hasHexColor
+              ? activeSchema.settings.backgroundColor
+              : undefined,
+            boxSizing: "content-box",
+          }}
+        >
+          {activeSchema.layers.map((layer) => (
+            <div
+              key={layer.id}
+              className="absolute inset-0 pointer-events-none"
+            >
+              {layer.items.map((item) => (
+                <ItemRenderer
+                  key={item.id}
+                  item={item}
+                  playhead={playhead}
+                  components={components}
+                  isTimelinePlaying={isPlaying && !isPlaybackBlocked}
+                  isSeeking={isSeeking}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </PreloadContext.Provider>
   );
 };
 

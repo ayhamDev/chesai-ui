@@ -7,12 +7,51 @@ import { clsx } from "clsx";
 import Hls from "hls.js";
 import { useMotionValueEvent } from "framer-motion";
 import { LoadingIndicator } from "../loadingIndicator";
+import { usePreload } from "./preload-context";
+
+// A secure whitelist of standard semantic tags allowed for layout elements.
+const ALLOWED_TAGS = new Set([
+  "div",
+  "span",
+  "p",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "section",
+  "article",
+  "aside",
+  "header",
+  "footer",
+  "main",
+  "ul",
+  "ol",
+  "li",
+  "a",
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "th",
+  "td",
+  "pre",
+  "code",
+  "blockquote",
+  "mark",
+  "strong",
+  "em",
+  "i",
+  "b",
+]);
 
 /**
  * Universal compatible Video Engine supporting standard MP4/WebM formats
  * alongside HLS (.m3u8) live streams. Responds instantly to timeline play/pause events.
  */
 export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
+  id,
   data,
   isActive,
   isTimelinePlaying,
@@ -26,18 +65,45 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
 
   const { src, muted = true, objectFit = "cover", volume = 1 } = data;
 
-  // Track if we have completed the initial load sync for this source
   const hasInitialSynced = useRef(false);
-
-  // Monitor buffering progress before triggering playback
   const [isBufferReady, setIsBufferReady] = useState(false);
+  const stallTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingSeekRef = useRef<number | null>(null);
+
+  const preload = usePreload();
+
+  // Register asset on mount
+  useEffect(() => {
+    if (preload && id) {
+      preload.registerAsset(id, "Video");
+    }
+    return () => {
+      if (preload && id) {
+        preload.unregisterAsset(id);
+      }
+    };
+  }, [id, preload]);
+
+  // Keep asset readiness status synchronized in context
+  useEffect(() => {
+    if (preload && id) {
+      preload.setAssetReady(id, isBufferReady, isActive);
+    }
+  }, [id, preload, isBufferReady, isActive]);
+
+  // Handle source errors without freezing playhead
+  useEffect(() => {
+    if (loadError && preload && id) {
+      preload.setAssetReady(id, true, isActive);
+    }
+  }, [loadError, preload, id, isActive]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
 
     setLoadError(null);
-    hasInitialSynced.current = false; // Reset sync status on src change
+    hasInitialSynced.current = false;
     setIsBufferReady(false);
 
     if (hlsInstanceRef.current) {
@@ -77,7 +143,6 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
     }
 
     return () => {
-      // RELEASE HARDWARE DECODER PIPELINE TO PREVENT MEMORY LEAKS
       if (video) {
         video.pause();
         video.src = "";
@@ -90,36 +155,71 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
     };
   }, [src]);
 
-  // Buffer Reservation System: Listen to frame loader updates
+  // Debounced stall tracking system with Pending Seek Queue
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const checkReadiness = () => {
-      // HAVE_FUTURE_DATA (3) or HAVE_ENOUGH_DATA (4) guarantees a solid initial play buffer
+    const handleReady = () => {
+      if (stallTimeoutRef.current) {
+        clearTimeout(stallTimeoutRef.current);
+        stallTimeoutRef.current = null;
+      }
+
+      // If a newer seek target was queued while seeking, execute it now
+      if (pendingSeekRef.current !== null) {
+        const nextTarget = pendingSeekRef.current;
+        pendingSeekRef.current = null;
+        try {
+          video.currentTime = nextTarget;
+        } catch (e) {
+          // ignore
+        }
+        return; // Wait for the new seek to fire seeked
+      }
+
       if (video.readyState >= 3) {
         setIsBufferReady(true);
       }
     };
 
-    const handleLoadStart = () => {
-      setIsBufferReady(false);
+    const handleStall = () => {
+      if (stallTimeoutRef.current) return;
+      stallTimeoutRef.current = setTimeout(() => {
+        setIsBufferReady(false);
+        stallTimeoutRef.current = null;
+      }, 300);
     };
 
-    video.addEventListener("canplay", checkReadiness);
-    video.addEventListener("canplaythrough", checkReadiness);
-    video.addEventListener("progress", checkReadiness);
-    video.addEventListener("loadstart", handleLoadStart);
-    video.addEventListener("emptied", handleLoadStart);
+    video.addEventListener("canplay", handleReady);
+    video.addEventListener("canplaythrough", handleReady);
+    video.addEventListener("playing", handleReady);
+    video.addEventListener("progress", handleReady);
+    video.addEventListener("seeked", handleReady);
 
-    checkReadiness();
+    video.addEventListener("waiting", handleStall);
+    video.addEventListener("stalled", handleStall);
+    video.addEventListener("seeking", handleStall);
+    video.addEventListener("loadstart", handleStall);
+    video.addEventListener("emptied", handleStall);
+
+    handleReady();
 
     return () => {
-      video.removeEventListener("canplay", checkReadiness);
-      video.removeEventListener("canplaythrough", checkReadiness);
-      video.removeEventListener("progress", checkReadiness);
-      video.removeEventListener("loadstart", handleLoadStart);
-      video.removeEventListener("emptied", handleLoadStart);
+      if (stallTimeoutRef.current) {
+        clearTimeout(stallTimeoutRef.current);
+      }
+      video.removeEventListener("canplay", handleReady);
+      video.removeEventListener("canplaythrough", handleReady);
+      video.removeEventListener("playing", handleReady);
+      video.removeEventListener("progress", handleReady);
+      video.removeEventListener("seeked", handleReady);
+
+      video.removeEventListener("waiting", handleStall);
+      video.removeEventListener("stalled", handleStall);
+      video.removeEventListener("seeking", handleStall);
+      video.removeEventListener("loadstart", handleStall);
+      video.removeEventListener("emptied", handleStall);
     };
   }, [src]);
 
@@ -127,7 +227,6 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
     const video = videoRef.current;
     if (!video || loadError) return;
 
-    // Only allow native playback to start if the timeline is playing AND our buffer is fully prepared
     const shouldPlay = isActive && isTimelinePlaying && isBufferReady;
 
     if (shouldPlay) {
@@ -154,13 +253,12 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
     }
   }, [isActive, isTimelinePlaying, isBufferReady, muted, volume, loadError]);
 
-  // --- HARDWARE-SAFE TIME SYNCHRONIZATION ---
+  // --- HARDWARE-SAFE TIME SYNCHRONIZATION WITH DRIFT CORRECTION ---
   const lastPlayheadRef = useRef(0);
 
   useMotionValueEvent(playhead, "change", (latest) => {
     const video = videoRef.current;
-    // CRITICAL: Prevent write operations while browser is actively seeking to avoid decoder freezes
-    if (!video || !isActive || video.readyState < 1 || video.seeking) {
+    if (!video || !isActive || video.readyState < 1) {
       lastPlayheadRef.current = latest;
       return;
     }
@@ -168,33 +266,40 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
     const expectedTimeS = Math.max(0, (latest - startTime) / 1000);
     const playheadDelta = Math.abs(latest - lastPlayheadRef.current);
 
-    if (!isTimelinePlaying) {
-      // 1. Paused scrubbing: sync continuously for responsive preview feedback
-      const timeDiff = Math.abs(video.currentTime - expectedTimeS);
-      if (timeDiff > 0.15) {
-        video.currentTime = expectedTimeS;
-      }
-    } else {
-      // 2. Active playback:
-      // A. Initial Sync: Sync once when the video loads to catch up to the current playhead
-      if (!hasInitialSynced.current && isBufferReady) {
+    // Support relative looped seeks if schema duration is larger than the file content
+    let targetTimeS = expectedTimeS;
+    if (video.duration && !isNaN(video.duration) && video.duration > 0) {
+      targetTimeS = expectedTimeS % video.duration;
+    }
+
+    const timeDiff = Math.abs(video.currentTime - targetTimeS);
+
+    const triggerSeek = (seekTimeS: number) => {
+      if (video.seeking) {
+        pendingSeekRef.current = seekTimeS;
+      } else {
+        pendingSeekRef.current = null;
         try {
-          video.currentTime = expectedTimeS;
-          hasInitialSynced.current = true;
+          video.currentTime = seekTimeS;
         } catch (e) {
           // ignore
         }
-      } else if (hasInitialSynced.current) {
-        // B. Dynamic Jumps: Only seek if a discrete playhead jump or loop is detected
-        const didPlayheadJump =
-          playheadDelta > 1000 || latest < lastPlayheadRef.current;
-        if (didPlayheadJump) {
-          try {
-            video.currentTime = expectedTimeS;
-          } catch (e) {
-            // ignore
-          }
-        }
+      }
+    };
+
+    if (!isTimelinePlaying) {
+      // 1. Paused scrubbing: sync immediately on 100ms tolerance drift
+      if (timeDiff > 0.1) {
+        triggerSeek(targetTimeS);
+      }
+    } else {
+      // 2. Active playback:
+      const didPlayheadJump =
+        playheadDelta > 1000 || latest < lastPlayheadRef.current;
+
+      // Correct clock alignment if playhead loops OR drift exceeds lipsync limit (250ms)
+      if (didPlayheadJump || timeDiff > 0.25) {
+        triggerSeek(targetTimeS);
       }
     }
 
@@ -266,107 +371,140 @@ export const PlaylistVideo: React.FC<PlaylistComponentProps> = ({
 };
 
 /**
- * Invisible Audio Engine.
- * Supports standard audio formats (mp3, wav, aac) and synchronizes with timeline.
+ * Invisible Programmatic Audio Engine.
+ * Handled via a direct in-memory HTMLAudioElement instance.
+ * Completely eliminates layout-rendering thread blocks, keeping media pipelines open.
  */
 export const PlaylistAudio: React.FC<PlaylistComponentProps> = ({
+  id,
   data,
   isActive,
   isTimelinePlaying,
   playhead,
   startTime,
+  isSeeking = false,
 }) => {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const playPromiseRef = useRef<Promise<void> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const pendingSeekRef = useRef<number | null>(null);
 
   const { src, muted = false, volume = 1 } = data;
-  const hasInitialSynced = useRef(false);
-  const [isBufferReady, setIsBufferReady] = useState(false);
+  const preload = usePreload();
 
+  // 1. Initialize persistent programmatic Audio object in memory
+  useEffect(() => {
+    const audio = new Audio();
+    audio.preload = "auto";
+    audioRef.current = audio;
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      audioRef.current = null;
+    };
+  }, []);
+
+  // 2. Register background audio asset as non-blocking to prevent master timeline deadlocks
+  useEffect(() => {
+    if (preload && id) {
+      preload.registerAsset(id, "Audio");
+      preload.setAssetReady(id, true, isActive);
+    }
+    return () => {
+      if (preload && id) {
+        preload.unregisterAsset(id);
+      }
+    };
+  }, [id, preload, isActive]);
+
+  // 3. Keep media sources cleanly in sync
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !src) return;
+
     audio.src = src;
-    hasInitialSynced.current = false;
-    setIsBufferReady(false);
-
-    return () => {
-      // Release decoder resources on unmount
-      if (audio) {
-        audio.pause();
-        audio.src = "";
-        audio.load();
-      }
-    };
+    audio.load(); // Force immediate connection handshake and fetch metadata
   }, [src]);
 
+  // 4. Manage playback operations with promise-backed handling
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const checkReadiness = () => {
-      if (audio.readyState >= 3) {
-        setIsBufferReady(true);
-      }
-    };
-
-    const handleLoadStart = () => {
-      setIsBufferReady(false);
-    };
-
-    audio.addEventListener("canplay", checkReadiness);
-    audio.addEventListener("canplaythrough", checkReadiness);
-    audio.addEventListener("progress", checkReadiness);
-    audio.addEventListener("loadstart", handleLoadStart);
-    audio.addEventListener("emptied", handleLoadStart);
-
-    checkReadiness();
-
-    return () => {
-      audio.removeEventListener("canplay", checkReadiness);
-      audio.removeEventListener("canplaythrough", checkReadiness);
-      audio.removeEventListener("progress", checkReadiness);
-      audio.removeEventListener("loadstart", handleLoadStart);
-      audio.removeEventListener("emptied", handleLoadStart);
-    };
-  }, [src]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const shouldPlay = isActive && isTimelinePlaying && isBufferReady;
+    // Pause audio during active seeks to eliminate stutter and pipeline errors
+    const shouldPlay = isActive && isTimelinePlaying && !isSeeking;
 
     if (shouldPlay) {
       audio.muted = muted;
       audio.volume = volume;
 
-      playPromiseRef.current = audio.play();
-      playPromiseRef.current.catch((error) => {
-        console.warn("[PlaylistAudio] Play request prevented:", error);
-      });
+      audio
+        .play()
+        .then(() => {
+          console.log("[PlaylistAudio] Playback started successfully!");
+        })
+        .catch((error) => {
+          console.warn("[PlaylistAudio] Playback blocked:", error);
+        });
     } else {
-      const haltPlayback = () => {
-        audio.pause();
-        if (!isActive) {
-          audio.currentTime = 0;
-        }
-      };
-
-      if (playPromiseRef.current) {
-        playPromiseRef.current.then(haltPlayback).catch(haltPlayback);
-      } else {
-        haltPlayback();
+      audio.pause();
+      if (!isActive) {
+        audio.currentTime = 0;
       }
     }
-  }, [isActive, isTimelinePlaying, isBufferReady, muted, volume]);
+  }, [isActive, isTimelinePlaying, muted, volume, isSeeking]);
 
-  // --- HARDWARE-SAFE TIME SYNCHRONIZATION ---
+  // 5. Safely handle seek completion updates sequentially
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleSeeked = () => {
+      if (pendingSeekRef.current !== null) {
+        const nextTarget = pendingSeekRef.current;
+        pendingSeekRef.current = null;
+        try {
+          audio.currentTime = nextTarget;
+        } catch (e) {
+          console.log(e);
+
+          // ignore
+        }
+      }
+    };
+
+    audio.addEventListener("seeked", handleSeeked);
+    return () => {
+      audio.removeEventListener("seeked", handleSeeked);
+    };
+  }, [src]);
+
+  // 6. Force-align playback position as soon as seeking ends
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || isSeeking) return;
+
+    const currentPlayhead = playhead.get();
+    const expectedTimeS = Math.max(0, (currentPlayhead - startTime) / 1000);
+    let targetTimeS = expectedTimeS;
+    if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
+      targetTimeS = expectedTimeS % audio.duration;
+    }
+    try {
+      audio.currentTime = targetTimeS;
+    } catch (e) {
+      // ignore
+    }
+  }, [isSeeking, isActive, startTime, playhead]);
+
+  // 7. Drift-correction and seek alignment clock loop
   const lastPlayheadRef = useRef(0);
 
   useMotionValueEvent(playhead, "change", (latest) => {
     const audio = audioRef.current;
-    if (!audio || !isActive || audio.readyState < 1 || audio.seeking) {
+    // Skip real-time seek logic entirely while seeking is active to avoid lockups
+    if (!audio || !isActive || audio.readyState < 1 || isSeeking) {
       lastPlayheadRef.current = latest;
       return;
     }
@@ -374,58 +512,159 @@ export const PlaylistAudio: React.FC<PlaylistComponentProps> = ({
     const expectedTimeS = Math.max(0, (latest - startTime) / 1000);
     const playheadDelta = Math.abs(latest - lastPlayheadRef.current);
 
-    if (!isTimelinePlaying) {
-      // 1. Paused scrubbing: sync continuously for responsive preview feedback
-      const timeDiff = Math.abs(audio.currentTime - expectedTimeS);
-      if (timeDiff > 0.15) {
-        audio.currentTime = expectedTimeS;
-      }
-    } else {
-      // 2. Active playback:
-      // A. Initial Sync
-      if (!hasInitialSynced.current && isBufferReady) {
+    // Support relative looped seeks if schema duration is larger than physical file content
+    let targetTimeS = expectedTimeS;
+    if (audio.duration && !isNaN(audio.duration) && audio.duration > 0) {
+      targetTimeS = expectedTimeS % audio.duration;
+    }
+
+    const timeDiff = Math.abs(audio.currentTime - targetTimeS);
+
+    const triggerSeek = (seekTimeS: number) => {
+      if (audio.seeking) {
+        // Enqueue target to apply sequentially when current seek is finalized
+        pendingSeekRef.current = seekTimeS;
+      } else {
+        pendingSeekRef.current = null;
         try {
-          audio.currentTime = expectedTimeS;
-          hasInitialSynced.current = true;
+          audio.currentTime = seekTimeS;
         } catch (e) {
           // ignore
         }
-      } else if (hasInitialSynced.current) {
-        // B. Dynamic Jumps only
-        const didPlayheadJump =
-          playheadDelta > 1000 || latest < lastPlayheadRef.current;
-        if (didPlayheadJump) {
-          try {
-            audio.currentTime = expectedTimeS;
-          } catch (e) {
-            // Ignore seek errors during loading
-          }
-        }
+      }
+    };
+
+    if (!isTimelinePlaying) {
+      // 1. Paused scrubbing: sync immediately on 100ms tolerance drift
+      if (timeDiff > 0.1) {
+        triggerSeek(targetTimeS);
+      }
+    } else {
+      // 2. Active playback:
+      const didPlayheadJump =
+        playheadDelta > 1000 || latest < lastPlayheadRef.current;
+
+      // Correct clock alignment if playhead loops OR drift exceeds lipsync limit (250ms)
+      if (didPlayheadJump || timeDiff > 0.25) {
+        triggerSeek(targetTimeS);
       }
     }
 
     lastPlayheadRef.current = latest;
   });
 
+  // No DOM nodes are rendered for background audio streams
+  return null;
+};
+
+export const PlaylistImage: React.FC<PlaylistComponentProps> = ({
+  id,
+  data,
+  isActive,
+}) => {
+  const { src, alt, objectFit = "cover" } = data;
+  const preload = usePreload();
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (preload && id) {
+      preload.registerAsset(id, "Image");
+    }
+    return () => {
+      if (preload && id) {
+        preload.unregisterAsset(id);
+      }
+    };
+  }, [id, preload]);
+
+  useEffect(() => {
+    if (preload && id) {
+      preload.setAssetReady(id, isLoaded, isActive);
+    }
+  }, [id, preload, isLoaded, isActive]);
+
+  useEffect(() => {
+    if (imgRef.current?.complete) {
+      setIsLoaded(true);
+    } else {
+      setIsLoaded(false);
+    }
+  }, [src]);
+
+  const handleLoad = () => {
+    setIsLoaded(true);
+  };
+
+  const handleError = () => {
+    setIsLoaded(true); // Unblock player
+  };
+
   return (
-    <audio
-      ref={audioRef}
-      preload="auto"
-      muted={muted}
-      style={{ display: "none" }}
+    <img
+      ref={imgRef}
+      src={src}
+      alt={alt || "Playlist Image"}
+      onLoad={handleLoad}
+      onError={handleError}
+      className="w-full h-full border-0 block select-none pointer-events-none"
+      style={{ objectFit: objectFit as React.CSSProperties["objectFit"] }}
     />
   );
 };
 
-export const PlaylistImage: React.FC<PlaylistComponentProps> = ({ data }) => {
-  const { src, alt, objectFit = "cover" } = data;
+/**
+ * Flexible HTML Element Renderer.
+ * Supports rendering custom tags (whitelisted for safety), custom React children,
+ * or raw HTML safely integrated with transitions and coordinates.
+ */
+export const PlaylistHtml: React.FC<PlaylistComponentProps> = ({
+  id,
+  data,
+  isActive,
+}) => {
+  const preload = usePreload();
+  const { tag = "div", html, children, className, style, ...restProps } = data;
+
+  // Sync state with preloading tracker. Plain HTML is instantly ready on mount.
+  useEffect(() => {
+    if (preload && id) {
+      preload.registerAsset(id, "Html");
+      preload.setAssetReady(id, true, isActive);
+    }
+    return () => {
+      if (preload && id) {
+        preload.unregisterAsset(id);
+      }
+    };
+  }, [id, preload, isActive]);
+
+  // Resolve secure tag matching whitelist
+  const requestedTag = typeof tag === "string" ? tag.toLowerCase() : "div";
+  const TagName = (
+    ALLOWED_TAGS.has(requestedTag) ? requestedTag : "div"
+  ) as React.ElementType;
+
+  // Safely inject parsed markup if specifically passed as a string
+  if (html && typeof html === "string") {
+    return (
+      <TagName
+        className={clsx("w-full h-full overflow-hidden", className)}
+        style={style}
+        dangerouslySetInnerHTML={{ __html: html }}
+        {...restProps}
+      />
+    );
+  }
+
   return (
-    <img
-      src={src}
-      alt={alt || "Playlist Image"}
-      className="w-full h-full border-0 block select-none pointer-events-none"
-      style={{ objectFit: objectFit as React.CSSProperties["objectFit"] }}
-    />
+    <TagName
+      className={clsx("w-full h-full overflow-hidden", className)}
+      style={style}
+      {...restProps}
+    >
+      {children}
+    </TagName>
   );
 };
 
@@ -433,4 +672,5 @@ export const defaultPlaylistRegistry = {
   Video: PlaylistVideo,
   Audio: PlaylistAudio,
   Image: PlaylistImage,
+  Html: PlaylistHtml,
 };

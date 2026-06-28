@@ -76,12 +76,14 @@ export interface PlaylistSchema {
 }
 
 export interface PlaylistComponentProps {
+  id?: string
   data: Record<string, any>
   playhead: MotionValue<number>
   isActive: boolean
   startTime: number
   endTime: number
   isTimelinePlaying: boolean
+  isSeeking?: boolean
 }
 
 export interface PlaylistComponentRegistry {

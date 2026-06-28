@@ -45,7 +45,7 @@ const PORTRAIT_SIGNAGE_SCHEMA: PlaylistSchema = {
           duration: 10000,
           layout: { x: 0, y: 0, width: "100%", height: "100%", zIndex: 1 },
           props: {
-            src: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+            src: "https://www.w3schools.com/tags/mov_bbb.mp4",
             objectFit: "cover",
             muted: true,
           },
@@ -56,6 +56,33 @@ const PORTRAIT_SIGNAGE_SCHEMA: PlaylistSchema = {
       id: "overlays-track",
       name: "Graphic Overlays",
       items: [
+        {
+          id: "header-title-text",
+          type: "Html",
+          startTime: 1000,
+          duration: 5000,
+          layout: {
+            x: "10%",
+            y: "10%",
+            width: "80%",
+            height: "15%",
+            zIndex: 20,
+          },
+          transitions: {
+            in: { type: "slide-down", duration: 800 },
+            out: { type: "fade", duration: 400 },
+          },
+          props: {
+            tag: "h1",
+            children: "Fresh Coffee Brewed Daily",
+            className:
+              "text-4xl font-extrabold text-on-primary-container tracking-tight",
+            style: {
+              textAlign: "center",
+              textShadow: "0 2px 10px rgba(0,0,0,0.1)",
+            },
+          },
+        },
         {
           id: "portrait-card-overlay",
           type: "Image",
