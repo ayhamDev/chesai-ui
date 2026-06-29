@@ -110,15 +110,15 @@ export const HeatmapChart = ({
 
   // Motion physics configuration aligned with MD3 specifications
   const springTransition = {
-    type: "spring",
+    type: "spring" as const,
     stiffness: 180,
     damping: 18,
     mass: 0.8,
   };
 
   const standardTransition = {
-    type: "tween",
-    ease: "easeOut",
+    type: "tween" as const,
+    ease: "easeOut" as const,
     duration: 0.35,
   };
 

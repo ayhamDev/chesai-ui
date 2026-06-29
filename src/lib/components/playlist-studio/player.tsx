@@ -271,12 +271,12 @@ const PlaylistPlayerCore: React.FC<PlaylistPlayerCoreProps> = ({
   const [assetsStatus, setAssetsStatus] = useState<
     Record<
       string,
-      { type: "Video" | "Audio" | "Image"; ready: boolean; isActive: boolean }
+      { type: "Video" | "Audio" | "Image" | "Html"; ready: boolean; isActive: boolean }
     >
   >({});
 
   const registerAsset = useCallback(
-    (id: string, type: "Video" | "Audio" | "Image") => {
+    (id: string, type: "Video" | "Audio" | "Image" | "Html") => {
       setAssetsStatus((prev) => {
         if (prev[id]) return prev;
         return { ...prev, [id]: { type, ready: false, isActive: false } };

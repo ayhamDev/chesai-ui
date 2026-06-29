@@ -4,7 +4,7 @@
 import React, { createContext, useContext } from "react";
 
 export interface PreloadContextValue {
-  registerAsset: (id: string, type: "Video" | "Audio" | "Image") => void;
+  registerAsset: (id: string, type: "Video" | "Audio" | "Image" | "Html") => void;
   unregisterAsset: (id: string) => void;
   setAssetReady: (id: string, ready: boolean, isActive: boolean) => void;
 }

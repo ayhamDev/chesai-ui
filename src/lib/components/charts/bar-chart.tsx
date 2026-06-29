@@ -65,9 +65,9 @@ export const BarChart = ({
 
   // Dynamic animation attributes matching Material 3 specifications
   const isExpressive = animationStyle === "expressive";
-  const easingFunction = isExpressive
+  const easingFunction = (isExpressive
     ? EASE_EXPRESSIVE_DEFAULT_SPATIAL
-    : EASE_EMPHASIZED;
+    : EASE_EMPHASIZED) as any;
   const animationDuration = isExpressive ? 1000 : 550;
 
   const getRadius = () => {

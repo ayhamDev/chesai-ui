@@ -70,6 +70,7 @@ export interface PlaylistSettings {
 
 export interface PlaylistSchema {
   id: string
+  name?: string
   version: string
   settings: PlaylistSettings
   layers: PlaylistLayer[]

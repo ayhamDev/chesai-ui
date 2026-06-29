@@ -3,9 +3,9 @@
 import React, { useState, useId } from "react";
 import { clsx } from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "../../context";
-import { Card } from "../card";
-import { Typography } from "../typography";
+import { useTheme } from "./index";
+import { Card } from "../components/card";
+import { Typography } from "../components/typography";
 
 export interface HeatmapDataPoint {
   x: string; // X-axis coordinate (column identifier)
@@ -110,15 +110,15 @@ export const HeatmapChart = ({
 
   // Motion physics configuration aligned with MD3 specifications
   const springTransition = {
-    type: "spring",
+    type: "spring" as const,
     stiffness: 180,
     damping: 18,
     mass: 0.8,
   };
 
   const standardTransition = {
-    type: "tween",
-    ease: "easeOut",
+    type: "tween" as const,
+    ease: "easeOut" as const,
     duration: 0.35,
   };
 
