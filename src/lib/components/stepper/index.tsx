@@ -4,7 +4,7 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
-import React, { createContext, useContext, useMemo } from "react";
+import React, { createContext, useContext } from "react";
 import { Typography } from "../typography";
 
 // --- CONTEXT ---
@@ -197,27 +197,34 @@ const StepperSeparator = React.forwardRef<
   const isHorizontal = orientation === "horizontal";
   const isComplete = status === "complete";
 
+  // Check the document direction layout state dynamically on runtime
+  const isRtl =
+    typeof document !== "undefined" && document.documentElement.dir === "rtl";
+
   return (
     <div
       ref={ref}
       className={clsx(
         "absolute bg-surface-container-highest",
         isHorizontal
-          ? "top-4 left-10 right-2 h-[2px] -translate-y-1/2"
-          : "top-8 bottom-0 left-4 w-[2px] -translate-x-1/2",
+          ? "top-4 ltr:left-10 ltr:right-2 rtl:right-10 rtl:left-2 h-[2px] -translate-y-1/2"
+          : "top-8 bottom-0 ltr:left-4 rtl:right-4 w-[2px] ltr:-translate-x-1/2 rtl:translate-x-1/2",
         className,
       )}
       {...props}
     >
       <motion.div
-        className="bg-primary h-full w-full origin-left"
+        className="bg-primary h-full w-full"
         initial={{ scaleX: 0, scaleY: 0 }}
         animate={{
           scaleX: isHorizontal ? (isComplete ? 1 : 0) : 1,
           scaleY: !isHorizontal ? (isComplete ? 1 : 0) : 1,
         }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{ transformOrigin: isHorizontal ? "left" : "top" }}
+        style={{
+          // Scale connectors inwards from right-to-left in RTL horizontal modes
+          transformOrigin: isHorizontal ? (isRtl ? "right" : "left") : "top",
+        }}
       />
     </div>
   );
@@ -236,8 +243,8 @@ const StepperContent = React.forwardRef<
       className={clsx(
         "flex flex-col",
         orientation === "horizontal"
-          ? "absolute top-10 left-0 w-max"
-          : "ml-4 pt-1",
+          ? "absolute top-10 ltr:left-0 rtl:right-0 w-max"
+          : "ms-4 pt-1",
         className,
       )}
       {...props}

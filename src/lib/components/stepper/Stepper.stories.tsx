@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { User, CreditCard, CheckCircle2 } from "lucide-react";
 import { Stepper } from "./index";
+import { LayoutDirectionToggle } from "../layout-toggle";
 
 const meta: Meta<typeof Stepper> = {
   title: "Components/Feedback/Stepper",
@@ -16,6 +17,7 @@ export const Horizontal: Story = {
   args: { currentStep: 1, orientation: "horizontal" },
   render: (args) => (
     <div className="w-full max-w-3xl pt-8 pb-16">
+      <LayoutDirectionToggle />
       <Stepper {...args}>
         <Stepper.Step>
           <Stepper.Indicator icon={<User className="h-4 w-4" />} />

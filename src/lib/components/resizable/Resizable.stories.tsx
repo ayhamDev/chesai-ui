@@ -77,6 +77,7 @@ import { Textarea } from "../textarea";
 import { toast } from "../toast";
 import { Typography } from "../typography";
 import { Resizable, useResizableState } from "./index";
+import { LayoutDirectionToggle } from "../layout-toggle";
 
 const meta: Meta = {
   title: "Showcase/Dynamic Split View (Gmail)",
@@ -183,6 +184,7 @@ const EmptyState = () => (
     </div>
     <Typography variant="title-small">Select an item to read</Typography>
     <Typography variant="body-medium">Nothing is selected yet.</Typography>
+    <LayoutDirectionToggle />
   </div>
 );
 
@@ -1351,6 +1353,7 @@ export const ThreePaneGmailWithApps: StoryObj = {
     return (
       <div className="flex h-screen w-full bg-graphite-background">
         {/* Leftmost primary navigation rail */}
+
         <NavigationRail.Navigator
           activeTab="inbox"
           onTabPress={() => {}}

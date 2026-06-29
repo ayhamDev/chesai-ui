@@ -212,7 +212,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               {startIcon && (
                 <motion.span
                   initial={{ width: 0, opacity: 0, marginRight: 0 }}
-                  animate={{ width: "auto", opacity: 1, marginRight: 8 }}
+                  animate={{
+                    width: "auto",
+                    opacity: 1,
+                    marginRight: 8,
+                    marginLeft: 0,
+                  }}
                   exit={{ width: 0, opacity: 0, marginRight: 0 }}
                   transition={{ duration: 0.25, ease: "easeInOut" }}
                   className="flex items-center overflow-hidden whitespace-nowrap"

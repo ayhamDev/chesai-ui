@@ -360,11 +360,19 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
         const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
         const currentWidth = sizes[targetId] || 0;
 
+        // Detect if the document is currently in RTL layout mode
+        const isRtl =
+          typeof document !== "undefined" &&
+          document.documentElement.dir === "rtl";
+
+        // Reverse the inversion logic dynamically in RTL mode
+        const finalInvert = isRtl ? !invert : invert;
+
         dragInfo.current = {
           startX: clientX,
           startWidth: currentWidth,
           targetId,
-          invert,
+          invert: finalInvert,
         };
 
         document.body.style.cursor = "col-resize";
