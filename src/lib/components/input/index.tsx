@@ -1,6 +1,8 @@
+// src/lib/components/input/index.tsx
+
 "use client";
 
-import { X } from "lucide-react";
+import { X, Eye, EyeOff } from "lucide-react";
 import React, { forwardRef, useMemo } from "react";
 import { type UseInputProps, useInput } from "./use-input";
 
@@ -11,6 +13,7 @@ export interface InputProps extends UseInputProps {}
 export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
   const {
     Component,
+    value,
     label,
     description,
     isClearable,
@@ -19,6 +22,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
     shouldLabelBeOutside,
     errorMessage,
     isInvalid,
+    // Dynamic password toggle context fetched from hook
+    originalType,
+    isPasswordVisible,
+    setIsPasswordVisible,
     getBaseProps,
     getLabelProps,
     getInputProps,
@@ -34,16 +41,61 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
     <label {...getLabelProps()}>{label}</label>
   ) : null;
 
+  // Re-constructed end area to support clear, eye/eye-off toggle, and custom elements together
   const end = useMemo(() => {
-    if (isClearable) {
-      return (
-        <button {...getClearButtonProps()}>
-          {endContent || <X className="h-4 w-4" />}
-        </button>
+    const endElements: React.ReactNode[] = [];
+
+    // 1. Render clear button if enabled and input has value
+    if (isClearable && value) {
+      endElements.push(
+        <button key="clear" {...getClearButtonProps()}>
+          <X className="h-4 w-4" />
+        </button>,
       );
     }
-    return endContent;
-  }, [isClearable, getClearButtonProps, endContent]);
+
+    // 2. Render dynamic password toggle if original type is 'password'
+    if (originalType === "password") {
+      endElements.push(
+        <button
+          key="password-toggle"
+          type="button"
+          onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+          aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+          // Styles designed to perfectly match the design system's clearButton variables
+          className="p-2 -m-2 z-10 select-none transition-opacity text-on-surface-variant hover:text-on-surface cursor-pointer active:opacity-70 rounded-full"
+        >
+          {isPasswordVisible ? (
+            <EyeOff className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
+        </button>,
+      );
+    }
+
+    // 3. Append custom endContent if provided by parent
+    if (endContent) {
+      endElements.push(
+        <React.Fragment key="custom-end">{endContent}</React.Fragment>,
+      );
+    }
+
+    if (endElements.length === 0) return null;
+
+    // Wrap multiple trailing actions inside a unified flex layout matching design-system metrics
+    return (
+      <div className="flex items-center gap-2 shrink-0">{endElements}</div>
+    );
+  }, [
+    isClearable,
+    value,
+    originalType,
+    isPasswordVisible,
+    setIsPasswordVisible,
+    getClearButtonProps,
+    endContent,
+  ]);
 
   const helperWrapper = useMemo(() => {
     const shouldShowError = isInvalid && errorMessage;

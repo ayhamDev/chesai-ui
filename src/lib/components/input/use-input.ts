@@ -1,3 +1,5 @@
+// src/lib/components/input/use-input.ts
+
 import { clsx } from 'clsx'
 import React, { useCallback, useRef, useState } from 'react'
 import { getInputSlotClassNames, inputSlots, inputStyles } from './input-styles'
@@ -35,6 +37,7 @@ export function useInput(props: UseInputProps) {
   const {
     ref,
     as: Component = 'div',
+    type, // Destructured here to handle dynamic input state switches
     label,
     description,
     errorMessage,
@@ -63,6 +66,8 @@ export function useInput(props: UseInputProps) {
   const domRef = useRef<HTMLInputElement>(null)
   const [isFocused, setIsFocused] = useState(false)
   const [internalValue, setInternalValue] = useState(defaultValue || '')
+  // Added state to handle password visibility toggling natively
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
   const isControlled = propValue !== undefined
   const value = isControlled ? propValue : internalValue
@@ -147,6 +152,8 @@ export function useInput(props: UseInputProps) {
     disabled,
     readOnly,
     value,
+    // Evaluate type dynamically depending on visibility status if type is 'password'
+    type: type === 'password' ? (isPasswordVisible ? 'text' : 'password') : type,
     onChange: handleChange,
     onFocus: () => setIsFocused(true),
     onBlur: () => setIsFocused(false),
@@ -178,6 +185,7 @@ export function useInput(props: UseInputProps) {
   return {
     Component,
     domRef,
+    value,
     label,
     description,
     isClearable,
@@ -189,6 +197,10 @@ export function useInput(props: UseInputProps) {
     shouldLabelBeOutside: labelPlacement === 'outside' || labelPlacement === 'outside-left',
     errorMessage,
     isInvalid,
+    // Exported properties to manage password visibility inside the UI render
+    originalType: type,
+    isPasswordVisible,
+    setIsPasswordVisible,
     getBaseProps,
     getLabelProps,
     getInputProps,

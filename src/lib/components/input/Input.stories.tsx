@@ -1,3 +1,5 @@
+// src/lib/components/input/Input.stories.tsx
+
 import type { Meta, StoryObj } from "@storybook/react";
 import { Mail, Search } from "lucide-react";
 import { Input } from "./index";
@@ -51,6 +53,16 @@ export const Default: Story = {
     placeholder: "Enter your email",
     type: "email",
     variant: "filled",
+  },
+};
+
+// Added story demonstrating standard password input functionality
+export const PasswordField: Story = {
+  args: {
+    label: "Password",
+    placeholder: "••••••••",
+    type: "password",
+    variant: "outlined",
   },
 };
 
