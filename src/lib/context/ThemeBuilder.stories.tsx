@@ -43,6 +43,7 @@ import { Carousel, CarouselItem } from "../components/material3-carousel";
 import { NavigationRail } from "../components/navigation-rail";
 import { Resizable } from "../components/resizable";
 import { Select } from "../components/select";
+import { Switch } from "../components/switch";
 import { Toaster, toast } from "../components/toast";
 import { Typography } from "../components/typography";
 
@@ -378,6 +379,8 @@ const SidebarControls = () => {
     setContrast,
     animationStyle,
     setAnimationStyle,
+    colorMatch,
+    setColorMatch,
   } = useTheme();
 
   const { show } = useDialog();
@@ -395,6 +398,7 @@ const SidebarControls = () => {
       plain: "Manrope",
     });
     setColorFamily("");
+    setColorMatch(false);
   };
 
   const handleExport = () => {
@@ -405,7 +409,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <ChesaiProvider
       defaultTheme="${theme}"
       defaultContrast="${contrast}"
-      defaultAnimationStyle="${animationStyle}"${seedColor ? `\n      defaultSeedColor="${seedColor}"` : ""}
+      defaultAnimationStyle="${animationStyle}"${seedColor ? `\n      defaultSeedColor="${seedColor}"` : ""}${colorMatch ? `\n      defaultColorMatch={${colorMatch}}` : ""}
       defaultFonts={${JSON.stringify(fonts, null, 2).split("\n").join("\n      ")}}
       defaultOverrides={${JSON.stringify(overrides, null, 2).split("\n").join("\n      ")}}
     >
@@ -595,6 +599,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 shape="minimal"
                 className="w-full"
               />
+            </div>
+
+            {/* --- COLOR MATCH SWITCH --- */}
+            <div className="flex items-center justify-between mt-3 py-1">
+              <div className="flex flex-col flex-1 pr-4">
+                <Typography variant="body-medium" className="font-semibold">
+                  Color match
+                </Typography>
+                <Typography variant="body-small" muted className="leading-snug">
+                  Stay true to source color (uses SchemeContent)
+                </Typography>
+              </div>
+              <Switch checked={colorMatch} onCheckedChange={setColorMatch} />
             </div>
           </section>
 

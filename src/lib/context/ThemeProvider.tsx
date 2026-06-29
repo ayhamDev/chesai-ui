@@ -1,7 +1,8 @@
 "use client";
 
 import type { Transition } from "framer-motion";
-import React, {
+import type React from "react";
+import {
   createContext,
   useCallback,
   useContext,
@@ -45,6 +46,8 @@ interface ThemeProviderState {
   resetOverrides: () => void;
   palette: ThemePalette;
   getComputedColor: (key: ThemeColorKey) => string;
+  colorMatch: boolean;
+  setColorMatch: (match: boolean) => void;
 }
 
 const defaultFontSettings: FontSettings = {
@@ -75,6 +78,8 @@ const initialState: ThemeProviderState = {
   resetOverrides: () => null,
   palette: staticPalette,
   getComputedColor: () => "",
+  colorMatch: false,
+  setColorMatch: () => null,
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
@@ -93,6 +98,8 @@ interface ThemeProviderProps {
   animationStorageKey?: string;
   seedColorStorageKey?: string;
   overridesStorageKey?: string;
+  colorMatchStorageKey?: string;
+  defaultColorMatch?: boolean;
 }
 
 export function ThemeProvider({
@@ -109,6 +116,8 @@ export function ThemeProvider({
   animationStorageKey = "chesai-ui-animation",
   seedColorStorageKey = "chesai-ui-seed-color",
   overridesStorageKey = "chesai-ui-overrides",
+  colorMatchStorageKey = "chesai-ui-color-match",
+  defaultColorMatch = false,
   ...props
 }: ThemeProviderProps) {
   // --- 1. STATE INITIALIZATION ---
@@ -161,6 +170,14 @@ export function ThemeProvider({
       }
     }
     return defaultOverrides;
+  });
+
+  const [colorMatch, setColorMatchState] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(colorMatchStorageKey);
+      if (stored !== null) return stored === "true";
+    }
+    return defaultColorMatch;
   });
 
   const [fonts, setFontsState] = useState<FontSettings>(() => {
@@ -252,6 +269,14 @@ export function ThemeProvider({
     localStorage.removeItem(overridesStorageKey);
   }, [overridesStorageKey]);
 
+  const setColorMatch = useCallback(
+    (match: boolean) => {
+      localStorage.setItem(colorMatchStorageKey, String(match));
+      setColorMatchState(match);
+    },
+    [colorMatchStorageKey],
+  );
+
   const getComputedColor = useCallback((key: ThemeColorKey): string => {
     if (typeof window === "undefined") return "";
     const cssKey = CSS_MAPPING[key];
@@ -300,8 +325,9 @@ export function ThemeProvider({
       resolvedTheme === "dark",
       contrast,
       overrides,
+      colorMatch,
     );
-  }, [seedColor, resolvedTheme, contrast, overrides]);
+  }, [seedColor, resolvedTheme, contrast, overrides, colorMatch]);
 
   // System Preference Listener
   useEffect(() => {
@@ -387,6 +413,8 @@ export function ThemeProvider({
     resetOverrides,
     palette: staticPalette,
     getComputedColor,
+    colorMatch,
+    setColorMatch,
   };
 
   return (

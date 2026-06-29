@@ -7,6 +7,7 @@ import {
   Hct,
   MaterialDynamicColors,
   redFromArgb,
+  SchemeContent,
   SchemeTonalSpot,
   TonalPalette,
 } from '@material/material-color-utilities'
@@ -89,6 +90,7 @@ export function applyThemeVariables(
   isDark: boolean,
   contrast: 'standard' | 'medium' | 'high',
   overrides: ThemeOverrides = {},
+  colorMatch: boolean = false,
 ) {
   const root = document.documentElement
   const computedValues: Record<string, string> = {}
@@ -101,7 +103,9 @@ export function applyThemeVariables(
       if (contrast === 'medium') contrastLevel = 0.5
       if (contrast === 'high') contrastLevel = 1.0
 
-      const scheme = new SchemeTonalSpot(sourceColorHct, isDark, contrastLevel)
+      const scheme = colorMatch
+        ? new SchemeContent(sourceColorHct, isDark, contrastLevel)
+        : new SchemeTonalSpot(sourceColorHct, isDark, contrastLevel)
 
       Object.entries(CSS_MAPPING).forEach(([jsKey, cssKey]) => {
         // @ts-expect-error

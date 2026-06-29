@@ -10,16 +10,20 @@ import {
   XAxis,
   YAxis,
   Cell,
+  ReferenceLine,
 } from "recharts";
 import { ChartTooltip } from "./chart-tooltip";
 import {
   chartAxisConfig,
   chartGridConfig,
   getColorForIndex,
+  EASE_EMPHASIZED,
+  EASE_EXPRESSIVE_DEFAULT_SPATIAL,
 } from "./chart-utils";
 import { ChartProps } from "./area-chart";
 import { clsx } from "clsx";
-import { motion } from "framer-motion"; // Added Framer Motion import
+import { motion } from "framer-motion";
+import { useTheme } from "../../context";
 
 // Import custom shapes subsystem paths
 import { SHAPE_PATHS, type ShapeType } from "../shape/paths";
@@ -33,6 +37,8 @@ export interface BarChartProps extends ChartProps {
   highlightShape?: ShapeType;
   /** Custom overlay icon centered in the badge. Defaults to a checkmark. */
   highlightIcon?: React.ReactNode;
+  /** Show a distinctive baseline reference line at y = 0 */
+  showBaseline?: boolean;
 }
 
 export const BarChart = ({
@@ -51,9 +57,18 @@ export const BarChart = ({
   highlightColor = "var(--md-sys-color-tertiary, #4ADE80)",
   highlightShape = "flower",
   highlightIcon,
+  showBaseline = false,
 }: BarChartProps) => {
   const isGhost = variant === "ghost";
   const isSecondary = variant === "secondary";
+  const { animationStyle } = useTheme();
+
+  // Dynamic animation attributes matching Material 3 specifications
+  const isExpressive = animationStyle === "expressive";
+  const easingFunction = isExpressive
+    ? EASE_EXPRESSIVE_DEFAULT_SPATIAL
+    : EASE_EMPHASIZED;
+  const animationDuration = isExpressive ? 1000 : 550;
 
   const getRadius = () => {
     if (shape === "sharp") return [0, 0, 0, 0];
@@ -61,20 +76,27 @@ export const BarChart = ({
     return [4, 4, 4, 4]; // Minimal default
   };
 
-  // Custom label renderer to overlay the decorative shape & inner checkmark at the top of the bar
+  // Custom label renderer to overlay the decorative shape & inner checkmark at the active top/bottom edge of the bar
   const renderCustomLabel = (props: any) => {
-    const { x, y, width, index: barIndex } = props;
+    const { x, y, width, height: barHeight, value, index: barIndex } = props;
     const entry = data[barIndex];
     const isHighlighted = highlightKey ? !!entry[highlightKey] : false;
 
-    if (!isHighlighted || isGhost) return null;
+    if (!isHighlighted || isGhost || barHeight === 0) return null;
 
     // Responsive badge size relative to bar width
     const badgeSize = Math.min(width * 0.75, 32);
     const bx = x + width / 2 - badgeSize / 2;
 
-    // Nestle the badge slightly down inside the top curved capsule boundary of the bar
-    const by = y + 6;
+    const isNegative = value < 0;
+
+    // Position the badge near the active outer boundary of the bar
+    // If positive: near the top (y + 6)
+    // If negative: near the bottom (y + barHeight - badgeSize - 6)
+    const by = isNegative ? y + barHeight - badgeSize - 6 : y + 6;
+
+    // If the bar is too short to display the badge, skip rendering to prevent overlapping issues
+    if (barHeight < badgeSize + 12) return null;
 
     const shapePath = highlightShape
       ? SHAPE_PATHS[highlightShape]
@@ -149,7 +171,7 @@ export const BarChart = ({
             margin={
               isGhost
                 ? { top: 0, right: 0, bottom: 0, left: 0 }
-                : { top: 20, right: 10, bottom: 0, left: 0 }
+                : { top: 20, right: 10, bottom: 5, left: 0 }
             }
             barGap={2}
           >
@@ -178,6 +200,16 @@ export const BarChart = ({
               />
             )}
 
+            {/* Render baseline reference line at y=0 if enabled */}
+            {showBaseline && !isGhost && (
+              <ReferenceLine
+                y={0}
+                stroke="var(--md-sys-color-outline-variant)"
+                strokeWidth={1.5}
+                className="opacity-80"
+              />
+            )}
+
             {categories.map((category, i) => {
               const baseColor = colors?.[i] || getColorForIndex(i);
               return (
@@ -185,8 +217,8 @@ export const BarChart = ({
                   key={category}
                   dataKey={category}
                   radius={getRadius() as any}
-                  animationDuration={1500}
-                  animationEasing="ease-out"
+                  animationDuration={animationDuration}
+                  animationEasing={easingFunction}
                   maxBarSize={isGhost ? undefined : 60}
                   label={highlightKey ? renderCustomLabel : undefined}
                 >

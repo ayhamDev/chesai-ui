@@ -6,6 +6,7 @@ import { AreaChart } from "./area-chart";
 import { BarChart } from "./bar-chart";
 import { LineChart } from "./line-chart";
 import { PieChart } from "./pie-chart";
+import { HeatmapChart } from "./heatmap-chart";
 
 const meta: Meta = {
   title: "Components/Data/Charts",
@@ -293,6 +294,146 @@ export const WeeklyStepsTracker: StoryObj = {
           highlightKey="reachedGoal" // Tells chart to inspect reachedGoal parameter
           highlightColor="#4ADE80" // Luminous green for achievers
           highlightShape="clover8" // Overlays flower shape from shapes paths
+        />
+      </Card>
+    </div>
+  ),
+};
+
+// ... at the end of src/lib/components/charts/Charts.stories.tsx ...
+
+const financialData = [
+  { month: "Jan", netCashFlow: 4500, majorAnomaly: false },
+  { month: "Feb", netCashFlow: -2800, majorAnomaly: true },
+  { month: "Mar", netCashFlow: 8900, majorAnomaly: false },
+  { month: "Apr", netCashFlow: -1200, majorAnomaly: false },
+  { month: "May", netCashFlow: 14000, majorAnomaly: true },
+  { month: "Jun", netCashFlow: -6200, majorAnomaly: true },
+  { month: "Jul", netCashFlow: 3100, majorAnomaly: false },
+];
+
+export const NegativeBarChartStory: StoryObj = {
+  name: "Negative Value Support (Cash Flow)",
+  render: () => (
+    <div className="w-full max-w-xl mx-auto">
+      <Card className="p-6 bg-slate-50 dark:bg-zinc-900 border-none shadow-md">
+        <div className="mb-6">
+          <Typography variant="title-medium" className="font-bold">
+            Net Cash Flow
+          </Typography>
+          <Typography variant="body-small" className="font-medium opacity-70">
+            Monthly balance showing capital surpluses and deficits
+          </Typography>
+          <Typography variant="body-small" muted className="mt-2 block">
+            Highlight badges flag months with extreme anomalies (under -2k or
+            over 10k).
+          </Typography>
+        </div>
+
+        <BarChart
+          data={financialData}
+          index="month"
+          categories={["netCashFlow"]}
+          colors={["var(--md-sys-color-primary, #6366F1)"]}
+          shape="full"
+          height={300}
+          valueFormatter={(v) =>
+            `${v >= 0 ? "+" : ""}${(v / 1000).toFixed(1)}k`
+          }
+          highlightKey="majorAnomaly"
+          highlightColor="#4ADE80" // Luminous green for achievers
+          highlightShape="clover8" // Overlays flower shape from shapes paths
+          showBaseline={false}
+        />
+      </Card>
+    </div>
+  ),
+};
+// Append the following imports and definitions to the end of src/lib/components/charts/Charts.stories.tsx
+
+const weekDays = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+const hourIntervals = ["12 AM", "4 AM", "8 AM", "12 PM", "4 PM", "8 PM"];
+
+// Generates real-looking mock traffic volume data spanning days of the week by hour segments
+const mockHeatmapData = (() => {
+  const dataPoints = [];
+  for (const day of weekDays) {
+    for (const hr of hourIntervals) {
+      let traffic = Math.floor(Math.random() * 85) + 15;
+
+      // Simulating higher traffic periods on weekdays and mid-afternoon
+      if (
+        day !== "Saturday" &&
+        day !== "Sunday" &&
+        (hr === "12 PM" || hr === "4 PM")
+      ) {
+        traffic += 110;
+      }
+      dataPoints.push({ x: hr, y: day, value: traffic });
+    }
+  }
+  return dataPoints;
+})();
+
+export const HeatmapShowcase: StoryObj = {
+  name: "Heatmap (System Load / Traffic Activity)",
+  render: () => (
+    <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
+      <Card className="p-6  border-none shadow-md">
+        <div className="mb-6">
+          <Typography variant="title-medium" className="font-bold">
+            Weekly Server Performance Heatmap
+          </Typography>
+          <Typography variant="body-small" className="font-medium opacity-70">
+            Hourly transaction throughput across standard work weeks.
+            Over-capacity surges are indicated by dense color bands.
+          </Typography>
+        </div>
+
+        <HeatmapChart
+          data={mockHeatmapData}
+          xLabels={hourIntervals}
+          yLabels={weekDays}
+          variant="primary"
+          shape="minimal"
+          height={340}
+          valueFormatter={(v) => `${v} req/min`}
+        />
+      </Card>
+
+      <Card className="p-6 border-none shadow-md">
+        <div className="mb-6">
+          <Typography variant="title-medium" className="font-bold">
+            Risk Mitigation Log (Errors Count)
+          </Typography>
+          <Typography
+            variant="body-small"
+            className="font-medium opacity-70 text-error"
+          >
+            High-density system exceptions logged per cluster nodes. Custom red
+            alert scaling mapping.
+          </Typography>
+        </div>
+
+        <HeatmapChart
+          data={mockHeatmapData.map((d) => ({
+            ...d,
+            value: Math.max(0, d.value - 60),
+          }))}
+          xLabels={hourIntervals}
+          yLabels={weekDays}
+          variant="error"
+          shape="full"
+          height={340}
+          valueFormatter={(v) => `${v} exceptions`}
         />
       </Card>
     </div>
