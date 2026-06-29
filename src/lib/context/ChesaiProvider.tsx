@@ -27,10 +27,14 @@ export interface ChesaiProviderProps {
   defaultFonts?: FontSettings;
   /** Manual theme overrides to take precedence over the generated palette */
   defaultOverrides?: ThemeOverrides;
+  /** Whether to stay true to the source seed color using SchemeContent. Defaults to false */
+  defaultColorMatch?: boolean;
   /** Initial layout direction. Defaults to 'ltr' */
   initialDirection?: Direction;
   /** Custom storage key for theme persistence */
   themeStorageKey?: string;
+  /** Custom storage key for color match persistence */
+  colorMatchStorageKey?: string;
   /** Custom storage key for direction persistence */
   layoutStorageKey?: string;
   /** Props to pass directly to the Sonner Toaster */
@@ -45,8 +49,10 @@ export function ChesaiProvider({
   defaultSeedColor = null,
   defaultFonts,
   defaultOverrides,
+  defaultColorMatch = false,
   initialDirection = "ltr",
   themeStorageKey = "chesai-ui-theme",
+  colorMatchStorageKey = "chesai-ui-color-match",
   layoutStorageKey = "layout-direction",
   toasterProps,
 }: ChesaiProviderProps) {
@@ -58,7 +64,9 @@ export function ChesaiProvider({
       defaultSeedColor={defaultSeedColor}
       defaultFonts={defaultFonts}
       defaultOverrides={defaultOverrides}
+      defaultColorMatch={defaultColorMatch}
       storageKey={themeStorageKey}
+      colorMatchStorageKey={colorMatchStorageKey}
     >
       <LayoutProvider
         initialDirection={initialDirection}
