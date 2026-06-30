@@ -50,7 +50,8 @@ export const inputStyles = cva('group flex flex-col data-[hidden=true]:hidden w-
 })
 
 export const inputWrapperVariants = cva(
-  'relative w-full inline-flex tap-highlight-transparent flex-row items-center gap-3 transition-colors duration-200 ease-out overflow-hidden outline-none text-left',
+  // CHANGED: text-left to text-start
+  'relative w-full inline-flex tap-highlight-transparent flex-row items-center gap-3 transition-colors duration-200 ease-out overflow-hidden outline-none text-start',
   {
     variants: {
       variant: {
@@ -92,11 +93,11 @@ export const inputWrapperVariants = cva(
       { variant: 'ghost', isFocused: true, className: 'bg-surface-container-highest/50' },
       { variant: 'ghost-inverted', isFocused: true, className: 'bg-primary/10' },
 
-      // Error States - UPDATED to match MultiSelect Ring Style
+      // Error States
       {
         variant: ['filled', 'filled-inverted'],
         isErrored: true,
-        className: 'bg-error-container/20 !text-error ring-inset ring-2 ring-error', // <--- CHANGED
+        className: 'bg-error-container/20 !text-error ring-inset ring-2 ring-error',
       },
       {
         variant: ['outlined', 'outlined-inverted', 'ghost', 'ghost-inverted'],
@@ -120,7 +121,8 @@ export const inputSlots = {
   base: 'group flex flex-col data-[hidden=true]:hidden w-full',
   label: [
     'absolute z-10 block subpixel-antialiased text-on-surface-variant/70 pointer-events-none',
-    'origin-top-left transition-all duration-200 ease-out will-change-transform',
+    // CHANGED: origin-top-left to origin-top-start for correct scale origin in RTL
+    'origin-top-start transition-all duration-200 ease-out will-change-transform',
     'cursor-text group-data-[filled=true]:cursor-default',
   ],
   mainWrapper: 'h-full flex flex-col',
@@ -177,15 +179,18 @@ export const getInputSlotClassNames = (
   let height = 'h-14'
   let py = 'py-2'
   let px = 'px-3'
-  let labelClasses = 'left-3'
+  // CHANGED: left-3 to start-3
+  let labelClasses = 'start-3'
   let inputPadding = ''
 
   if (shape === 'full') {
     px = 'px-5'
-    labelClasses = 'left-5'
+    // CHANGED: left-5 to start-5
+    labelClasses = 'start-5'
   } else {
     px = 'px-4'
-    labelClasses = 'left-4'
+    // CHANGED: left-4 to start-4
+    labelClasses = 'start-4'
   }
 
   if (labelPlacement === 'inside') {
@@ -202,9 +207,11 @@ export const getInputSlotClassNames = (
 
     if (hasStartContent) {
       if (shape === 'full') {
-        labelClasses = size === 'sm' ? 'left-10' : size === 'lg' ? 'left-14' : 'left-12'
+        // CHANGED: left-* to start-*
+        labelClasses = size === 'sm' ? 'start-10' : size === 'lg' ? 'start-14' : 'start-12'
       } else {
-        labelClasses = size === 'sm' ? 'left-9' : size === 'lg' ? 'left-12' : 'left-11'
+        // CHANGED: left-* to start-*
+        labelClasses = size === 'sm' ? 'start-9' : size === 'lg' ? 'start-12' : 'start-11'
       }
     }
 
@@ -224,12 +231,14 @@ export const getInputSlotClassNames = (
     }
   } else {
     height = size === 'sm' ? 'h-10' : size === 'lg' ? 'h-14' : 'h-12'
-    labelClasses = 'static mb-1.5 ml-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
+    // CHANGED: ml-1 to ms-1 (margin-start)
+    labelClasses = 'static mb-1.5 ms-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
   }
 
   if (variant === 'underlined') {
     px = 'px-0'
-    labelClasses = labelClasses.replace(/left-\d+/, 'left-0')
+    // CHANGED: left-\d+ to start-\d+, and replacing with start-0
+    labelClasses = labelClasses.replace(/start-\d+/, 'start-0')
   }
 
   return {

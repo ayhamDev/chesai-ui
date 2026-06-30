@@ -3,6 +3,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Mail, Search } from "lucide-react";
 import { Input } from "./index";
+import { LayoutDirectionToggle } from "../layout-toggle";
 
 const meta: Meta<typeof Input> = {
   title: "Components/Forms & Inputs/Input",
@@ -130,6 +131,8 @@ export const Sizes: Story = {
   name: "Sizes (Inside Label)",
   render: () => (
     <div className="w-full flex flex-col gap-6 max-w-sm">
+      <LayoutDirectionToggle />
+
       <Input label="Small" size="sm" variant="filled" />
       <Input label="Medium" size="md" variant="filled" />
       <Input label="Large" size="lg" variant="filled" />
