@@ -17,9 +17,10 @@ import {
   type VisibilityState,
   type Table as TanstackTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Search } from "lucide-react";
 import React from "react";
 import { Button } from "../button";
+import { EmptyState } from "../empty-state";
 import {
   DataTableContext,
   DataTablePagination,
@@ -77,6 +78,13 @@ export interface DataDisplayProps<TData> {
    */
   enableSortControl?: boolean;
   searchViewProps?: Partial<Omit<SearchViewProps, "value" | "onChange">>;
+
+  // Empty State Configuration Slots
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyIcon?: React.ReactNode;
+  emptyAction?: React.ReactNode;
+  renderEmptyState?: () => React.ReactNode;
 }
 
 // --- Sort Control Helper ---
@@ -165,6 +173,11 @@ export function DataDisplay<TData>({
   bulkActions,
   enableSortControl = true,
   searchViewProps,
+  emptyTitle,
+  emptyDescription,
+  emptyIcon,
+  emptyAction,
+  renderEmptyState,
 }: DataDisplayProps<TData>) {
   // --- Table State Management ---
   const [internalRowSelection, setInternalRowSelection] = React.useState({});
@@ -238,9 +251,25 @@ export function DataDisplay<TData>({
     }
 
     if (rows.length === 0) {
+      if (renderEmptyState) {
+        return renderEmptyState();
+      }
+
       return (
-        <div className="flex h-64 w-full items-center justify-center border-2 border-dashed border-outline-variant rounded-xl text-on-surface-variant">
-          No results found.
+        <div className="flex h-64 w-full items-center justify-center border-2 border-dashed border-outline-variant rounded-xl p-6">
+          <EmptyState
+            variant="default"
+            icon={
+              emptyIcon ?? (
+                <Search className="h-10 w-10 opacity-40 text-on-surface-variant" />
+              )
+            }
+            title={emptyTitle ?? "No results found."}
+            description={
+              emptyDescription ?? "Try adjusting your filters or search terms."
+            }
+            action={emptyAction}
+          />
         </div>
       );
     }

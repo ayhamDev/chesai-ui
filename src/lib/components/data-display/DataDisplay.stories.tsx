@@ -1,13 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Check, Mail, MoreHorizontal, Star, Trash2 } from "lucide-react";
-import React, { useState } from "react";
+import { MoreHorizontal, Star, Trash2 } from "lucide-react";
 import { Avatar } from "../avatar";
 import { Badge } from "../badge";
 import { Button } from "../button";
 import { Card } from "../card";
 import { Checkbox } from "../checkbox";
-import { DataTableColumnHeader } from "../data-table";
 import {
   DropdownMenu,
   DropdownMenuContent,
