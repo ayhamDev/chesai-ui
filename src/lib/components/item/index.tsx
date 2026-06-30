@@ -506,7 +506,7 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
     };
 
     const handleItemClick = (e: React.MouseEvent<HTMLDivElement>) => {
-      // FIX: Disable expanding while actively swiping/dragging.
+      // Disable expanding while actively swiping/dragging.
       // If pointer has dragged the card horizontally (> 5px), early return.
       if (isSwipeable && Math.abs(x.get()) > 5) {
         if (swipeType === "reveal" && Math.abs(x.get()) > 10) {
@@ -673,7 +673,8 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
             dragConstraints={stableConstraints}
             dragElastic={swipeType === "reveal" ? 0.2 : 0.3}
             onDragEnd={handleDragEnd}
-            className="relative z-10 w-full rounded-[inherit] cursor-pointer transform-gpu will-change-transform"
+            data-vaul-no-drag
+            className="relative z-10 w-full rounded-[inherit] cursor-pointer transform-gpu will-change-transform touch-pan-y"
           >
             {innerContent}
           </motion.div>
@@ -824,8 +825,19 @@ ItemActions.displayName = "ItemActions";
 const ItemExpandedContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, children, ...props }, ref) => {
+>(({ className, children, onClick, onPointerDown, ...props }, ref) => {
   const { expanded } = useItem();
+
+  // Prevent event bubbling to avoid triggering parent toggles and ripples
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    onClick?.(e);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    onPointerDown?.(e);
+  };
 
   return (
     <AnimatePresence initial={false}>
@@ -837,6 +849,8 @@ const ItemExpandedContent = React.forwardRef<
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
           className={twMerge("overflow-hidden w-full", className)}
+          onClick={handleClick}
+          onPointerDown={handlePointerDown}
           {...(props as any)}
         >
           <div className="pt-2 pb-1">{children}</div>
