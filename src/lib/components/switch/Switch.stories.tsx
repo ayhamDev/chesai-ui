@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Switch } from "./index";
 import { Card } from "../card";
 import { Typography } from "../typography";
+import { LayoutDirectionToggle } from "../layout-toggle";
 
 const meta: Meta<typeof Switch> = {
   title: "Components/Forms & Inputs/Switch",
@@ -29,7 +30,7 @@ type Story = StoryObj<typeof Switch>;
 
 export const MaterialSpecs: Story = {
   args: {
-    size: "md"
+    size: "md",
   },
 
   name: "Material You Spec Sheet",
@@ -39,6 +40,7 @@ export const MaterialSpecs: Story = {
     return (
       <div className="flex flex-col gap-8 p-8 bg-surface-container-low rounded-3xl">
         {/* Header */}
+        <LayoutDirectionToggle />
         <div className="flex justify-between items-center border-b border-outline-variant pb-4">
           <Typography variant="title-small">Switch Variations</Typography>
         </div>
@@ -125,7 +127,7 @@ export const MaterialSpecs: Story = {
         </div>
       </div>
     );
-  }
+  },
 };
 
 export const Interactive: Story = {

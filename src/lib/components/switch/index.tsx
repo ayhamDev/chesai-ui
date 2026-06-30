@@ -5,6 +5,7 @@ import { clsx } from "clsx";
 import { motion, Transition } from "framer-motion";
 import { Check, X } from "lucide-react";
 import React, { useState } from "react";
+import { useLayout } from "../../context/layout-context";
 
 // --- VARIANTS ---
 
@@ -74,6 +75,19 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
     const uniqueId = React.useId();
     const switchId = id || uniqueId;
 
+    // Detect RTL status safely from layout context or document fallback
+    let isRtl = false;
+    try {
+      const layout = useLayout();
+      isRtl = layout.isRtl;
+    } catch {
+      if (typeof window !== "undefined") {
+        isRtl =
+          document.documentElement.dir === "rtl" ||
+          document.documentElement.classList.contains("rtl");
+      }
+    }
+
     const [internalChecked, setInternalChecked] = useState(
       defaultChecked ?? false,
     );
@@ -123,6 +137,8 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
     };
 
     const animState = getThumbAnimation();
+    const multiplier = isRtl ? -1 : 1;
+    const animX = animState.x * multiplier;
     const iconSizePixel = size === "sm" ? 10 : size === "lg" ? 20 : 16;
 
     return (
@@ -162,12 +178,16 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
               transition={springTransition}
               initial={false}
               animate={{
-                x: animState.x,
+                x: animX,
                 width: animState.width,
                 height: animState.height,
                 backgroundColor: isChecked
                   ? "var(--md-sys-color-on-primary)"
                   : "var(--md-sys-color-outline-variant)",
+              }}
+              style={{
+                left: isRtl ? "auto" : 0,
+                right: isRtl ? 0 : "auto",
               }}
               className={clsx(
                 "absolute top-1/2 -translate-y-1/2 rounded-full shadow-sm flex items-center justify-center z-10",
