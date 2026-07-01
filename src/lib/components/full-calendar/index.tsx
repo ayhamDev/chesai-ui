@@ -453,6 +453,7 @@ export const FullCalendarViewDispatcher = () => {
   );
 };
 export * from "./recurrence-dialog";
+export * from "./recurrence-select";
 
 export const FullCalendar = Object.assign(FullCalendarRoot, {
   Toolbar: FullCalendarToolbar,
