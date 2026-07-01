@@ -119,10 +119,11 @@ export const ReverseInfiniteScroll = forwardRef<
     // Scroll Observer: monitors bounds without causing full component re-renders
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const el = e.currentTarget;
-      const { scrollTop, scrollHeight, clientHeight } = el;
+      const { scrollTop, scrollHeight } = el;
 
-      // Update current positional states
+      // Update current positional states to prevent stale calculations
       scrollStateRef.current.previousScrollTop = scrollTop;
+      scrollStateRef.current.previousScrollHeight = scrollHeight;
 
       const currentAtBottom = checkIsAtBottom(el);
       updateAtBottomState(currentAtBottom);
@@ -174,22 +175,38 @@ export const ReverseInfiniteScroll = forwardRef<
       }
     }, [children]);
 
-    // Handle dynamically resized nodes (e.g. nested images loading inside cards)
+    // Handle dynamically resized nodes (e.g. streaming tokens, nested images loading inside cards)
     useEffect(() => {
       const container = containerRef.current;
       const content = contentRef.current;
       if (!container || !content) return;
 
       const observer = new ResizeObserver(() => {
-        const { isAtBottom } = scrollStateRef.current;
-        if (isAtBottom) {
-          container.scrollTop = container.scrollHeight - container.clientHeight;
+        const { previousScrollHeight, previousScrollTop, isAtBottom } =
+          scrollStateRef.current;
+
+        // MATHEMATICAL ANCHORING:
+        // Calculate if we were docked at the bottom of the container *prior* to this resizing tick.
+        // This prevents race-conditions with asynchronous scroll events that lag behind rapid DOM height expansions.
+        const wasNearBottom =
+          previousScrollHeight - container.clientHeight - previousScrollTop <=
+          autoScrollThreshold;
+
+        if (isAtBottom || wasNearBottom) {
+          const newScrollTop = container.scrollHeight - container.clientHeight;
+          container.scrollTop = newScrollTop;
+
+          // Sync refs immediately to ensure the next observation tick has updated context
+          scrollStateRef.current.previousScrollHeight = container.scrollHeight;
+          scrollStateRef.current.previousScrollTop = newScrollTop;
+          scrollStateRef.current.isAtBottom = true;
+          setIsAtBottomState(true);
         }
       });
 
       observer.observe(content);
       return () => observer.disconnect();
-    }, []);
+    }, [autoScrollThreshold]);
 
     // Initial positioning on mount
     useEffect(() => {
