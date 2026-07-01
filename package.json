@@ -111,6 +111,7 @@
     "react-rnd": "^10.5.2",
     "react-router-dom": "^7.15.1",
     "recharts": "^3.7.0",
+    "rrule": "^2.8.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "use-ripple-hook": "^1.0.24",

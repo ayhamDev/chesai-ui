@@ -1,9 +1,6 @@
 // src/lib/components/full-calendar/utils.ts
 import {
   addDays,
-  addMonths,
-  addWeeks,
-  addYears,
   differenceInDays,
   endOfMonth,
   endOfWeek,
@@ -17,6 +14,7 @@ import {
   startOfWeek,
   startOfYear,
 } from 'date-fns'
+import { RRule } from 'rrule' // Standard compliant recurrence evaluator
 import type { CalendarEvent, CalendarVariant } from './types'
 
 // --- THEME UTILS ---
@@ -48,7 +46,26 @@ export const getCalendarStickyBgClasses = (variant?: CalendarVariant) => {
   }
 }
 
-// --- VIRTUAL RECURRENCE EXPANSION ---
+// Map custom frequency keys to the standard RRule constants
+const freqMap = {
+  daily: RRule.DAILY,
+  weekly: RRule.WEEKLY,
+  monthly: RRule.MONTHLY,
+  yearly: RRule.YEARLY,
+};
+
+// Map Javascript weekday indices (0 = Sunday, 1 = Monday, ..., 6 = Saturday) to RRule Weekdays
+const RRULE_WEEKDAYS = [
+  RRule.SU, // 0
+  RRule.MO, // 1
+  RRule.TU, // 2
+  RRule.WE, // 3
+  RRule.TH, // 4
+  RRule.FR, // 5
+  RRule.SA, // 6
+];
+
+// --- STANDARD RECURRENCE EXPANSION ---
 export const expandEvents = (events: CalendarEvent[], viewStart: Date, viewEnd: Date): CalendarEvent[] => {
   const expanded: CalendarEvent[] = []
 
@@ -61,78 +78,47 @@ export const expandEvents = (events: CalendarEvent[], viewStart: Date, viewEnd: 
       return
     }
 
-    const rule = event.recurrence
-    let currentStart = new Date(event.start)
-    const duration = event.end.getTime() - event.start.getTime()
-    let occurrenceCount = 0
+    try {
+      const rule = event.recurrence;
+      const freq = freqMap[rule.frequency];
 
-    const maxCount = rule.endType === 'after_occurrences' ? rule.count || 1 : Infinity
-    const endDate = rule.endType === 'on_date' && rule.until ? new Date(rule.until) : new Date(8640000000000000) // Far future
+      const rruleOptions: any = {
+        freq,
+        dtstart: event.start,
+        interval: rule.interval || 1,
+      };
 
-    // Failsafe limit for generating virtual events to prevent infinite loops
-    const hardLimit = 1500
-
-    if (rule.frequency === 'weekly' && rule.daysOfWeek && rule.daysOfWeek.length > 0) {
-      let currentWeekStart = startOfWeek(currentStart)
-
-      while (
-        currentWeekStart <= viewEnd &&
-        currentWeekStart <= endDate &&
-        occurrenceCount < maxCount &&
-        occurrenceCount < hardLimit
-      ) {
-        for (const dayOfWeek of rule.daysOfWeek) {
-          const instanceStart = addDays(currentWeekStart, dayOfWeek)
-          instanceStart.setHours(
-            event.start.getHours(),
-            event.start.getMinutes(),
-            event.start.getSeconds(),
-            event.start.getMilliseconds(),
-          )
-
-          // Only count and render if it is on or after the original start date
-          if (instanceStart >= event.start && instanceStart <= endDate && occurrenceCount < maxCount) {
-            if (instanceStart <= viewEnd && instanceStart.getTime() + duration >= viewStart.getTime()) {
-              expanded.push({
-                ...event,
-                id: `${event.id}-occ-${occurrenceCount}`,
-                start: new Date(instanceStart),
-                end: new Date(instanceStart.getTime() + duration),
-              })
-            }
-            occurrenceCount++
-          }
-        }
-        currentWeekStart = addWeeks(currentWeekStart, rule.interval || 1)
+      // Set ending constraints based on endType
+      if (rule.endType === 'on_date' && rule.until) {
+        rruleOptions.until = rule.until;
+      } else if (rule.endType === 'after_occurrences' && rule.count) {
+        rruleOptions.count = rule.count;
       }
-    } else {
-      while (
-        currentStart <= viewEnd &&
-        currentStart <= endDate &&
-        occurrenceCount < maxCount &&
-        occurrenceCount < hardLimit
-      ) {
-        if (currentStart <= viewEnd && currentStart.getTime() + duration >= viewStart.getTime()) {
-          expanded.push({
-            ...event,
-            id: `${event.id}-occ-${occurrenceCount}`,
-            start: new Date(currentStart),
-            end: new Date(currentStart.getTime() + duration),
-          })
-        }
-        occurrenceCount++
 
-        if (rule.frequency === 'daily') {
-          currentStart = addDays(currentStart, rule.interval || 1)
-        } else if (rule.frequency === 'weekly') {
-          currentStart = addWeeks(currentStart, rule.interval || 1)
-        } else if (rule.frequency === 'monthly') {
-          currentStart = addMonths(currentStart, rule.interval || 1)
-        } else if (rule.frequency === 'yearly') {
-          currentStart = addYears(currentStart, rule.interval || 1)
-        } else {
-          break
-        }
+      // Handle custom weekly days constraint
+      if (rule.frequency === 'weekly' && rule.daysOfWeek && rule.daysOfWeek.length > 0) {
+        rruleOptions.byweekday = rule.daysOfWeek.map(d => RRULE_WEEKDAYS[d]);
+      }
+
+      const rruleInstance = new RRule(rruleOptions);
+      
+      // Query the occurrences precisely within our current calendar window
+      const dates = rruleInstance.between(viewStart, viewEnd, true);
+      const duration = event.end.getTime() - event.start.getTime();
+
+      dates.forEach((date, index) => {
+        expanded.push({
+          ...event,
+          id: `${event.id}-occ-${index}`, // Keep -occ- pattern intact to support standard edits
+          start: date,
+          end: new Date(date.getTime() + duration),
+        });
+      });
+    } catch (error) {
+      console.error('Failed to parse recurrence rule with rrule.js:', error);
+      // Fallback: If rrule parsing throws, fall back to checking the original event's timeframe
+      if (event.start <= viewEnd && event.end >= viewStart) {
+        expanded.push(event);
       }
     }
   })

@@ -1,4 +1,3 @@
-// src/lib/components/full-calendar/event-popover.tsx
 "use client";
 
 import { useMediaQuery } from "@uidotdev/usehooks";
@@ -15,6 +14,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { Button } from "../button";
+import { ButtonGroup } from "../button-group";
 import { DatePicker } from "../date-picker/date-picker";
 import { IconButton } from "../icon-button";
 import { Input } from "../input";
@@ -652,36 +652,35 @@ export const EventPopover = () => {
                 <Typography variant="body-medium" className="font-medium">
                   Repeat on
                 </Typography>
-                <div className="flex justify-between gap-1 mt-1">
-                  {["S", "M", "T", "W", "T", "F", "S"].map((day, idx) => {
-                    const isSelected =
-                      recurrenceDraft.daysOfWeek?.includes(idx);
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setRecurrenceDraft((p) => {
-                            const current = p.daysOfWeek || [];
-                            const next = current.includes(idx)
-                              ? current.filter((d) => d !== idx)
-                              : [...current, idx];
-                            return {
-                              ...p,
-                              daysOfWeek: next.length ? next : [idx],
-                            };
-                          });
-                        }}
-                        className={clsx(
-                          "w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                          isSelected
-                            ? "bg-primary text-on-primary"
-                            : "bg-surface-container-highest text-on-surface hover:bg-surface-container-highest/80",
-                        )}
-                      >
-                        {day}
-                      </button>
-                    );
-                  })}
+                <div className="flex justify-between mt-1 w-full">
+                  <ButtonGroup shape="full" gap="xs" className="w-full flex">
+                    {["S", "M", "T", "W", "T", "F", "S"].map((day, idx) => {
+                      const isSelected =
+                        recurrenceDraft.daysOfWeek?.includes(idx);
+                      return (
+                        <Button
+                          key={idx}
+                          variant={isSelected ? "primary" : "secondary"}
+                          isActive={isSelected}
+                          onClick={() => {
+                            setRecurrenceDraft((p) => {
+                              const current = p.daysOfWeek || [];
+                              const next = current.includes(idx)
+                                ? current.filter((d) => d !== idx)
+                                : [...current, idx];
+                              return {
+                                ...p,
+                                daysOfWeek: next.length ? next : [idx],
+                              };
+                            });
+                          }}
+                          className="flex-1 !px-0 min-w-0"
+                        >
+                          {day}
+                        </Button>
+                      );
+                    })}
+                  </ButtonGroup>
                 </div>
               </div>
             )}
