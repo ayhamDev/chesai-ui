@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.0.0 (2026-07-01)
+
+
+### Features
+
+* add ActivityContainer for improved tab transition handling and visibility management ([7d92dfb](https://github.com/ayhamDev/chesai-ui/commit/7d92dfb6d7a4ba1b9477519cfc70f149bf4c6d70))
+* add animated gradient border to Card and new variants + RTL support to FullCalendar ([fea7791](https://github.com/ayhamDev/chesai-ui/commit/fea7791fd74ac0af68f801bd04b84fee4d2341ca))
+* add Kanban component with customizable columns and drag-and-drop functionality ([62afa13](https://github.com/ayhamDev/chesai-ui/commit/62afa1308ba124d2466a9a0d8721143ec625699d))
+* add MD3 pill styles, collapsible sidebar nesting, and intelligent theme overrides ([13ce863](https://github.com/ayhamDev/chesai-ui/commit/13ce863cf046a197c73d1e35f446a764a410657e))
+* add Popover component with variant/shape/glass system; enhance QR code with 2K canvas, transparent bg, explicit PNG format; export timeline and useMaterialRipple ([1ee4ca0](https://github.com/ayhamDev/chesai-ui/commit/1ee4ca06e8a3994802b806c710cb6d2763c2d6e7))
+* **components:** add glassmorphism support to Card, Dialog, and Sheet ([c515efc](https://github.com/ayhamDev/chesai-ui/commit/c515efcfd7dd6b3a23155c6e6fe35349057774a2))
+* comprehensive MD3 component overhaul and form integrations ([115bffd](https://github.com/ayhamDev/chesai-ui/commit/115bffd3d08f1728fecd842f58332b82a04c8f40))
+* **data-table:** implement collapsible rows with animated expansion ([460ef1e](https://github.com/ayhamDev/chesai-ui/commit/460ef1e5357d82c92a4d8f4139f64c0242450cd3))
+* **dialog:** add controlled dialog story and refactor dialog components ([7aa0098](https://github.com/ayhamDev/chesai-ui/commit/7aa00987903f51277fc3053d11267180cd0a8aa2))
+* enhance Accordion and Dropzone components with new features and improved functionality ([2a3615c](https://github.com/ayhamDev/chesai-ui/commit/2a3615c03500af0c27304d4a427d1993aacf4e0c))
+* Enhance Avatar component with shape support and morphing animations ([3154e82](https://github.com/ayhamDev/chesai-ui/commit/3154e82419faf6f834143d7c17887d4d860a5037))
+* enhance Resizable component with collapsible panes and improved state management ([0365401](https://github.com/ayhamDev/chesai-ui/commit/03654010dc25ca00b4233404bace0dab054d3213))
+* enhance SearchView and Tabs components with shape and size variations ([cfc56bd](https://github.com/ayhamDev/chesai-ui/commit/cfc56bd37f42f681c4b442a1ba14e9561568da39))
+* extract Framer Motion event types from props in TabsPanel for improved prop handling ([14fe187](https://github.com/ayhamDev/chesai-ui/commit/14fe1874cb2ab71948f166f7dff02a675d2e49c6))
+* major UI refinements, MD3 expressive updates, and RTL support ([2144b5d](https://github.com/ayhamDev/chesai-ui/commit/2144b5d91bf0f15bd5ca3026e31263c14691383a))
+* **multi-select:** add portal prop to control Popover portal behavior ([587b5e4](https://github.com/ayhamDev/chesai-ui/commit/587b5e4b76e53c944041226b87e645e1f385a11c))
+* overhaul shape morphing, slider segmentation, and animation theming ([3dc5bf9](https://github.com/ayhamDev/chesai-ui/commit/3dc5bf959362a49df4732d981131a1c1da86aa4d))
+* **resizable:** add gap support and enhance handle indicator functionality ([233fa0f](https://github.com/ayhamDev/chesai-ui/commit/233fa0fe32112f1010af8d91840318901456fa5e))
+* restructure layout system, refactor stack-router with adapter pattern, and enhance navigation components ([3e28ac0](https://github.com/ayhamDev/chesai-ui/commit/3e28ac063a00349630535b32957c05e1fa607e37))
+* **search-view:** add showOverlay prop to control background overlay visibility ([744190e](https://github.com/ayhamDev/chesai-ui/commit/744190eb859f8229e29f1d7c83a78d47c222d67e))
+* **studio:** add multi-selection, undo/redo history, page CRUD, and component isolation sandbox ([5e0990a](https://github.com/ayhamDev/chesai-ui/commit/5e0990aecfbcbf9dbe4167530dad9523d2f6377b))
+* **ui:** Enhance components with variants, filtering, and image zoom ([0e58ed3](https://github.com/ayhamDev/chesai-ui/commit/0e58ed35f194616154c69dd6ec9520c26da4d204))
+* update version to 0.12.3, enhance theme and palette configuration, and add Tailwind CSS integration ([7356480](https://github.com/ayhamDev/chesai-ui/commit/7356480397c1a9dc95e70cd994ecd4c19bcc6392))
+* update version to 0.12.4, add official Tailwind CSS plugin, and enhance utility exports ([f38b57a](https://github.com/ayhamDev/chesai-ui/commit/f38b57a1f48f7beb545e7cc6c56e981b3eaaacb4))
+* update version to 0.12.8, refactor component props, and enhance sidebar functionality ([8d9da37](https://github.com/ayhamDev/chesai-ui/commit/8d9da3736b1ae633852383e122461c28e67f65cc))
+
+
+### Bug Fixes
+
+* **input:** label rests center when empty, placeholder fades via opacity ([996acc5](https://github.com/ayhamDev/chesai-ui/commit/996acc55afd8d20a0fb33bbef61de95566abe141))
+
 ## [3.0.1](https://github.com/IgnacioNMiranda/vite-component-library-template/compare/v3.0.0...v3.0.1) (2025-06-22)
 
 
