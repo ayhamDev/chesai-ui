@@ -235,7 +235,8 @@ const ToolbarRoot = React.forwardRef<
 ToolbarRoot.displayName = "Toolbar";
 
 const ToolbarSeparator: React.ForwardRefExoticComponent<
-  React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Separator> & React.RefAttributes<React.ElementRef<typeof ToolbarPrimitive.Separator>>
+  React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.Separator> &
+    React.RefAttributes<React.ElementRef<typeof ToolbarPrimitive.Separator>>
 > = React.forwardRef(({ className, ...props }, ref) => {
   const { orientation, size } = useToolbarContext();
   return (
@@ -350,7 +351,8 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
 ToolbarButton.displayName = "ToolbarButton";
 
 const ToolbarToggleGroup: React.ForwardRefExoticComponent<
-  React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleGroup> & React.RefAttributes<React.ElementRef<typeof ToolbarPrimitive.ToggleGroup>>
+  React.ComponentPropsWithoutRef<typeof ToolbarPrimitive.ToggleGroup> &
+    React.RefAttributes<React.ElementRef<typeof ToolbarPrimitive.ToggleGroup>>
 > = React.forwardRef(({ className, ...props }, ref) => {
   const { orientation } = useToolbarContext();
   return (
@@ -390,7 +392,10 @@ const ToolbarToggleItem = React.forwardRef<
     const finalShape = shape || context.shape;
 
     const localRef = React.useRef<HTMLButtonElement>(null);
-    React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current as HTMLButtonElement);
+    React.useImperativeHandle(
+      ref as React.Ref<any>,
+      () => localRef.current as HTMLButtonElement,
+    );
     const rippleColor =
       variant === "primary" || variant === "default"
         ? "var(--color-ripple-dark)" // Defined in theme.css as rgba(255,255,255, 0.1)
