@@ -3,7 +3,18 @@ import React from 'react';
 
 export type CalendarView = 'day' | 'week' | 'month' | 'year';
 export type EventType = 'event' | 'task' | 'appointment';
-export type CalendarVariant = 'primary' | 'secondary' | 'surface' | 'ghost';
+export type CalendarVariant =
+  | 'primary'
+  | 'secondary'
+  | 'tertiary'
+  | 'high-contrast'
+  | 'ghost'
+  | 'surface'
+  | 'surface-container-lowest'
+  | 'surface-container-low'
+  | 'surface-container'
+  | 'surface-container-high'
+  | 'surface-container-highest';
 
 export interface RecurrenceRule {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';

@@ -6,6 +6,7 @@ import { addDays, format, isSameDay, isToday, startOfDay } from "date-fns";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Typography } from "../typography";
 import { useFullCalendar, PrintModeContext } from "./calendar-context";
+import { useLayout } from "../../context/layout-context";
 import {
   expandEvents,
   getDaysForWeekView,
@@ -32,6 +33,7 @@ const COLOR_MAP = {
 
 export const TimelineView = () => {
   const isPrintMode = React.useContext(PrintModeContext);
+  const { isRtl } = useLayout();
 
   const {
     currentDate,
@@ -214,7 +216,6 @@ export const TimelineView = () => {
   }, [view, isPrintMode]);
 
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>, day: Date) => {
-    // 💡 FIX: Also block the grid click if an event was just dropped
     if (wasDraggedRef.current || dragState.current || isPrintMode) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
@@ -350,10 +351,13 @@ export const TimelineView = () => {
         const gridRect = gridRef.current.getBoundingClientRect();
         const colWidth = gridRect.width / days.length;
         const mouseX = e.clientX - gridRect.left;
-        const targetColIndex = Math.max(
+        let targetColIndex = Math.max(
           0,
           Math.min(days.length - 1, Math.floor(mouseX / colWidth)),
         );
+        if (isRtl) {
+          targetColIndex = days.length - 1 - targetColIndex;
+        }
         dayDelta = targetColIndex - startColIndex;
       }
 
@@ -580,7 +584,7 @@ export const TimelineView = () => {
                     style={{
                       top: `${top}%`,
                       height: `${height}%`,
-                      left: `${left}%`,
+                      [isRtl ? "right" : "left"]: `${left}%`,
                       width: `${width}%`,
                     }}
                   >

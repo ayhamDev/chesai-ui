@@ -44,6 +44,15 @@ const meta: Meta<typeof Card> = {
       control: "boolean",
       description: "Enables the ripple click effect.",
     },
+    animatedGradientBorder: {
+      control: "boolean",
+      description:
+        "Enables an animated linear gradient surrounding the border.",
+    },
+    gradientWidth: {
+      control: "number",
+      description: "Border thickness of the gradient.",
+    },
   },
 };
 
@@ -353,7 +362,44 @@ export const GlassEffect: Story = {
 };
 
 // ============================================================================
-// NEW CARD GROUP STORIES
+// NEW: ANIMATED GRADIENT BORDER STORY
+// ============================================================================
+
+export const AnimatedGradientBorder: Story = {
+  name: "Animated Gradient Border",
+  args: {
+    // Example of a dark variant
+    variant: "surface-container-highest",
+
+    shape: "minimal",
+    padding: "md",
+    animatedGradientBorder: true,
+    gradientWidth: 2,
+    gradientColors: ["#4285F4", "#EA4335", "#FBBC05", "#34A853"],
+    glass: false
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Injects a seamlessly looping, CSS-masked animated linear gradient border around the card. It does not obstruct content or interfere with hover and click state ripples. Perfect for 'Pro' up-sells.",
+      },
+    },
+  },
+  render: (args) => (
+    <Card {...args} className="max-w-sm flex flex-col gap-1.5">
+      <Typography variant="title-medium" className="font-bold">
+        Upgrade to unlock more
+      </Typography>
+      <Typography variant="body-small" muted>
+        Access higher limits, Pro models, and more.
+      </Typography>
+    </Card>
+  ),
+};
+
+// ============================================================================
+// CARD GROUP STORIES
 // ============================================================================
 
 export const GroupedVertical: StoryObj = {

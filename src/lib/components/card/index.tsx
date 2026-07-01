@@ -230,6 +230,9 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   elevation?: "none" | 1 | 2 | 3 | 4 | 5;
   enableRipple?: boolean;
   glass?: boolean;
+  animatedGradientBorder?: boolean;
+  gradientColors?: string[];
+  gradientWidth?: number;
 }
 
 // --- CardGroup Shape Helper Implementation ---
@@ -370,7 +373,11 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       enableRipple,
       hoverEffect,
       glass,
+      animatedGradientBorder,
+      gradientColors,
+      gradientWidth = 2,
       onPointerDown,
+      children,
       ...props
     },
     ref,
@@ -389,6 +396,16 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       duration: 600,
       disabled: !enableRipple,
     });
+
+    // Default playful Google AI/Gemini style colors if none are provided
+    const defaultGradientColors = ["#4285F4", "#EA4335", "#FBBC05", "#34A853"];
+    const safeColors =
+      gradientColors && gradientColors.length > 0
+        ? gradientColors
+        : defaultGradientColors;
+
+    // Duplicating the array perfectly loops a 200% width background animation
+    const cssGradientColors = [...safeColors, ...safeColors].join(", ");
 
     return (
       <div
@@ -412,7 +429,38 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
           onPointerDown?.(e);
         }}
         {...props}
-      />
+      >
+        {animatedGradientBorder && (
+          <>
+            <style>
+              {`
+                @keyframes card-border-gradient-animation {
+                  0% { background-position: 0% 50%; }
+                  100% { background-position: 100% 50%; }
+                }
+              `}
+            </style>
+            <div
+              className="absolute inset-0 rounded-[inherit] pointer-events-none z-10"
+              style={
+                {
+                  padding: `${gradientWidth}px`,
+                  background: `linear-gradient(90deg, ${cssGradientColors})`,
+                  backgroundSize: "200% 100%",
+                  animation:
+                    "card-border-gradient-animation 4s linear infinite",
+                  WebkitMask:
+                    "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                  WebkitMaskComposite: "xor",
+                  mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                  maskComposite: "exclude",
+                } as React.CSSProperties
+              }
+            />
+          </>
+        )}
+        {children}
+      </div>
     );
   },
 );

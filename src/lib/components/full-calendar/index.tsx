@@ -23,6 +23,7 @@ import { IconButton } from "../icon-button";
 import { Select } from "../select";
 import { Typography } from "../typography";
 import { TooltipProvider, Tooltip, TooltipTrigger } from "../tooltip";
+import { useLayout } from "../../context/layout-context";
 import {
   FullCalendarProvider,
   useFullCalendar,
@@ -35,7 +36,7 @@ import { YearView } from "./year-view";
 import { EventPopover } from "./event-popover";
 import { PrintPreviewDialog } from "./print-preview-dialog";
 import type { CalendarView, FullCalendarProps } from "./types";
-import { getCalendarBgClasses, getCalendarStickyBgClasses } from "./utils";
+import { getCalendarBgClasses, getCalendarStickyBgClasses, getCalendarSidePanelBgClasses } from "./utils";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { Calendar } from "../date-picker/calendar";
 
@@ -240,7 +241,7 @@ const FullCalendarRootContent = React.forwardRef<
       <div
         ref={ref}
         className={clsx(
-          "flex flex-col w-full h-full text-on-surface rounded-2xl overflow-hidden font-manrope relative print:hidden",
+          "flex flex-col w-full h-full rounded-2xl overflow-hidden font-manrope relative print:hidden",
           getCalendarBgClasses(variant),
           className,
         )}
@@ -340,6 +341,8 @@ const FullCalendarToolbar = ({ className }: { className?: string }) => {
     setPrintPreviewOpen,
   } = useFullCalendar();
 
+  const { isRtl } = useLayout();
+
   const headerText = React.useMemo(() => {
     if (view === "day") return format(currentDate, "MMMM d, yyyy");
     if (view === "week") return format(currentDate, "MMMM yyyy");
@@ -366,10 +369,18 @@ const FullCalendarToolbar = ({ className }: { className?: string }) => {
         </Button>
         <div className="flex items-center gap-1">
           <IconButton variant="ghost" size="sm" onClick={navigatePrev}>
-            <ChevronLeft className="w-5 h-5" />
+            {isRtl ? (
+              <ChevronRight className="w-5 h-5" />
+            ) : (
+              <ChevronLeft className="w-5 h-5" />
+            )}
           </IconButton>
           <IconButton variant="ghost" size="sm" onClick={navigateNext}>
-            <ChevronRight className="w-5 h-5" />
+            {isRtl ? (
+              <ChevronLeft className="w-5 h-5" />
+            ) : (
+              <ChevronRight className="w-5 h-5" />
+            )}
           </IconButton>
         </div>
         <Typography
@@ -431,7 +442,10 @@ export const FullCalendarViewDispatcher = () => {
       )}
     >
       {showSideCalendar && (
-        <div className="w-[350px] shrink-0 border-r border-outline-variant/30 p-2 flex flex-col bg-surface-container-low/30">
+        <div className={clsx(
+            "w-[350px] shrink-0 border-r border-outline-variant/30 p-2 flex flex-col",
+            getCalendarSidePanelBgClasses(variant)
+          )}>
           <Calendar
             mode="single"
             value={currentDate}

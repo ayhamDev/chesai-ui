@@ -21,28 +21,77 @@ import type { CalendarEvent, CalendarVariant } from './types'
 export const getCalendarBgClasses = (variant?: CalendarVariant) => {
   switch (variant) {
     case 'primary':
-      return 'bg-surface-container-low'
+      return 'bg-surface-container-low text-on-surface'
     case 'secondary':
-      return 'bg-surface-container-high'
+      return 'bg-surface-container-highest text-on-surface'
+    case 'tertiary':
+      return 'bg-tertiary-container text-on-tertiary-container'
+    case 'high-contrast':
+      return 'bg-inverse-surface text-inverse-on-surface'
     case 'ghost':
-      return 'bg-transparent'
+      return 'bg-transparent text-on-surface'
+    case 'surface-container-lowest':
+      return 'bg-surface-container-lowest text-on-surface'
+    case 'surface-container-low':
+      return 'bg-surface-container-low text-on-surface'
+    case 'surface-container':
+      return 'bg-surface-container text-on-surface'
+    case 'surface-container-high':
+      return 'bg-surface-container-high text-on-surface'
+    case 'surface-container-highest':
+      return 'bg-surface-container-highest text-on-surface'
     case 'surface':
     default:
-      return 'bg-surface'
+      return 'bg-surface text-on-surface'
   }
 }
 
 export const getCalendarStickyBgClasses = (variant?: CalendarVariant) => {
   switch (variant) {
     case 'primary':
-      return 'bg-surface-container-low'
+      return 'bg-surface-container-low text-on-surface'
     case 'secondary':
-      return 'bg-surface-container-high'
+      return 'bg-surface-container-highest text-on-surface'
+    case 'tertiary':
+      return 'bg-tertiary-container text-on-tertiary-container'
+    case 'high-contrast':
+      return 'bg-inverse-surface text-inverse-on-surface'
     case 'ghost':
-      return 'bg-surface/80 backdrop-blur-md'
+      return 'bg-surface/80 backdrop-blur-md text-on-surface'
+    case 'surface-container-lowest':
+      return 'bg-surface-container-lowest text-on-surface'
+    case 'surface-container-low':
+      return 'bg-surface-container-low text-on-surface'
+    case 'surface-container':
+      return 'bg-surface-container text-on-surface'
+    case 'surface-container-high':
+      return 'bg-surface-container-high text-on-surface'
+    case 'surface-container-highest':
+      return 'bg-surface-container-highest text-on-surface'
     case 'surface':
     default:
-      return 'bg-surface'
+      return 'bg-surface text-on-surface'
+  }
+}
+
+export const getCalendarSidePanelBgClasses = (variant?: CalendarVariant) => {
+  switch (variant) {
+    case 'ghost':
+      return 'bg-transparent'
+    case 'surface-container-lowest':
+      return 'bg-surface-container-lowest'
+    case 'surface-container-low':
+      return 'bg-surface-container-low'
+    case 'surface-container':
+      return 'bg-surface-container-low/30'
+    case 'surface-container-high':
+      return 'bg-surface-container-low/50'
+    case 'surface-container-highest':
+      return 'bg-surface-container-low/70'
+    case 'high-contrast':
+      return 'bg-inverse-surface/5'
+    default:
+      return 'bg-surface-container-low/30'
   }
 }
 

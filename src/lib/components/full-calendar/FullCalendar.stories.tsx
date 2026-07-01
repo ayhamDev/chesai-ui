@@ -15,7 +15,19 @@ const meta: Meta<typeof FullCalendar> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "surface", "ghost"],
+      options: [
+        "primary",
+        "secondary",
+        "tertiary",
+        "high-contrast",
+        "ghost",
+        "surface",
+        "surface-container-lowest",
+        "surface-container-low",
+        "surface-container",
+        "surface-container-high",
+        "surface-container-highest",
+      ],
       description:
         "Controls the background and wrapper aesthetics for the calendar.",
     },
