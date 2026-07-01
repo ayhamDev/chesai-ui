@@ -41,14 +41,14 @@ const MonthGrid = memo(
     mode: "single" | "range";
     onDateClick: (date: Date) => void;
   }) => {
-    // 1. Memoize the days generation to prevent recalc on scroll
+    // Memoize the days generation to prevent recalc on scroll
     const days = useMemo(() => {
       const start = startOfMonth(monthDate);
       const end = endOfMonth(monthDate);
       return eachDayOfInterval({ start, end });
     }, [monthDate]);
 
-    // 2. Memoize start index
+    // Memoize start index
     const startDayIndex = useMemo(() => getDay(days[0]), [days]);
 
     return (
@@ -67,7 +67,6 @@ const MonthGrid = memo(
           ))}
 
           {days.map((day) => {
-            // Logic optimization: simpler checks
             const dayIso = day.toISOString();
             let isSelected = false;
             let isRangeStart = false;
@@ -81,8 +80,6 @@ const MonthGrid = memo(
               if (range?.from) isRangeStart = isSameDay(day, range.from);
               if (range?.to) isRangeEnd = isSameDay(day, range.to);
               if (range?.from && range?.to) {
-                // isAfter/isBefore can be expensive in tight loops, but necessary here
-                // We trust V8 to optimize this, but memo prevents re-running it on scroll
                 isInRange = isAfter(day, range.from) && isBefore(day, range.to);
               }
             }
@@ -96,9 +93,9 @@ const MonthGrid = memo(
                   "relative flex aspect-square items-center justify-center p-0",
                   isInRange && "bg-secondary-container/30",
                   isRangeStart &&
-                    "bg-gradient-to-r from-transparent to-secondary-container/30",
+                    "bg-gradient-to-r rtl:bg-gradient-to-l from-transparent to-secondary-container/30",
                   isRangeEnd &&
-                    "bg-gradient-to-l from-transparent to-secondary-container/30",
+                    "bg-gradient-to-l rtl:bg-gradient-to-r from-transparent to-secondary-container/30",
                 )}
               >
                 <button
@@ -116,7 +113,7 @@ const MonthGrid = memo(
                       !isRangeEnd &&
                       isTodayDate &&
                       "border border-primary text-primary font-bold",
-                    // Hover State (only if not selected)
+                    // Hover State
                     !isSelected &&
                       !isRangeStart &&
                       !isRangeEnd &&
@@ -132,7 +129,6 @@ const MonthGrid = memo(
       </div>
     );
   },
-  // Custom comparison function for React.memo to strictly prevent re-renders
   (prev, next) => {
     return (
       prev.monthDate.getTime() === next.monthDate.getTime() &&
@@ -163,7 +159,7 @@ export const InfiniteCalendar = ({
       current = addMonths(current, 1);
     }
     return monthList;
-  }, []); // Empty dependency array = calculate once on mount
+  }, []);
 
   // Find initial scroll index
   const initialIndex = useMemo(() => {
@@ -179,13 +175,13 @@ export const InfiniteCalendar = ({
         m.getFullYear() === (target || new Date()).getFullYear() &&
         m.getMonth() === (target || new Date()).getMonth(),
     );
-  }, [months, value, mode]); // Only recalc if value changes drastically
+  }, [months, value, mode]);
 
   const virtualizer = useVirtualizer({
     count: months.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 340, // Consistent height estimate
-    overscan: 1, // Reduced overscan for performance (renders fewer invisible items)
+    estimateSize: () => 340,
+    overscan: 1,
     initialOffset: initialIndex !== -1 ? initialIndex * 340 : 0,
   });
 

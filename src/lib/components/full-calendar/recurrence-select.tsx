@@ -1,4 +1,3 @@
-// src/lib/components/full-calendar/recurrence-select.tsx
 "use client";
 
 import { format } from "date-fns";
@@ -101,7 +100,7 @@ export const RecurrenceSelect = ({
 }: RecurrenceSelectProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // 1. Calculate active selector selection based on recurrence rules
+  // 1. Calculate active selector selection based on exact rule matches
   const activeValue = useMemo(() => {
     if (!value) return "none";
 
@@ -142,24 +141,17 @@ export const RecurrenceSelect = ({
     return "custom_active";
   }, [value, startDate]);
 
-  // 2. Format localized string options dynamically
+  // 2. Format options safely.
+  // Pushing 'custom_active' to the very END guarantees the 0-6 array indices never shift during updates.
   const selectItems = useMemo(() => {
     const items = [
       { value: "none", label: "Does not repeat" },
       { value: "daily", label: "Daily" },
-      {
-        value: "weekly",
-        label: `Weekly on ${format(startDate, "EEEE")}`,
-      },
-      {
-        value: "monthly",
-        label: `Monthly on the ${startDate.getDate()}`,
-      },
-      {
-        value: "yearly",
-        label: `Annually on ${format(startDate, "MMM d")}`,
-      },
+      { value: "weekly", label: `Weekly on ${format(startDate, "EEEE")}` },
+      { value: "monthly", label: `Monthly on the ${startDate.getDate()}` },
+      { value: "yearly", label: `Annually on ${format(startDate, "MMM d")}` },
       { value: "weekdays", label: "Every weekday (Monday to Friday)" },
+      { value: "custom", label: "Custom..." },
     ];
 
     if (activeValue === "custom_active" && value) {
@@ -169,11 +161,12 @@ export const RecurrenceSelect = ({
       });
     }
 
-    items.push({ value: "custom", label: "Custom..." });
     return items;
   }, [startDate, activeValue, value]);
 
   const handleSelectChange = (val: string) => {
+    if (val === activeValue) return;
+
     if (val === "none") {
       onChange(undefined);
     } else if (val === "custom") {
@@ -185,7 +178,8 @@ export const RecurrenceSelect = ({
         endType: "never",
         daysOfWeek: [1, 2, 3, 4, 5],
       });
-    } else if (val !== "custom_active") {
+    } else if (["daily", "weekly", "monthly", "yearly"].includes(val)) {
+      // Strict guard prevents rogue index shifts from emitting corrupted types
       onChange({
         frequency: val as any,
         interval: 1,

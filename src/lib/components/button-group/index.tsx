@@ -47,27 +47,27 @@ const getButtonShapeClasses = (
 
   if (hasGap) {
     if (shape === "full") {
-      if (isFirst) return "!rounded-l-[30px] !rounded-r-md";
-      if (isLast) return "!rounded-l-md !rounded-r-[30px]";
+      if (isFirst) return "!rounded-s-[30px] !rounded-e-md";
+      if (isLast) return "!rounded-s-md !rounded-e-[30px]";
       return "!rounded-md";
     }
 
     if (shape === "minimal") {
-      if (isFirst) return "!rounded-l-xl !rounded-r-md";
-      if (isLast) return "!rounded-l-md !rounded-r-xl";
+      if (isFirst) return "!rounded-s-xl !rounded-e-md";
+      if (isLast) return "!rounded-s-md !rounded-e-xl";
       return "!rounded-md";
     }
   } else {
     // Seamless layout using finite radius values for smooth transitions
     if (shape === "full") {
-      if (isFirst) return "!rounded-l-[30px] !rounded-r-none";
-      if (isLast) return "!rounded-l-none !rounded-r-[30px]";
+      if (isFirst) return "!rounded-s-[30px] !rounded-e-none";
+      if (isLast) return "!rounded-s-none !rounded-e-[30px]";
       return "!rounded-none";
     }
 
     if (shape === "minimal") {
-      if (isFirst) return "!rounded-l-xl !rounded-r-none";
-      if (isLast) return "!rounded-l-none !rounded-r-xl";
+      if (isFirst) return "!rounded-s-xl !rounded-e-none";
+      if (isLast) return "!rounded-s-none !rounded-e-xl";
       return "!rounded-none";
     }
   }
@@ -113,7 +113,7 @@ export const ButtonGroup = ({
         const newClassName = clsx(
           childProps.className,
           shapeClass,
-          !isFirst && !hasGap && "-ml-px",
+          !isFirst && !hasGap && "-ms-px",
           "focus:z-10",
         );
 

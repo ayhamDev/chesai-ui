@@ -64,7 +64,6 @@ const getDayButtonClasses = (shape: "full" | "minimal" | "sharp") => {
 
 // --- ANIMATION CONFIG ---
 const transition: Transition = {
-  // FIX: Explicitly type transition object
   type: "spring",
   stiffness: 300,
   damping: 30,
@@ -84,7 +83,6 @@ const slideVariants = {
 };
 
 // --- TYPES ---
-// FIX: Removed incorrect extension of React.HTMLAttributes
 export interface CalendarProps
   extends
     Omit<React.HTMLAttributes<HTMLDivElement>, "onSelect">,
@@ -122,7 +120,7 @@ const DayButton = memo(
   }: DayButtonProps) => {
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [, event] = useRipple({
-      ref: buttonRef as React.RefObject<HTMLElement>, // FIX: Cast ref
+      ref: buttonRef as React.RefObject<HTMLElement>,
       color: "var(--color-ripple-dark)",
       duration: 400,
     });
@@ -210,7 +208,7 @@ const YearPicker = memo(
             return (
               <div
                 key={virtualRow.key}
-                className="absolute top-0 left-0 w-full flex justify-between px-2"
+                className="absolute top-0 inset-x-0 w-full flex justify-between px-2"
                 style={{
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
@@ -315,6 +313,17 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
   ) => {
     const [view, setView] = useState<"days" | "months" | "years">("days");
     const [direction, setDirection] = useState(0);
+    const [isRtl, setIsRtl] = useState(false);
+
+    // Detect RTL configuration safely inside the browser execution loop
+    useEffect(() => {
+      if (typeof document !== "undefined") {
+        setIsRtl(
+          document.documentElement.dir === "rtl" ||
+            document.documentElement.classList.contains("rtl"),
+        );
+      }
+    }, []);
 
     const {
       cursorDate,
@@ -333,13 +342,15 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
     } = useCalendar(value instanceof Date ? value : new Date(), value, mode);
 
     const handleNext = () => {
-      setDirection(1);
+      // Reverse slide transition parameter under RTL
+      setDirection(isRtl ? -1 : 1);
       if (view === "years") nextYear();
       else nextMonth();
     };
 
     const handlePrev = () => {
-      setDirection(-1);
+      // Reverse slide transition parameter under RTL
+      setDirection(isRtl ? 1 : -1);
       if (view === "years") prevYear();
       else prevMonth();
     };
@@ -347,10 +358,21 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
     const SWIPE_THRESHOLD = 50;
     const handleDragEnd = (_: any, info: PanInfo) => {
       if (view !== "days") return;
-      if (info.offset.x < -SWIPE_THRESHOLD) {
-        handleNext();
-      } else if (info.offset.x > SWIPE_THRESHOLD) {
-        handlePrev();
+
+      if (isRtl) {
+        // Under RTL layout, swipe right pulls in the next month, swipe left pulls previous
+        if (info.offset.x < -SWIPE_THRESHOLD) {
+          handlePrev();
+        } else if (info.offset.x > SWIPE_THRESHOLD) {
+          handleNext();
+        }
+      } else {
+        // Standard LTR layout gestures
+        if (info.offset.x < -SWIPE_THRESHOLD) {
+          handleNext();
+        } else if (info.offset.x > SWIPE_THRESHOLD) {
+          handlePrev();
+        }
       }
     };
 
@@ -431,7 +453,7 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
               shape="full"
               onClick={handlePrev}
             >
-              <ChevronLeft className="w-5 h-5 text-on-surface-variant" />
+              <ChevronLeft className="w-5 h-5 text-on-surface-variant rtl:rotate-180" />
             </IconButton>
             <IconButton
               variant="ghost"
@@ -439,7 +461,7 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
               shape="full"
               onClick={handleNext}
             >
-              <ChevronRight className="w-5 h-5 text-on-surface-variant" />
+              <ChevronRight className="w-5 h-5 text-on-surface-variant rtl:rotate-180" />
             </IconButton>
           </div>
         </div>
@@ -487,10 +509,10 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
                           (isInRange || isRangeStart || isRangeEnd) &&
                             "before:absolute before:inset-y-0 before:bg-primary/10 before:z-0",
                           isRangeStart &&
-                            "before:left-1/2 before:right-0 before:rounded-l-full",
+                            "before:start-1/2 before:end-0 before:rounded-s-full",
                           isRangeEnd &&
-                            "before:left-0 before:right-1/2 before:rounded-r-full",
-                          isInRange && "before:left-0 before:right-0",
+                            "before:start-0 before:end-1/2 before:rounded-e-full",
+                          isInRange && "before:start-0 before:end-0",
                         )}
                       >
                         <DayButton

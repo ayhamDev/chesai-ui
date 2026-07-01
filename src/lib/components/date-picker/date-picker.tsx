@@ -44,7 +44,9 @@ export interface DatePickerProps {
   color?: "primary" | "secondary" | "error";
   itemShape?: Shape;
   className?: string;
-  classNames?: Partial<Record<"base" | "label" | "inputWrapper" | "innerWrapper", string>>;
+  classNames?: Partial<
+    Record<"base" | "label" | "inputWrapper" | "innerWrapper", string>
+  >;
 }
 
 const shapeStyles: Record<Shape, string> = {
@@ -221,7 +223,7 @@ export const DatePicker = ({
   const [tempDate, setTempDate] = useState<Date | undefined>(value);
   const [viewMode, setViewMode] = useState<"calendar" | "input">("calendar");
 
-  // FIX 1: Prevent infinite loops by comparing timestamps, not objects
+  // Prevent infinite loops by comparing timestamps
   const valueTime = value?.getTime();
   useEffect(() => {
     if (open) {
@@ -258,12 +260,12 @@ export const DatePicker = ({
           isFocused: open,
           isErrored: isInvalid,
         }),
-        "w-full justify-start text-left font-normal text-on-surface",
+        "w-full justify-start text-start font-normal text-on-surface",
         !isValidValue && "text-on-surface-variant/50",
         classNames?.inputWrapper,
       )}
     >
-      <CalendarIcon className="mr-2 h-4 w-4 opacity-50 shrink-0" />
+      <CalendarIcon className="me-2 h-4 w-4 opacity-50 shrink-0" />
       <span className="truncate">{displayValue}</span>
     </button>
   );
@@ -275,7 +277,7 @@ export const DatePicker = ({
         {label && (
           <label
             className={clsx(
-              "ml-1 text-sm font-medium",
+              "ms-1 text-sm font-medium",
               isInvalid ? "text-error" : "text-on-surface-variant",
             )}
           >
@@ -286,7 +288,6 @@ export const DatePicker = ({
           <PopoverPrimitive.Trigger asChild>
             {TriggerButton}
           </PopoverPrimitive.Trigger>
-          {/* FIX 2: Wrapped in Portal to prevent clipping */}
           <PopoverPrimitive.Portal>
             <PopoverPrimitive.Content
               align="start"
@@ -324,7 +325,7 @@ export const DatePicker = ({
       {label && (
         <label
           className={clsx(
-            "ml-1 text-sm font-medium",
+            "ms-1 text-sm font-medium",
             isInvalid ? "text-error" : "text-on-surface-variant",
           )}
         >
