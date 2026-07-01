@@ -14,7 +14,7 @@ import {
   startOfWeek,
   startOfYear,
 } from 'date-fns'
-import { RRule } from 'rrule' // Standard compliant recurrence evaluator
+import { RRule } from 'rrule'
 import type { CalendarEvent, CalendarVariant } from './types'
 
 // --- THEME UTILS ---
@@ -39,14 +39,13 @@ export const getCalendarStickyBgClasses = (variant?: CalendarVariant) => {
     case 'secondary':
       return 'bg-surface-container-high'
     case 'ghost':
-      return 'bg-surface/80 backdrop-blur-md' // Prevents text overlapping in ghost mode
+      return 'bg-surface/80 backdrop-blur-md'
     case 'surface':
     default:
       return 'bg-surface'
   }
 }
 
-// Map custom frequency keys to the standard RRule constants
 const freqMap = {
   daily: RRule.DAILY,
   weekly: RRule.WEEKLY,
@@ -54,7 +53,6 @@ const freqMap = {
   yearly: RRule.YEARLY,
 };
 
-// Map Javascript weekday indices (0 = Sunday, 1 = Monday, ..., 6 = Saturday) to RRule Weekdays
 const RRULE_WEEKDAYS = [
   RRule.SU, // 0
   RRule.MO, // 1
@@ -65,13 +63,12 @@ const RRULE_WEEKDAYS = [
   RRule.SA, // 6
 ];
 
-// --- STANDARD RECURRENCE EXPANSION ---
+// --- VIRTUAL RECURRENCE EXPANSION ---
 export const expandEvents = (events: CalendarEvent[], viewStart: Date, viewEnd: Date): CalendarEvent[] => {
   const expanded: CalendarEvent[] = []
 
   events.forEach(event => {
     if (!event.recurrence) {
-      // Add standard events if they overlap with the view
       if (event.start <= viewEnd && event.end >= viewStart) {
         expanded.push(event)
       }
@@ -88,35 +85,54 @@ export const expandEvents = (events: CalendarEvent[], viewStart: Date, viewEnd: 
         interval: rule.interval || 1,
       };
 
-      // Set ending constraints based on endType
       if (rule.endType === 'on_date' && rule.until) {
         rruleOptions.until = rule.until;
       } else if (rule.endType === 'after_occurrences' && rule.count) {
         rruleOptions.count = rule.count;
       }
 
-      // Handle custom weekly days constraint
+      // 1. Weekly specific filters
       if (rule.frequency === 'weekly' && rule.daysOfWeek && rule.daysOfWeek.length > 0) {
         rruleOptions.byweekday = rule.daysOfWeek.map(d => RRULE_WEEKDAYS[d]);
       }
 
+      // 2. Monthly specific filters
+      if (rule.frequency === 'monthly') {
+        if (rule.monthDay) {
+          rruleOptions.bymonthday = rule.monthDay;
+        } else if (rule.nthDayOfWeek) {
+          const { dayOfWeek, nth } = rule.nthDayOfWeek;
+          rruleOptions.byweekday = RRULE_WEEKDAYS[dayOfWeek].nth(nth);
+        }
+      }
+
+      // 3. Yearly specific filters
+      if (rule.frequency === 'yearly') {
+        if (rule.month) {
+          rruleOptions.bymonth = rule.month;
+        }
+        if (rule.monthDay) {
+          rruleOptions.bymonthday = rule.monthDay;
+        } else if (rule.nthDayOfWeek) {
+          const { dayOfWeek, nth } = rule.nthDayOfWeek;
+          rruleOptions.byweekday = RRULE_WEEKDAYS[dayOfWeek].nth(nth);
+        }
+      }
+
       const rruleInstance = new RRule(rruleOptions);
-      
-      // Query the occurrences precisely within our current calendar window
       const dates = rruleInstance.between(viewStart, viewEnd, true);
       const duration = event.end.getTime() - event.start.getTime();
 
       dates.forEach((date, index) => {
         expanded.push({
           ...event,
-          id: `${event.id}-occ-${index}`, // Keep -occ- pattern intact to support standard edits
+          id: `${event.id}-occ-${index}`,
           start: date,
           end: new Date(date.getTime() + duration),
         });
       });
     } catch (error) {
       console.error('Failed to parse recurrence rule with rrule.js:', error);
-      // Fallback: If rrule parsing throws, fall back to checking the original event's timeframe
       if (event.start <= viewEnd && event.end >= viewStart) {
         expanded.push(event);
       }

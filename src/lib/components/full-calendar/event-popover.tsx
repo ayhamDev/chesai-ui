@@ -1,7 +1,7 @@
+// src/lib/components/full-calendar/event-popover.tsx
 "use client";
 
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { clsx } from "clsx";
 import { format } from "date-fns";
 import {
   AnimatePresence,
@@ -14,120 +14,19 @@ import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { Button } from "../button";
-import { ButtonGroup } from "../button-group";
 import { DatePicker } from "../date-picker/date-picker";
 import { IconButton } from "../icon-button";
 import { Input } from "../input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../sheet";
 import { TimePicker } from "../time-picker";
-import { Typography } from "../typography";
 import { Switch } from "../switch";
 import { Select } from "../select";
-import { NumberInput } from "../number-input";
 
 import { useFullCalendar } from "./calendar-context";
-import type { CalendarEvent, RecurrenceRule } from "./types";
+import { RecurrenceDialog } from "./recurrence-dialog";
+import type { CalendarEvent } from "./types";
 
 const POPOVER_WIDTH = 380;
-
-const formatRecurrence = (rule: RecurrenceRule, startDate: Date) => {
-  const f = rule.frequency;
-  const i = rule.interval;
-  let s = "";
-
-  if (i > 1) {
-    s = `Every ${i} ${f === "daily" ? "days" : f === "weekly" ? "weeks" : f === "monthly" ? "months" : "years"}`;
-  } else {
-    s =
-      f === "daily"
-        ? "Daily"
-        : f === "weekly"
-          ? "Weekly"
-          : f === "monthly"
-            ? "Monthly"
-            : "Annually";
-  }
-
-  if (f === "weekly" && rule.daysOfWeek && rule.daysOfWeek.length > 0) {
-    const dayNames = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    if (rule.daysOfWeek.length === 7) {
-      s = i > 1 ? `Every ${i} weeks on all days` : "Every day";
-    } else if (
-      rule.daysOfWeek.length === 5 &&
-      [1, 2, 3, 4, 5].every((d) => rule.daysOfWeek!.includes(d))
-    ) {
-      s =
-        i > 1
-          ? `Every ${i} weeks on weekdays`
-          : "Every weekday (Monday to Friday)";
-    } else {
-      s += ` on ${rule.daysOfWeek.map((d) => dayNames[d]).join(", ")}`;
-    }
-  } else if (f === "monthly") {
-    s += ` on day ${startDate.getDate()}`;
-  } else if (f === "yearly") {
-    s += ` on ${format(startDate, "MMM d")}`;
-  }
-
-  if (rule.endType === "on_date" && rule.until) {
-    s += `, until ${format(rule.until, "MMM d, yyyy")}`;
-  } else if (rule.endType === "after_occurrences" && rule.count) {
-    s += `, for ${rule.count} occurrences`;
-  }
-
-  return s;
-};
-
-const CustomRadioOption = ({
-  checked,
-  onChange,
-  label,
-  children,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  label: string;
-  children?: React.ReactNode;
-}) => (
-  <div className="flex items-center gap-4 h-10 w-full">
-    <label className="flex items-center gap-3 cursor-pointer shrink-0">
-      <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
-        <input
-          type="radio"
-          className="peer sr-only"
-          checked={checked}
-          onChange={onChange}
-        />
-        <div
-          className={clsx(
-            "w-5 h-5 rounded-full border-2 transition-colors",
-            checked
-              ? "border-primary"
-              : "border-outline-variant hover:border-on-surface-variant",
-          )}
-        />
-        <div
-          className={clsx(
-            "absolute w-2.5 h-2.5 rounded-full bg-primary transition-transform duration-200",
-            checked ? "scale-100" : "scale-0",
-          )}
-        />
-      </div>
-      <span className="text-sm font-medium text-on-surface select-none">
-        {label}
-      </span>
-    </label>
-    {children && <div className="flex-1 flex items-center">{children}</div>}
-  </div>
-);
 
 export const EventPopover = () => {
   const calendar = useFullCalendar();
@@ -155,15 +54,6 @@ export const EventPopover = () => {
 
   const [isRecurrenceOpen, setIsRecurrenceOpen] = useState(false);
   const [measuredHeight, setMeasuredHeight] = useState(450);
-
-  const [recurrenceDraft, setRecurrenceDraft] = useState<RecurrenceRule>({
-    frequency: "weekly",
-    interval: 1,
-    daysOfWeek: [],
-    endType: "never",
-    count: 13,
-    until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-  });
 
   // --- DYNAMIC HEIGHT MEASUREMENT ---
   useEffect(() => {
@@ -283,7 +173,6 @@ export const EventPopover = () => {
     setDraftEvent((prev) => (prev ? { ...prev, ...updates } : null));
   };
 
-  // Safe nested state update helper for developers to use inside custom renderers
   const updateDraftNested = (updates: Partial<CalendarEvent>) => {
     setDraftEvent((prev) => {
       if (!prev) return null;
@@ -341,7 +230,7 @@ export const EventPopover = () => {
       activeRepeatValue = "custom_active";
       repeatOptions.push({
         value: "custom_active",
-        label: formatRecurrence(r, draftEvent.start),
+        label: "Custom Recurrence",
       });
     }
   }
@@ -352,16 +241,6 @@ export const EventPopover = () => {
     if (val === "none") {
       updateDraft({ recurrence: undefined });
     } else if (val === "custom") {
-      setRecurrenceDraft(
-        draftEvent?.recurrence || {
-          frequency: "weekly",
-          interval: 1,
-          daysOfWeek: [draftEvent?.start?.getDay() || 0],
-          endType: "never",
-          count: 13,
-          until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        },
-      );
       setIsRecurrenceOpen(true);
     } else if (val === "weekdays") {
       updateDraft({
@@ -389,14 +268,12 @@ export const EventPopover = () => {
 
   const formContent = (
     <div className="flex flex-col gap-6 p-6 font-manrope text-on-surface min-w-[340px]">
-      {/* 1. Injected Header Fields */}
       {renderPopoverHeader && (
         <div className="flex flex-col gap-4">
           {renderPopoverHeader(draftEvent, updateDraftNested)}
         </div>
       )}
 
-      {/* 2. Default Title Input */}
       {!hidePopoverTitle && (
         <div className="pl-10 pr-2">
           <Input
@@ -415,7 +292,6 @@ export const EventPopover = () => {
         </div>
       )}
 
-      {/* 3. Default Time Inputs */}
       {!hidePopoverTime && (
         <div className="flex items-start gap-4">
           <Clock className="w-5 h-5 mt-2.5 text-on-surface-variant shrink-0" />
@@ -538,7 +414,6 @@ export const EventPopover = () => {
         </div>
       )}
 
-      {/* 4. Default Recurrence Selector */}
       {!hidePopoverRecurrence && (
         <div className="flex items-center gap-4 mt-2">
           <Repeat className="w-5 h-5 text-on-surface-variant shrink-0" />
@@ -555,229 +430,18 @@ export const EventPopover = () => {
         </div>
       )}
 
-      {/* 5. Legacy Custom Fields (Center) */}
       {renderPopoverCustomFields && (
         <div className="mt-2 border-t border-outline-variant/30 pt-4 flex flex-col gap-4">
           {renderPopoverCustomFields(draftEvent, updateDraftNested)}
         </div>
       )}
 
-      {/* 6. Injected Footer Fields */}
       {renderPopoverFooter && (
         <div className="mt-2 border-t border-outline-variant/30 pt-4 flex flex-col gap-4">
           {renderPopoverFooter(draftEvent, updateDraftNested)}
         </div>
       )}
     </div>
-  );
-
-  const recurrenceDialog = (
-    <AnimatePresence>
-      {isRecurrenceOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 pointer-events-auto">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setIsRecurrenceOpen(false)}
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="relative bg-surface-container-high rounded-3xl shadow-2xl p-6 w-full max-w-[420px] flex flex-col gap-6"
-          >
-            <Typography variant="title-medium" className="font-bold">
-              Custom recurrence
-            </Typography>
-
-            <div className="flex items-center gap-3">
-              <Typography
-                variant="body-medium"
-                className="shrink-0 w-24 font-medium"
-              >
-                Repeat every
-              </Typography>
-              <div className="w-20">
-                <NumberInput
-                  size="sm"
-                  variant="filled"
-                  value={recurrenceDraft.interval}
-                  onValueChange={(v) =>
-                    setRecurrenceDraft((p) => ({ ...p, interval: Number(v) }))
-                  }
-                  min={1}
-                  classNames={{
-                    inputWrapper: "h-10 min-h-[40px] px-2",
-                    input: "text-center",
-                  }}
-                />
-              </div>
-              <div className="flex-1">
-                <Select
-                  size="sm"
-                  variant="filled"
-                  value={recurrenceDraft.frequency}
-                  onValueChange={(v) =>
-                    setRecurrenceDraft((p) => ({ ...p, frequency: v as any }))
-                  }
-                  items={[
-                    {
-                      value: "daily",
-                      label: recurrenceDraft.interval > 1 ? "days" : "day",
-                    },
-                    {
-                      value: "weekly",
-                      label: recurrenceDraft.interval > 1 ? "weeks" : "week",
-                    },
-                    {
-                      value: "monthly",
-                      label: recurrenceDraft.interval > 1 ? "months" : "month",
-                    },
-                    {
-                      value: "yearly",
-                      label: recurrenceDraft.interval > 1 ? "years" : "year",
-                    },
-                  ]}
-                  classNames={{ trigger: "h-10 px-3" }}
-                />
-              </div>
-            </div>
-
-            {recurrenceDraft.frequency === "weekly" && (
-              <div className="flex flex-col gap-2 mt-2">
-                <Typography variant="body-medium" className="font-medium">
-                  Repeat on
-                </Typography>
-                <div className="flex justify-between mt-1 w-full">
-                  <ButtonGroup shape="full" gap="xs" className="w-full flex">
-                    {["S", "M", "T", "W", "T", "F", "S"].map((day, idx) => {
-                      const isSelected =
-                        recurrenceDraft.daysOfWeek?.includes(idx);
-                      return (
-                        <Button
-                          key={idx}
-                          variant={isSelected ? "primary" : "secondary"}
-                          isActive={isSelected}
-                          onClick={() => {
-                            setRecurrenceDraft((p) => {
-                              const current = p.daysOfWeek || [];
-                              const next = current.includes(idx)
-                                ? current.filter((d) => d !== idx)
-                                : [...current, idx];
-                              return {
-                                ...p,
-                                daysOfWeek: next.length ? next : [idx],
-                              };
-                            });
-                          }}
-                          className="flex-1 !px-0 min-w-0"
-                        >
-                          {day}
-                        </Button>
-                      );
-                    })}
-                  </ButtonGroup>
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-3 mt-2">
-              <Typography variant="body-medium" className="font-medium mb-1">
-                Ends
-              </Typography>
-
-              <div className="flex flex-col gap-4">
-                <CustomRadioOption
-                  checked={recurrenceDraft.endType === "never"}
-                  onChange={() =>
-                    setRecurrenceDraft((p) => ({ ...p, endType: "never" }))
-                  }
-                  label="Never"
-                />
-
-                <CustomRadioOption
-                  checked={recurrenceDraft.endType === "on_date"}
-                  onChange={() =>
-                    setRecurrenceDraft((p) => ({ ...p, endType: "on_date" }))
-                  }
-                  label="On"
-                >
-                  <div className="w-[180px]">
-                    <DatePicker
-                      variant="docked"
-                      inputVariant="filled"
-                      size="sm"
-                      disabled={recurrenceDraft.endType !== "on_date"}
-                      value={recurrenceDraft.until}
-                      onChange={(d) =>
-                        d && setRecurrenceDraft((p) => ({ ...p, until: d }))
-                      }
-                      classNames={{ inputWrapper: "h-10 min-h-[40px]" }}
-                    />
-                  </div>
-                </CustomRadioOption>
-
-                <CustomRadioOption
-                  checked={recurrenceDraft.endType === "after_occurrences"}
-                  onChange={() =>
-                    setRecurrenceDraft((p) => ({
-                      ...p,
-                      endType: "after_occurrences",
-                    }))
-                  }
-                  label="After"
-                >
-                  <div className="w-[180px] flex items-center gap-3">
-                    <NumberInput
-                      variant="filled"
-                      size="sm"
-                      disabled={recurrenceDraft.endType !== "after_occurrences"}
-                      value={recurrenceDraft.count}
-                      onValueChange={(v) =>
-                        setRecurrenceDraft((p) => ({ ...p, count: Number(v) }))
-                      }
-                      min={1}
-                      classNames={{
-                        inputWrapper: "h-10 min-h-[40px] px-2",
-                        input: "text-center",
-                      }}
-                    />
-                    <Typography
-                      variant="body-medium"
-                      className="whitespace-nowrap opacity-80 font-normal"
-                    >
-                      occurrences
-                    </Typography>
-                  </div>
-                </CustomRadioOption>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="ghost"
-                onClick={() => setIsRecurrenceOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  updateDraft({ recurrence: recurrenceDraft });
-                  setIsRecurrenceOpen(false);
-                }}
-              >
-                Done
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
   );
 
   if (!popover.isOpen) return null;
@@ -830,96 +494,103 @@ export const EventPopover = () => {
             </div>
           </SheetContent>
         </Sheet>
-        {typeof document !== "undefined" &&
-          createPortal(recurrenceDialog, document.body)}
+
+        <RecurrenceDialog
+          isOpen={isRecurrenceOpen}
+          onClose={() => setIsRecurrenceOpen(false)}
+          value={draftEvent.recurrence}
+          onChange={(rule) => updateDraft({ recurrence: rule })}
+          startDate={draftEvent.start}
+        />
       </>
     );
   }
 
-  const desktopPopover = (
-    <div className="fixed inset-0 pointer-events-none z-[50]">
-      <AnimatePresence>
-        {popover.isOpen && (
-          <motion.div
-            ref={popoverRef}
-            drag
-            dragMomentum={false}
-            dragControls={dragControls}
-            dragListener={false}
-            style={{
-              x,
-              y,
-              width: "auto",
-              minWidth: POPOVER_WIDTH,
-              maxWidth: "calc(100vw - 32px)",
-            }}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="absolute bg-surface-container-high border border-outline-variant/50 rounded-2xl shadow-2xl pointer-events-auto flex flex-col h-auto max-h-[90vh]"
-          >
-            <div
-              onPointerDown={(e) => {
-                e.stopPropagation();
-                dragControls.start(e);
+  return (
+    <>
+      <div className="fixed inset-0 pointer-events-none z-[50]">
+        <AnimatePresence>
+          {popover.isOpen && (
+            <motion.div
+              ref={popoverRef}
+              drag
+              dragMomentum={false}
+              dragControls={dragControls}
+              dragListener={false}
+              style={{
+                x,
+                y,
+                width: "auto",
+                minWidth: POPOVER_WIDTH,
+                maxWidth: "calc(100vw - 32px)",
               }}
-              className="flex items-center justify-between px-2 py-1.5 bg-surface-container-high border-b border-outline-variant/20 drag-handle cursor-move rounded-t-2xl shrink-0"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute bg-surface-container-high border border-outline-variant/50 rounded-2xl shadow-2xl pointer-events-auto flex flex-col h-auto max-h-[90vh]"
             >
-              <IconButton
-                variant="ghost"
-                size="sm"
-                className="pointer-events-none opacity-50"
+              <div
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  dragControls.start(e);
+                }}
+                className="flex items-center justify-between px-2 py-1.5 bg-surface-container-high border-b border-outline-variant/20 drag-handle cursor-move rounded-t-2xl shrink-0"
               >
-                <GripHorizontal className="w-4 h-4" />
-              </IconButton>
-              <div className="flex items-center gap-1">
-                {popover.mode === "edit" && draftEvent && (
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDelete}
-                    className="text-error hover:bg-error/10 hover:text-error cursor-pointer pointer-events-auto"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </IconButton>
-                )}
                 <IconButton
                   variant="ghost"
                   size="sm"
-                  onClick={closePopover}
-                  className="pointer-events-auto hover:bg-surface-container-highest cursor-pointer"
+                  className="pointer-events-none opacity-50"
                 >
-                  <X className="w-4 h-4" />
+                  <GripHorizontal className="w-4 h-4" />
                 </IconButton>
+                <div className="flex items-center gap-1">
+                  {popover.mode === "edit" && draftEvent && (
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDelete}
+                      className="text-error hover:bg-error/10 hover:text-error cursor-pointer pointer-events-auto"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </IconButton>
+                  )}
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={closePopover}
+                    className="pointer-events-auto hover:bg-surface-container-highest cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </IconButton>
+                </div>
               </div>
-            </div>
 
-            <div className="flex-1 max-h-[80vh] overflow-y-auto scrollbar-thin overflow-x-hidden min-h-0">
-              {formContent}
-            </div>
+              <div className="flex-1 max-h-[80vh] overflow-y-auto scrollbar-thin overflow-x-hidden min-h-0">
+                {formContent}
+              </div>
 
-            <div className="flex items-center justify-end gap-2 p-4 border-t border-outline-variant/20 bg-surface-container-high shrink-0 rounded-b-2xl">
-              <Button
-                variant="primary"
-                onClick={handleSave}
-                className="px-6 rounded-full font-bold"
-              >
-                Save
-              </Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
+              <div className="flex items-center justify-end gap-2 p-4 border-t border-outline-variant/20 bg-surface-container-high shrink-0 rounded-b-2xl">
+                <Button
+                  variant="primary"
+                  onClick={handleSave}
+                  className="px-6 rounded-full font-bold"
+                >
+                  Save
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-  return (
-    <>
-      {typeof document !== "undefined" &&
-        createPortal(desktopPopover, document.body)}
-      {typeof document !== "undefined" &&
-        createPortal(recurrenceDialog, document.body)}
+      <RecurrenceDialog
+        isOpen={isRecurrenceOpen}
+        onClose={() => setIsRecurrenceOpen(false)}
+        value={draftEvent.recurrence}
+        onChange={(rule) => updateDraft({ recurrence: rule })}
+        startDate={draftEvent.start}
+      />
     </>
   );
 };

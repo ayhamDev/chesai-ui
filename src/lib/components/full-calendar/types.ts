@@ -9,6 +9,12 @@ export interface RecurrenceRule {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   interval: number;
   daysOfWeek?: number[]; // 0 (Sun) to 6 (Sat)
+  monthDay?: number; // 1 to 31
+  nthDayOfWeek?: {
+    dayOfWeek: number; // 0 to 6
+    nth: number; // 1, 2, 3, 4, or -1 (last)
+  };
+  month?: number; // 1 to 12
   endType: 'never' | 'on_date' | 'after_occurrences';
   until?: Date;
   count?: number;
@@ -50,7 +56,6 @@ export interface FullCalendarProps<T = any> {
   initialView?: CalendarView;
   variant?: CalendarVariant;
 
-  // --- NEW: Customization Flags ---
   hidePopoverTitle?: boolean;
   hidePopoverTime?: boolean;
   hidePopoverRecurrence?: boolean;
@@ -66,7 +71,6 @@ export interface FullCalendarProps<T = any> {
   onViewChange?: (view: CalendarView) => void;
   onDateRangeChange?: (start: Date, end: Date) => void;
 
-  // --- NEW: Custom Render Injection Points ---
   renderPopoverHeader?: (
     eventState: Partial<CalendarEvent<T>>,
     setEventState: (updates: Partial<CalendarEvent<T>>) => void,
