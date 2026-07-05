@@ -13,6 +13,7 @@ export interface GridItemConfig {
 }
 
 export type GridGap = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
+export type ResizeDirection = "t" | "b" | "l" | "r" | "tl" | "tr" | "bl" | "br";
 
 export const GAP_MAP: Record<GridGap, number> = {
   none: 0,

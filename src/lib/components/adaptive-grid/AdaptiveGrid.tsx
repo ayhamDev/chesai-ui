@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+} from "react";
 import {
   DndContext,
   DragStartEvent,
@@ -10,7 +16,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { GridItemConfig, GridGap, GAP_MAP } from "./types";
+import { GridItemConfig, GridGap, GAP_MAP, ResizeDirection } from "./types";
 import { GridItem } from "./GridItem";
 import { resolveLayout, compactLayout } from "./layout-engine";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,13 +32,30 @@ interface AdaptiveGridProps {
   columns?: number;
   rowHeight?: number;
   gap?: GridGap;
+  useDragHandle?: boolean;
   onChange: (items: GridItemConfig[]) => void;
-  renderItem: (item: GridItemConfig, isDragging: boolean) => React.ReactNode;
+  renderItem: (
+    item: GridItemConfig,
+    isDragging: boolean,
+    dragHandleProps: Record<string, any>,
+  ) => React.ReactNode;
   className?: string;
 }
 
 export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
-  ({ items, columns = 12, rowHeight = 60, gap = "md", onChange, renderItem, className }, ref) => {
+  (
+    {
+      items,
+      columns = 12,
+      rowHeight = 60,
+      gap = "md",
+      useDragHandle = false,
+      onChange,
+      renderItem,
+      className,
+    },
+    ref,
+  ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [colWidth, setColWidth] = useState(0);
     const gapPx = GAP_MAP[gap];
@@ -54,7 +77,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     }, [previewLayout]);
 
     const sensors = useSensors(
-      useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+      useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     );
 
     useEffect(() => {
@@ -76,21 +99,15 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     }, [columns, gapPx]);
 
     useImperativeHandle(ref, () => ({
-      compact: () => {
-        const compacted = compactLayout(latestPreviewRef.current);
-        onChange(compacted);
-      },
-      reset: () => {
-        if (initialLayoutRef.current.length > 0) {
-          onChange(JSON.parse(JSON.stringify(initialLayoutRef.current)));
-        }
-      },
+      compact: () => onChange(compactLayout(latestPreviewRef.current)),
+      reset: () =>
+        onChange(JSON.parse(JSON.stringify(initialLayoutRef.current))),
       getLayout: () => latestPreviewRef.current,
     }));
 
-    const handleDragStart = (e: DragStartEvent) => {
+    // --- DND HANDLERS ---
+    const handleDragStart = (e: DragStartEvent) =>
       setActiveId(e.active.id as string);
-    };
 
     const handleDragMove = (e: DragMoveEvent) => {
       const { active, delta } = e;
@@ -100,11 +117,14 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       const moveX = Math.round(delta.x / (colWidth + gapPx));
       const moveY = Math.round(delta.y / (rowHeight + gapPx));
 
-      const newX = Math.max(0, Math.min(columns - origItem.w, origItem.x + moveX));
+      const newX = Math.max(
+        0,
+        Math.min(columns - origItem.w, origItem.x + moveX),
+      );
       const newY = Math.max(0, origItem.y + moveY);
 
       const simulatedActive = { ...origItem, x: newX, y: newY };
-      setPreviewLayout(resolveLayout(items, simulatedActive));
+      setPreviewLayout(resolveLayout(items, simulatedActive, columns));
     };
 
     const handleDragEnd = () => {
@@ -117,30 +137,80 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       setActiveId(null);
     };
 
-    const handleResizeMove = (id: string, deltaW: number, deltaH: number) => {
+    // --- 8-WAY RESIZE HANDLERS ---
+    const handleResizeMove = (
+      id: string,
+      direction: ResizeDirection,
+      deltaX: number,
+      deltaY: number,
+    ) => {
       const orig = items.find((i) => i.id === id);
       if (!orig) return;
 
-      let newW = orig.w + deltaW;
-      let newH = orig.h + deltaH;
+      let newX = orig.x;
+      let newY = orig.y;
+      let newW = orig.w;
+      let newH = orig.h;
 
-      newW = Math.max(orig.minW || 1, Math.min(orig.maxW || columns, newW));
-      newH = Math.max(orig.minH || 1, Math.min(orig.maxH || 100, newH));
+      // Horizontal Edges
+      if (direction.includes("r")) {
+        newW = Math.max(
+          orig.minW || 1,
+          Math.min(orig.maxW || columns, orig.w + deltaX),
+        );
+        newW = Math.min(columns - newX, newW); // Clamp to right grid edge
+      }
+      if (direction.includes("l")) {
+        let allowedDeltaX = deltaX;
+        if (orig.x + allowedDeltaX < 0) allowedDeltaX = -orig.x; // Cannot break left edge
 
-      newW = Math.min(columns - orig.x, newW);
+        let tempW = orig.w - allowedDeltaX;
+        if (tempW < (orig.minW || 1)) {
+          tempW = orig.minW || 1;
+          allowedDeltaX = orig.w - tempW;
+        } else if (tempW > (orig.maxW || columns)) {
+          tempW = orig.maxW || columns;
+          allowedDeltaX = orig.w - tempW;
+        }
 
-      const simulatedActive = { ...orig, w: newW, h: newH };
-      setPreviewLayout(resolveLayout(items, simulatedActive));
-    };
+        newX = orig.x + allowedDeltaX;
+        newW = tempW;
+      }
 
-    const handleResizeEnd = () => {
-      onChange(latestPreviewRef.current);
-      setResizingId(null);
+      // Vertical Edges
+      if (direction.includes("b")) {
+        newH = Math.max(
+          orig.minH || 1,
+          Math.min(orig.maxH || 100, orig.h + deltaY),
+        );
+      }
+      if (direction.includes("t")) {
+        let allowedDeltaY = deltaY;
+        if (orig.y + allowedDeltaY < 0) allowedDeltaY = -orig.y;
+
+        let tempH = orig.h - allowedDeltaY;
+        if (tempH < (orig.minH || 1)) {
+          tempH = orig.minH || 1;
+          allowedDeltaY = orig.h - tempH;
+        } else if (tempH > (orig.maxH || 100)) {
+          tempH = orig.maxH || 100;
+          allowedDeltaY = orig.h - tempH;
+        }
+
+        newY = orig.y + allowedDeltaY;
+        newH = tempH;
+      }
+
+      const simulatedActive = { ...orig, x: newX, y: newY, w: newW, h: newH };
+      setPreviewLayout(resolveLayout(items, simulatedActive, columns));
     };
 
     const maxRow = Math.max(...previewLayout.map((i) => i.y + i.h), 0);
-    const containerHeight = maxRow * rowHeight + Math.max(0, maxRow - 1) * gapPx;
-    const activePreviewItem = previewLayout.find((i) => i.id === (activeId || resizingId));
+    const containerHeight =
+      maxRow * rowHeight + Math.max(0, maxRow - 1) * gapPx;
+    const activePreviewItem = previewLayout.find(
+      (i) => i.id === (activeId || resizingId),
+    );
 
     return (
       <div
@@ -148,25 +218,45 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
         className={`relative w-full transition-all duration-300 ${className}`}
         style={{ height: `${containerHeight}px`, minHeight: "200px" }}
       >
+        {/* BACKGROUND BLOCK BLUEPRINT GRID */}
         <AnimatePresence>
-          {(activeId || resizingId) && activePreviewItem && (
+          {(activeId || resizingId) && activePreviewItem && colWidth > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 pointer-events-none z-0 overflow-hidden rounded-xl"
-              style={{
-                backgroundImage: `
-                  linear-gradient(to right, var(--md-sys-color-outline-variant) 1px, transparent 1px),
-                  linear-gradient(to bottom, var(--md-sys-color-outline-variant) 1px, transparent 1px)
-                `,
-                backgroundSize: `${colWidth + gapPx}px ${rowHeight + gapPx}px`,
-                opacity: 0.15,
-              }}
-            />
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 pointer-events-none z-0"
+            >
+              <svg width="100%" height="100%" opacity={0.3}>
+                <defs>
+                  <pattern
+                    id="grid-blocks"
+                    width={colWidth + gapPx}
+                    height={rowHeight + gapPx}
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <rect
+                      x="0"
+                      y="0"
+                      width={colWidth}
+                      height={rowHeight}
+                      rx="8" // Match standard soft card corners
+                      fill="var(--md-sys-color-surface-container-highest)"
+                      fillOpacity="0.4"
+                      stroke="var(--md-sys-color-outline-variant)"
+                      strokeOpacity="0.6"
+                      strokeWidth="1"
+                    />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid-blocks)" />
+              </svg>
+            </motion.div>
           )}
         </AnimatePresence>
 
+        {/* GHOST SNAP PREVIEW */}
         <AnimatePresence>
           {(activeId || resizingId) && activePreviewItem && (
             <motion.div
@@ -175,8 +265,12 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
                 opacity: 1,
                 left: activePreviewItem.x * (colWidth + gapPx),
                 top: activePreviewItem.y * (rowHeight + gapPx),
-                width: activePreviewItem.w * colWidth + (activePreviewItem.w - 1) * gapPx,
-                height: activePreviewItem.h * rowHeight + (activePreviewItem.h - 1) * gapPx,
+                width:
+                  activePreviewItem.w * colWidth +
+                  (activePreviewItem.w - 1) * gapPx,
+                height:
+                  activePreviewItem.h * rowHeight +
+                  (activePreviewItem.h - 1) * gapPx,
               }}
               exit={{ opacity: 0 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
@@ -209,10 +303,18 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
                   gap={gap}
                   isActiveDrag={isDragging}
                   isResizing={isResizing}
-                  renderContent={(interacting) => renderItem(displayItem, interacting)}
+                  useDragHandle={useDragHandle}
+                  renderContent={(interacting, dragProps) =>
+                    renderItem(displayItem, interacting, dragProps)
+                  }
                   onResizeStart={() => setResizingId(origItem.id as string)}
-                  onResizeMove={(dw, dh) => handleResizeMove(origItem.id as string, dw, dh)}
-                  onResizeEnd={handleResizeEnd}
+                  onResizeMove={(dir, dx, dy) =>
+                    handleResizeMove(origItem.id as string, dir, dx, dy)
+                  }
+                  onResizeEnd={() => {
+                    onChange(latestPreviewRef.current);
+                    setResizingId(null);
+                  }}
                 />
               );
             })}
@@ -220,7 +322,6 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
         </DndContext>
       </div>
     );
-  }
+  },
 );
-
 AdaptiveGrid.displayName = "AdaptiveGrid";

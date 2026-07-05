@@ -45,10 +45,9 @@ export const compactLayout = (
 
 export const resolveLayout = (
   items: GridItemConfig[],
-  activeItem?: GridItemConfig
+  activeItem: GridItemConfig,
+  columns: number
 ): GridItemConfig[] => {
-  if (!activeItem) return compactLayout(items);
-
   let layout = [activeItem, ...items.filter((i) => i.id !== activeItem.id)].map(
     (i) => ({ ...i })
   );
@@ -67,10 +66,14 @@ export const resolveLayout = (
 
         if (hasCollision(itemA, itemB)) {
           hasCollisions = true;
-          if (itemB.id === activeItem.id) {
-            itemA.y = itemB.y + itemB.h;
+
+          let target = itemB.id === activeItem.id ? itemA : itemB;
+          let blocker = itemB.id === activeItem.id ? itemB : itemA;
+
+          if (blocker.x + blocker.w + target.w <= columns) {
+            target.x = blocker.x + blocker.w;
           } else {
-            itemB.y = itemA.y + itemA.h;
+            target.y = blocker.y + blocker.h;
           }
         }
       }

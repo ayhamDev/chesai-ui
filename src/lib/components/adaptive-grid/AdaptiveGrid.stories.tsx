@@ -84,14 +84,6 @@ export const ImperativeWorkspace: StoryObj = {
     const [items, setItems] = useState<DemoItem[]>(INITIAL_LAYOUT);
     const gridRef = useRef<AdaptiveGridHandle>(null);
 
-    const handleAutoSort = () => {
-      gridRef.current?.compact();
-    };
-
-    const handleReset = () => {
-      gridRef.current?.reset();
-    };
-
     return (
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between bg-surface-container-low p-4 rounded-2xl border border-outline-variant/30">
@@ -100,14 +92,14 @@ export const ImperativeWorkspace: StoryObj = {
               Material Operation Center
             </Typography>
             <Typography variant="body-small" muted>
-              Interactive dashboard workspace featuring constraint boundaries.
+              Interactive dashboard featuring 8-way edges and custom drag grips.
             </Typography>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={handleReset}
+              onClick={() => gridRef.current?.reset()}
               startIcon={<Undo2 size={16} />}
             >
               Reset Layout
@@ -115,7 +107,7 @@ export const ImperativeWorkspace: StoryObj = {
             <Button
               variant="primary"
               size="sm"
-              onClick={handleAutoSort}
+              onClick={() => gridRef.current?.compact()}
               startIcon={<Sparkles size={16} />}
             >
               Auto-Compact Spacing
@@ -129,8 +121,9 @@ export const ImperativeWorkspace: StoryObj = {
           columns={24}
           rowHeight={40}
           gap="md"
-          onChange={(newLayout) => setItems(newItems => newLayout as DemoItem[])}
-          renderItem={(item, isInteracting) => {
+          useDragHandle={true}
+          onChange={(newLayout) => setItems(newLayout as DemoItem[])}
+          renderItem={(item, isInteracting, dragProps) => {
             const layoutItem = item as DemoItem;
             return (
               <Card
@@ -140,7 +133,10 @@ export const ImperativeWorkspace: StoryObj = {
                   isInteracting ? "shadow-xl ring-2 ring-primary/20 scale-[0.99]" : "shadow-sm"
                 }`}
               >
-                <div className="px-4 py-2.5 border-b border-outline-variant/30 flex items-center justify-between bg-surface-container-low/40">
+                <div
+                  {...dragProps}
+                  className="px-4 py-2.5 border-b border-outline-variant/30 flex items-center justify-between bg-surface-container-low/40 cursor-grab active:cursor-grabbing touch-none"
+                >
                   <div className="flex items-center gap-2">
                     {layoutItem.type === "revenue" && <DollarSign size={16} className="text-primary" />}
                     {layoutItem.type === "users" && <Users size={16} className="text-primary" />}
@@ -150,30 +146,15 @@ export const ImperativeWorkspace: StoryObj = {
                       {layoutItem.title}
                     </Typography>
                   </div>
-                  <Badge variant="secondary" className="text-[9px] scale-90 opacity-50 px-1.5 py-0">
-                    min-w: {layoutItem.minW || 1}
-                  </Badge>
                 </div>
 
-                <div className="flex-1 min-h-0 p-4">
+                <div className="flex-1 min-h-0 p-4 relative pointer-events-auto">
                   {layoutItem.type === "revenue" && (
-                    <div className="h-full flex flex-col justify-center">
-                      <Typography variant="headline-medium" className="font-black">$42,500</Typography>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-none font-bold">+12%</Badge>
-                        <Typography variant="body-small" muted>growth yield</Typography>
-                      </div>
-                    </div>
+                    <Typography variant="headline-medium" className="font-black">$42,500</Typography>
                   )}
 
                   {layoutItem.type === "users" && (
-                    <div className="h-full flex flex-col justify-center">
-                      <Typography variant="headline-medium" className="font-black">1,284</Typography>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="bg-primary/10 text-primary border-none font-bold">Stable</Badge>
-                        <Typography variant="body-small" muted>concurrent actions</Typography>
-                      </div>
-                    </div>
+                    <Typography variant="headline-medium" className="font-black">1,284</Typography>
                   )}
 
                   {layoutItem.type === "chart-line" && (
