@@ -12,7 +12,8 @@ export const hasCollision = (a: GridItemConfig, b: GridItemConfig): boolean => {
 
 export const compactLayout = (
   layout: GridItemConfig[],
-  activeItem?: GridItemConfig
+  activeItem?: GridItemConfig,
+  gravityEnabled = true
 ): GridItemConfig[] => {
   const compacted: GridItemConfig[] = [];
 
@@ -25,7 +26,7 @@ export const compactLayout = (
     .sort((a, b) => a.y - b.y || a.x - b.x);
 
   for (const item of sorted) {
-    let currentY = 0;
+    let currentY = gravityEnabled ? 0 : item.y;
     let isColliding = true;
 
     while (isColliding) {
@@ -46,7 +47,8 @@ export const compactLayout = (
 export const resolveLayout = (
   items: GridItemConfig[],
   activeItem: GridItemConfig,
-  columns: number
+  columns: number,
+  gravityEnabled = true
 ): GridItemConfig[] => {
   let layout = [activeItem, ...items.filter((i) => i.id !== activeItem.id)].map(
     (i) => ({ ...i })
@@ -66,19 +68,15 @@ export const resolveLayout = (
 
         if (hasCollision(itemA, itemB)) {
           hasCollisions = true;
-
-          let target = itemB.id === activeItem.id ? itemA : itemB;
-          let blocker = itemB.id === activeItem.id ? itemB : itemA;
-
-          if (blocker.x + blocker.w + target.w <= columns) {
-            target.x = blocker.x + blocker.w;
+          if (itemB.id === activeItem.id) {
+            itemA.y = itemB.y + itemB.h;
           } else {
-            target.y = blocker.y + blocker.h;
+            itemB.y = itemA.y + itemA.h;
           }
         }
       }
     }
   }
 
-  return compactLayout(layout, activeItem);
+  return compactLayout(layout, activeItem, gravityEnabled);
 };

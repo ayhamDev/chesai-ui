@@ -122,6 +122,7 @@ export const ImperativeWorkspace: StoryObj = {
           rowHeight={40}
           gap="md"
           useDragHandle={true}
+          gravityEnabled={false}
           onChange={(newLayout) => setItems(newLayout as DemoItem[])}
           renderItem={(item, isInteracting, dragProps) => {
             const layoutItem = item as DemoItem;

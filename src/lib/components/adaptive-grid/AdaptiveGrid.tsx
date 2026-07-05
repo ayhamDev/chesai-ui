@@ -33,6 +33,7 @@ interface AdaptiveGridProps {
   rowHeight?: number;
   gap?: GridGap;
   useDragHandle?: boolean;
+  gravityEnabled?: boolean;
   onChange: (items: GridItemConfig[]) => void;
   renderItem: (
     item: GridItemConfig,
@@ -50,6 +51,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       rowHeight = 60,
       gap = "md",
       useDragHandle = false,
+      gravityEnabled = true,
       onChange,
       renderItem,
       className,
@@ -82,9 +84,9 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
 
     useEffect(() => {
       if (!activeId && !resizingId) {
-        setPreviewLayout(compactLayout(items));
+        setPreviewLayout(compactLayout(items, undefined, gravityEnabled));
       }
-    }, [items, activeId, resizingId]);
+    }, [items, activeId, resizingId, gravityEnabled]);
 
     useEffect(() => {
       const updateWidth = () => {
@@ -99,7 +101,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     }, [columns, gapPx]);
 
     useImperativeHandle(ref, () => ({
-      compact: () => onChange(compactLayout(latestPreviewRef.current)),
+      compact: () => onChange(compactLayout(latestPreviewRef.current, undefined, true)),
       reset: () =>
         onChange(JSON.parse(JSON.stringify(initialLayoutRef.current))),
       getLayout: () => latestPreviewRef.current,
@@ -124,7 +126,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       const newY = Math.max(0, origItem.y + moveY);
 
       const simulatedActive = { ...origItem, x: newX, y: newY };
-      setPreviewLayout(resolveLayout(items, simulatedActive, columns));
+      setPreviewLayout(resolveLayout(items, simulatedActive, columns, gravityEnabled));
     };
 
     const handleDragEnd = () => {
@@ -133,7 +135,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     };
 
     const handleDragCancel = () => {
-      setPreviewLayout(compactLayout(items));
+      setPreviewLayout(compactLayout(items, undefined, gravityEnabled));
       setActiveId(null);
     };
 
@@ -202,7 +204,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       }
 
       const simulatedActive = { ...orig, x: newX, y: newY, w: newW, h: newH };
-      setPreviewLayout(resolveLayout(items, simulatedActive, columns));
+      setPreviewLayout(resolveLayout(items, simulatedActive, columns, gravityEnabled));
     };
 
     const maxRow = Math.max(...previewLayout.map((i) => i.y + i.h), 0);
