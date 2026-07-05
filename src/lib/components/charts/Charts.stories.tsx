@@ -240,7 +240,7 @@ export const ChartShowcase: StoryObj = {
               />
             </div>
             <div>
-              <Typography variant="large" className="font-bold">
+              <Typography variant="display-large" className="font-bold">
                 Traffic
               </Typography>
               <Typography variant="body-small" muted={true} className="text-xs">
