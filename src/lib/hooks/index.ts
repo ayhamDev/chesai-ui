@@ -4,5 +4,6 @@ export * from './useAppBar'
 export * from './useCapacitorBackButton'
 export * from './useFlubber'
 export * from './useMaterialRipple'
+export * from './useRipple' // Updated to export upgraded M3 Expressive ripple
 export * from './useShallowRouter'
 export * from './useWindowSizeClass'

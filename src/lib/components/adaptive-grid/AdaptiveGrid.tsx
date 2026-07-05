@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export interface AdaptiveGridHandle {
   compact: () => void;
+  reset: () => void;
   getLayout: () => GridItemConfig[];
 }
 
@@ -40,6 +41,13 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     const [resizingId, setResizingId] = useState<string | null>(null);
     const [previewLayout, setPreviewLayout] = useState<GridItemConfig[]>(items);
 
+    const initialLayoutRef = useRef<GridItemConfig[]>([]);
+    useEffect(() => {
+      if (initialLayoutRef.current.length === 0 && items.length > 0) {
+        initialLayoutRef.current = JSON.parse(JSON.stringify(items));
+      }
+    }, [items]);
+
     const latestPreviewRef = useRef<GridItemConfig[]>(previewLayout);
     useEffect(() => {
       latestPreviewRef.current = previewLayout;
@@ -51,7 +59,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
 
     useEffect(() => {
       if (!activeId && !resizingId) {
-        setPreviewLayout(resolveLayout(items));
+        setPreviewLayout(compactLayout(items));
       }
     }, [items, activeId, resizingId]);
 
@@ -71,6 +79,11 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       compact: () => {
         const compacted = compactLayout(latestPreviewRef.current);
         onChange(compacted);
+      },
+      reset: () => {
+        if (initialLayoutRef.current.length > 0) {
+          onChange(JSON.parse(JSON.stringify(initialLayoutRef.current)));
+        }
       },
       getLayout: () => latestPreviewRef.current,
     }));
@@ -100,7 +113,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     };
 
     const handleDragCancel = () => {
-      setPreviewLayout(resolveLayout(items));
+      setPreviewLayout(compactLayout(items));
       setActiveId(null);
     };
 

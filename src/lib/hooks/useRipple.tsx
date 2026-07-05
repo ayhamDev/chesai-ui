@@ -1,4 +1,10 @@
-import { useRef, useCallback, useEffect, useMemo, useInsertionEffect } from "react";
+import {
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useInsertionEffect,
+} from "react";
 
 /**
  * useRipple — a faithful recreation of the native Android 16 / Material 3
@@ -148,7 +154,7 @@ function stepSpring(
   velocity: number,
   target: number,
   spring: { stiffness: number; damping: number; mass: number },
-  dt: number
+  dt: number,
 ): [number, number] {
   const { stiffness, damping, mass } = spring;
   const displacement = value - target;
@@ -161,7 +167,9 @@ function stepSpring(
 }
 
 function isSettled(value: number, velocity: number, target: number): boolean {
-  return Math.abs(value - target) < REST_EPSILON && Math.abs(velocity) < REST_EPSILON;
+  return (
+    Math.abs(value - target) < REST_EPSILON && Math.abs(velocity) < REST_EPSILON
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -226,7 +234,9 @@ export function useRipple(options: UseRippleOptions = {}) {
   // -------------------------------------------------------------------
   const tick = useCallback(
     (time: number) => {
-      const dtRaw = lastFrameTime.current ? (time - lastFrameTime.current) / 1000 : 1 / 60;
+      const dtRaw = lastFrameTime.current
+        ? (time - lastFrameTime.current) / 1000
+        : 1 / 60;
       lastFrameTime.current = time;
       // Clamp dt so a background tab / jank spike doesn't blow up the spring.
       const dt = Math.min(dtRaw, 1 / 30);
@@ -240,26 +250,40 @@ export function useRipple(options: UseRippleOptions = {}) {
         stateLayerOpacityVelocity.current,
         target,
         FADE_SPRING,
-        dt
+        dt,
       );
       stateLayerOpacityCurrent.current = so;
       stateLayerOpacityVelocity.current = sv;
       if (!isSettled(so, sv, target)) anyActive = true;
       if (stateLayerRef.current) {
-        stateLayerRef.current.style.opacity = String(Math.max(0, Math.min(1, so)));
+        stateLayerRef.current.style.opacity = String(
+          Math.max(0, Math.min(1, so)),
+        );
       }
 
       // Advance every live ripple.
       const toRemove: number[] = [];
       ripples.current.forEach((r) => {
-        const [nr, nrv] = stepSpring(r.radius, r.radiusVelocity, r.targetRadius, EXPAND_SPRING, dt);
+        const [nr, nrv] = stepSpring(
+          r.radius,
+          r.radiusVelocity,
+          r.targetRadius,
+          EXPAND_SPRING,
+          dt,
+        );
         r.radius = nr;
         r.radiusVelocity = nrv;
         const radiusSettled = isSettled(nr, nrv, r.targetRadius);
 
         let opacitySettled = true;
         if (r.fading) {
-          const [no, nov] = stepSpring(r.opacity, r.opacityVelocity, r.fadeTarget, FADE_SPRING, dt);
+          const [no, nov] = stepSpring(
+            r.opacity,
+            r.opacityVelocity,
+            r.fadeTarget,
+            FADE_SPRING,
+            dt,
+          );
           r.opacity = no;
           r.opacityVelocity = nov;
           opacitySettled = isSettled(no, nov, r.fadeTarget);
@@ -282,7 +306,7 @@ export function useRipple(options: UseRippleOptions = {}) {
         lastFrameTime.current = 0;
       }
     },
-    [targetStateOpacity]
+    [targetStateOpacity],
   );
 
   const ensureLoopRunning = useCallback(() => {
@@ -305,9 +329,14 @@ export function useRipple(options: UseRippleOptions = {}) {
     const liveIds = new Set<number>();
     ripples.current.forEach((r) => {
       liveIds.add(r.id);
-      let circle = svg.querySelector<SVGCircleElement>(`circle[data-ripple-id="${r.id}"]`);
+      let circle = svg.querySelector<SVGCircleElement>(
+        `circle[data-ripple-id="${r.id}"]`,
+      );
       if (!circle) {
-        circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "circle",
+        );
         circle.setAttribute("data-ripple-id", String(r.id));
         circle.style.pointerEvents = "none";
         svg.appendChild(circle);
@@ -320,10 +349,12 @@ export function useRipple(options: UseRippleOptions = {}) {
     });
 
     // Remove circles for ripples that no longer exist.
-    svg.querySelectorAll<SVGCircleElement>("circle[data-ripple-id]").forEach((el) => {
-      const id = Number(el.getAttribute("data-ripple-id"));
-      if (!liveIds.has(id)) el.remove();
-    });
+    svg
+      .querySelectorAll<SVGCircleElement>("circle[data-ripple-id]")
+      .forEach((el) => {
+        const id = Number(el.getAttribute("data-ripple-id"));
+        if (!liveIds.has(id)) el.remove();
+      });
   }, [color]);
 
   // -------------------------------------------------------------------
@@ -345,7 +376,8 @@ export function useRipple(options: UseRippleOptions = {}) {
         Math.hypot(x, rect.height - y),
         Math.hypot(rect.width - x, rect.height - y),
       ];
-      const targetRadius = Math.max(Math.max(...corners) + RADIUS_PAD, MIN_RADIUS) * radiusScale;
+      const targetRadius =
+        Math.max(Math.max(...corners) + RADIUS_PAD, MIN_RADIUS) * radiusScale;
 
       const id = ++rippleIdCounter;
       const ripple: LiveRipple = {
@@ -365,7 +397,7 @@ export function useRipple(options: UseRippleOptions = {}) {
       ensureLoopRunning();
       return id;
     },
-    [disabled, radiusScale, ensureLoopRunning]
+    [disabled, radiusScale, ensureLoopRunning],
   );
 
   /** Begin the fade-out for a specific ripple (or all, if id omitted). */
@@ -385,7 +417,7 @@ export function useRipple(options: UseRippleOptions = {}) {
       }
       ensureLoopRunning();
     },
-    [ensureLoopRunning]
+    [ensureLoopRunning],
   );
 
   // Track which ripple id belongs to which live pointer, so pointer-up
@@ -406,7 +438,7 @@ export function useRipple(options: UseRippleOptions = {}) {
       if (id != null) pointerRippleMap.current.set(e.pointerId, id);
       ensureLoopRunning();
     },
-    [disabled, spawnRipple, ensureLoopRunning]
+    [disabled, spawnRipple, ensureLoopRunning],
   );
 
   const endPress = useCallback(
@@ -418,7 +450,7 @@ export function useRipple(options: UseRippleOptions = {}) {
         pointerRippleMap.current.delete(e.pointerId);
       }
     },
-    [releaseRipple]
+    [releaseRipple],
   );
 
   const onPointerEnter = useCallback(() => {
@@ -435,7 +467,7 @@ export function useRipple(options: UseRippleOptions = {}) {
       endPress(e);
       ensureLoopRunning();
     },
-    [endPress, ensureLoopRunning]
+    [endPress, ensureLoopRunning],
   );
 
   const onFocus = useCallback(() => {
@@ -461,11 +493,15 @@ export function useRipple(options: UseRippleOptions = {}) {
       if (!host) return;
       const rect = host.getBoundingClientRect();
       interaction.current.pressed = true;
-      const id = spawnRipple(rect.left + rect.width / 2, rect.top + rect.height / 2, -1);
+      const id = spawnRipple(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+        -1,
+      );
       if (id != null) pointerRippleMap.current.set(-1, id);
       ensureLoopRunning();
     },
-    [disabled, spawnRipple, ensureLoopRunning]
+    [disabled, spawnRipple, ensureLoopRunning],
   );
 
   const onKeyUp = useCallback(
@@ -478,7 +514,7 @@ export function useRipple(options: UseRippleOptions = {}) {
         pointerRippleMap.current.delete(-1);
       }
     },
-    [releaseRipple]
+    [releaseRipple],
   );
 
   // Cancel on context menu / pointer cancel (e.g. scroll interrupts touch),
@@ -492,7 +528,7 @@ export function useRipple(options: UseRippleOptions = {}) {
         pointerRippleMap.current.delete(e.pointerId);
       }
     },
-    [releaseRipple]
+    [releaseRipple],
   );
 
   useEffect(() => {
@@ -513,10 +549,10 @@ export function useRipple(options: UseRippleOptions = {}) {
       position: "absolute",
       inset: unbounded ? "-9999% -9999%" : 0,
       overflow: unbounded ? "visible" : "hidden",
-      borderRadius: unbounded ? undefined : borderRadius ?? "inherit",
+      borderRadius: unbounded ? undefined : (borderRadius ?? "inherit"),
       pointerEvents: "none",
     }),
-    [unbounded, borderRadius]
+    [unbounded, borderRadius],
   );
 
   const stateLayerStyle = useMemo<React.CSSProperties>(
@@ -527,7 +563,7 @@ export function useRipple(options: UseRippleOptions = {}) {
       opacity: 0,
       pointerEvents: "none",
     }),
-    [color]
+    [color],
   );
 
   const RippleContainer = useMemo(
@@ -542,7 +578,7 @@ export function useRipple(options: UseRippleOptions = {}) {
         />
       </span>
     ),
-    [containerStyle, stateLayerStyle]
+    [containerStyle, stateLayerStyle],
   );
 
   const rippleProps = useMemo(
@@ -557,9 +593,24 @@ export function useRipple(options: UseRippleOptions = {}) {
       onBlur,
       onKeyDown,
       onKeyUp,
-      style: { position: "relative" as const, overflow: unbounded ? "visible" : ("hidden" as const) },
+      style: {
+        position: "relative" as const,
+        overflow: unbounded ? "visible" : ("hidden" as const),
+      },
     }),
-    [setHostNode, onPointerDown, endPress, onPointerLeave, onPointerEnter, onPointerCancel, onFocus, onBlur, onKeyDown, onKeyUp, unbounded]
+    [
+      setHostNode,
+      onPointerDown,
+      endPress,
+      onPointerLeave,
+      onPointerEnter,
+      onPointerCancel,
+      onFocus,
+      onBlur,
+      onKeyDown,
+      onKeyUp,
+      unbounded,
+    ],
   );
 
   return { rippleProps, RippleContainer, hostRef };

@@ -11,7 +11,7 @@ import { AreaChart } from "../charts/area-chart";
 import { BarChart } from "../charts/bar-chart";
 import { Badge } from "../badge";
 import { ChesaiProvider } from "../../context/ChesaiProvider";
-import { Sparkles, DollarSign, Users, Activity, BarChart3 } from "lucide-react";
+import { Sparkles, DollarSign, Users, Activity, BarChart3, Undo2 } from "lucide-react";
 
 const meta: Meta<typeof AdaptiveGrid> = {
   title: "Components/Layout/AdaptiveGrid",
@@ -88,6 +88,10 @@ export const ImperativeWorkspace: StoryObj = {
       gridRef.current?.compact();
     };
 
+    const handleReset = () => {
+      gridRef.current?.reset();
+    };
+
     return (
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between bg-surface-container-low p-4 rounded-2xl border border-outline-variant/30">
@@ -99,14 +103,24 @@ export const ImperativeWorkspace: StoryObj = {
               Interactive dashboard workspace featuring constraint boundaries.
             </Typography>
           </div>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleAutoSort}
-            startIcon={<Sparkles size={16} />}
-          >
-            Auto-Compact Spacing
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              startIcon={<Undo2 size={16} />}
+            >
+              Reset Layout
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleAutoSort}
+              startIcon={<Sparkles size={16} />}
+            >
+              Auto-Compact Spacing
+            </Button>
+          </div>
         </div>
 
         <AdaptiveGrid
