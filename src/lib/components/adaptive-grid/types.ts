@@ -8,6 +8,8 @@ export interface GridItemConfig {
   h: number; // Row span
   minW?: number;
   minH?: number;
+  maxW?: number;
+  maxH?: number;
 }
 
 export type GridGap = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";

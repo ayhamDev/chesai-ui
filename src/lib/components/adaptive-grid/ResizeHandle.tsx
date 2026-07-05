@@ -61,7 +61,7 @@ export const ResizeHandle = ({
   return (
     <div
       onPointerDown={handlePointerDown}
-      className="absolute bottom-0 right-0 w-6 h-6 flex items-end justify-end p-1.5 cursor-nwse-resize z-20 opacity-0 group-hover:opacity-100 transition-opacity text-on-surface-variant/50 hover:text-primary rounded-br-[inherit]"
+      className="absolute bottom-0 right-0 w-6 h-6 flex items-end justify-end p-1.5 cursor-nwse-resize z-20 opacity-0 group-hover:opacity-100 transition-opacity text-on-surface-variant/40 hover:text-primary rounded-br-[inherit]"
     >
       {/* Minimalist Corner Edge Lines */}
       <svg viewBox="0 0 10 10" className="w-2.5 h-2.5 overflow-visible">
