@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-// Near the top of src/lib/components/resizable/Resizable.stories.tsx
 import {
   Archive,
   Bold,
@@ -18,6 +17,11 @@ import {
   Paperclip,
   Plus,
   Reply,
+  X,
+  Calendar,
+  Lightbulb,
+  CheckSquare,
+  HardDrive,
   Search,
   Settings,
   Star,
@@ -28,12 +32,6 @@ import {
   UserPlus,
   Users,
   Video,
-  X,
-  // Added icons for the new side panel apps:
-  Calendar,
-  Lightbulb,
-  CheckSquare,
-  HardDrive,
 } from "lucide-react";
 
 import { useMemo, useState } from "react";
@@ -1666,6 +1664,227 @@ export const ThreePaneGmailWithApps: StoryObj = {
         </div>
 
         <ComposeModal open={isComposeOpen} onOpenChange={setIsComposeOpen} />
+      </div>
+    );
+  },
+};
+
+// --- STORY 4: STATE-CONTROLLED PANEL WITH BOTTOM SHEET ADAPTATION ---
+
+export const StateControlledSheetAdaptation: StoryObj = {
+  name: "4. Controlled State with Sheet Adaptation",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Demonstrates programmatic state control over a pane's open state using a standard React state variable, combined with Sheet drawer adaptation on narrower screens. Use the toolbar buttons to open, close, or inspect configuration states.",
+      },
+    },
+  },
+  render: () => {
+    const [isPaneOpen, setIsPaneOpen] = useState(true);
+    const isMobileOrTablet = useMediaQuery("(max-width: 900px)");
+
+    return (
+      <div className="flex flex-col h-screen w-full bg-surface-container-lowest">
+        {/* Header toolbar displaying state variables */}
+        <div className="h-16 border-b border-outline-variant/30 px-6 flex items-center justify-between bg-surface shrink-0">
+          <div className="flex items-center gap-3">
+            <Typography variant="title-medium" className="font-semibold">
+              Asset Workspace
+            </Typography>
+            <Badge
+              variant={isPaneOpen ? "primary" : "secondary"}
+              className="text-xs"
+            >
+              {isPaneOpen ? "Panel Open" : "Panel Closed"}
+            </Badge>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant={isPaneOpen ? "secondary" : "primary"}
+              onClick={() => setIsPaneOpen((prev) => !prev)}
+              startIcon={isPaneOpen ? <X size={16} /> : <Settings size={16} />}
+            >
+              {isPaneOpen ? "Hide Inspector" : "Show Inspector"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Resizable structure */}
+        <div className="flex-1 overflow-hidden">
+          <Resizable>
+            {/* Main view which takes up the remaining layout */}
+            <Resizable.Pane
+              id="workspace-canvas"
+              flex
+              className="bg-surface p-6"
+            >
+              <div className="h-full flex flex-col items-center justify-center border border-dashed border-outline-variant rounded-2xl p-8 text-center bg-surface-container-low/20">
+                <Typography variant="title-large" className="mb-2 font-medium">
+                  Workspace Canvas
+                </Typography>
+                <Typography
+                  variant="body-medium"
+                  className="max-w-md opacity-60 mb-6"
+                >
+                  This pane expands flexibly. Trigger the side panel
+                  programmatically using the toolbar button or by choosing one
+                  of the presets below.
+                </Typography>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <Button variant="tonal" onClick={() => setIsPaneOpen(true)}>
+                    Force Open Inspector
+                  </Button>
+                  <Button variant="ghost" onClick={() => setIsPaneOpen(false)}>
+                    Dismiss Inspector
+                  </Button>
+                </div>
+              </div>
+            </Resizable.Pane>
+
+            <Resizable.Handle target="inspector-adaptive-pane" invert />
+
+            {/* Controlled Pane utilizing adaptTo="docked" */}
+            <Resizable.Pane
+              id="inspector-adaptive-pane"
+              defaultWidth={350}
+              minWidth={250}
+              collapseAt={900}
+              adaptTo="docked"
+              open={isPaneOpen}
+              onOpenChange={setIsPaneOpen}
+              dismissible={true}
+              className="bg-surface-container-low border-l border-outline-variant/30"
+            >
+              <div className="flex flex-col h-full">
+                {/* Internal Panel Header */}
+                <div className="h-14 px-4 flex items-center justify-between border-b border-outline-variant/20 bg-surface-container">
+                  <div className="flex items-center gap-2">
+                    <Settings
+                      size={18}
+                      className="text-primary animate-spin-slow"
+                    />
+                    <Typography variant="label-large" className="font-bold">
+                      Properties Inspector
+                    </Typography>
+                  </div>
+                  <IconButton
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => setIsPaneOpen(false)}
+                  >
+                    <X size={16} />
+                  </IconButton>
+                </div>
+
+                {/* Panel Content Area */}
+                <div className="flex-1 p-4 overflow-hidden">
+                  <ElasticScrollArea className="h-full">
+                    <div className="flex flex-col gap-6">
+                      <div>
+                        <Typography
+                          variant="label-small"
+                          muted
+                          className="uppercase tracking-wider"
+                        >
+                          Context State
+                        </Typography>
+                        <div className="mt-2 flex flex-col gap-2">
+                          <Card
+                            className="p-3 bg-surface"
+                            variant="outline"
+                            shape="minimal"
+                          >
+                            <Typography
+                              variant="body-medium"
+                              className="font-medium"
+                            >
+                              Active Layout Mode
+                            </Typography>
+                            <Typography
+                              variant="body-small"
+                              muted
+                              className="mt-1"
+                            >
+                              {isMobileOrTablet
+                                ? "Sheet / Bottom Drawer Overlay"
+                                : "In-line Split Pane View"}
+                            </Typography>
+                          </Card>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Typography
+                          variant="label-small"
+                          muted
+                          className="uppercase tracking-wider"
+                        >
+                          Target Dimensions
+                        </Typography>
+                        <div className="mt-2 flex flex-col gap-2">
+                          <div className="flex justify-between items-center py-1 border-b border-outline-variant/10">
+                            <Typography variant="body-medium" muted>
+                              Default Width
+                            </Typography>
+                            <Typography
+                              variant="body-medium"
+                              className="font-mono"
+                            >
+                              350px
+                            </Typography>
+                          </div>
+                          <div className="flex justify-between items-center py-1 border-b border-outline-variant/10">
+                            <Typography variant="body-medium" muted>
+                              Min Width Threshold
+                            </Typography>
+                            <Typography
+                              variant="body-medium"
+                              className="font-mono"
+                            >
+                              250px
+                            </Typography>
+                          </div>
+                          <div className="flex justify-between items-center py-1">
+                            <Typography variant="body-medium" muted>
+                              Collapse Viewport
+                            </Typography>
+                            <Typography
+                              variant="body-medium"
+                              className="font-mono text-primary"
+                            >
+                              900px
+                            </Typography>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-primary-container/30 p-4 rounded-xl border border-primary/10">
+                        <Typography
+                          variant="body-medium"
+                          className="font-medium text-primary"
+                        >
+                          Fluid Sheet Animation
+                        </Typography>
+                        <Typography
+                          variant="body-small"
+                          className="mt-1 leading-relaxed opacity-90"
+                        >
+                          Resize the screen below 900px to see the inline pane
+                          turn into a bottom sheet overlay. State changes are
+                          synchronized between inline layouts and the overlay
+                          sheet drawer.
+                        </Typography>
+                      </div>
+                    </div>
+                  </ElasticScrollArea>
+                </div>
+              </div>
+            </Resizable.Pane>
+          </Resizable>
+        </div>
       </div>
     );
   },

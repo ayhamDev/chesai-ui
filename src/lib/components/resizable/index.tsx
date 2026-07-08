@@ -563,16 +563,17 @@ const Pane = React.forwardRef<HTMLDivElement, PaneProps>(
       (newOpen: boolean) => {
         if (!isControlled) {
           setInternalOpen(newOpen);
+
           if (!newOpen && shouldCollapse) {
             setPaneWidth(id, 0);
           }
         }
+
         onOpenChange?.(newOpen);
       },
       [isControlled, onOpenChange, shouldCollapse, setPaneWidth, id],
     );
 
-    // Register parameters on mount
     useEffect(() => {
       if (!flex) {
         registerPane(id, defaultWidth, { dismissible, minWidth, collapseAt });
@@ -587,8 +588,8 @@ const Pane = React.forwardRef<HTMLDivElement, PaneProps>(
       registerPane,
     ]);
 
-    // Track responsive transitions to auto-open/close the levitated panel
     const prevWidth = useRef(0);
+
     useEffect(() => {
       if (containerWidth === 0 || collapseAt === undefined) return;
 
@@ -600,41 +601,33 @@ const Pane = React.forwardRef<HTMLDivElement, PaneProps>(
         const isCollapsed = current < collapseAt;
 
         if (!wasCollapsed && isCollapsed) {
-          // Desktop -> Mobile transition: automatically open the sheet overlay
           handleOpenChange(true);
         }
-        // Mobile -> Desktop transition: we do NOT call handleOpenChange(false)
-        // because the sheet automatically unmounts and the content seamlessly
-        // transitions back to its inline placement without being dismissed.
       }
 
       prevWidth.current = current;
     }, [containerWidth, collapseAt, handleOpenChange]);
 
-    // Automatically sync uncontrolled internalOpen state with current width changes when collapsed
     const currentWidth = sizes[id];
+
     useEffect(() => {
       if (shouldCollapse && !isControlled) {
-        if (currentWidth > 0) {
-          setInternalOpen(true);
-        } else {
-          setInternalOpen(false);
-        }
+        setInternalOpen(currentWidth > 0);
       }
     }, [shouldCollapse, currentWidth, isControlled]);
 
-    // Track collapse and width sync dynamically, accounting for controlled states
     const isClosedInline = shouldCollapse || (isControlled && !open);
+
     useEffect(() => {
       setPaneCollapsed(id, isClosedInline || currentWidth === 0);
     }, [id, isClosedInline, currentWidth, setPaneCollapsed]);
 
-    // Smoothly toggle child rendering visibility during transitions to avoid visual layout jumps
     const [isFullyClosed, setIsFullyClosed] = useState(
       (sizes[id] ?? defaultWidth) === 0 || (isControlled && !open),
     );
 
     const isOpened = currentWidth > 0 && (!isControlled || open);
+
     if (isOpened && isFullyClosed) {
       setIsFullyClosed(false);
     }
@@ -648,34 +641,31 @@ const Pane = React.forwardRef<HTMLDivElement, PaneProps>(
       }
     };
 
-    // Delay overlays from triggering until collapse animations finish
     const [delayedOpen, setDelayedOpen] = useState(false);
     const isInitialMount = useRef(true);
 
     useEffect(() => {
       if (shouldCollapse && currentOpen) {
-        if (isInitialMount.current) {
-          setDelayedOpen(true);
-          isInitialMount.current = false;
-          return;
-        }
         setDelayedOpen(true);
       } else {
         setDelayedOpen(false);
       }
+
       isInitialMount.current = false;
     }, [shouldCollapse, currentOpen]);
 
-    // Evaluate displays
+    const adaptedOverlayOpen = shouldCollapse && currentOpen && delayedOpen;
+
     let displayWidth: number | undefined = flex
       ? undefined
       : (currentWidth ?? defaultWidth);
+
     if (isClosedInline) {
       displayWidth = flex ? undefined : 0;
     }
 
     const showCoplanarChildren =
-      !isFullyClosed && (!shouldCollapse || !delayedOpen);
+      !isFullyClosed && (!shouldCollapse || !adaptedOverlayOpen);
 
     return (
       <SafeActivity
@@ -701,7 +691,7 @@ const Pane = React.forwardRef<HTMLDivElement, PaneProps>(
 
           {shouldCollapse && adaptTo === "docked" && (
             <Sheet
-              open={delayedOpen}
+              open={adaptedOverlayOpen}
               onOpenChange={handleOpenChange}
               forceBottomSheet
               {...sheetProps}
@@ -721,7 +711,7 @@ const Pane = React.forwardRef<HTMLDivElement, PaneProps>(
 
           {shouldCollapse && adaptTo === "floating" && (
             <Dialog
-              open={delayedOpen}
+              open={adaptedOverlayOpen}
               onOpenChange={handleOpenChange}
               variant="basic"
               {...dialogProps}
