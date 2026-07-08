@@ -58,8 +58,14 @@ const meta: Meta<typeof Tabs> = {
       control: "select",
       options: ["search", "pathname", "memory"],
     },
+    searchParamName: {
+      control: "text",
+      description:
+        'Search parameter key used when `routingMode="search"`, e.g. `inventory.tab` for `?inventory.tab=products`.',
+    },
     routingParamName: {
       control: "text",
+      description: "Deprecated. Use `searchParamName` instead.",
     },
     shape: {
       control: "select",
@@ -89,7 +95,7 @@ export const Primary: Story = {
     defaultValue: "flights",
     variant: "primary",
     pageTransition: "fade",
-    routingParamName: "view",
+    searchParamName: "view",
     stretch: true,
     shape: "minimal",
     size: "md",
@@ -354,6 +360,59 @@ export const Scrollable: Story = {
           </Tabs.Panel>
           <Tabs.Panel value="packages">
             <Typography variant="title-small">Vacation Packages</Typography>
+          </Tabs.Panel>
+        </Tabs.Content>
+      </Tabs>
+    </Card>
+  ),
+};
+
+export const CustomSearchParamName: Story = {
+  name: "7. Custom Search Param Name",
+  args: {
+    defaultValue: "products",
+    variant: "secondary",
+    pageTransition: "fade",
+    routingMode: "search",
+    searchParamName: "inventory.tab",
+    stretch: true,
+    shape: "minimal",
+    size: "md",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Use `searchParamName` to customize the query-string key in search routing mode. This example writes URLs like `?inventory.tab=products` instead of `?tab=products`.',
+      },
+    },
+  },
+  render: (args) => (
+    <Card className="w-96" shape="minimal">
+      <Tabs {...args}>
+        <Tabs.List>
+          <Tabs.Trigger value="products">Products</Tabs.Trigger>
+          <Tabs.Trigger value="categories">Categories</Tabs.Trigger>
+          <Tabs.Trigger value="stock">Stock</Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content>
+          <Tabs.Panel value="products">
+            <Typography variant="title-small">Products</Typography>
+            <Typography variant="body-medium">
+              Selecting this tab sets the URL to `?inventory.tab=products`.
+            </Typography>
+          </Tabs.Panel>
+          <Tabs.Panel value="categories">
+            <Typography variant="title-small">Categories</Typography>
+            <Typography variant="body-medium">
+              Selecting this tab sets the URL to `?inventory.tab=categories`.
+            </Typography>
+          </Tabs.Panel>
+          <Tabs.Panel value="stock">
+            <Typography variant="title-small">Stock</Typography>
+            <Typography variant="body-medium">
+              Selecting this tab sets the URL to `?inventory.tab=stock`.
+            </Typography>
           </Tabs.Panel>
         </Tabs.Content>
       </Tabs>

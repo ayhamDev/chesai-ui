@@ -78,6 +78,9 @@ interface TabsProps {
   variant?: TabVariant;
   pageTransition?: PageTransition;
   routingMode?: "search" | "pathname" | "memory";
+  /** Search parameter used by search routing mode, e.g. "tab" or "inventory.tab". */
+  searchParamName?: string;
+  /** @deprecated Use searchParamName for search routing mode. */
   routingParamName?: string;
   initialTab?: string;
   shape?: TabShape;
@@ -91,6 +94,7 @@ const TabsRoot: React.FC<TabsProps> = ({
   variant = "primary",
   pageTransition = "fade",
   routingMode = "memory",
+  searchParamName,
   routingParamName = "tab",
   initialTab,
   shape = "minimal",
@@ -98,8 +102,10 @@ const TabsRoot: React.FC<TabsProps> = ({
   stretch = true,
 }) => {
   const uniqueId = useId();
+  const paramName = searchParamName ?? routingParamName;
+
   return (
-    <ShallowRouter mode={routingMode} paramName={routingParamName}>
+    <ShallowRouter mode={routingMode} paramName={paramName}>
       <TabsProvider
         defaultValue={defaultValue}
         variant={variant}
