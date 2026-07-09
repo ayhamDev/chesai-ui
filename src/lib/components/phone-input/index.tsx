@@ -5,22 +5,16 @@ import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
 import { Check, ChevronDown, Search } from "lucide-react";
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 // Phone number logic
-import {
-  type CountryCode,
-  getCountries,
-  getCountryCallingCode,
-} from "react-phone-number-input";
+import { getCountries, getCountryCallingCode } from "react-phone-number-input";
 import SmartPhoneInput from "react-phone-number-input/input";
 import enLabels from "react-phone-number-input/locale/en.json";
 
-// Corrected standard ES imports for libphonenumber-js
-import { getExampleNumber } from "libphonenumber-js";
+// Corrected standard ES imports for libphonenumber-js (safe source for CountryCode typings)
+import { getExampleNumber, type CountryCode } from "libphonenumber-js";
 import examples from "libphonenumber-js/examples.mobile.json";
-
-import { Dialog, DialogContent, DialogTrigger } from "../dialog";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { Input, type InputProps } from "../input";
 import {
@@ -33,8 +27,8 @@ import {
 
 // Re-export validation utilities for convenience
 export {
-  isValidPhoneNumber,
   isPossiblePhoneNumber,
+  isValidPhoneNumber,
 } from "react-phone-number-input";
 
 export const getFlagEmoji = (countryCode: string) => {
@@ -71,7 +65,7 @@ const CountryPicker = ({
 
   const countries = useMemo(() => {
     return getCountries().map((c) => ({
-      country: c,
+      country: c as CountryCode,
       name: labels[c] || enLabels[c] || c,
       callingCode: getCountryCallingCode(c),
     }));
@@ -221,7 +215,6 @@ const CountryPicker = ({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>{triggerElement}</SheetTrigger>
         <SheetContent
-          padding="none"
           shape="minimal"
           className="p-0 flex flex-col overflow-hidden max-h-[85vh] h-[500px]"
         >
@@ -385,7 +378,7 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
         inputComponent={Input}
         country={activeCountry}
         value={value}
-        onChange={onValueChange}
+        onChange={onValueChange || (() => {})}
         disabled={disabled}
         startContent={composedStartContent}
         labelPlacement={labelPlacement}
@@ -408,5 +401,7 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
     );
   },
 );
-
+// Pre-bundled, tree-shakable locales for developers to import easily
+export { default as phoneLocaleAr } from "react-phone-number-input/locale/ar.json";
+export { default as phoneLocaleEn } from "react-phone-number-input/locale/en.json";
 PhoneInput.displayName = "PhoneInput";

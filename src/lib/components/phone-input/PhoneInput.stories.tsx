@@ -4,7 +4,9 @@ import { useState } from "react";
 import { PhoneInput, isValidPhoneNumber, type PhoneInputProps } from "./index";
 import { Button } from "../button";
 import { LayoutDirectionToggle } from "../layout-toggle";
-import { type CountryCode } from "react-phone-number-input";
+
+// Resolved TS2614: Safe source import for CountryCode typings
+import type { CountryCode } from "libphonenumber-js";
 
 // Standard localization dictionaries provided by the library
 import arLabels from "react-phone-number-input/locale/ar.json";
