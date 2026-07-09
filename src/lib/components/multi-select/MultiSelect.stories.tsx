@@ -56,6 +56,11 @@ const frameworks = [
   { value: "angular", label: "Angular" },
   { value: "svelte", label: "Svelte" },
   { value: "solid", label: "Solid" },
+  { value: "react.ts", label: "React.ts" },
+  { value: "vue.ts", label: "Vue.ts" },
+  { value: "angular.ts", label: "Angular.ts" },
+  { value: "svelte.ts", label: "Svelte.ts" },
+  { value: "solid.ts", label: "Solid.ts" },
 ];
 
 export const Default: Story = {

@@ -1,3 +1,4 @@
+// src/lib/components/stepper/index.tsx
 "use client";
 
 import { cva } from "class-variance-authority";
@@ -26,6 +27,7 @@ const useStepper = () => {
 interface StepContextProps {
   index: number;
   status: "complete" | "current" | "upcoming";
+  isFirst: boolean;
   isLast: boolean;
 }
 
@@ -81,12 +83,13 @@ const StepperRoot = React.forwardRef<HTMLDivElement, StepperProps>(
                 : currentStep === index
                   ? "current"
                   : "upcoming";
+            const isFirst = index === 0;
             const isLast = index === childArray.length - 1;
 
             return (
               <StepContext.Provider
                 key={index}
-                value={{ index, status, isLast }}
+                value={{ index, status, isFirst, isLast }}
               >
                 {child}
               </StepContext.Provider>
@@ -237,14 +240,28 @@ const StepperContent = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
   const { orientation } = useStepper();
+  const { isFirst, isLast } = useStep();
+
   return (
     <div
       ref={ref}
       className={clsx(
         "flex flex-col",
         orientation === "horizontal"
-          ? "absolute top-10 ltr:left-0 rtl:right-0 w-max"
-          : "ms-4 pt-1",
+          ? clsx(
+              "absolute top-10 w-max max-w-[100px] sm:max-w-[140px] whitespace-normal break-words",
+              // First step anchors left
+              isFirst &&
+                "ltr:left-0 ltr:items-start ltr:text-left rtl:right-0 rtl:items-start rtl:text-right",
+              // Last step anchors right
+              isLast &&
+                "ltr:right-0 ltr:items-end ltr:text-right rtl:left-0 rtl:items-end rtl:text-left",
+              // Middle steps center exactly underneath the indicator circle
+              !isFirst &&
+                !isLast &&
+                "ltr:left-4 ltr:-translate-x-1/2 rtl:right-4 rtl:translate-x-1/2 items-center text-center",
+            )
+          : "ms-4 pt-1 items-start text-left",
         className,
       )}
       {...props}

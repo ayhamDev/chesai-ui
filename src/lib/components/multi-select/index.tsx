@@ -1,3 +1,4 @@
+// src/lib/components/multi-select/index.tsx
 "use client";
 
 import * as PopoverPrimitive from "@radix-ui/react-popover";
@@ -192,8 +193,49 @@ export const MultiSelect = React.forwardRef<
       selectedValues.length === 0 &&
       (!label || labelPlacement !== "inside" || open);
 
+    // Extracted the options list to avoid duplication
+    const optionsListContent = (
+      <div className="p-1 flex flex-col gap-0.5 pb-safe">
+        {filteredOptions.length > 0 ? (
+          filteredOptions.map((option) => {
+            const isSelected = selectedValues.includes(option.value);
+            return (
+              <div
+                key={option.value}
+                onClick={() => handleSelect(option.value)}
+                className={clsx(
+                  "relative flex cursor-pointer select-none items-center rounded-lg px-2 py-2 text-sm outline-none transition-colors shrink-0",
+                  isSelected
+                    ? "bg-secondary-container/60 text-on-surface"
+                    : "hover:bg-surface-container-highest text-on-surface",
+                )}
+              >
+                <div
+                  className={clsx(
+                    "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                    isSelected ? "bg-primary text-on-primary" : "opacity-50",
+                  )}
+                >
+                  {isSelected && <Check className="h-3 w-3" />}
+                </div>
+                {option.icon && (
+                  // @ts-ignore
+                  <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                )}
+                <span>{option.label}</span>
+              </div>
+            );
+          })
+        ) : (
+          <div className="py-6 text-center text-sm text-on-surface-variant">
+            {emptyMessage}
+          </div>
+        )}
+      </div>
+    );
+
     const renderListContent = () => (
-      <div className="flex flex-col h-full w-full">
+      <div className="flex flex-col flex-1 min-h-0 h-full w-full">
         <div className="p-2 border-b border-outline-variant/10 shrink-0">
           <Input
             variant="filled"
@@ -210,49 +252,18 @@ export const MultiSelect = React.forwardRef<
           />
         </div>
 
-        <div className="flex-1 min-h-0 relative">
-          <ElasticScrollArea className="h-full w-full">
-            <div className="p-1 flex flex-col gap-0.5 pb-safe">
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => {
-                  const isSelected = selectedValues.includes(option.value);
-                  return (
-                    <div
-                      key={option.value}
-                      onClick={() => handleSelect(option.value)}
-                      className={clsx(
-                        "relative flex cursor-pointer select-none items-center rounded-lg px-2 py-2 text-sm outline-none transition-colors shrink-0",
-                        isSelected
-                          ? "bg-secondary-container/60 text-on-surface"
-                          : "hover:bg-surface-container-highest text-on-surface",
-                      )}
-                    >
-                      <div
-                        className={clsx(
-                          "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                          isSelected
-                            ? "bg-primary text-on-primary"
-                            : "opacity-50",
-                        )}
-                      >
-                        {isSelected && <Check className="h-3 w-3" />}
-                      </div>
-                      {option.icon && (
-                        // @ts-ignore
-                        <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                      )}
-                      <span>{option.label}</span>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-6 text-center text-sm text-on-surface-variant">
-                  {emptyMessage}
-                </div>
-              )}
-            </div>
-          </ElasticScrollArea>
-        </div>
+        {/* Conditionally apply ElasticScrollArea for Mobile, Native Overflow for Desktop */}
+        {shouldUseMobileLayout ? (
+          <div className="flex-1 min-h-0 relative">
+            <ElasticScrollArea className="h-full w-full">
+              {optionsListContent}
+            </ElasticScrollArea>
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto relative">
+            {optionsListContent}
+          </div>
+        )}
 
         {selectedValues.length > 0 && (
           <div className="p-2 border-t border-outline-variant/10 shrink-0">
@@ -441,9 +452,7 @@ export const MultiSelect = React.forwardRef<
           </PopoverPrimitive.Trigger>
         </BaseWrapper>
         {portal ? (
-          <PopoverPrimitive.Portal>
-            {popoverContent}
-          </PopoverPrimitive.Portal>
+          <PopoverPrimitive.Portal>{popoverContent}</PopoverPrimitive.Portal>
         ) : (
           popoverContent
         )}
