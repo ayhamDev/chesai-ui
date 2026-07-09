@@ -5,7 +5,7 @@ import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
 import { Check, ChevronDown, Search } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 
 // Phone number logic
 import { getCountries, getCountryCallingCode } from "react-phone-number-input";
@@ -15,6 +15,8 @@ import enLabels from "react-phone-number-input/locale/en.json";
 // Corrected standard ES imports for libphonenumber-js (safe source for CountryCode typings)
 import { getExampleNumber, type CountryCode } from "libphonenumber-js";
 import examples from "libphonenumber-js/examples.mobile.json";
+
+import { Dialog, DialogContent, DialogTrigger } from "../dialog";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { Input, type InputProps } from "../input";
 import {
@@ -27,8 +29,8 @@ import {
 
 // Re-export validation utilities for convenience
 export {
-  isPossiblePhoneNumber,
   isValidPhoneNumber,
+  isPossiblePhoneNumber,
 } from "react-phone-number-input";
 
 export const getFlagEmoji = (countryCode: string) => {
@@ -361,6 +363,24 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
       }
     }, [activeCountry, placeholder]);
 
+    // Calculate maximum allowable character input dynamically based on the example country numbers
+    // This blocks overflowing values natively on the browser input level, fully eliminating state mismatch update cycles
+    const dynamicMaxLength = useMemo(() => {
+      if (!activeCountry) return undefined;
+      try {
+        const example = getExampleNumber(activeCountry, examples as any);
+        if (example) {
+          const formatted = example.formatNational();
+          // Add a safe buffer of 4 characters to accommodate alternative formatting rules,
+          // custom spacing, or bracket choices comfortably without loop issues.
+          return formatted.length + 4;
+        }
+      } catch (error) {
+        // Fallback
+      }
+      return 22; // Ultimate safe length fallback for international inputs
+    }, [activeCountry]);
+
     // Force the inner input row elements to strictly render in physical LTR flow order (Button on Left, Field on Right)
     const mergedClassNames = useMemo(() => {
       return {
@@ -390,7 +410,7 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
         errorMessage={activeErrorMessage}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        limitMaxLength={true}
+        maxLength={dynamicMaxLength} // Handled natively rather than buggy JS limitMaxLength={} overrides
         dir="ltr"
         classNames={mergedClassNames}
         {...props}
@@ -401,7 +421,9 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
     );
   },
 );
+
+PhoneInput.displayName = "PhoneInput";
+
 // Pre-bundled, tree-shakable locales for developers to import easily
 export { default as phoneLocaleAr } from "react-phone-number-input/locale/ar.json";
 export { default as phoneLocaleEn } from "react-phone-number-input/locale/en.json";
-PhoneInput.displayName = "PhoneInput";
