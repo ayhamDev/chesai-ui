@@ -54,12 +54,14 @@ const slotVariants = cva(
       {
         variant: "filled",
         isActive: true,
-        className: "bg-surface-container-highest border-primary",
+        className:
+          "bg-surface-container-highest border-transparent ring-inset ring-2 ring-primary",
       },
       {
         variant: "filled-inverted",
         isActive: true,
-        className: "bg-surface-container border-primary",
+        className:
+          "bg-surface-container border-transparent ring-inset ring-2 ring-primary",
       },
       {
         variant: "outlined",
@@ -79,12 +81,12 @@ const slotVariants = cva(
       {
         variant: "ghost",
         isActive: true,
-        className: "bg-surface-container-highest/50",
+        className: "bg-surface-container-highest/50 border-primary",
       },
       {
         variant: "ghost-inverted",
         isActive: true,
-        className: "bg-primary/10",
+        className: "bg-primary/10 border-primary",
       },
 
       // Error States
@@ -111,12 +113,12 @@ const slotVariants = cva(
       {
         shape: "full",
         variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
-        className: "first:rounded-l-full last:rounded-r-full",
+        className: "first:rounded-s-full last:rounded-e-full",
       },
       {
         shape: "minimal",
         variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
-        className: "first:rounded-l-2xl last:rounded-r-2xl",
+        className: "first:rounded-s-2xl last:rounded-e-2xl",
       },
 
       // --- Separated Rounding (Gapped/Individual Slots) ---
@@ -207,8 +209,7 @@ const InputOTPGroup = React.forwardRef<
       ref={ref}
       className={clsx(
         "flex items-center",
-        // Overlap adjacent 2px borders by applying negative margin to non-first children
-        isSeparated ? "gap-2" : "gap-0 [&>div:not(:first-child)]:-ml-[2px]",
+        isSeparated ? "gap-2" : "gap-0 [&>div:not(:first-child)]:-ms-[2px]",
         className,
       )}
       {...props}
