@@ -13,11 +13,12 @@ import {
   DragEndEvent,
   DragMoveEvent,
   PointerSensor,
+  UniqueIdentifier,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import { GridItemConfig, GridGap, GAP_MAP, ResizeDirection } from "./types";
-import { GridItem } from "./GridItem";
+import { GridItem, GridItemRect } from "./GridItem";
 import { resolveLayout, compactLayout } from "./layout-engine";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -34,6 +35,14 @@ interface AdaptiveGridProps {
   gap?: GridGap;
   useDragHandle?: boolean;
   gravityEnabled?: boolean;
+  /**
+   * Container width (px) below which items render as a full-width vertical
+   * stack (ordered by y, then x) with drag/resize disabled. The stored layout
+   * is never mutated by stacking. Pass false to disable. Default 600.
+   */
+  stackBelow?: number | false;
+  /** Fixed item height (px) in stacked mode. Defaults to item.h × rowHeight (+ gaps). */
+  stackedItemHeight?: number;
   onChange: (items: GridItemConfig[]) => void;
   renderItem: (
     item: GridItemConfig,
@@ -52,6 +61,8 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       gap = "md",
       useDragHandle = false,
       gravityEnabled = true,
+      stackBelow = 600,
+      stackedItemHeight,
       onChange,
       renderItem,
       className,
@@ -59,8 +70,15 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     ref,
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [colWidth, setColWidth] = useState(0);
+    const [containerWidth, setContainerWidth] = useState(0);
     const gapPx = GAP_MAP[gap];
+
+    const colWidth =
+      containerWidth > 0
+        ? (containerWidth - (columns - 1) * gapPx) / columns
+        : 0;
+    const isStacked =
+      stackBelow !== false && containerWidth > 0 && containerWidth < stackBelow;
 
     const [activeId, setActiveId] = useState<string | null>(null);
     const [resizingId, setResizingId] = useState<string | null>(null);
@@ -88,17 +106,33 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       }
     }, [items, activeId, resizingId, gravityEnabled]);
 
+    // Width changes are frozen while dragging/resizing: on classic-scrollbar
+    // browsers, container growth mid-drag toggles the page scrollbar, which
+    // narrows the container — re-applying that live reflows every card under
+    // the pointer and breaks the drag. Buffer it and flush when idle.
+    const latestWidthRef = useRef(0);
+    const interactingRef = useRef(false);
     useEffect(() => {
-      const updateWidth = () => {
-        if (containerRef.current) {
-          const totalGap = (columns - 1) * gapPx;
-          setColWidth((containerRef.current.offsetWidth - totalGap) / columns);
+      const el = containerRef.current;
+      if (!el) return;
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          latestWidthRef.current = entry.contentRect.width;
+          if (!interactingRef.current) {
+            setContainerWidth(entry.contentRect.width);
+          }
         }
-      };
-      updateWidth();
-      window.addEventListener("resize", updateWidth);
-      return () => window.removeEventListener("resize", updateWidth);
-    }, [columns, gapPx]);
+      });
+      observer.observe(el);
+      latestWidthRef.current = el.offsetWidth;
+      setContainerWidth(el.offsetWidth);
+      return () => observer.disconnect();
+    }, []);
+
+    const flushWidth = () => {
+      interactingRef.current = false;
+      setContainerWidth(latestWidthRef.current);
+    };
 
     useImperativeHandle(ref, () => ({
       compact: () => onChange(compactLayout(latestPreviewRef.current, undefined, true)),
@@ -108,10 +142,13 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     }));
 
     // --- DND HANDLERS ---
-    const handleDragStart = (e: DragStartEvent) =>
+    const handleDragStart = (e: DragStartEvent) => {
+      interactingRef.current = true;
       setActiveId(e.active.id as string);
+    };
 
     const handleDragMove = (e: DragMoveEvent) => {
+      if (isStacked) return;
       const { active, delta } = e;
       const origItem = items.find((i) => i.id === active.id);
       if (!origItem) return;
@@ -123,7 +160,11 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
         0,
         Math.min(columns - origItem.w, origItem.x + moveX),
       );
-      const newY = Math.max(0, origItem.y + moveY);
+      // Clamp to the content's bottom edge: without this, page auto-scroll
+      // feeds the drag delta, which grows the container, which allows more
+      // scroll — a runaway loop when dragging toward the canvas bottom.
+      const maxBottom = Math.max(0, ...items.map((i) => i.y + i.h));
+      const newY = Math.min(Math.max(0, origItem.y + moveY), maxBottom);
 
       const simulatedActive = { ...origItem, x: newX, y: newY };
       setPreviewLayout(resolveLayout(items, simulatedActive, columns, gravityEnabled));
@@ -132,11 +173,13 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     const handleDragEnd = () => {
       onChange(latestPreviewRef.current);
       setActiveId(null);
+      flushWidth();
     };
 
     const handleDragCancel = () => {
       setPreviewLayout(compactLayout(items, undefined, gravityEnabled));
       setActiveId(null);
+      flushWidth();
     };
 
     // --- 8-WAY RESIZE HANDLERS ---
@@ -146,6 +189,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       deltaX: number,
       deltaY: number,
     ) => {
+      if (isStacked) return;
       const orig = items.find((i) => i.id === id);
       if (!orig) return;
 
@@ -207,9 +251,36 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       setPreviewLayout(resolveLayout(items, simulatedActive, columns, gravityEnabled));
     };
 
+    // --- GEOMETRY ---
+    const gridRect = (item: GridItemConfig): GridItemRect => ({
+      left: item.x * (colWidth + gapPx),
+      top: item.y * (rowHeight + gapPx),
+      width: item.w * colWidth + (item.w - 1) * gapPx,
+      height: item.h * rowHeight + (item.h - 1) * gapPx,
+    });
+
+    // Stacked mode: full-width vertical stack ordered by (y, x); the stored
+    // layout stays untouched so the desktop arrangement survives round-trips.
+    const stackedRects = new Map<UniqueIdentifier, GridItemRect>();
+    let stackedHeight = 0;
+    if (isStacked) {
+      const ordered = [...previewLayout].sort(
+        (a, b) => a.y - b.y || a.x - b.x,
+      );
+      let top = 0;
+      for (const item of ordered) {
+        const height =
+          stackedItemHeight ?? item.h * rowHeight + (item.h - 1) * gapPx;
+        stackedRects.set(item.id, { left: 0, top, width: containerWidth, height });
+        top += height + gapPx;
+      }
+      stackedHeight = Math.max(0, top - gapPx);
+    }
+
     const maxRow = Math.max(...previewLayout.map((i) => i.y + i.h), 0);
-    const containerHeight =
-      maxRow * rowHeight + Math.max(0, maxRow - 1) * gapPx;
+    const containerHeight = isStacked
+      ? stackedHeight
+      : maxRow * rowHeight + Math.max(0, maxRow - 1) * gapPx;
     const activePreviewItem = previewLayout.find(
       (i) => i.id === (activeId || resizingId),
     );
@@ -222,7 +293,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       >
         {/* BACKGROUND BLOCK BLUEPRINT GRID */}
         <AnimatePresence>
-          {(activeId || resizingId) && activePreviewItem && colWidth > 0 && (
+          {!isStacked && (activeId || resizingId) && activePreviewItem && colWidth > 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -260,7 +331,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
 
         {/* GHOST SNAP PREVIEW */}
         <AnimatePresence>
-          {(activeId || resizingId) && activePreviewItem && (
+          {!isStacked && (activeId || resizingId) && activePreviewItem && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{
@@ -289,17 +360,23 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
           onDragCancel={handleDragCancel}
         >
           <div className="relative z-10 w-full h-full">
-            {items.map((origItem) => {
+            {containerWidth > 0 && items.map((origItem) => {
               const isDragging = activeId === origItem.id;
               const isResizing = resizingId === origItem.id;
               const displayItem = isDragging
                 ? origItem
                 : previewLayout.find((p) => p.id === origItem.id) || origItem;
+              const rect = isStacked
+                ? stackedRects.get(origItem.id) ?? gridRect(displayItem)
+                : gridRect(displayItem);
 
               return (
                 <GridItem
                   key={origItem.id}
                   item={displayItem}
+                  rect={rect}
+                  dragBounds={{ width: containerWidth, height: containerHeight }}
+                  isStatic={isStacked}
                   colWidth={colWidth}
                   rowHeight={rowHeight}
                   gap={gap}
@@ -309,13 +386,17 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
                   renderContent={(interacting, dragProps) =>
                     renderItem(displayItem, interacting, dragProps)
                   }
-                  onResizeStart={() => setResizingId(origItem.id as string)}
+                  onResizeStart={() => {
+                    interactingRef.current = true;
+                    setResizingId(origItem.id as string);
+                  }}
                   onResizeMove={(dir, dx, dy) =>
                     handleResizeMove(origItem.id as string, dir, dx, dy)
                   }
                   onResizeEnd={() => {
                     onChange(latestPreviewRef.current);
                     setResizingId(null);
+                    flushWidth();
                   }}
                 />
               );
