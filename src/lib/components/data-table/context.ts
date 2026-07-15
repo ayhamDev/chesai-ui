@@ -2,11 +2,18 @@
 
 import type { Table } from "@tanstack/react-table";
 import { createContext, useContext } from "react";
-import { type SearchViewProps } from "../search-view";
+import type { InputProps } from "../input";
+
+export type DataTableSearchInputProps = Partial<
+  Omit<
+    InputProps,
+    "value" | "defaultValue" | "onChange" | "onValueChange"
+  >
+>;
 
 interface DataTableContextProps<TData> {
   table: Table<TData>;
-  searchViewProps?: Partial<Omit<SearchViewProps, "value" | "onChange">>;
+  searchInputProps?: DataTableSearchInputProps;
 }
 
 const DataTableContext = createContext<DataTableContextProps<any> | null>(null);

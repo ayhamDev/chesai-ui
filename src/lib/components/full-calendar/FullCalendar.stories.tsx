@@ -1,6 +1,7 @@
 // src/lib/components/full-calendar/FullCalendar.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
 import React, { useState } from "react";
+import { LayoutProvider } from "../../context/layout-context";
 import { Input } from "../input";
 import { toast } from "../toast";
 import { CalendarEvent, FullCalendar } from "./index";
@@ -13,6 +14,26 @@ const meta: Meta<typeof FullCalendar> = {
     layout: "fullscreen",
   },
   argTypes: {
+    onEventClick: {
+      description:
+        "Called when an existing event is clicked. The details/edit popover remains enabled by default.",
+    },
+    onDateClick: {
+      description:
+        "Called when an empty date or time slot is clicked, before the create popover opens.",
+    },
+    onEventCreate: {
+      description:
+        "Called after the user saves a new event from the create popover.",
+    },
+    disableEventPopover: {
+      description:
+        "Disables only the built-in details/edit popover. onEventClick still fires.",
+    },
+    disableCreatePopover: {
+      description:
+        "Disables only the built-in create popover. onDateClick still fires.",
+    },
     variant: {
       control: "select",
       options: [
@@ -56,21 +77,21 @@ const INITIAL_EVENTS: CalendarEvent[] = [
     start: new Date(currentYear, currentMonth, 15),
     end: new Date(currentYear, currentMonth, 18),
     isAllDay: true,
-    colorVariant: "success",
+    color: "#dbeafe",
   },
   {
     id: "meeting-1",
     title: "Design Sync",
     start: new Date(currentYear, currentMonth, currentDay, 10, 0),
     end: new Date(currentYear, currentMonth, currentDay, 11, 0),
-    colorVariant: "primary",
+    color: "#5b21b6",
   },
   {
     id: "recurring-standup",
     title: "Daily Standup",
     start: new Date(currentYear, currentMonth, currentDay, 9, 0),
     end: new Date(currentYear, currentMonth, currentDay, 9, 30),
-    colorVariant: "indigo",
+    color: "#fbbf24",
     recurrence: {
       frequency: "daily",
       interval: 1,
@@ -144,6 +165,53 @@ export const Variants: Story = {
   name: "Visual Variants",
   args: {
     variant: "secondary",
+  },
+  render: (args) => <InteractiveCalendarApp {...args} />,
+};
+
+export const RtlWeekView: Story = {
+  name: "RTL Week View",
+  args: {
+    variant: "primary",
+    hidePopoverTitle: true,
+  },
+  render: (args) => (
+    <LayoutProvider
+      initialDirection="rtl"
+      storageKey="full-calendar-rtl-story-direction"
+    >
+      <InteractiveCalendarApp {...args} />
+    </LayoutProvider>
+  ),
+};
+
+export const CustomEventClick: Story = {
+  name: "Existing Event Click — Custom Handling",
+  args: {
+    variant: "primary",
+    onEventClick: (event) => {
+      toast(`Custom click: ${event.title}`, {
+        description: "The built-in event popover stays closed.",
+      });
+    },
+  },
+  render: (args) => (
+    <InteractiveCalendarApp {...args} disableEventPopover />
+  ),
+};
+
+export const RecurringOccurrenceEditing: Story = {
+  name: "Recurring Event — This or All",
+  args: {
+    variant: "primary",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Edit, move, resize, or delete a Daily Standup occurrence to choose between changing only that occurrence or the entire recurring series.",
+      },
+    },
   },
   render: (args) => <InteractiveCalendarApp {...args} />,
 };

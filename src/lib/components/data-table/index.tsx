@@ -22,12 +22,14 @@ import {
 import React from "react";
 import { Table, type TableRootProps } from "../table";
 import { DataTableColumnHeader } from "./column-header";
-import { DataTableContext } from "./context";
+import {
+  DataTableContext,
+  type DataTableSearchInputProps,
+} from "./context";
 import { DataTableFacetedFilter } from "./faceted-filter";
 import { advancedFilterFn } from "./filter-utils";
 import { DataTablePagination } from "./pagination";
 import { DataTableToolbar } from "./toolbar";
-import { type SearchViewProps } from "../search-view";
 
 export {
   DataTableColumnHeader,
@@ -38,8 +40,10 @@ export {
   advancedFilterFn as numericFilterFn,
   DataTableContext,
 };
+export type { DataTableSearchInputProps } from "./context";
 
-interface DataTableProps<TData> extends Omit<TableRootProps<TData>, "table"> {
+export interface DataTableProps<TData>
+  extends Omit<TableRootProps<TData>, "table"> {
   data: TData[];
   columns: ColumnDef<TData>[];
   variant?: "primary" | "secondary";
@@ -61,7 +65,10 @@ interface DataTableProps<TData> extends Omit<TableRootProps<TData>, "table"> {
   renderContextMenu?: (row: Row<TData>) => React.ReactNode;
   renderExpandedRow?: (row: Row<TData>) => React.ReactNode;
   bulkActions?: (table: TanstackTable<TData>) => React.ReactNode;
-  searchViewProps?: Partial<Omit<SearchViewProps, "value" | "onChange">>;
+  /** Props forwarded to the Chesai search input in the toolbar. */
+  searchInputProps?: DataTableSearchInputProps;
+  /** Hides the complete toolbar, including search, filters, actions, and view options. */
+  hideToolbar?: boolean;
 }
 
 export function DataTable<TData>({
@@ -83,7 +90,8 @@ export function DataTable<TData>({
   renderExpandedRow,
   bulkActions,
   variant = "primary",
-  searchViewProps,
+  searchInputProps,
+  hideToolbar = false,
   ...tableProps
 }: DataTableProps<TData>) {
   const [internalRowSelection, setInternalRowSelection] = React.useState({});
@@ -152,11 +160,13 @@ export function DataTable<TData>({
   });
 
   return (
-    <DataTableContext.Provider value={{ table, searchViewProps }}>
+    <DataTableContext.Provider value={{ table, searchInputProps }}>
       <div className="flex flex-col w-full space-y-4">
-        <DataTableToolbar bulkActions={bulkActions}>
-          {toolbarChildren}
-        </DataTableToolbar>
+        {!hideToolbar && (
+          <DataTableToolbar bulkActions={bulkActions}>
+            {toolbarChildren}
+          </DataTableToolbar>
+        )}
         <Table
           variant={variant}
           table={table}

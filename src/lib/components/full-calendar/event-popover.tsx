@@ -19,10 +19,16 @@ import { Input } from "../input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../sheet";
 import { TimePicker } from "../time-picker";
 import { Switch } from "../switch";
+import { useLayout } from "../../context/layout-context";
 
 import { useFullCalendar } from "./calendar-context";
 import { RecurrenceSelect } from "./recurrence-select";
 import type { CalendarEvent } from "./types";
+import {
+  findRecurringSeries,
+  updateRecurringSeries,
+  updateSingleOccurrence,
+} from "./utils";
 
 const POPOVER_WIDTH = 380;
 
@@ -32,7 +38,9 @@ export const EventPopover = () => {
     popover,
     closePopover,
     draftEvent,
+    editingEvent,
     setDraftEvent,
+    events,
     onEventCreate,
     onEventUpdate,
     onEventDelete,
@@ -42,7 +50,9 @@ export const EventPopover = () => {
     renderPopoverHeader,
     renderPopoverFooter,
     renderPopoverCustomFields,
+    requestRecurrenceScope,
   } = calendar;
+  const { isRtl } = useLayout();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -64,7 +74,13 @@ export const EventPopover = () => {
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setMeasuredHeight(entry.target.getBoundingClientRect().height);
+        // offsetHeight excludes the opening scale animation transform, keeping
+        // the final panel inside the viewport after the animation completes.
+        setMeasuredHeight(
+          entry.target instanceof HTMLElement
+            ? entry.target.offsetHeight
+            : entry.contentRect.height,
+        );
       }
     });
 
@@ -152,6 +168,27 @@ export const EventPopover = () => {
 
     if (popover.mode === "create" && onEventCreate) {
       await onEventCreate(eventData);
+    } else if (
+      popover.mode === "edit" &&
+      editingEvent?.recurrenceOccurrence
+    ) {
+      const series = findRecurringSeries(events, editingEvent);
+      if (!series) return;
+
+      const recurrenceChanged =
+        JSON.stringify(eventData.recurrence) !==
+        JSON.stringify(series.recurrence);
+      const scope = await requestRecurrenceScope({
+        action: "update",
+        singleDisabled: recurrenceChanged,
+      });
+      if (!scope) return;
+
+      const updatedSeries =
+        scope === "single"
+          ? updateSingleOccurrence(series, eventData)
+          : updateRecurringSeries(series, editingEvent, eventData);
+      await onEventUpdate?.(updatedSeries);
     } else if (popover.mode === "edit" && onEventUpdate) {
       await onEventUpdate(eventData);
     }
@@ -160,7 +197,20 @@ export const EventPopover = () => {
   };
 
   const handleDelete = async () => {
-    if (draftEvent?.id && onEventDelete) {
+    if (editingEvent?.recurrenceOccurrence) {
+      const series = findRecurringSeries(events, editingEvent);
+      if (!series) return;
+      const scope = await requestRecurrenceScope({ action: "delete" });
+      if (!scope) return;
+
+      if (scope === "single") {
+        await onEventUpdate?.(
+          updateSingleOccurrence(series, editingEvent, true),
+        );
+      } else {
+        await onEventDelete?.(series.id);
+      }
+    } else if (draftEvent?.id && onEventDelete) {
       await onEventDelete(draftEvent.id);
     }
     closePopover();
@@ -413,8 +463,11 @@ export const EventPopover = () => {
     );
   }
 
-  return (
-    <div className="fixed inset-0 pointer-events-none z-[50]">
+  const desktopPopover = (
+    <div
+      dir={isRtl ? "rtl" : "ltr"}
+      className="fixed inset-0 pointer-events-none z-[1000]"
+    >
       <AnimatePresence>
         {popover.isOpen && (
           <motion.div
@@ -434,7 +487,7 @@ export const EventPopover = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute bg-surface-container-high border border-outline-variant/50 rounded-2xl shadow-2xl pointer-events-auto flex flex-col h-auto max-h-[90vh]"
+            className="absolute left-0 top-0 bg-surface-container-high border border-outline-variant/50 rounded-2xl shadow-2xl pointer-events-auto flex flex-col h-auto max-h-[90vh]"
           >
             <div
               onPointerDown={(e) => {
@@ -490,4 +543,10 @@ export const EventPopover = () => {
       </AnimatePresence>
     </div>
   );
+
+  // Render at the viewport level so calendar overflow containers and Storybook
+  // canvas wrappers cannot clip or reposition the floating popover.
+  return typeof document !== "undefined"
+    ? createPortal(desktopPopover, document.body)
+    : desktopPopover;
 };

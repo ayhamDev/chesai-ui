@@ -11,6 +11,8 @@ import {
   getDaysForMonthView,
   getEventSegments,
   getCalendarBgClasses,
+  getCalendarEventColor,
+  getCalendarEventColorStyle,
 } from "./utils";
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -48,9 +50,11 @@ export const MonthView = () => {
     setCurrentDate,
     setView,
     openPopover,
+    onDateClick,
+    onEventClick,
     renderEventContent,
-    disableCreateOnGridClick,
-    disableEventClick,
+    disableCreatePopover,
+    disableEventPopover,
   } = useFullCalendar();
 
   const isPrintMode = React.useContext(PrintModeContext);
@@ -64,18 +68,15 @@ export const MonthView = () => {
   const days = useMemo(() => getDaysForMonthView(currentDate), [currentDate]);
 
   const displayEvents = useMemo(() => {
-    let baseEvents = events;
-    if (draftEvent) {
-      const baseDraftId = String(draftEvent.id).split("-occ-")[0];
-      baseEvents = [
-        ...events.filter((e) => String(e.id) !== baseDraftId),
-        draftEvent,
-      ];
-    }
     const viewStart = startOfDay(days[0]);
     const viewEnd = addDays(startOfDay(days[days.length - 1]), 1);
+    const expanded = expandEvents(events, viewStart, viewEnd);
 
-    return expandEvents(baseEvents, viewStart, viewEnd);
+    if (!draftEvent?.isDraft) return expanded;
+    return [
+      ...expanded.filter((event) => event.id !== draftEvent.id),
+      { ...draftEvent, recurrence: undefined },
+    ];
   }, [events, draftEvent, days]);
 
   const weeks = useMemo(() => {
@@ -133,11 +134,13 @@ export const MonthView = () => {
                             ? "opacity-30"
                             : "bg-black/5 dark:bg-white/5 opacity-50"),
                         !isPrintMode &&
-                          !disableCreateOnGridClick &&
+                          !disableCreatePopover &&
                           "hover:bg-on-surface/5 cursor-pointer",
                       )}
                       onClick={(e) => {
-                        if (isPrintMode || disableCreateOnGridClick) return;
+                        if (isPrintMode) return;
+                        onDateClick?.(day, e);
+                        if (disableCreatePopover) return;
                         const rect = e.currentTarget.getBoundingClientRect();
                         openPopover("create", rect, day);
                       }}
@@ -178,6 +181,7 @@ export const MonthView = () => {
                   const { event, colStart, colSpan, row } = segment;
                   const isAllDayOrSpanning = event.isAllDay || colSpan > 1;
                   const colorVariant = event.colorVariant || "tertiary";
+                  const customColor = getCalendarEventColor(event);
 
                   // Soft cap visual rows
                   if (row > 5) return null;
@@ -198,20 +202,14 @@ export const MonthView = () => {
                         height: "22px",
                       }}
                       onClick={(e) => {
-                        if (
-                          isCurrentlyDraft ||
-                          isPrintMode ||
-                          disableEventClick
-                        )
-                          return;
+                        if (isCurrentlyDraft || isPrintMode) return;
                         e.stopPropagation();
+                        onEventClick?.(event, e);
+
+                        if (disableEventPopover) return;
+
                         const rect = e.currentTarget.getBoundingClientRect();
-                        const originalId = String(event.id).split("-occ-")[0];
-                        const baseEventObj =
-                          events.find(
-                            (base) => String(base.id) === originalId,
-                          ) || event;
-                        openPopover("edit", rect, undefined, baseEventObj);
+                        openPopover("edit", rect, undefined, event);
                       }}
                     >
                       {renderEventContent ? (
@@ -222,18 +220,18 @@ export const MonthView = () => {
                             "h-full w-full rounded-md px-2 flex items-center overflow-hidden transition-opacity",
                             !isCurrentlyDraft &&
                               !isPrintMode &&
-                              !disableEventClick &&
+                              (onEventClick || !disableEventPopover) &&
                               "cursor-pointer hover:opacity-90",
                             isCurrentlyDraft &&
                               "border-2 border-dashed border-current shadow-lg ring-2 ring-primary ring-offset-1",
-                            event.colorHex
+                            customColor
                               ? ""
                               : COLOR_MAP[colorVariant].split(" ")[0] +
                                   " " +
                                   COLOR_MAP[colorVariant].split(" ")[1],
                             isPrintMode && "border border-black/30",
                           )}
-                          style={{ backgroundColor: event.colorHex }}
+                          style={getCalendarEventColorStyle(event)}
                         >
                           <Typography
                             variant="label-small"
@@ -248,7 +246,7 @@ export const MonthView = () => {
                             "h-full w-full rounded-md px-1 flex items-center gap-1.5 overflow-hidden transition-colors",
                             !isCurrentlyDraft &&
                               !isPrintMode &&
-                              !disableEventClick &&
+                              (onEventClick || !disableEventPopover) &&
                               "cursor-pointer hover:bg-on-surface/10",
                             isCurrentlyDraft &&
                               "border-2 border-dashed border-outline-variant",
@@ -257,10 +255,10 @@ export const MonthView = () => {
                           <div
                             className={clsx(
                               "w-2 h-2 rounded-full shrink-0",
-                              event.colorHex ? "" : DOT_COLOR_MAP[colorVariant],
+                              customColor ? "" : DOT_COLOR_MAP[colorVariant],
                               isPrintMode && "border border-black/30",
                             )}
-                            style={{ backgroundColor: event.colorHex }}
+                            style={{ backgroundColor: customColor }}
                           />
                           <Typography
                             variant="label-small"

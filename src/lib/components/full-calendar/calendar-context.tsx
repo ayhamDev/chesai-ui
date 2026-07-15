@@ -7,8 +7,14 @@ import {
   addWeeks,
   addYears,
   differenceInDays,
+  endOfDay,
+  endOfMonth,
   endOfWeek,
+  endOfYear,
+  startOfDay,
+  startOfMonth,
   startOfWeek,
+  startOfYear,
   subDays,
   subMonths,
   subWeeks,
@@ -20,6 +26,7 @@ import React, {
   useState,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import type {
   CalendarEvent,
@@ -35,6 +42,13 @@ export interface PopoverState {
   anchorRect?: DOMRect;
 }
 
+export type RecurrenceEditScope = "single" | "all";
+
+export interface RecurrenceScopeRequest {
+  action: "update" | "delete";
+  singleDisabled?: boolean;
+}
+
 interface FullCalendarContextType extends FullCalendarProps {
   currentDate: Date;
   view: CalendarView;
@@ -48,6 +62,7 @@ interface FullCalendarContextType extends FullCalendarProps {
 
   popover: PopoverState;
   draftEvent: CalendarEvent | null;
+  editingEvent: CalendarEvent | null;
   setDraftEvent: React.Dispatch<React.SetStateAction<CalendarEvent | null>>;
   openPopover: (
     mode: "create" | "edit",
@@ -57,7 +72,14 @@ interface FullCalendarContextType extends FullCalendarProps {
   ) => void;
   closePopover: () => void;
 
+  recurrenceScopeRequest: RecurrenceScopeRequest | null;
+  requestRecurrenceScope: (
+    request: RecurrenceScopeRequest,
+  ) => Promise<RecurrenceEditScope | null>;
+  resolveRecurrenceScope: (scope: RecurrenceEditScope | null) => void;
+
   isPrintPreviewOpen: boolean;
+  openPrintPreview: () => void;
   setPrintPreviewOpen: (v: boolean) => void;
   printSettings: PrintSettings;
   setPrintSettings: React.Dispatch<React.SetStateAction<PrintSettings>>;
@@ -128,6 +150,8 @@ export const FullCalendarProvider = ({
 
   renderEventContent,
   className,
+  disableCreatePopover,
+  disableEventPopover,
   disableCreateOnGridClick = false,
   disableEventClick = false,
   disableDragAndDrop = false,
@@ -142,18 +166,67 @@ export const FullCalendarProvider = ({
   });
 
   const [draftEvent, setDraftEvent] = useState<CalendarEvent | null>(null);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [recurrenceScopeRequest, setRecurrenceScopeRequest] =
+    useState<RecurrenceScopeRequest | null>(null);
+  const recurrenceScopeResolver = useRef<
+    ((scope: RecurrenceEditScope | null) => void) | null
+  >(null);
+
+  const requestRecurrenceScope = useCallback(
+    (request: RecurrenceScopeRequest) =>
+      new Promise<RecurrenceEditScope | null>((resolve) => {
+        recurrenceScopeResolver.current?.(null);
+        recurrenceScopeResolver.current = resolve;
+        setRecurrenceScopeRequest(request);
+      }),
+    [],
+  );
+
+  const resolveRecurrenceScope = useCallback(
+    (scope: RecurrenceEditScope | null) => {
+      recurrenceScopeResolver.current?.(scope);
+      recurrenceScopeResolver.current = null;
+      setRecurrenceScopeRequest(null);
+    },
+    [],
+  );
 
   const [isPrintPreviewOpen, setPrintPreviewOpen] = useState(false);
   const [printSettings, setPrintSettings] = useState<PrintSettings>({
     rangeStart: startOfWeek(initialDate),
     rangeEnd: endOfWeek(initialDate),
-    view: "auto",
-    fontSize: "normal",
+    view: initialView,
     orientation: "auto",
     colorStyle: "full",
-    showWeekends: true,
-    showDeclined: false,
   });
+
+  const openPrintPreview = useCallback(() => {
+    let rangeStart: Date;
+    let rangeEnd: Date;
+
+    if (view === "day") {
+      rangeStart = startOfDay(currentDate);
+      rangeEnd = endOfDay(currentDate);
+    } else if (view === "week") {
+      rangeStart = startOfWeek(currentDate);
+      rangeEnd = endOfWeek(currentDate);
+    } else if (view === "month") {
+      rangeStart = startOfMonth(currentDate);
+      rangeEnd = endOfMonth(currentDate);
+    } else {
+      rangeStart = startOfYear(currentDate);
+      rangeEnd = endOfYear(currentDate);
+    }
+
+    setPrintSettings((settings) => ({
+      ...settings,
+      rangeStart,
+      rangeEnd,
+      view,
+    }));
+    setPrintPreviewOpen(true);
+  }, [currentDate, view]);
 
   const handleSetView = useCallback(
     (newView: CalendarView) => {
@@ -193,8 +266,10 @@ export const FullCalendarProvider = ({
       event?: CalendarEvent,
     ) => {
       if (mode === "edit" && event) {
+        setEditingEvent(event);
         setDraftEvent({ ...event, isDraft: false });
       } else {
+        setEditingEvent(null);
         const initStart = new Date(initialDate || new Date());
         if (initialDate && initialDate.getHours() !== 0) {
           initStart.setMinutes(0, 0, 0);
@@ -223,6 +298,7 @@ export const FullCalendarProvider = ({
   const closePopover = useCallback(() => {
     setPopover((prev) => ({ ...prev, isOpen: false }));
     setDraftEvent(null);
+    setEditingEvent(null);
   }, []);
 
   const value = useMemo(
@@ -255,15 +331,21 @@ export const FullCalendarProvider = ({
       setCurrentDate,
       popover,
       draftEvent,
+      editingEvent,
       setDraftEvent,
       openPopover,
       closePopover,
+      recurrenceScopeRequest,
+      requestRecurrenceScope,
+      resolveRecurrenceScope,
       isPrintPreviewOpen,
+      openPrintPreview,
       setPrintPreviewOpen,
       printSettings,
       setPrintSettings,
-      disableCreateOnGridClick,
-      disableEventClick,
+      disableCreatePopover:
+        disableCreatePopover ?? disableCreateOnGridClick,
+      disableEventPopover: disableEventPopover ?? disableEventClick,
       disableDragAndDrop,
     }),
     [
@@ -291,10 +373,17 @@ export const FullCalendarProvider = ({
       handleSetView,
       popover,
       draftEvent,
+      editingEvent,
       openPopover,
       closePopover,
+      recurrenceScopeRequest,
+      requestRecurrenceScope,
+      resolveRecurrenceScope,
       isPrintPreviewOpen,
+      openPrintPreview,
       printSettings,
+      disableCreatePopover,
+      disableEventPopover,
       disableCreateOnGridClick,
       disableEventClick,
       disableDragAndDrop,

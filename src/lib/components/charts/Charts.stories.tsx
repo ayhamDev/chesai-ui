@@ -1,4 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import {
+  ArrowUpRight,
+  Globe2,
+  MonitorSmartphone,
+  ShoppingBag,
+  Users,
+} from "lucide-react";
+import { Badge } from "../badge";
 import { Card } from "../card";
 import { Grid, GridItem } from "../layouts/grid";
 import { Typography } from "../typography";
@@ -435,6 +443,310 @@ export const HeatmapShowcase: StoryObj = {
           height={340}
           valueFormatter={(v) => `${v} exceptions`}
         />
+      </Card>
+    </div>
+  ),
+};
+
+const acquisitionData = [
+  { channel: "Organic search", visitors: 42840 },
+  { channel: "Paid campaigns", visitors: 28160 },
+  { channel: "Direct", visitors: 17420 },
+  { channel: "Social", visitors: 11680 },
+  { channel: "Referrals", visitors: 6320 },
+];
+
+const deviceTrafficData = [
+  { device: "Mobile", sessions: 58 },
+  { device: "Desktop", sessions: 32 },
+  { device: "Tablet", sessions: 10 },
+];
+
+const regionalRevenueData = [
+  { region: "North America", revenue: 486000 },
+  { region: "Europe", revenue: 328000 },
+  { region: "Middle East", revenue: 214000 },
+  { region: "Asia Pacific", revenue: 172000 },
+  { region: "Other", revenue: 80000 },
+];
+
+const subscriptionData = [
+  { plan: "Enterprise", accounts: 36 },
+  { plan: "Pro", accounts: 44 },
+  { plan: "Starter", accounts: 20 },
+];
+
+const orderStatusData = [
+  { status: "Delivered", orders: 72 },
+  { status: "In transit", orders: 18 },
+  { status: "Processing", orders: 10 },
+];
+
+const customerData = [
+  { type: "Returning", customers: 64 },
+  { type: "New", customers: 36 },
+];
+
+const PIE_ACCENT_COLORS = [
+  "var(--md-sys-color-primary)",
+  "var(--md-sys-color-secondary)",
+  "var(--md-sys-color-tertiary)",
+  "var(--md-sys-color-error)",
+  "var(--md-sys-color-outline)",
+];
+
+export const PieChartAnalyticsDashboard: StoryObj = {
+  name: "Pie Chart (Analytics Dashboard)",
+  render: () => (
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <Badge variant="secondary" shape="full">
+              Live overview
+            </Badge>
+            <Typography variant="label-small" muted>
+              Updated 2 minutes ago
+            </Typography>
+          </div>
+          <Typography variant="display-small">Audience intelligence</Typography>
+          <Typography
+            variant="body-medium"
+            className="mt-2 max-w-2xl text-on-surface-variant"
+          >
+            A responsive dashboard demonstrating pie and donut charts across
+            acquisition, revenue, customer, and fulfillment data.
+          </Typography>
+        </div>
+        <div className="flex items-center gap-2 rounded-full bg-primary-container px-4 py-2 text-on-primary-container">
+          <ArrowUpRight className="h-4 w-4" />
+          <Typography variant="label-large" className="text-inherit">
+            12.8% growth
+          </Typography>
+        </div>
+      </div>
+
+      <Grid columns={{ default: 1, sm: 2, xl: 4 }} gap="md">
+        {[
+          {
+            label: "Total audience",
+            value: "106.4K",
+            change: "+18.2%",
+            icon: Users,
+          },
+          {
+            label: "Revenue",
+            value: "$1.28M",
+            change: "+9.4%",
+            icon: ShoppingBag,
+          },
+          {
+            label: "Active markets",
+            value: "24",
+            change: "+3 this month",
+            icon: Globe2,
+          },
+          {
+            label: "Mobile sessions",
+            value: "58%",
+            change: "+4.1%",
+            icon: MonitorSmartphone,
+          },
+        ].map((metric) => (
+          <GridItem key={metric.label}>
+            <Card className="h-full" padding="md" shape="minimal">
+              <div className="mb-5 flex items-start justify-between">
+                <div className="rounded-full bg-secondary-container p-2.5 text-on-secondary-container">
+                  <metric.icon className="h-5 w-5" />
+                </div>
+                <Badge variant="secondary" shape="full">
+                  {metric.change}
+                </Badge>
+              </div>
+              <Typography variant="headline-small">{metric.value}</Typography>
+              <Typography variant="body-small" muted className="mt-1">
+                {metric.label}
+              </Typography>
+            </Card>
+          </GridItem>
+        ))}
+      </Grid>
+
+      <Grid columns={{ default: 1, lg: 5 }} gap="lg">
+        <GridItem className="lg:col-span-3">
+          <Card className="h-full p-5 sm:p-7" shape="minimal">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <Typography variant="title-large">
+                  Acquisition channels
+                </Typography>
+                <Typography variant="body-small" muted>
+                  Visitors attributed by their first touchpoint
+                </Typography>
+              </div>
+              <Badge variant="primary" shape="full">
+                Last 30 days
+              </Badge>
+            </div>
+
+            <div className="relative mt-4">
+              <PieChart
+                data={acquisitionData}
+                category="visitors"
+                index="channel"
+                donut
+                shape="full"
+                height={390}
+                colors={PIE_ACCENT_COLORS}
+              />
+              <div className="pointer-events-none absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 text-center">
+                <Typography variant="headline-medium">106.4K</Typography>
+                <Typography variant="label-small" muted>
+                  visitors
+                </Typography>
+              </div>
+            </div>
+          </Card>
+        </GridItem>
+
+        <GridItem className="lg:col-span-2">
+          <Card className="h-full p-5 sm:p-7" variant="secondary" shape="minimal">
+            <Typography variant="title-large">Revenue by region</Typography>
+            <Typography variant="body-small" muted>
+              Contribution to total recognized revenue
+            </Typography>
+            <PieChart
+              data={regionalRevenueData}
+              category="revenue"
+              index="region"
+              shape="minimal"
+              paddingAngle={0}
+              cornerRadius={0}
+              height={390}
+              className="mt-4"
+            />
+          </Card>
+        </GridItem>
+      </Grid>
+
+      <Grid columns={{ default: 1, md: 3 }} gap="md">
+        <GridItem>
+          <Card className="h-full p-5" shape="minimal">
+            <div className="mb-2 flex items-center justify-between">
+              <div>
+                <Typography variant="title-medium">Device mix</Typography>
+                <Typography variant="body-small" muted>
+                  Sessions by device
+                </Typography>
+              </div>
+              <Typography variant="label-large" className="text-primary">
+                58% mobile
+              </Typography>
+            </div>
+            <PieChart
+              data={deviceTrafficData}
+              category="sessions"
+              index="device"
+              donut
+              shape="full"
+              variant="secondary"
+              height={250}
+            />
+          </Card>
+        </GridItem>
+
+        <GridItem>
+          <Card className="h-full p-5" shape="minimal">
+            <div className="mb-2 flex items-center justify-between">
+              <div>
+                <Typography variant="title-medium">Plan mix</Typography>
+                <Typography variant="body-small" muted>
+                  Accounts by tier
+                </Typography>
+              </div>
+              <Typography variant="label-large" className="text-primary">
+                44% Pro
+              </Typography>
+            </div>
+            <PieChart
+              data={subscriptionData}
+              category="accounts"
+              index="plan"
+              donut
+              shape="minimal"
+              height={250}
+            />
+          </Card>
+        </GridItem>
+
+        <GridItem>
+          <Card className="h-full p-5" shape="minimal">
+            <div className="mb-2 flex items-center justify-between">
+              <div>
+                <Typography variant="title-medium">Order status</Typography>
+                <Typography variant="body-small" muted>
+                  Current fulfillment split
+                </Typography>
+              </div>
+              <Typography variant="label-large" className="text-primary">
+                72% delivered
+              </Typography>
+            </div>
+            <PieChart
+              data={orderStatusData}
+              category="orders"
+              index="status"
+              shape="sharp"
+              height={250}
+            />
+          </Card>
+        </GridItem>
+      </Grid>
+
+      <Card className="overflow-hidden p-5 sm:p-7" shape="minimal">
+        <div className="mb-6">
+          <Typography variant="title-large">Style comparison</Typography>
+          <Typography variant="body-small" muted>
+            The same customer data shown with full, minimal, sharp, and ghost
+            treatments.
+          </Typography>
+        </div>
+        <Grid columns={{ default: 2, md: 4 }} gap="md">
+          {[
+            { label: "Full donut", shape: "full" as const, donut: true },
+            {
+              label: "Minimal donut",
+              shape: "minimal" as const,
+              donut: true,
+            },
+            { label: "Sharp pie", shape: "sharp" as const, donut: false },
+            {
+              label: "Ghost accent",
+              shape: "full" as const,
+              donut: true,
+              variant: "ghost" as const,
+            },
+          ].map((example) => (
+            <GridItem key={example.label}>
+              <div className="rounded-2xl bg-surface-container-low p-3 text-center">
+                <PieChart
+                  data={customerData}
+                  category="customers"
+                  index="type"
+                  shape={example.shape}
+                  donut={example.donut}
+                  variant={example.variant}
+                  height={180}
+                  colors={[
+                    "var(--md-sys-color-primary)",
+                    "var(--md-sys-color-tertiary)",
+                  ]}
+                />
+                <Typography variant="label-large">{example.label}</Typography>
+              </div>
+            </GridItem>
+          ))}
+        </Grid>
       </Card>
     </div>
   ),

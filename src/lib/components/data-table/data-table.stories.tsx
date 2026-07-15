@@ -54,6 +54,7 @@ const meta: Meta<typeof DataTable> = {
     data: { control: false },
     columns: { control: false },
     isLoading: { control: "boolean" },
+    hideToolbar: { control: "boolean" },
   },
 };
 
@@ -218,8 +219,24 @@ export const Default: Story = {
   ),
 };
 
+export const WithoutToolbar: Story = {
+  args: {
+    variant: "secondary",
+    hideToolbar: true,
+  },
+  name: "2. Without Toolbar",
+  render: (args) => (
+    <DataTable
+      data={sampleData}
+      columns={columns}
+      density={args.density}
+      hideToolbar={args.hideToolbar}
+    />
+  ),
+};
+
 export const WithBulkActions: Story = {
-  name: "2. With Bulk Actions",
+  name: "3. With Bulk Actions",
   render: (args) => (
     <DataTable
       data={sampleData}
@@ -256,7 +273,7 @@ export const WithBulkActions: Story = {
 };
 
 export const WithContextMenu: Story = {
-  name: "3. With Context Menu",
+  name: "4. With Context Menu",
   parameters: {
     docs: {
       description: {
@@ -296,7 +313,7 @@ export const WithContextMenu: Story = {
 };
 
 export const ServerSideSimulation: Story = {
-  name: "4. Server-Side Simulation",
+  name: "5. Server-Side Simulation",
   render: function Render() {
     const [data, setData] = useState<Payment[]>([]);
     const [pageCount, setPageCount] = useState(0);
@@ -387,7 +404,7 @@ export const ServerSideSimulation: Story = {
 };
 
 export const ServerSideSimulationWithSkeleton: Story = {
-  name: "5. Server-Side Simulation With Skeleton",
+  name: "6. Server-Side Simulation With Skeleton",
   render: function Render() {
     const [data, setData] = useState<Payment[]>([]);
     const [pageCount, setPageCount] = useState(0);
@@ -640,7 +657,7 @@ const HistorySubTable = ({ data }: { data: HistoryEntry[] }) => {
 };
 
 export const CollapsibleRows: Story = {
-  name: "6. Collapsible Rows",
+  name: "7. Collapsible Rows",
   parameters: {
     docs: {
       description: {

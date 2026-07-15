@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Cell,
   Legend,
@@ -27,6 +27,23 @@ const AnimatedSector = ({
   cornerRadius = 6,
 }: any) => {
   const targetOuterRadius = isActive ? outerRadius + 6 : outerRadius;
+  const sliceAngle = (Math.abs(endAngle - startAngle) * Math.PI) / 180;
+  const halfAngleSine = Math.sin(sliceAngle / 2);
+  const maxRadiusForAngle =
+    halfAngleSine > 0
+      ? (outerRadius * halfAngleSine) / (1 + halfAngleSine)
+      : 0;
+  const maxRadiusForThickness = (outerRadius - innerRadius) / 2;
+  const safeCornerRadius = Math.max(
+    0,
+    Math.min(
+      cornerRadius,
+      maxRadiusForThickness,
+      // Keep narrow slices visibly wedge-shaped instead of letting their
+      // rounded ends meet and collapse into a detached circle.
+      maxRadiusForAngle * 0.45,
+    ),
+  );
 
   return (
     <MotionSector
@@ -38,7 +55,7 @@ const AnimatedSector = ({
       startAngle={startAngle}
       endAngle={endAngle}
       fill={fill}
-      cornerRadius={cornerRadius}
+      cornerRadius={safeCornerRadius}
     />
   );
 };
@@ -61,11 +78,12 @@ const MotionSector = ({ targetRadius, ...props }: any) => {
 
 const TweenedSector = ({ targetRadius, ...props }: any) => {
   const [radius, setRadius] = useState(props.outerRadius);
+  const radiusRef = useRef(props.outerRadius);
 
   React.useEffect(() => {
     let animationFrameId: number;
     const startTime = performance.now();
-    const startRadius = radius;
+    const startRadius = radiusRef.current;
     const duration = 250; // ms
 
     const animate = (time: number) => {
@@ -73,9 +91,10 @@ const TweenedSector = ({ targetRadius, ...props }: any) => {
       const progress = Math.min(elapsed / duration, 1);
 
       // Ease out cubic
-      const ease = 1 - Math.pow(1 - progress, 3);
+      const ease = 1 - (1 - progress) ** 3;
 
       const current = startRadius + (targetRadius - startRadius) * ease;
+      radiusRef.current = current;
       setRadius(current);
 
       if (progress < 1) {
@@ -92,7 +111,7 @@ const TweenedSector = ({ targetRadius, ...props }: any) => {
 
 // --- Main Component ---
 
-interface PieChartProps {
+export interface PieChartProps {
   data: any[];
   category: string;
   index: string;
@@ -102,6 +121,10 @@ interface PieChartProps {
   height?: number | string;
   className?: string;
   donut?: boolean;
+  /** Angular spacing between slices. Use 0 for a continuous pie or donut. */
+  paddingAngle?: number;
+  /** Slice corner radius in pixels. Use 0 for square slice edges. */
+  cornerRadius?: number;
 }
 
 export const PieChart = ({
@@ -114,6 +137,8 @@ export const PieChart = ({
   height = 300,
   className,
   donut = false,
+  paddingAngle,
+  cornerRadius,
 }: PieChartProps) => {
   const [activeIndex, setActiveIndex] = useState<number | undefined>();
   const isGhost = variant === "ghost";
@@ -126,8 +151,9 @@ export const PieChart = ({
 
   const innerRadius = donut ? "60%" : "0%";
   const outerRadius = isGhost ? "80%" : "90%";
-  const paddingAngle = isGhost || shape === "sharp" ? 0 : 4;
-  const cornerRadiusValue = getCornerRadius();
+  const resolvedPaddingAngle =
+    paddingAngle ?? (isGhost || shape === "sharp" ? 0 : 4);
+  const resolvedCornerRadius = cornerRadius ?? getCornerRadius();
 
   const onPieEnter = (_: any, idx: number) => {
     if (!isGhost) setActiveIndex(idx);
@@ -153,7 +179,7 @@ export const PieChart = ({
             cy="50%"
             innerRadius={innerRadius}
             outerRadius={outerRadius}
-            paddingAngle={paddingAngle}
+            paddingAngle={resolvedPaddingAngle}
             dataKey={category}
             nameKey={index}
             stroke="none"
@@ -162,7 +188,7 @@ export const PieChart = ({
               <AnimatedSector
                 {...props}
                 isActive={props.index === activeIndex}
-                cornerRadius={cornerRadiusValue}
+                cornerRadius={resolvedCornerRadius}
               />
             )}
             onMouseEnter={onPieEnter}
@@ -170,7 +196,7 @@ export const PieChart = ({
           >
             {data.map((entry, i) => (
               <Cell
-                key={`cell-${i}`}
+                key={String(entry[index])}
                 fill={colors?.[i] || getColorForIndex(i)}
                 stroke="none"
               />

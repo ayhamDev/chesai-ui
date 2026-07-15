@@ -26,6 +26,7 @@ import {
   DataTablePagination,
   DataTableToolbar,
   advancedFilterFn,
+  type DataTableSearchInputProps,
 } from "../data-table";
 import {
   DropdownMenu,
@@ -38,7 +39,6 @@ import {
 import { Grid, type GridProps } from "../layouts/grid";
 import { Masonry, type MasonryProps } from "../layouts/masonry";
 import { LoadingIndicator } from "../loadingIndicator";
-import { type SearchViewProps } from "../search-view";
 
 // --- Types ---
 
@@ -77,7 +77,10 @@ export interface DataDisplayProps<TData> {
    * since column headers aren't visible.
    */
   enableSortControl?: boolean;
-  searchViewProps?: Partial<Omit<SearchViewProps, "value" | "onChange">>;
+  /** Props forwarded to the Chesai search input in the toolbar. */
+  searchInputProps?: DataTableSearchInputProps;
+  /** Hides the complete toolbar, including search, filters, sorting, actions, and view options. */
+  hideToolbar?: boolean;
 
   // Empty State Configuration Slots
   emptyTitle?: string;
@@ -172,7 +175,8 @@ export function DataDisplay<TData>({
   toolbarChildren,
   bulkActions,
   enableSortControl = true,
-  searchViewProps,
+  searchInputProps,
+  hideToolbar = false,
   emptyTitle,
   emptyDescription,
   emptyIcon,
@@ -314,12 +318,14 @@ export function DataDisplay<TData>({
   };
 
   return (
-    <DataTableContext.Provider value={{ table, searchViewProps }}>
+    <DataTableContext.Provider value={{ table, searchInputProps }}>
       <div className="flex flex-col w-full space-y-6">
-        <DataTableToolbar bulkActions={bulkActions}>
-          {toolbarChildren}
-          {enableSortControl && <DataDisplaySortControl table={table} />}
-        </DataTableToolbar>
+        {!hideToolbar && (
+          <DataTableToolbar bulkActions={bulkActions}>
+            {toolbarChildren}
+            {enableSortControl && <DataDisplaySortControl table={table} />}
+          </DataTableToolbar>
+        )}
 
         <div className="min-h-[200px]">{renderContent()}</div>
 

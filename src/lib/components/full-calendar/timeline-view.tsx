@@ -14,8 +14,14 @@ import {
   getTimelinePositionsForDay,
   getCalendarBgClasses,
   getCalendarStickyBgClasses,
+  getCalendarEventColor,
+  getCalendarEventColorStyle,
+  findRecurringSeries,
+  updateRecurringSeries,
+  updateSingleOccurrence,
 } from "./utils";
 import { ElasticScrollArea } from "../elastic-scroll-area";
+import type { CalendarEvent } from "./types";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
@@ -49,9 +55,10 @@ export const TimelineView = () => {
     onDateClick,
     onEventClick,
     renderEventContent,
-    disableCreateOnGridClick,
-    disableEventClick,
+    disableCreatePopover,
+    disableEventPopover,
     disableDragAndDrop,
+    requestRecurrenceScope,
   } = useFullCalendar();
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -75,18 +82,16 @@ export const TimelineView = () => {
   }, [currentDate, view]);
 
   const displayEvents = useMemo(() => {
-    let baseEvents = events;
-    if (draftEvent) {
-      const baseDraftId = String(draftEvent.id).split("-occ-")[0];
-      baseEvents = [
-        ...events.filter((e) => String(e.id) !== baseDraftId),
-        draftEvent,
-      ];
-    }
     const viewStart = startOfDay(days[0]);
     const viewEnd = addDays(startOfDay(days[days.length - 1]), 1);
+    const expanded = expandEvents(events, viewStart, viewEnd);
 
-    return expandEvents(baseEvents, viewStart, viewEnd);
+    if (!draftEvent?.isDraft) return expanded;
+
+    return [
+      ...expanded.filter((event) => event.id !== draftEvent.id),
+      { ...draftEvent, recurrence: undefined },
+    ];
   }, [events, draftEvent, days]);
 
   const printRange = useMemo(() => {
@@ -232,7 +237,7 @@ export const TimelineView = () => {
       onDateClick(clickDate, e);
     }
 
-    if (!disableCreateOnGridClick) {
+    if (!disableCreatePopover) {
       openPopover("create", rect, clickDate);
     }
   };
@@ -255,12 +260,9 @@ export const TimelineView = () => {
       onEventClick(event, e);
     }
 
-    if (!disableEventClick) {
+    if (!disableEventPopover) {
       const rect = e.currentTarget.getBoundingClientRect();
-      const originalId = String(event.id).split("-occ-")[0];
-      const baseEventObj =
-        events.find((base) => String(base.id) === originalId) || event;
-      openPopover("edit", rect, undefined, baseEventObj);
+      openPopover("edit", rect, undefined, event);
     }
   };
 
@@ -272,7 +274,9 @@ export const TimelineView = () => {
     startColIndex: number;
     startTopMins: number;
     startHeightMins: number;
-    originalEvent: any;
+    originalEvent: CalendarEvent;
+    seriesEvent?: CalendarEvent;
+    draftEvent?: CalendarEvent;
     hasMoved: boolean;
   } | null>(null);
 
@@ -296,19 +300,18 @@ export const TimelineView = () => {
     const startMins = event.start.getHours() * 60 + event.start.getMinutes();
     const durationMins = (event.end.getTime() - event.start.getTime()) / 60000;
 
-    const originalEventId = String(event.id).split("-occ-")[0];
-    const baseEventObj =
-      events.find((base) => String(base.id) === originalEventId) || event;
+    const seriesEvent = findRecurringSeries(events, event);
 
     dragState.current = {
-      eventId: baseEventObj.id,
+      eventId: seriesEvent?.id ?? event.id,
       type,
       startX: e.clientX,
       startY: e.clientY,
       startColIndex: Math.max(0, startColIndex),
       startTopMins: startMins,
       startHeightMins: durationMins,
-      originalEvent: baseEventObj,
+      originalEvent: event,
+      seriesEvent,
       hasMoved: false,
     };
 
@@ -365,23 +368,14 @@ export const TimelineView = () => {
       newStart.setHours(0, newStartMins, 0, 0);
       const newEnd = new Date(newStart.getTime() + startHeightMins * 60000);
 
-      let updatedRecurrence = originalEvent.recurrence;
-      if (updatedRecurrence?.daysOfWeek && dayDelta !== 0) {
-        updatedRecurrence = {
-          ...updatedRecurrence,
-          daysOfWeek: updatedRecurrence.daysOfWeek.map(
-            (d: number) => (d + (dayDelta % 7) + 7) % 7,
-          ),
-        };
-      }
-
-      setDraftEvent({
+      const nextDraft = {
         ...originalEvent,
         start: newStart,
         end: newEnd,
-        recurrence: updatedRecurrence,
         isDraft: true,
-      });
+      };
+      dragState.current.draftEvent = nextDraft;
+      setDraftEvent(nextDraft);
     } else if (type === "resize") {
       let newHeightMins = startHeightMins + deltaMins;
       if (newHeightMins < 15) newHeightMins = 15;
@@ -389,7 +383,9 @@ export const TimelineView = () => {
       const newEnd = new Date(
         originalEvent.start.getTime() + newHeightMins * 60000,
       );
-      setDraftEvent({ ...originalEvent, end: newEnd, isDraft: true });
+      const nextDraft = { ...originalEvent, end: newEnd, isDraft: true };
+      dragState.current.draftEvent = nextDraft;
+      setDraftEvent(nextDraft);
     }
   };
 
@@ -398,24 +394,40 @@ export const TimelineView = () => {
     document.removeEventListener("pointerup", handlePointerUp);
     document.body.style.cursor = "";
 
-    if (dragState.current) {
-      if (dragState.current.hasMoved) {
+    const completedDrag = dragState.current;
+    dragState.current = null;
+
+    if (completedDrag) {
+      if (completedDrag.hasMoved && completedDrag.draftEvent) {
         // Blocks the immediate subsequent native onClick
         wasDraggedRef.current = true;
         setTimeout(() => {
           wasDraggedRef.current = false;
         }, 200);
 
-        setDraftEvent((currentDraft) => {
-          if (currentDraft && onEventUpdate) {
-            const finalEvent = { ...currentDraft };
-            delete finalEvent.isDraft;
-            onEventUpdate(finalEvent);
+        const finalEvent = { ...completedDrag.draftEvent };
+        delete finalEvent.isDraft;
+
+        if (completedDrag.seriesEvent) {
+          const scope = await requestRecurrenceScope({ action: "update" });
+          if (scope === "single") {
+            await onEventUpdate?.(
+              updateSingleOccurrence(completedDrag.seriesEvent, finalEvent),
+            );
+          } else if (scope === "all") {
+            await onEventUpdate?.(
+              updateRecurringSeries(
+                completedDrag.seriesEvent,
+                completedDrag.originalEvent,
+                finalEvent,
+              ),
+            );
           }
-          return null;
-        });
+        } else {
+          await onEventUpdate?.(finalEvent);
+        }
+        setDraftEvent(null);
       }
-      dragState.current = null;
     }
   };
 
@@ -433,10 +445,13 @@ export const TimelineView = () => {
   }, [allDaySegments]);
 
   const GridContent = (
-    <div className="flex min-w-max md:min-w-full h-full">
+    <div
+      dir={isRtl ? "rtl" : "ltr"}
+      className="flex min-w-max md:min-w-full h-full"
+    >
       <div
         className={clsx(
-          "w-16 shrink-0 flex flex-col border-r relative z-10",
+          "w-16 shrink-0 flex flex-col border-e relative z-10",
           stickyBgClass,
           borderClass,
         )}
@@ -447,12 +462,16 @@ export const TimelineView = () => {
               <div
                 key={hour}
                 className={clsx(
-                  "relative flex justify-end pr-2 min-h-0", // min-h-0 prevents flex overflow bounds
+                  "relative flex min-h-0", // min-h-0 prevents flex overflow bounds
+                  isRtl
+                    ? "justify-end pl-3"
+                    : "justify-end pr-2",
                   isPrintMode ? "flex-1" : "h-[60px]",
                 )}
               >
                 {(hour !== 0 || isPrintMode) && (
                   <Typography
+                    dir="ltr"
                     variant="label-small"
                     className={clsx(
                       "text-[10px] -mt-[6px] leading-none bg-inherit z-10",
@@ -522,7 +541,7 @@ export const TimelineView = () => {
             className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
             style={{
               top: `${currentTimeTopPercentage}%`,
-              marginLeft: "-6px",
+              [isRtl ? "marginRight" : "marginLeft"]: "-6px",
             }}
           >
             <div className="w-3 h-3 rounded-full bg-error shrink-0" />
@@ -537,9 +556,9 @@ export const TimelineView = () => {
             <div
               key={day.toISOString()}
               className={clsx(
-                "flex-1 relative border-r last:border-r-0 min-h-0",
+                "flex-1 relative border-e last:border-e-0 min-h-0",
                 borderClass,
-                !isPrintMode && !disableCreateOnGridClick && "cursor-pointer",
+                !isPrintMode && !disableCreatePopover && "cursor-pointer",
               )}
               style={isPrintMode ? undefined : { height: "1440px" }}
               onClick={(e) => handleGridClick(e, day)}
@@ -548,7 +567,8 @@ export const TimelineView = () => {
                 let { top, height } = pos;
                 const { event, left, width } = pos;
                 const colorVariant = event.colorVariant || "primary";
-                const colorClass = event.colorHex
+                const customColor = getCalendarEventColor(event);
+                const colorClass = customColor
                   ? ""
                   : COLOR_MAP[colorVariant];
                 const isCurrentlyDraft = event.isDraft;
@@ -590,23 +610,20 @@ export const TimelineView = () => {
                   >
                     <div
                       className={clsx(
-                        "w-full h-full rounded-md border-l-4 p-1.5 overflow-hidden shadow-sm flex flex-col relative group",
+                        "w-full h-full rounded-md p-1.5 overflow-hidden shadow-sm flex flex-col relative group",
+                        isRtl ? "border-r-4" : "border-l-4",
                         !isCurrentlyDraft &&
                           !isPrintMode &&
-                          !disableEventClick &&
+                          (onEventClick || !disableEventPopover) &&
                           "cursor-pointer hover:shadow-md transition-shadow",
                         isCurrentlyDraft &&
                           "border-dashed shadow-lg ring-2 ring-primary ring-offset-1",
                         colorClass,
                         isPrintMode && "!shadow-none border border-black/30",
                       )}
-                      style={{
-                        backgroundColor: event.colorHex
-                          ? `${event.colorHex}20`
-                          : undefined,
-                        borderColor: event.colorHex,
-                        color: event.colorHex,
-                      }}
+                      style={getCalendarEventColorStyle(event, {
+                        legacyTinted: true,
+                      })}
                       onPointerDown={(e) => {
                         handlePointerDown(e, event, "move", day);
                       }}
@@ -624,6 +641,7 @@ export const TimelineView = () => {
                           </Typography>
                           {height > (30 / totalDisplayMins) * 100 && (
                             <Typography
+                              dir="ltr"
                               variant="body-small"
                               className="text-[10px] text-inherit opacity-80 truncate mt-0.5 pointer-events-none"
                             >
@@ -667,8 +685,8 @@ export const TimelineView = () => {
           stickyBgClass,
         )}
       >
-        <div className="flex">
-          <div className={clsx("w-16 shrink-0 border-r", borderClass)} />
+        <div dir={isRtl ? "rtl" : "ltr"} className="flex">
+          <div className={clsx("w-16 shrink-0 border-e", borderClass)} />
           <div className="flex flex-1">
             {days.map((day) => {
               const isDayToday = isToday(day);
@@ -676,7 +694,7 @@ export const TimelineView = () => {
                 <div
                   key={day.toISOString()}
                   className={clsx(
-                    "flex-1 flex flex-col items-center justify-center py-3 border-r last:border-r-0",
+                    "flex-1 flex flex-col items-center justify-center py-3 border-e last:border-e-0",
                     borderClass,
                   )}
                 >
@@ -723,10 +741,13 @@ export const TimelineView = () => {
         </div>
 
         {allDayMaxRows > 0 && (
-          <div className={clsx("flex border-t", borderClass)}>
+          <div
+            dir={isRtl ? "rtl" : "ltr"}
+            className={clsx("flex border-t", borderClass)}
+          >
             <div
               className={clsx(
-                "w-16 shrink-0 border-r flex items-center justify-center py-2",
+                "w-16 shrink-0 border-e flex items-center justify-center py-2",
                 borderClass,
               )}
             >
@@ -754,7 +775,7 @@ export const TimelineView = () => {
                   <div
                     key={i}
                     className={clsx(
-                      "flex-1 border-r last:border-r-0",
+                      "flex-1 border-e last:border-e-0",
                       borderClass,
                     )}
                   />
@@ -771,6 +792,7 @@ export const TimelineView = () => {
                 {allDaySegments.map((segment) => {
                   const { event, colStart, colSpan, row } = segment;
                   const colorVariant = event.colorVariant || "tertiary";
+                  const customColor = getCalendarEventColor(event);
                   const isCurrentlyDraft = event.isDraft;
 
                   return (
@@ -792,18 +814,18 @@ export const TimelineView = () => {
                           "h-full w-full rounded-md px-2 flex items-center overflow-hidden transition-all",
                           !isCurrentlyDraft &&
                             !isPrintMode &&
-                            !disableEventClick &&
+                            (onEventClick || !disableEventPopover) &&
                             "cursor-pointer hover:opacity-90",
                           isCurrentlyDraft &&
                             "border-2 border-dashed border-current shadow-lg ring-2 ring-primary ring-offset-1",
-                          event.colorHex
+                          customColor
                             ? ""
                             : COLOR_MAP[colorVariant].split(" ")[0] +
                                 " " +
                                 COLOR_MAP[colorVariant].split(" ")[1],
                           isPrintMode && "!shadow-none border border-black/30",
                         )}
-                        style={{ backgroundColor: event.colorHex }}
+                        style={getCalendarEventColorStyle(event)}
                       >
                         <Typography
                           variant="label-small"

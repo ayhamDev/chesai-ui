@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Star, Trash2 } from "lucide-react";
 import { Avatar } from "../avatar";
 import { Badge } from "../badge";
@@ -24,6 +24,9 @@ const meta: Meta<typeof DataDisplay> = {
   parameters: {
     layout: "padded",
   },
+  argTypes: {
+    hideToolbar: { control: "boolean" },
+  },
 };
 
 export default meta;
@@ -39,10 +42,17 @@ type Product = {
   image: string;
 };
 
+const PRODUCT_CATEGORIES: Product["category"][] = [
+  "Electronics",
+  "Clothing",
+  "Home",
+  "Toys",
+];
+
 const PRODUCTS: Product[] = Array.from({ length: 50 }).map((_, i) => ({
   id: `prod-${i}`,
   name: `Product ${i + 1} - ${["Super", "Ultra", "Mega", "Pro"][i % 4]} Edition`,
-  category: ["Electronics", "Clothing", "Home", "Toys"][i % 4] as any,
+  category: PRODUCT_CATEGORIES[i % PRODUCT_CATEGORIES.length],
   price: Math.floor(Math.random() * 500) + 20,
   stock: Math.floor(Math.random() * 100),
   rating: Math.random() * 2 + 3, // 3.0 to 5.0
@@ -80,6 +90,7 @@ export const ProductGrid: StoryObj<typeof DataDisplay> = {
         data={PRODUCTS}
         columns={columns}
         layout="grid"
+        searchInputProps={{ placeholder: "Search products..." }}
         gridProps={{ columns: { default: 1, sm: 2, md: 3, xl: 4 }, gap: "md" }}
         // --- SELECTION BULK ACTIONS ---
         bulkActions={(table) => (
@@ -264,6 +275,27 @@ export const MasonryLayout: StoryObj<typeof DataDisplay> = {
           </Card>
         );
       }}
+    />
+  ),
+};
+
+export const WithoutToolbar: StoryObj<typeof DataDisplay> = {
+  name: "4. Without Toolbar",
+  render: () => (
+    <DataDisplay
+      data={PRODUCTS}
+      columns={columns}
+      layout="grid"
+      hideToolbar
+      gridProps={{ columns: { default: 1, sm: 2, md: 3 }, gap: "md" }}
+      renderItem={(row) => (
+        <Card padding="md" shape="minimal">
+          <Typography variant="title-small">{row.original.name}</Typography>
+          <Typography variant="body-small" className="text-on-surface-variant">
+            ${row.original.price}
+          </Typography>
+        </Card>
+      )}
     />
   ),
 };

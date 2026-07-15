@@ -3,7 +3,7 @@
 import React, {
   useEffect,
   useRef,
-  useState,
+  useCallback,
   useImperativeHandle,
   forwardRef,
   useLayoutEffect,
@@ -42,6 +42,10 @@ export interface ReverseInfiniteScrollRef {
   isAtBottom: () => boolean;
 }
 
+// Hoisted so the container doesn't allocate a fresh style object every render.
+// Overrides browser scroll anchoring so we can apply our own precise offsets.
+const VIEWPORT_STYLE: React.CSSProperties = { overflowAnchor: "none" };
+
 export const ReverseInfiniteScroll = forwardRef<
   ReverseInfiniteScrollRef,
   ReverseInfiniteScrollProps
@@ -66,7 +70,9 @@ export const ReverseInfiniteScroll = forwardRef<
     const containerRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
 
-    // Tracking internal dimensions & states inside refs to avoid re-rendering
+    // All positional/loading bookkeeping lives in a ref: none of it is rendered,
+    // so keeping it out of React state avoids re-rendering the (potentially large)
+    // children list on every scroll tick.
     const scrollStateRef = useRef({
       previousScrollHeight: 0,
       previousScrollTop: 0,
@@ -74,105 +80,131 @@ export const ReverseInfiniteScroll = forwardRef<
       isLoadingOlder: false,
     });
 
-    const [isAtBottomState, setIsAtBottomState] = useState(true);
-
     // Sync loading state inside ref for callback processing
     useEffect(() => {
       scrollStateRef.current.isLoadingOlder = isLoading;
     }, [isLoading]);
 
-    // Check if container is scrolled within the bottom threshold
-    const checkIsAtBottom = (el: HTMLDivElement): boolean => {
-      const { scrollTop, scrollHeight, clientHeight } = el;
-      return scrollHeight - clientHeight - scrollTop <= autoScrollThreshold;
-    };
+    // Notify the parent only when the bottom-boundary status actually flips.
+    const updateAtBottomState = useCallback(
+      (newStatus: boolean) => {
+        const state = scrollStateRef.current;
+        if (state.isAtBottom !== newStatus) {
+          state.isAtBottom = newStatus;
+          onAtBottomChange?.(newStatus);
+        }
+      },
+      [onAtBottomChange],
+    );
 
-    const scrollToBottom = (forcedBehavior?: "smooth" | "instant") => {
-      const el = containerRef.current;
-      if (!el) return;
+    const scrollToBottom = useCallback(
+      (forcedBehavior?: "smooth" | "instant") => {
+        const el = containerRef.current;
+        if (!el) return;
 
-      const targetScrollTop = el.scrollHeight - el.clientHeight;
-      el.scrollTo({
-        top: targetScrollTop,
-        behavior: forcedBehavior || behavior,
-      });
+        // Clamp: when content is shorter than the viewport this is negative,
+        // which would otherwise poison the prepend/append anchoring math.
+        const targetScrollTop = Math.max(0, el.scrollHeight - el.clientHeight);
+        el.scrollTo({
+          top: targetScrollTop,
+          behavior: forcedBehavior || behavior,
+        });
 
-      scrollStateRef.current.isAtBottom = true;
-      updateAtBottomState(true);
-    };
-
-    const updateAtBottomState = (newStatus: boolean) => {
-      if (scrollStateRef.current.isAtBottom !== newStatus) {
-        scrollStateRef.current.isAtBottom = newStatus;
-        setIsAtBottomState(newStatus);
-        onAtBottomChange?.(newStatus);
-      }
-    };
+        const state = scrollStateRef.current;
+        // Order matches the original: mark docked *before* the boundary check so
+        // updateAtBottomState short-circuits here and lets the follow-up scroll
+        // events drive the onAtBottomChange notification.
+        state.isAtBottom = true;
+        state.previousScrollTop = targetScrollTop;
+        state.previousScrollHeight = el.scrollHeight;
+        updateAtBottomState(true);
+      },
+      [behavior, updateAtBottomState],
+    );
 
     // Expose api methods programmatically to parent components
-    useImperativeHandle(ref, () => ({
-      scrollToBottom: (customBehavior) => scrollToBottom(customBehavior),
-      getHTMLElement: () => containerRef.current,
-      isAtBottom: () => scrollStateRef.current.isAtBottom,
-    }));
+    useImperativeHandle(
+      ref,
+      () => ({
+        scrollToBottom: (customBehavior) => scrollToBottom(customBehavior),
+        getHTMLElement: () => containerRef.current,
+        isAtBottom: () => scrollStateRef.current.isAtBottom,
+      }),
+      [scrollToBottom],
+    );
 
-    // Scroll Observer: monitors bounds without causing full component re-renders
-    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-      const el = e.currentTarget;
-      const { scrollTop, scrollHeight } = el;
+    // Scroll Observer: monitors bounds without causing full component re-renders.
+    // Reads are synchronous (cheap during a scroll frame) and, crucially, capture
+    // the pre-mutation snapshot the anchoring layout effect depends on.
+    const handleScroll = useCallback(
+      (e: React.UIEvent<HTMLDivElement>) => {
+        const el = e.currentTarget;
+        const { scrollTop, scrollHeight, clientHeight } = el;
+        const state = scrollStateRef.current;
 
-      // Update current positional states to prevent stale calculations
-      scrollStateRef.current.previousScrollTop = scrollTop;
-      scrollStateRef.current.previousScrollHeight = scrollHeight;
+        // Update current positional states to prevent stale calculations
+        state.previousScrollTop = scrollTop;
+        state.previousScrollHeight = scrollHeight;
 
-      const currentAtBottom = checkIsAtBottom(el);
-      updateAtBottomState(currentAtBottom);
+        const currentAtBottom =
+          scrollHeight - clientHeight - scrollTop <= autoScrollThreshold;
+        updateAtBottomState(currentAtBottom);
 
-      // Trigger infinite loading when hitting top threshold
-      if (
-        scrollTop <= loadThreshold &&
-        hasMore &&
-        !scrollStateRef.current.isLoadingOlder
-      ) {
-        // Prevent multiple calls
-        scrollStateRef.current.isLoadingOlder = true;
-        onLoadOlder();
-      }
-    };
+        // Trigger infinite loading only when the user genuinely scrolled up to
+        // the top of an *overflowing* list. When content is shorter than the
+        // viewport, scrollTop stays pinned at 0 (top === bottom), so without this
+        // guard any programmatic bottom-pin would spuriously fire onLoadOlder.
+        const isScrollable = scrollHeight > clientHeight;
+        if (
+          isScrollable &&
+          scrollTop <= loadThreshold &&
+          hasMore &&
+          !state.isLoadingOlder
+        ) {
+          // Prevent multiple calls
+          state.isLoadingOlder = true;
+          onLoadOlder();
+        }
+      },
+      [autoScrollThreshold, loadThreshold, hasMore, onLoadOlder, updateAtBottomState],
+    );
 
-    // 1. Capture scroll heights immediately prior to DOM updates
-    useLayoutEffect(() => {
-      const container = containerRef.current;
-      if (container) {
-        scrollStateRef.current.previousScrollHeight = container.scrollHeight;
-        scrollStateRef.current.previousScrollTop = container.scrollTop;
-      }
-    });
-
-    // 2. Adjust scroll offsets following child changes (Prepends/Appends)
+    // Adjust scroll offsets following child changes (Prepends/Appends).
+    // Uses the snapshot captured synchronously by handleScroll (the last scroll
+    // position *before* this DOM mutation), then re-syncs it to the post-mutation
+    // layout so the ResizeObserver/next scroll tick compares against fresh values.
     useLayoutEffect(() => {
       const container = containerRef.current;
       if (!container) return;
 
-      const { previousScrollHeight, previousScrollTop, isAtBottom } =
-        scrollStateRef.current;
+      const state = scrollStateRef.current;
+      const { previousScrollHeight, previousScrollTop, isAtBottom } = state;
 
       const currentScrollHeight = container.scrollHeight;
       const heightDifference = currentScrollHeight - previousScrollHeight;
 
       if (heightDifference > 0) {
-        // SCENARIO A: Items were loaded and prepended at the top
-        if (previousScrollTop <= loadThreshold + 10) {
-          container.scrollTop = previousScrollTop + heightDifference;
-        }
-        // SCENARIO B: A new message arrived at the bottom
-        else if (isAtBottom) {
+        // SCENARIO B (checked first): user is docked at the bottom, so a new
+        // message (append) — or growth in a not-yet-overflowing list — pins to
+        // the bottom. Taking this first prevents a short list, where the user is
+        // simultaneously at the top and the bottom, from being treated as a prepend.
+        if (isAtBottom) {
           container.scrollTop = currentScrollHeight - container.clientHeight;
+        }
+        // SCENARIO A: items were prepended at the top while scrolled up — hold
+        // the viewer's position by offsetting for the newly inserted height.
+        else if (previousScrollTop <= loadThreshold + 10) {
+          container.scrollTop = previousScrollTop + heightDifference;
         }
       } else if (isAtBottom) {
         // Automatically pin to bottom if layout shrank but user is docked
         container.scrollTop = currentScrollHeight - container.clientHeight;
       }
+
+      // Keep the snapshot aligned with the committed layout.
+      state.previousScrollHeight = container.scrollHeight;
+      state.previousScrollTop = container.scrollTop;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [children]);
 
     // Handle dynamically resized nodes (e.g. streaming tokens, nested images loading inside cards)
@@ -182,8 +214,8 @@ export const ReverseInfiniteScroll = forwardRef<
       if (!container || !content) return;
 
       const observer = new ResizeObserver(() => {
-        const { previousScrollHeight, previousScrollTop, isAtBottom } =
-          scrollStateRef.current;
+        const state = scrollStateRef.current;
+        const { previousScrollHeight, previousScrollTop, isAtBottom } = state;
 
         // MATHEMATICAL ANCHORING:
         // Calculate if we were docked at the bottom of the container *prior* to this resizing tick.
@@ -197,10 +229,9 @@ export const ReverseInfiniteScroll = forwardRef<
           container.scrollTop = newScrollTop;
 
           // Sync refs immediately to ensure the next observation tick has updated context
-          scrollStateRef.current.previousScrollHeight = container.scrollHeight;
-          scrollStateRef.current.previousScrollTop = newScrollTop;
-          scrollStateRef.current.isAtBottom = true;
-          setIsAtBottomState(true);
+          state.previousScrollHeight = container.scrollHeight;
+          state.previousScrollTop = newScrollTop;
+          state.isAtBottom = true;
         }
       });
 
@@ -208,9 +239,30 @@ export const ReverseInfiniteScroll = forwardRef<
       return () => observer.disconnect();
     }, [autoScrollThreshold]);
 
+    // Backfill headroom: when the list is too short to overflow the viewport
+    // yet more history exists, proactively load older pages. Without this the
+    // user has no room to scroll up, so the top-threshold trigger in
+    // handleScroll can never fire. This runs after each settle (children /
+    // hasMore / isLoading change) until the viewport fills or hasMore is false.
+    // It is the disjoint counterpart to handleScroll, which only loads once the
+    // list is actually scrollable.
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container || !hasMore || isLoading) return;
+      if (scrollStateRef.current.isLoadingOlder) return;
+
+      const isOverflowing = container.scrollHeight > container.clientHeight;
+      if (!isOverflowing) {
+        scrollStateRef.current.isLoadingOlder = true;
+        onLoadOlder();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [children, hasMore, isLoading]);
+
     // Initial positioning on mount
     useEffect(() => {
       scrollToBottom("instant");
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
@@ -221,9 +273,7 @@ export const ReverseInfiniteScroll = forwardRef<
           "flex flex-col overflow-y-auto h-full w-full outline-none",
           viewportClassName,
         )}
-        style={{
-          overflowAnchor: "none", // Override browser anchoring to allow custom precision offsets
-        }}
+        style={VIEWPORT_STYLE}
         {...props}
       >
         <div
@@ -232,7 +282,7 @@ export const ReverseInfiniteScroll = forwardRef<
         >
           {/* Header/Loader Area */}
           {hasMore && (
-            <div className="flex w-full items-center justify-center py-4 min-h-[48px]">
+            <div className="flex w-full items-center justify-center py-4 min-h-12">
               {isLoading ? (
                 loader || (
                   <LoadingIndicator variant="material-morph-background" />

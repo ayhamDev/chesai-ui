@@ -1,15 +1,13 @@
 "use client";
 
-import { type Table } from "@tanstack/react-table";
+import type { Table } from "@tanstack/react-table";
 import { useDebounce } from "@uidotdev/usehooks";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Badge } from "../badge";
 import { Button } from "../button";
 import { Card } from "../card";
-import { SearchView } from "../search-view";
-import { Typography } from "../typography";
+import { Input } from "../input";
 import { DataTableAdvancedFilter } from "./advanced-filter";
 import { useDataTable } from "./context";
 import { DataTableViewOptions } from "./view-options";
@@ -23,7 +21,7 @@ export function DataTableToolbar<TData>({
   children,
   bulkActions,
 }: DataTableToolbarProps<TData>) {
-  const { table, searchViewProps } = useDataTable<TData>();
+  const { table, searchInputProps } = useDataTable<TData>();
 
   const isFiltered =
     table.getState().columnFilters.length > 0 ||
@@ -36,17 +34,7 @@ export function DataTableToolbar<TData>({
     table.getState().globalFilter ?? "",
   );
   const debouncedSearch = useDebounce(searchValue, 300);
-
-  // Allow open and onOpenChange overrides from searchViewProps
-  const [internalSearchOpen, setInternalSearchOpen] = useState(false);
-  const isSearchOpen =
-    searchViewProps?.open !== undefined
-      ? searchViewProps.open
-      : internalSearchOpen;
-  const handleSearchOpenChange =
-    searchViewProps?.onOpenChange !== undefined
-      ? searchViewProps.onOpenChange
-      : setInternalSearchOpen;
+  const globalFilter = table.getState().globalFilter;
 
   useEffect(() => {
     table.setGlobalFilter(debouncedSearch);
@@ -54,10 +42,8 @@ export function DataTableToolbar<TData>({
 
   // Sync state if globalFilter gets reset externally
   useEffect(() => {
-    if (table.getState().globalFilter !== searchValue) {
-      setSearchValue(table.getState().globalFilter ?? "");
-    }
-  }, [table.getState().globalFilter]);
+    setSearchValue(globalFilter ?? "");
+  }, [globalFilter]);
 
   return (
     <Card
@@ -67,46 +53,18 @@ export function DataTableToolbar<TData>({
     >
       <div className="flex flex-1 items-center gap-4 w-full overflow-x-auto no-scrollbar flex-wrap z-10">
         <div className="w-full max-w-sm min-w-[250px]">
-          <SearchView
-            variant="docked"
+          <Input
+            variant="filled"
+            shape="full"
             placeholder="Search..."
-            dockedLeadingIcon={
+            startContent={
               <Search className="h-5 w-5 text-on-surface-variant" />
             }
-            {...searchViewProps}
+            {...searchInputProps}
+            type="search"
             value={searchValue}
-            onChange={setSearchValue}
-            open={isSearchOpen}
-            onOpenChange={handleSearchOpenChange}
-          >
-            {searchViewProps?.children || (
-              <div className="p-4 flex flex-col gap-3">
-                <Typography
-                  variant="label-small"
-                  className="opacity-60 uppercase tracking-wider font-bold"
-                >
-                  Searchable Columns
-                </Typography>
-                <div className="flex flex-wrap gap-2">
-                  {table
-                    .getAllColumns()
-                    .filter((col) => col.getCanFilter())
-                    .map((col) => {
-                      const header =
-                        typeof col.columnDef.header === "string"
-                          ? col.columnDef.header
-                          : col.id.charAt(0).toUpperCase() + col.id.slice(1);
-
-                      return (
-                        <Badge key={col.id} variant="secondary" shape="minimal">
-                          {header}
-                        </Badge>
-                      );
-                    })}
-                </div>
-              </div>
-            )}
-          </SearchView>
+            onValueChange={setSearchValue}
+          />
         </div>
 
         <DataTableAdvancedFilter table={table} />

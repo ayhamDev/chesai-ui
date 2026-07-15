@@ -6,7 +6,6 @@ import { Button } from "../button";
 import { DatePicker } from "../date-picker/date-picker";
 import { Dialog, DialogContent } from "../dialog";
 import { Select } from "../select";
-import { Checkbox } from "../checkbox";
 import { Typography } from "../typography";
 import { useFullCalendar } from "./calendar-context";
 import { PrintPagesLayout } from "./index";
@@ -53,9 +52,13 @@ export const PrintPreviewDialog = () => {
   }, [printWidth, printHeight, isPrintPreviewOpen]);
 
   return (
-    <Dialog open={isPrintPreviewOpen} onOpenChange={setPrintPreviewOpen} isLocked={true}>
+    <Dialog
+      open={isPrintPreviewOpen}
+      onOpenChange={setPrintPreviewOpen}
+      isLocked={true}
+    >
       <DialogContent
-        className="flex flex-col md:flex-row gap-0 p-0 overflow-hidden max-w-6xl! w-[95vw] h-[85vh] bg-surface-container"
+        className="flex flex-col md:flex-row gap-0 p-0 overflow-hidden max-w-full w-[95vw] h-[85vh] bg-surface-container"
         shape="minimal"
       >
         <div className="w-[400px] flex-shrink-0 bg-surface-container-high border-r border-outline-variant/30 flex flex-col h-full z-10 shadow-lg relative">
@@ -114,22 +117,6 @@ export const PrintPreviewDialog = () => {
 
               <Select
                 labelPlacement="outside"
-                label="Font size"
-                variant="filled"
-                size="sm"
-                value={printSettings.fontSize}
-                onValueChange={(v) =>
-                  setPrintSettings((s) => ({ ...s, fontSize: v as any }))
-                }
-                items={[
-                  { value: "normal", label: "Normal" },
-                  { value: "small", label: "Small" },
-                  { value: "smallest", label: "Smallest" },
-                ]}
-              />
-
-              <Select
-                labelPlacement="outside"
                 label="Orientation"
                 variant="filled"
                 size="sm"
@@ -159,28 +146,6 @@ export const PrintPreviewDialog = () => {
                 ]}
               />
 
-              <div className="flex flex-col gap-3 mt-2">
-                <Checkbox
-                  label="Show weekends"
-                  checked={printSettings.showWeekends}
-                  onChange={(e) =>
-                    setPrintSettings((s) => ({
-                      ...s,
-                      showWeekends: e.target.checked,
-                    }))
-                  }
-                />
-                <Checkbox
-                  label="Show events you have declined"
-                  checked={printSettings.showDeclined}
-                  onChange={(e) =>
-                    setPrintSettings((s) => ({
-                      ...s,
-                      showDeclined: e.target.checked,
-                    }))
-                  }
-                />
-              </div>
             </div>
           </div>
 

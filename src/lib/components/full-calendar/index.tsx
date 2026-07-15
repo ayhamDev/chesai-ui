@@ -34,6 +34,7 @@ import { MonthView } from "./month-view";
 import { TimelineView } from "./timeline-view";
 import { YearView } from "./year-view";
 import { EventPopover } from "./event-popover";
+import { RecurrenceScopeDialog } from "./recurrence-scope-dialog";
 import { PrintPreviewDialog } from "./print-preview-dialog";
 import type { CalendarView, FullCalendarProps } from "./types";
 import { getCalendarBgClasses, getCalendarStickyBgClasses, getCalendarSidePanelBgClasses } from "./utils";
@@ -161,12 +162,6 @@ export const PrintPagesLayout = ({
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
-            fontSize:
-              printSettings.fontSize === "small"
-                ? "0.85rem"
-                : printSettings.fontSize === "smallest"
-                  ? "0.7rem"
-                  : "1rem",
             filter:
               printSettings.colorStyle === "bw" ? "grayscale(100%)" : "none",
           }}
@@ -188,18 +183,18 @@ const FullCalendarRootContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, children, ...props }, ref) => {
-  const { setPrintPreviewOpen, printSettings, variant } = useFullCalendar();
+  const { openPrintPreview, printSettings, variant } = useFullCalendar();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
         e.preventDefault();
-        setPrintPreviewOpen(true);
+        openPrintPreview();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [setPrintPreviewOpen]);
+  }, [openPrintPreview]);
 
   const printCss = `
     @media print {
@@ -249,6 +244,7 @@ const FullCalendarRootContent = React.forwardRef<
       >
         {children}
         <EventPopover />
+        <RecurrenceScopeDialog />
         <PrintPreviewDialog />
       </div>
 
@@ -288,6 +284,8 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
       hidePopoverTime,
       hidePopoverRecurrence,
 
+      disableCreatePopover,
+      disableEventPopover,
       disableCreateOnGridClick,
       disableEventClick,
       disableDragAndDrop,
@@ -316,6 +314,8 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
         hidePopoverTitle={hidePopoverTitle}
         hidePopoverTime={hidePopoverTime}
         hidePopoverRecurrence={hidePopoverRecurrence}
+        disableCreatePopover={disableCreatePopover}
+        disableEventPopover={disableEventPopover}
         disableCreateOnGridClick={disableCreateOnGridClick}
         disableEventClick={disableEventClick}
         disableDragAndDrop={disableDragAndDrop}
@@ -338,7 +338,7 @@ const FullCalendarToolbar = ({ className }: { className?: string }) => {
     navigateNext,
     navigatePrev,
     navigateToday,
-    setPrintPreviewOpen,
+    openPrintPreview,
   } = useFullCalendar();
 
   const { isRtl } = useLayout();
@@ -397,7 +397,7 @@ const FullCalendarToolbar = ({ className }: { className?: string }) => {
             <IconButton
               variant="ghost"
               size="sm"
-              onClick={() => setPrintPreviewOpen(true)}
+              onClick={openPrintPreview}
             >
               <Printer className="w-5 h-5 text-on-surface-variant" />
             </IconButton>
