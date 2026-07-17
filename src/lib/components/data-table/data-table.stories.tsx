@@ -311,7 +311,38 @@ export const GranularControls: Story = {
       visibility={{
         search: false,
         viewOptions: false,
+        export: false,
         selectionSummary: false,
+      }}
+    />
+  ),
+};
+
+export const ClientExportScopes: Story = {
+  name: "5. CSV/XLSX Export (Client)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The Export menu supports all raw data, the current page, all filtered rows, and selected rows. Email starts hidden from the table but remains in the exported file because export includes all data columns by default.",
+      },
+    },
+  },
+  render: args => (
+    <DataTable
+      data={sampleData}
+      columns={columns}
+      density={args.density}
+      variant="secondary"
+      getRowId={row => row.id}
+      initialState={{
+        pagination: { pageIndex: 0, pageSize: 10 },
+        columnVisibility: { email: false },
+        rowSelection: { "PAY-1": true, "PAY-3": true },
+      }}
+      exportOptions={{
+        fileName: ({ scope }) => `payments-${scope}`,
+        sheetName: "Payments",
       }}
     />
   ),
@@ -720,6 +751,43 @@ export const ServerSideUrlState: Story = {
               globalFilter: next.globalFilter,
               columnVisibility: next.columnVisibility,
             });
+          }}
+          exportOptions={{
+            fileName: ({ scope }) => `payments-${scope}`,
+            sheetName: "Payments",
+            batchSize: 25,
+            fetchPage: async ({
+              offset,
+              limit,
+              signal,
+              scope,
+              selectedRowIds,
+            }) => {
+              await new Promise<void>((resolve, reject) => {
+                const timer = window.setTimeout(resolve, 150);
+                signal.addEventListener(
+                  "abort",
+                  () => {
+                    window.clearTimeout(timer);
+                    reject(new DOMException("Aborted", "AbortError"));
+                  },
+                  { once: true },
+                );
+              });
+              const serverLimit = Math.min(limit, 17);
+              const exportRows =
+                scope === "selected"
+                  ? filtered.filter(payment =>
+                      selectedRowIds.includes(payment.id),
+                    )
+                  : scope === "allData"
+                    ? sampleData
+                    : filtered;
+              return {
+                rows: exportRows.slice(offset, offset + serverLimit),
+                totalRows: exportRows.length,
+              };
+            },
           }}
         />
         <Typography variant="body-small" className="break-all opacity-70">

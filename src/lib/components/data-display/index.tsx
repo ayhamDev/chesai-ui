@@ -28,6 +28,7 @@ import {
   advancedFilterFn,
   type DataTableSearchInputProps,
 } from "../data-table";
+import { defaultDataTableVisibility } from "../data-table/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -318,7 +319,13 @@ export function DataDisplay<TData>({
   };
 
   return (
-    <DataTableContext.Provider value={{ table, searchInputProps }}>
+    <DataTableContext.Provider
+      value={{
+        table,
+        searchInputProps,
+        visibility: { ...defaultDataTableVisibility, export: false },
+      }}
+    >
       <div className="flex flex-col w-full space-y-6">
         {!hideToolbar && (
           <DataTableToolbar bulkActions={bulkActions}>

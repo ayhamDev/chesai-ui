@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DataTable, type DataTableState } from "./index";
 
 Object.defineProperty(window, "matchMedia", {
@@ -15,6 +15,28 @@ Object.defineProperty(window, "matchMedia", {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
+});
+
+Object.defineProperty(URL, "createObjectURL", {
+  configurable: true,
+  value: vi.fn(() => "blob:data-table-export"),
+});
+Object.defineProperty(URL, "revokeObjectURL", {
+  configurable: true,
+  value: vi.fn(),
+});
+Object.defineProperty(SVGElement.prototype, "getTotalLength", {
+  configurable: true,
+  value: () => 100,
+});
+Object.defineProperty(SVGElement.prototype, "getPointAtLength", {
+  configurable: true,
+  value: (length: number) => ({ x: length, y: length }),
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 type Item = {
@@ -83,6 +105,7 @@ describe("DataTable", () => {
           filters: false,
           reset: false,
           viewOptions: false,
+          export: false,
           pagination: false,
           selectionSummary: false,
         }}
@@ -92,6 +115,7 @@ describe("DataTable", () => {
     expect(screen.queryByPlaceholderText("Search...")).toBeNull();
     expect(screen.queryByText("Filter")).toBeNull();
     expect(screen.queryByText("View")).toBeNull();
+    expect(screen.queryByText("Export")).toBeNull();
     expect(screen.getByText("Alpha")).toBeTruthy();
   });
 
@@ -179,5 +203,99 @@ describe("DataTable", () => {
     expect(nextPageButton).toBeTruthy();
     if (nextPageButton) fireEvent.click(nextPageButton);
     expect(onPaginationChange).toHaveBeenCalled();
+  });
+
+  it("exports the current client page from the toolbar", async () => {
+    const onSuccess = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    render(
+      <DataTable
+        data={data}
+        columns={columns}
+        initialState={{ pagination: { pageIndex: 0, pageSize: 1 } }}
+        exportOptions={{ fileName: "items", onSuccess }}
+        visibility={{ search: false, filters: false, viewOptions: false }}
+      />,
+    );
+
+    const exportButton = screen.getByRole("button", { name: "Export" });
+    exportButton.focus();
+    fireEvent.keyDown(exportButton, { key: "Enter", code: "Enter" });
+    const pageActions = await screen.findAllByText("Current page (1)");
+    fireEvent.click(pageActions[0]);
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
+    expect(onSuccess.mock.calls[0]?.[0]).toMatchObject({
+      fileName: "items.csv",
+      format: "csv",
+      scope: "page",
+      rowCount: 1,
+    });
+    expect(URL.createObjectURL).toHaveBeenCalledOnce();
+  });
+
+  it("exports all unfiltered client data above the current-page action", async () => {
+    const onSuccess = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    render(
+      <DataTable
+        data={data}
+        columns={columns}
+        initialState={{ pagination: { pageIndex: 0, pageSize: 1 } }}
+        exportOptions={{ fileName: "all-items", onSuccess }}
+        visibility={{ search: false, filters: false, viewOptions: false }}
+      />,
+    );
+
+    const exportButton = screen.getByRole("button", { name: "Export" });
+    exportButton.focus();
+    fireEvent.keyDown(exportButton, { key: "Enter", code: "Enter" });
+    const menuItems = await screen.findAllByRole("menuitem");
+
+    expect(menuItems[0]?.textContent).toBe("All data (2)");
+    expect(menuItems[1]?.textContent).toBe("Current page (1)");
+    fireEvent.click(menuItems[0]);
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
+    expect(onSuccess.mock.calls[0]?.[0]).toMatchObject({
+      fileName: "all-items.csv",
+      format: "csv",
+      scope: "allData",
+      rowCount: 2,
+    });
+  });
+
+  it("disables server-wide scopes without a fetchPage callback", async () => {
+    render(
+      <DataTable
+        data={data.slice(0, 1)}
+        columns={columns}
+        serverSide
+        rowCount={25}
+        state={{ ...serverState, rowSelection: { "1": true } }}
+        onStateChange={() => {}}
+        visibility={{ search: false, filters: false, viewOptions: false }}
+      />,
+    );
+
+    const exportButton = screen.getByRole("button", { name: "Export" });
+    exportButton.focus();
+    fireEvent.keyDown(exportButton, { key: "Enter", code: "Enter" });
+    const allDataActions = await screen.findAllByText("All data");
+    const allActions = await screen.findAllByText("All filtered rows (25)");
+    const selectedActions = await screen.findAllByText("Selected rows (1)");
+
+    expect(allActions).toHaveLength(2);
+    expect(selectedActions).toHaveLength(2);
+    expect(allDataActions).toHaveLength(2);
+    for (const action of [
+      ...allDataActions,
+      ...allActions,
+      ...selectedActions,
+    ]) {
+      expect(
+        action.closest('[role="menuitem"]')?.getAttribute("data-disabled"),
+      ).not.toBeNull();
+    }
   });
 });

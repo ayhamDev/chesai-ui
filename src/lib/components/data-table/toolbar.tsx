@@ -10,6 +10,7 @@ import { Card } from "../card";
 import { Input } from "../input";
 import { DataTableAdvancedFilter } from "./advanced-filter";
 import { useDataTable } from "./context";
+import { DataTableExportButton } from "./export-button";
 import { defaultDataTableVisibility } from "./types";
 import { DataTableViewOptions } from "./view-options";
 
@@ -65,12 +66,14 @@ export function DataTableToolbar<TData>({
   const showFilters = visibility.filters && hasFilterableColumns;
   const showReset = visibility.reset && isFiltered;
   const showViewOptions = visibility.viewOptions;
+  const showExport = visibility.export;
   const showBulkActions = hasSelection && !!bulkActions;
   const hasContent =
     showSearch ||
     showFilters ||
     showReset ||
     showViewOptions ||
+    showExport ||
     showBulkActions ||
     !!children;
 
@@ -142,7 +145,7 @@ export function DataTableToolbar<TData>({
         </AnimatePresence>
       </div>
 
-      {(showBulkActions || showViewOptions) && (
+      {(showBulkActions || showViewOptions || showExport) && (
         <div className="z-0 flex items-center gap-2 self-end sm:self-auto">
           <AnimatePresence>
             {showBulkActions && (
@@ -153,12 +156,13 @@ export function DataTableToolbar<TData>({
                 className="flex items-center gap-2"
               >
                 {bulkActions?.(table)}
-                {showViewOptions && (
+                {(showViewOptions || showExport) && (
                   <div className="mx-1 h-6 w-[1px] bg-outline-variant" />
                 )}
               </motion.div>
             )}
           </AnimatePresence>
+          {showExport && <DataTableExportButton />}
           {showViewOptions && <DataTableViewOptions />}
         </div>
       )}

@@ -35,6 +35,8 @@ import {
   advancedGlobalFilterFn,
   prepareDataTableColumns,
 } from "./filter-utils";
+import type { DataTableExportConfig } from "./export";
+import { DataTableExportButton } from "./export-button";
 import { DataTablePagination } from "./pagination";
 import { DataTableToolbar } from "./toolbar";
 import {
@@ -50,11 +52,35 @@ export {
   DataTablePagination,
   DataTableToolbar,
   DataTableFacetedFilter,
+  DataTableExportButton,
   advancedFilterFn,
   advancedGlobalFilterFn,
   advancedFilterFn as numericFilterFn,
   DataTableContext,
 };
+export {
+  DataTableExportError,
+  downloadDataTableExport,
+  exportDataTable,
+  sanitizeDataTableSheetName,
+} from "./export";
+export type { DataTableExportButtonProps } from "./export-button";
+export type {
+  DataTableColumnExportConfig,
+  DataTableExportConfig,
+  DataTableExportErrorCode,
+  DataTableExportFetchRequest,
+  DataTableExportFetcher,
+  DataTableExportFetchResult,
+  DataTableExportFileNameContext,
+  DataTableExportFormat,
+  DataTableExportProgress,
+  DataTableExportResult,
+  DataTableExportScope,
+  DataTableExportValue,
+  DataTableExportValueContext,
+  ExportDataTableOptions,
+} from "./export";
 export { createDataTableUrlCodec } from "./url-codec";
 export type {
   DataTableFilterEditorProps,
@@ -115,6 +141,7 @@ interface DataTableBaseProps<TData extends {}>
   bulkActions?: (table: TanstackTable<TData>) => React.ReactNode;
   searchInputProps?: DataTableSearchInputProps;
   searchDebounceMs?: number;
+  exportOptions?: DataTableExportConfig<TData>;
   visibility?: Partial<DataTableVisibility>;
   /** @deprecated Prefer `visibility={{ toolbar: false }}`. */
   hideToolbar?: boolean;
@@ -173,6 +200,7 @@ export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
     variant = "primary",
     searchInputProps,
     searchDebounceMs = 300,
+    exportOptions,
     visibility,
     hideToolbar = false,
     ...tableProps
@@ -403,6 +431,8 @@ export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
         rowCount,
         serverSide,
         resetFilters,
+        exportOptions,
+        exportColumns: columns,
       }}
     >
       <div className="flex w-full flex-col space-y-4">

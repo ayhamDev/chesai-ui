@@ -32,6 +32,7 @@ export interface DataTableVisibility {
   filters: boolean;
   reset: boolean;
   viewOptions: boolean;
+  export: boolean;
   pagination: boolean;
   selectionSummary: boolean;
 }
@@ -55,6 +56,7 @@ export const defaultDataTableVisibility: DataTableVisibility = {
   filters: true,
   reset: true,
   viewOptions: true,
+  export: true,
   pagination: true,
   selectionSummary: true,
 };
