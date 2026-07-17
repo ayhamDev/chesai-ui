@@ -6,7 +6,6 @@ import {
   format,
   differenceInDays,
   startOfDay,
-  addDays,
   startOfWeek,
   endOfWeek,
   addWeeks,
@@ -36,6 +35,11 @@ import { YearView } from "./year-view";
 import { EventPopover } from "./event-popover";
 import { RecurrenceScopeDialog } from "./recurrence-scope-dialog";
 import { PrintPreviewDialog } from "./print-preview-dialog";
+import {
+  filterDaysWithEvents,
+  getDayDatesInRange,
+  resolvePrintOrientation,
+} from "./print-layout";
 import type { CalendarView, FullCalendarProps } from "./types";
 import { getCalendarBgClasses, getCalendarStickyBgClasses, getCalendarSidePanelBgClasses } from "./utils";
 import { useMediaQuery } from "@uidotdev/usehooks";
@@ -84,7 +88,7 @@ export const PrintPagesLayout = ({
   printHeight?: number;
   scale?: number;
 }) => {
-  const { printSettings } = useFullCalendar();
+  const { events, printSettings } = useFullCalendar();
 
   const printView = useMemo(() => {
     if (printSettings.view !== "auto") return printSettings.view;
@@ -102,11 +106,10 @@ export const PrintPagesLayout = ({
     const pageDates: Date[] = [];
 
     if (printView === "day") {
-      let curr = start;
-      while (curr <= end) {
-        pageDates.push(curr);
-        curr = addDays(curr, 1);
-      }
+      const dayDates = getDayDatesInRange(start, end);
+      return printSettings.onlyDaysWithEvents
+        ? filterDaysWithEvents(dayDates, events)
+        : dayDates;
     } else if (printView === "week") {
       let curr = startOfWeek(start);
       const endWeek = startOfWeek(end);
@@ -130,7 +133,13 @@ export const PrintPagesLayout = ({
       }
     }
     return pageDates.length > 0 ? pageDates : [start];
-  }, [printSettings.rangeStart, printSettings.rangeEnd, printView]);
+  }, [
+    events,
+    printSettings.onlyDaysWithEvents,
+    printSettings.rangeStart,
+    printSettings.rangeEnd,
+    printView,
+  ]);
 
   return (
     <div
@@ -184,6 +193,9 @@ const FullCalendarRootContent = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, children, ...props }, ref) => {
   const { openPrintPreview, printSettings, variant } = useFullCalendar();
+  const resolvedPrintOrientation = resolvePrintOrientation(
+    printSettings.orientation,
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -199,10 +211,15 @@ const FullCalendarRootContent = React.forwardRef<
   const printCss = `
     @media print {
       @page {
-        size: ${printSettings.orientation === "landscape" ? "landscape" : printSettings.orientation === "portrait" ? "portrait" : "auto"};
+        size: letter ${resolvedPrintOrientation};
         margin: 0.5cm;
       }
+      html,
       body {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
         background: white !important;
@@ -216,10 +233,16 @@ const FullCalendarRootContent = React.forwardRef<
         left: 0 !important;
         top: 0 !important;
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         background: white !important;
       }
       .print-page-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         height: 100vh !important;
+        overflow: hidden !important;
         page-break-after: always !important;
         break-after: page !important;
       }

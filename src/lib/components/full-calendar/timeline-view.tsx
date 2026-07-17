@@ -447,7 +447,10 @@ export const TimelineView = () => {
   const GridContent = (
     <div
       dir={isRtl ? "rtl" : "ltr"}
-      className="flex min-w-max md:min-w-full h-full"
+      className={clsx(
+        "flex h-full",
+        isPrintMode ? "w-full min-w-0" : "min-w-max md:min-w-full",
+      )}
     >
       <div
         className={clsx(
@@ -507,8 +510,13 @@ export const TimelineView = () => {
         ))}
       </div>
 
-      <div className="flex-1 flex relative" ref={gridRef}>
-        <div className="absolute inset-0 pointer-events-none flex flex-col">
+      <div className="flex-1 min-w-0 flex relative" ref={gridRef}>
+        <div
+          className={clsx(
+            "absolute inset-0 pointer-events-none flex flex-col",
+            isPrintMode && "z-20",
+          )}
+        >
           {blocksToRender.map((block, bIndex) => (
             <React.Fragment key={bIndex}>
               {block.map((hour) => (
@@ -687,14 +695,14 @@ export const TimelineView = () => {
       >
         <div dir={isRtl ? "rtl" : "ltr"} className="flex">
           <div className={clsx("w-16 shrink-0 border-e", borderClass)} />
-          <div className="flex flex-1">
+          <div className="flex flex-1 min-w-0">
             {days.map((day) => {
               const isDayToday = isToday(day);
               return (
                 <div
                   key={day.toISOString()}
                   className={clsx(
-                    "flex-1 flex flex-col items-center justify-center py-3 border-e last:border-e-0",
+                    "flex-1 min-w-0 flex flex-col items-center justify-center py-3 border-e last:border-e-0",
                     borderClass,
                   )}
                 >

@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "../dropdown-menu";
 import { ColumnFilterDialog } from "./column-filter-dialog";
+import { hasFilterValue } from "./filter-utils";
 
 interface DataTableColumnHeaderProps<
   TData,
@@ -36,7 +37,7 @@ export function DataTableColumnHeader<TData, TValue>({
   className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const isFiltered = !!column.getFilterValue();
+  const isFiltered = hasFilterValue(column.getFilterValue());
 
   if (!column.getCanSort() && !column.getCanFilter()) {
     return <div className={clsx(className)}>{title}</div>;

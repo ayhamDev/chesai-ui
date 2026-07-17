@@ -4,6 +4,7 @@ import {
   type ColumnFiltersState,
   type PaginationState,
   type SortingState,
+  functionalUpdate,
   getCoreRowModel, // Imported for sub-table
   useReactTable, // Imported for sub-table
 } from "@tanstack/react-table";
@@ -35,9 +36,16 @@ import {
 } from "../dropdown-menu";
 import { Table } from "../table"; // Imported base Table component
 import { Typography } from "../typography";
+import { Input } from "../input";
 import { DataTableColumnHeader } from "./column-header";
 import { type AdvancedFilterValue } from "./filter-utils";
-import { DataTable, advancedFilterFn } from "./index";
+import {
+  DataTable,
+  advancedFilterFn,
+  createDataTableUrlCodec,
+  type DataTableState,
+  type DataTableUrlState,
+} from "./index";
 
 const meta: Meta<typeof DataTable> = {
   title: "Components/Data/DataTable",
@@ -55,6 +63,7 @@ const meta: Meta<typeof DataTable> = {
     columns: { control: false },
     isLoading: { control: "boolean" },
     hideToolbar: { control: "boolean" },
+    visibility: { control: "object" },
   },
 };
 
@@ -138,13 +147,43 @@ const columns: ColumnDef<Payment>[] = [
         </div>
       );
     },
-    filterFn: (row, id, value) => value.includes(row.getValue(id)),
+    meta: {
+      filter: {
+        variant: "select",
+        label: "Payment status",
+        options: statuses.map(status => ({
+          value: status.value,
+          label: status.label,
+        })),
+      },
+    },
+    filterFn: advancedFilterFn,
   },
   {
     accessorKey: "email",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Email" />
     ),
+    meta: {
+      filter: {
+        variant: "custom",
+        label: "Customer email",
+        operators: ["contains"],
+        defaultOperator: "contains",
+        parse: values => values[0],
+        serialize: value => [String(value)],
+        renderEditor: ({ value, onValueChange }) => (
+          <Input
+            size="sm"
+            variant="filled"
+            type="email"
+            placeholder="name@example.com"
+            value={String(value ?? "")}
+            onValueChange={onValueChange}
+          />
+        ),
+      },
+    },
   },
   {
     accessorKey: "amount",
@@ -152,7 +191,6 @@ const columns: ColumnDef<Payment>[] = [
       <DataTableColumnHeader
         column={column}
         title="Amount"
-        enableColumnFilter
       />
     ),
     cell: ({ row }) => {
@@ -162,6 +200,13 @@ const columns: ColumnDef<Payment>[] = [
         currency: "USD",
       }).format(amount);
       return <div className="font-medium">{formatted}</div>;
+    },
+    meta: {
+      filter: {
+        variant: "number",
+        label: "Amount",
+        defaultOperator: "gte",
+      },
     },
     filterFn: advancedFilterFn,
   },
@@ -182,7 +227,14 @@ const columns: ColumnDef<Payment>[] = [
         </Badge>
       );
     },
-    filterFn: (row, id, value) => value.includes(row.getValue(id)),
+    meta: {
+      filter: {
+        variant: "multi-select",
+        label: "Priority",
+        options: priorities,
+      },
+    },
+    filterFn: advancedFilterFn,
   },
   {
     id: "actions",
@@ -215,7 +267,12 @@ export const Default: Story = {
   },
   name: "1. Default Table",
   render: (args) => (
-    <DataTable data={sampleData} columns={columns} density={args.density} />
+    <DataTable
+      data={sampleData}
+      columns={columns}
+      density={args.density}
+      variant="secondary"
+    />
   ),
 };
 
@@ -231,6 +288,51 @@ export const WithoutToolbar: Story = {
       columns={columns}
       density={args.density}
       hideToolbar={args.hideToolbar}
+    />
+  ),
+};
+
+export const GranularControls: Story = {
+  name: "3. Granular Controls",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The search, filter builder, view menu, reset action, pagination, and selection summary can be hidden independently without disabling controlled state.",
+      },
+    },
+  },
+  render: args => (
+    <DataTable
+      data={sampleData}
+      columns={columns}
+      density={args.density}
+      variant="secondary"
+      visibility={{
+        search: false,
+        viewOptions: false,
+        selectionSummary: false,
+      }}
+    />
+  ),
+};
+
+export const TypedAndCustomFilters: Story = {
+  name: "4. Typed and Custom Filters",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Status uses a single select, priority uses a multi-select, amount only exposes numeric operators, and email supplies a custom editor. Badge cells filter through their raw accessor values.",
+      },
+    },
+  },
+  render: args => (
+    <DataTable
+      data={sampleData}
+      columns={columns}
+      density={args.density}
+      variant="secondary"
     />
   ),
 };
@@ -442,7 +544,7 @@ export const ServerSideSimulationWithSkeleton: Story = {
 
             filteredData = filteredData.filter((item) => {
               const itemValue = item[id as keyof Payment];
-              if (op === "eq") return String(itemValue) == String(val);
+              if (op === "eq") return String(itemValue) === String(val);
               if (op === "gt") return Number(itemValue) > Number(val);
               if (op === "lt") return Number(itemValue) < Number(val);
               return String(itemValue)
@@ -492,6 +594,140 @@ export const ServerSideSimulationWithSkeleton: Story = {
         onGlobalFilterChange={setGlobalFilter}
         isLoading={isLoading}
       />
+    );
+  },
+};
+
+export const ServerSideUrlState: Story = {
+  name: "7. Server Side + URL State",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The table owns no router integration. A pure codec reads and writes its controlled state while preserving Storybook's unrelated URL parameters; the same calls can be used inside nuqs, Next.js, React Router, or TanStack Router setters.",
+      },
+    },
+  },
+  render: function Render() {
+    const codec = useMemo(
+      () =>
+        createDataTableUrlCodec({
+          columns,
+          namespace: "payments",
+        }),
+      [],
+    );
+    const [urlState, setUrlState] = useState<DataTableUrlState>(() =>
+      codec.parse(new URLSearchParams(window.location.search)),
+    );
+
+    useEffect(() => {
+      const params = codec.write(
+        new URLSearchParams(window.location.search),
+        urlState,
+      );
+      const query = params.toString();
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${window.location.pathname}${query ? `?${query}` : ""}`,
+      );
+    }, [codec, urlState]);
+
+    const filtered = useMemo(() => {
+      let result = [...sampleData];
+      if (urlState.globalFilter) {
+        const search = urlState.globalFilter.toLowerCase();
+        result = result.filter(
+          payment =>
+            payment.email.toLowerCase().includes(search) ||
+            payment.status.toLowerCase().includes(search) ||
+            payment.priority.toLowerCase().includes(search),
+        );
+      }
+      for (const filter of urlState.columnFilters) {
+        const filterValue = filter.value as AdvancedFilterValue;
+        const value = filterValue.value;
+        result = result.filter(payment => {
+          const candidate = payment[filter.id as keyof Payment];
+          if (filterValue.operator === "in") {
+            return Array.isArray(value) && value.includes(candidate as never);
+          }
+          if (filterValue.operator === "notIn") {
+            return Array.isArray(value) && !value.includes(candidate as never);
+          }
+          if (filterValue.operator === "gt") {
+            return Number(candidate) > Number(value);
+          }
+          if (filterValue.operator === "gte") {
+            return Number(candidate) >= Number(value);
+          }
+          if (filterValue.operator === "lt") {
+            return Number(candidate) < Number(value);
+          }
+          if (filterValue.operator === "lte") {
+            return Number(candidate) <= Number(value);
+          }
+          if (filterValue.operator === "eq") {
+            return String(candidate) === String(value);
+          }
+          if (filterValue.operator === "neq") {
+            return String(candidate) !== String(value);
+          }
+          return String(candidate)
+            .toLowerCase()
+            .includes(String(value).toLowerCase());
+        });
+      }
+      for (const sort of [...urlState.sorting].reverse()) {
+        result.sort((left, right) => {
+          const a = left[sort.id as keyof Payment];
+          const b = right[sort.id as keyof Payment];
+          if (a === b) return 0;
+          return (a < b ? -1 : 1) * (sort.desc ? -1 : 1);
+        });
+      }
+      return result;
+    }, [urlState]);
+
+    const start =
+      urlState.pagination.pageIndex * urlState.pagination.pageSize;
+    const page = filtered.slice(
+      start,
+      start + urlState.pagination.pageSize,
+    );
+    const fullState: DataTableState = {
+      ...urlState,
+      rowSelection: {},
+      expanded: {},
+    };
+
+    return (
+      <div className="flex flex-col gap-3">
+        <DataTable
+          data={page}
+          columns={columns}
+          serverSide
+          rowCount={filtered.length}
+          state={urlState}
+          getRowId={row => row.id}
+          onStateChange={updater => {
+            const next = functionalUpdate(updater, fullState);
+            setUrlState({
+              pagination: next.pagination,
+              sorting: next.sorting,
+              columnFilters: next.columnFilters,
+              globalFilter: next.globalFilter,
+              columnVisibility: next.columnVisibility,
+            });
+          }}
+        />
+        <Typography variant="body-small" className="break-all opacity-70">
+          {codec
+            .write(new URLSearchParams(), urlState)
+            .toString()}
+        </Typography>
+      </div>
     );
   },
 };

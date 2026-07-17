@@ -3,6 +3,7 @@
 import type { Table } from "@tanstack/react-table";
 import { createContext, useContext } from "react";
 import type { InputProps } from "../input";
+import type { DataTableVisibility } from "./types";
 
 export type DataTableSearchInputProps = Partial<
   Omit<
@@ -14,8 +15,14 @@ export type DataTableSearchInputProps = Partial<
 interface DataTableContextProps<TData> {
   table: Table<TData>;
   searchInputProps?: DataTableSearchInputProps;
+  visibility?: DataTableVisibility;
+  searchDebounceMs?: number;
+  rowCount?: number;
+  serverSide?: boolean;
+  resetFilters?: () => void;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: One context must hold tables with arbitrary row types.
 const DataTableContext = createContext<DataTableContextProps<any> | null>(null);
 
 export function useDataTable<TData>() {

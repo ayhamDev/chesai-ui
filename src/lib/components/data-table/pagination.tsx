@@ -14,11 +14,23 @@ import { Typography } from "../typography";
 import { useDataTable } from "./context";
 
 export function DataTablePagination<TData>() {
-  const { table } = useDataTable<TData>();
+  const {
+    table,
+    visibility,
+    rowCount,
+    serverSide,
+  } = useDataTable<TData>();
 
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const pageCount = table.getPageCount();
+  const selectedCount = Object.values(table.getState().rowSelection).filter(
+    Boolean,
+  ).length;
+  const totalCount =
+    serverSide && rowCount !== undefined
+      ? rowCount
+      : table.getFilteredRowModel().rows.length;
 
   const [pageInput, setPageInput] = useState(String(pageIndex + 1));
 
@@ -28,7 +40,7 @@ export function DataTablePagination<TData>() {
 
   const handlePageSubmit = () => {
     let page = Number(pageInput) - 1;
-    if (isNaN(page)) page = 0;
+    if (Number.isNaN(page)) page = 0;
     if (page < 0) page = 0;
     if (page >= pageCount) page = pageCount - 1;
 
@@ -52,13 +64,16 @@ export function DataTablePagination<TData>() {
     }));
   }, [pageSize]);
 
+  if (visibility?.pagination === false) return null;
+
   return (
     <div className="flex flex-col items-center justify-between gap-4 px-2 py-4 sm:flex-row flex-wrap">
       {/* Selected Count */}
-      <div className="text-sm text-graphite-foreground/70 order-2 sm:order-1">
-        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-        {table.getFilteredRowModel().rows.length} row(s) selected.
-      </div>
+      {visibility?.selectionSummary !== false && (
+        <div className="text-sm text-graphite-foreground/70 order-2 sm:order-1">
+          {selectedCount} of {totalCount} row(s) selected.
+        </div>
+      )}
 
       {/* Controls Container */}
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6 lg:gap-8 order-1 sm:order-2 w-full sm:w-auto flex-wrap">

@@ -81,6 +81,7 @@ export interface PrintSettings {
   view: 'auto' | 'day' | 'week' | 'month' | 'year';
   orientation: 'auto' | 'portrait' | 'landscape';
   colorStyle: 'full' | 'bw';
+  onlyDaysWithEvents?: boolean;
 }
 
 export interface FullCalendarProps<T = any> {

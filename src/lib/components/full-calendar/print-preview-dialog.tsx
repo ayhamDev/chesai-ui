@@ -1,19 +1,33 @@
 // src/lib/components/full-calendar/print-preview-dialog.tsx
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "../button";
+import { Checkbox } from "../checkbox";
 import { DatePicker } from "../date-picker/date-picker";
 import { Dialog, DialogContent } from "../dialog";
 import { Select } from "../select";
 import { Typography } from "../typography";
 import { useFullCalendar } from "./calendar-context";
 import { PrintPagesLayout } from "./index";
+import {
+  filterDaysWithEvents,
+  getDayDatesInRange,
+  LETTER_PAGE_PIXELS,
+  resolvePrintOrientation,
+} from "./print-layout";
 
 export const PrintPreviewDialog = () => {
   const {
     isPrintPreviewOpen,
     setPrintPreviewOpen,
+    events,
     printSettings,
     setPrintSettings,
   } = useFullCalendar();
@@ -25,12 +39,28 @@ export const PrintPreviewDialog = () => {
     }, 400);
   }, [setPrintPreviewOpen]);
 
-  const isLandscape =
-    printSettings.orientation === "landscape" ||
-    printSettings.orientation === "auto";
-
-  const printWidth = isLandscape ? 1056 : 816;
-  const printHeight = isLandscape ? 816 : 1056;
+  const resolvedOrientation = resolvePrintOrientation(
+    printSettings.orientation,
+  );
+  const { width: printWidth, height: printHeight } =
+    LETTER_PAGE_PIXELS[resolvedOrientation];
+  const isDayView = printSettings.view === "day";
+  const hasPrintableDays = useMemo(
+    () =>
+      !isDayView ||
+      !printSettings.onlyDaysWithEvents ||
+      filterDaysWithEvents(
+        getDayDatesInRange(printSettings.rangeStart, printSettings.rangeEnd),
+        events,
+      ).length > 0,
+    [
+      events,
+      isDayView,
+      printSettings.onlyDaysWithEvents,
+      printSettings.rangeEnd,
+      printSettings.rangeStart,
+    ],
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -149,13 +179,52 @@ export const PrintPreviewDialog = () => {
             </div>
           </div>
 
-          <div className="mt-auto p-4 flex items-center justify-end gap-3 border-t border-outline-variant/30 bg-surface-container-high shrink-0 z-20">
+          <div className="mt-auto px-6 py-4 border-t border-outline-variant/30 bg-surface-container-high shrink-0">
+            <Typography
+              variant="label-small"
+              className="mb-3 text-on-surface-variant opacity-70"
+            >
+              Options
+            </Typography>
+            <div className="flex flex-col gap-1 px-1">
+              <Checkbox
+                checked={printSettings.onlyDaysWithEvents}
+                disabled={!isDayView}
+                label="Only days with events"
+                onChange={(event) =>
+                  setPrintSettings((settings) => ({
+                    ...settings,
+                    onlyDaysWithEvents: event.target.checked,
+                  }))
+                }
+              />
+              {!isDayView && (
+                <Typography
+                  variant="label-small"
+                  className="ms-9 text-on-surface-variant opacity-70"
+                >
+                  Available in Day view
+                </Typography>
+              )}
+              {!hasPrintableDays && (
+                <Typography
+                  variant="label-small"
+                  className="ms-9 text-error"
+                >
+                  No event days in this range
+                </Typography>
+              )}
+            </div>
+          </div>
+
+          <div className="p-4 flex items-center justify-end gap-3 border-t border-outline-variant/30 bg-surface-container-high shrink-0 z-20">
             <Button variant="ghost" onClick={() => setPrintPreviewOpen(false)}>
               Cancel
             </Button>
             <Button
               variant="primary"
               onClick={handlePrint}
+              disabled={!hasPrintableDays}
               className="px-6 rounded-full font-bold"
             >
               Print

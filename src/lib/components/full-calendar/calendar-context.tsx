@@ -199,6 +199,7 @@ export const FullCalendarProvider = ({
     view: initialView,
     orientation: "auto",
     colorStyle: "full",
+    onlyDaysWithEvents: false,
   });
 
   const openPrintPreview = useCallback(() => {
