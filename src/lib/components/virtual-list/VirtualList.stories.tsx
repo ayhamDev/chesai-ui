@@ -1,39 +1,34 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { clsx } from "clsx";
-import { Mail } from "lucide-react";
-import React, { useRef } from "react";
-import { Button } from "../button";
-import { ElasticScrollArea } from "../elastic-scroll-area";
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "../item";
-import { toast, Toaster } from "../toast";
-import { VirtualList } from "./index";
+import type { Meta, StoryObj } from '@storybook/react'
+import type { Virtualizer } from '@tanstack/react-virtual'
+import { clsx } from 'clsx'
+import { Mail } from 'lucide-react'
+import { useRef } from 'react'
+import { Button } from '../button'
+import { ElasticScrollArea } from '../elastic-scroll-area'
+import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '../item'
+import { Toaster, toast } from '../toast'
+import { VirtualList } from './index'
 
 const meta: Meta<typeof VirtualList> = {
-  title: "Components/Data/VirtualList",
+  title: 'Components/Data/VirtualList',
   component: VirtualList,
-};
+}
 
-export default meta;
+export default meta
 
 const data = Array.from({ length: 5000 }, (_, i) => ({
   id: i,
   title: `Message #${i + 1}`,
-  desc: "This list uses ElasticScrollArea for virtualization.",
-}));
+  desc: 'This list uses ElasticScrollArea for virtualization.',
+}))
 
 export const WithElasticScroll: StoryObj<typeof VirtualList> = {
-  name: "1. Vertical Integrated with Elastic Scroll",
+  name: '1. Vertical Integrated with Elastic Scroll',
   render: () => {
     const handleRefresh = async () => {
-      await new Promise((res) => setTimeout(res, 2000));
-      toast.success("Inbox Updated");
-    };
+      await new Promise(res => setTimeout(res, 2000))
+      toast.success('Inbox Updated')
+    }
 
     return (
       <div className="h-[600px] w-96 mx-auto border border-outline-variant rounded-2xl overflow-hidden bg-surface shadow-xl">
@@ -45,13 +40,15 @@ export const WithElasticScroll: StoryObj<typeof VirtualList> = {
             pullToRefresh: true,
             onRefresh: handleRefresh,
             dampingFactor: 0.2,
-            scrollbarVisibility: "hidden",
-            className: "bg-transparent",
+            scrollbarVisibility: 'hidden',
+            className: 'bg-transparent',
           }}
           gap={4}
-          estimateSize={72}
-          renderItem={(item) => (
-            <Item variant="secondary" shape="minimal" className="mx-2">
+          estimateSize={97}
+          measureItems={false}
+          getItemKey={item => item.id}
+          renderItem={item => (
+            <Item variant="secondary" shape="minimal" className="mx-2 h-[97px]">
               <ItemMedia variant="icon" shape="full">
                 <Mail className="size-4" />
               </ItemMedia>
@@ -63,30 +60,28 @@ export const WithElasticScroll: StoryObj<typeof VirtualList> = {
           )}
         />
       </div>
-    );
+    )
   },
-};
+}
 
 export const HorizontalWithControls: StoryObj<typeof VirtualList> = {
-  name: "2. Horizontal with Scroll Controls",
+  name: '2. Horizontal with Scroll Controls',
   render: () => {
-    const virtualizerRef = useRef<any>(null);
-    const scrollContainerRef = useRef<HTMLElement>(null);
+    const virtualizerRef = useRef<Virtualizer<HTMLElement, HTMLDivElement>>(null)
+    const scrollContainerRef = useRef<HTMLElement>(null)
 
     const handleScrollTo = () => {
       if (virtualizerRef.current) {
         virtualizerRef.current.scrollToIndex(2500, {
-          align: "center",
-          behavior: "smooth",
-        });
+          align: 'center',
+          behavior: 'smooth',
+        })
       }
-    };
+    }
 
     return (
       <div className="flex flex-col gap-6 items-center w-full max-w-4xl mx-auto pt-12">
-        <Button onClick={handleScrollTo}>
-          Programmatically Scroll to Item #2500
-        </Button>
+        <Button onClick={handleScrollTo}>Programmatically Scroll to Item #2500</Button>
 
         <div className="w-[800px] h-32 border border-outline-variant rounded-xl bg-surface-container-low shadow-md overflow-hidden">
           <VirtualList
@@ -97,7 +92,9 @@ export const HorizontalWithControls: StoryObj<typeof VirtualList> = {
             itemsWrapper="ul"
             gap={12}
             estimateSize={250}
-            renderItem={(item) => (
+            measureItems={false}
+            getItemKey={item => item.id}
+            renderItem={item => (
               <Item
                 variant="secondary"
                 shape="minimal"
@@ -105,25 +102,23 @@ export const HorizontalWithControls: StoryObj<typeof VirtualList> = {
               >
                 <ItemContent className="text-center w-full">
                   <ItemTitle className="mx-auto">{item.title}</ItemTitle>
-                  <ItemDescription className="text-center">
-                    Swipe me!
-                  </ItemDescription>
+                  <ItemDescription className="text-center">Swipe me!</ItemDescription>
                 </ItemContent>
               </Item>
             )}
           />
         </div>
       </div>
-    );
+    )
   },
-};
+}
 
 export const ChatInterface: StoryObj<typeof VirtualList> = {
-  name: "3. Chat Interface (Vertical Reverse)",
+  name: '3. Chat Interface (Vertical Reverse)',
   render: () => {
     // In a vertical-reverse layout, item index 0 is rendered at the absolute bottom.
     // Make sure your newest message is passed in as data[0] so users start viewing the newest content.
-    const chatData = [...data].slice(0, 50).reverse();
+    const chatData = [...data].slice(0, 50).reverse()
 
     return (
       <div className="h-[600px] w-96 mx-auto border border-outline-variant rounded-2xl overflow-hidden bg-surface-container-low shadow-xl flex flex-col">
@@ -136,40 +131,36 @@ export const ChatInterface: StoryObj<typeof VirtualList> = {
             data={chatData}
             direction="vertical-reverse" // Native Flex-based bottom anchoring
             gap={12}
-            estimateSize={80}
+            estimateSize={104}
+            getItemKey={item => item.id}
             containerProps={{
-              className: "px-4 pb-4 pt-2",
+              className: 'px-4 pb-4 pt-2',
             }}
-            renderItem={(item) => {
+            renderItem={item => {
               // Mock distinguishing who sent the message
-              const isMe = item.id % 2 === 0;
+              const isMe = item.id % 2 === 0
 
               return (
-                <div
-                  className={clsx(
-                    "flex w-full",
-                    isMe ? "justify-end" : "justify-start",
-                  )}
-                >
+                <div className={clsx('flex w-full', isMe ? 'justify-end' : 'justify-start')}>
                   <div
                     className={clsx(
-                      "px-4 py-3 max-w-[80%] text-sm shadow-sm",
+                      'px-4 py-3 max-w-[80%] text-sm shadow-sm',
                       isMe
-                        ? "bg-primary text-on-primary rounded-2xl rounded-br-sm"
-                        : "bg-surface text-on-surface border border-outline-variant/30 rounded-2xl rounded-bl-sm",
+                        ? 'bg-primary text-on-primary rounded-2xl rounded-br-sm'
+                        : 'bg-surface text-on-surface border border-outline-variant/30 rounded-2xl rounded-bl-sm',
                     )}
                   >
                     <div className="font-semibold text-[11px] opacity-70 mb-1 uppercase tracking-wider">
-                      {isMe ? "You" : `User ${item.id}`}
+                      {isMe ? 'You' : `User ${item.id}`}
                     </div>
                     {item.desc} Let's hang out this weekend!
                   </div>
                 </div>
-              );
+              )
             }}
           />
         </div>
       </div>
-    );
+    )
   },
-};
+}

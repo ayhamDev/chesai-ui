@@ -1,9 +1,15 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 "use client";
 
-import clsx from "clsx";
 import { interpolate } from "flubber";
-import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import {
+  animate,
+  type Easing,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+} from "framer-motion";
 import React, { useEffect } from "react";
 
 // The path data extracted from the provided assets.
@@ -25,6 +31,39 @@ const MD3_PATHS = [
   // Duplicate Step 1 for smooth loop
   "M22.4683 7.83978C23.1732 6.72008 24.8268 6.72007 25.5317 7.83977L27.2214 10.5237C27.6848 11.2599 28.6197 11.5592 29.4338 11.232L32.4021 10.0391C33.6404 9.54145 34.9781 10.499 34.8804 11.8131L34.6461 14.963C34.5819 15.8269 35.1597 16.6104 36.0135 16.8172L39.1265 17.571C40.4252 17.8855 40.9362 19.4349 40.0731 20.4414L38.0044 22.854C37.437 23.5158 37.437 24.4842 38.0044 25.146L40.0731 27.5586C40.9362 28.5651 40.4252 30.1145 39.1265 30.429L36.0135 31.1828C35.1597 31.3896 34.5819 32.1731 34.6461 33.037L34.8804 36.1869C34.9781 37.501 33.6404 38.4585 32.4021 37.9609L29.4338 36.768C28.6197 36.4408 27.6848 36.7401 27.2214 37.4763L25.5317 40.1602C24.8268 41.2799 23.1732 41.2799 22.4683 40.1602L20.7786 37.4763C20.3152 36.7401 19.3803 36.4408 18.5662 36.768L15.5979 37.9609C14.3596 38.4585 13.0219 37.501 13.1196 36.1869L13.3539 33.037C13.4181 32.1731 12.8403 31.3896 11.9865 31.1828L8.87348 30.429C7.57479 30.1145 7.0638 28.5651 7.92684 27.5586L9.99559 25.146C10.563 24.4842 10.563 23.5158 9.99559 22.854L7.92685 20.4414C7.0638 19.4349 7.57478 17.8855 8.87348 17.571L11.9865 16.8172C12.8403 16.6104 13.4181 15.8269 13.3539 14.963L13.1196 11.8131C13.0219 10.499 14.3596 9.54145 15.5979 10.0391L18.5662 11.232C19.3803 11.5592 20.3152 11.2599 20.7786 10.5237L22.4683 7.83978Z",
 ];
+
+const NUM_STEPS = MD3_PATHS.length - 1; // 7 morph steps per cycle
+
+// Two consecutive cycles of the shape sequence. Progress animates continuously
+// from `start` to `start + NUM_STEPS` (never wrapping mid-keyframe), so the
+// repeat boundary lands on an identical shape and the loop is seamless.
+const EXTENDED_PATHS = Array.from(
+  { length: NUM_STEPS * 2 + 1 },
+  (_, i) => MD3_PATHS[i % NUM_STEPS],
+);
+const EXTENDED_RANGE = EXTENDED_PATHS.map((_, i) => i);
+
+// Flubber interpolators are expensive to build, so they are constructed once
+// and shared by every instance. Output coordinates are trimmed to 2 decimals
+// (≤0.01 units in the 48-unit viewBox) to shrink the per-frame `d` string the
+// browser has to re-parse.
+let pairMixers: Array<(t: number) => string> | null = null;
+
+const getPairMixers = () => {
+  if (!pairMixers) {
+    pairMixers = MD3_PATHS.slice(0, -1).map((p, i) => {
+      const raw = interpolate(p, MD3_PATHS[i + 1], { maxSegmentLength: 3 });
+      return (t: number) => raw(t).replace(/(\d\.\d{2})\d+/g, "$1");
+    });
+  }
+  return pairMixers;
+};
+
+const MORPH_OPTIONS = {
+  // Extended paths reuse the same string references as MD3_PATHS, so indexOf
+  // resolves via reference equality and maps any pair back to its base mixer.
+  mixer: (a: string) => getPairMixers()[MD3_PATHS.indexOf(a)],
+};
 
 export interface MaterialMorphProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
@@ -50,8 +89,8 @@ export const MaterialMorph: React.FC<MaterialMorphProps> = ({
   className,
   cycleDuration = 5,
   background = true,
-  isPlaying = true, // Added default value
-  startingShape = 0, // Added default value
+  isPlaying = true,
+  startingShape = 0,
   ...props
 }) => {
   // Constrain to available shapes (0-6)
@@ -59,96 +98,103 @@ export const MaterialMorph: React.FC<MaterialMorphProps> = ({
   const progress = useMotionValue(initialStep);
   const rotation = useMotionValue(0);
   const scale = useMotionValue(1);
+  const reducedMotion = useReducedMotion();
+  const playing = isPlaying && !reducedMotion;
 
   const path = useTransform(
     progress,
-    MD3_PATHS.map((_, i) => i),
-    MD3_PATHS,
-    {
-      mixer: (a, b) => interpolate(a, b, { maxSegmentLength: 2 }),
-    },
+    EXTENDED_RANGE,
+    EXTENDED_PATHS,
+    MORPH_OPTIONS,
   );
 
   useEffect(() => {
-    // If not playing, don't start the loop
-    if (!isPlaying) return;
+    if (!playing) return;
 
-    let isCancelled = false;
-    let controls: any[] = [];
+    const stepDuration = cycleDuration / NUM_STEPS;
+    const morphDuration = Math.min(0.3, stepDuration);
+    const morphFraction = morphDuration / cycleDuration;
 
-    const numSteps = MD3_PATHS.length - 1;
-    const stepDuration = cycleDuration / numSteps;
-    const fastActionTime = 0.3;
-    const delayTime = stepDuration - fastActionTime;
+    // Pick up from the current shape (handles pause/play)
+    const start = Math.round(progress.get()) % NUM_STEPS;
 
-    // Pick up exactly where the progress is left off (handles pause/play beautifully)
-    let currentStep = Math.round(progress.get());
+    // Each step: a fast morph (with a scale pulse), then hold until the step
+    // ends. Rotation sweeps 180° per step; it spans two cycles so its repeat
+    // boundary lands on a multiple of 360° and never visibly jumps.
+    const progressValues: number[] = [start];
+    const progressTimes: number[] = [0];
+    const progressEase: Easing[] = [];
+    const scaleValues: number[] = [1];
+    const scaleTimes: number[] = [0];
+    const scaleEase: Easing[] = [];
 
-    const runAnimationLoop = async () => {
-      // Loop continually from the current step
-      while (!isCancelled) {
-        const nextStep = currentStep + 1;
+    for (let i = 0; i < NUM_STEPS; i++) {
+      const stepStart = i / NUM_STEPS;
+      const stepEnd = (i + 1) / NUM_STEPS;
+      // Clamped so float error can't push the morph past the step boundary
+      const morphEnd = Math.min(stepStart + morphFraction, stepEnd);
 
-        // Start animations and store controls so we can .stop() them later
-        const morphPromise = animate(progress, nextStep, {
-          duration: fastActionTime,
-          ease: "easeInOut",
-        });
+      progressValues.push(start + i + 1, start + i + 1);
+      progressTimes.push(morphEnd, stepEnd);
+      progressEase.push("easeInOut", "linear");
 
-        const scalePromise = animate(scale, [1, 1.125, 1], {
-          duration: fastActionTime,
-          ease: "easeIn",
-        });
+      scaleValues.push(1.125, 1, 1);
+      scaleTimes.push(
+        Math.min(stepStart + morphFraction / 2, stepEnd),
+        morphEnd,
+        stepEnd,
+      );
+      scaleEase.push("easeIn", "easeIn", "linear");
+    }
 
-        const rotatePromise = animate(rotation, rotation.get() + 180, {
-          duration: stepDuration,
-          ease: [0.5, 0.6, 0.4, 0.8],
-        });
+    const rotationStart = rotation.get();
+    const rotationValues = Array.from(
+      { length: NUM_STEPS * 2 + 1 },
+      (_, i) => rotationStart + i * 180,
+    );
+    const rotationTimes = rotationValues.map((_, i) => i / (NUM_STEPS * 2));
+    const rotationEase = Array.from(
+      { length: NUM_STEPS * 2 },
+      () => [0.5, 0.6, 0.4, 0.8] as Easing,
+    );
 
-        controls = [morphPromise, scalePromise, rotatePromise];
+    const animations = [
+      animate(progress, progressValues, {
+        duration: cycleDuration,
+        times: progressTimes,
+        ease: progressEase,
+        repeat: Number.POSITIVE_INFINITY,
+      }),
+      animate(scale, scaleValues, {
+        duration: cycleDuration,
+        times: scaleTimes,
+        ease: scaleEase,
+        repeat: Number.POSITIVE_INFINITY,
+      }),
+      animate(rotation, rotationValues, {
+        duration: cycleDuration * 2,
+        times: rotationTimes,
+        ease: rotationEase,
+        repeat: Number.POSITIVE_INFINITY,
+      }),
+    ];
 
-        // Wait for morph and scale
-        await Promise.all([morphPromise, scalePromise]);
-
-        // Wait for the delay phase
-        await new Promise((resolve) => setTimeout(resolve, delayTime * 1000));
-
-        if (isCancelled) return;
-        await rotatePromise;
-
-        // Assign the finished step
-        currentStep = nextStep;
-
-        // Reset for a seamless loop if we've reached the duplicate frame
-        if (currentStep >= numSteps) {
-          progress.set(0);
-          currentStep = 0;
-        }
+    return () => {
+      for (const animation of animations) {
+        animation.stop();
       }
     };
-
-    runAnimationLoop();
-
-    // Cleanup: Stop animations and flag loop as cancelled
-    return () => {
-      isCancelled = true;
-      controls.forEach((control) => control.stop && control.stop());
-    };
-  }, [cycleDuration, isPlaying, progress, rotation, scale]);
+  }, [cycleDuration, playing, progress, rotation, scale]);
 
   const svgContent = (
     // @ts-ignore
     <motion.svg
       viewBox="0 0 48 48"
-      className={clsx("transform-gpu", className)}
+      className={className}
       style={{ rotate: rotation, scale }}
       {...props}
     >
-      <motion.path
-        className={"will-change-transform transform-3d transform-gpu"}
-        d={path}
-        fill="currentColor"
-      />
+      <motion.path d={path} fill="currentColor" />
     </motion.svg>
   );
 

@@ -15,7 +15,7 @@ export const LoadingIndicator = React.forwardRef<
 >(
   (
     {
-      variant = "linear-straight",
+      variant = "material-morph",
       isPlaying = true,
       startingShape,
       className,
