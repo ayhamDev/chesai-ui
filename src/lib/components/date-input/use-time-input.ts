@@ -1,6 +1,6 @@
 'use client'
 
-import { useTimeField } from '@react-aria/datepicker'
+import { type DateFieldAria, useTimeField } from '@react-aria/datepicker'
 import { useLocale } from '@react-aria/i18n'
 import { useTimeFieldState } from '@react-stately/datepicker'
 import type { AriaTimeFieldProps, TimeValue } from '@react-types/datepicker'
@@ -63,7 +63,7 @@ export function useTimeInput<T extends TimeValue>(props: UseTimeInputProps<T>) {
     shouldForceLeadingZeros: true,
   })
 
-  const { labelProps, fieldProps, inputProps, validationErrors, descriptionProps, errorMessageProps, isInvalid } =
+  const { labelProps, fieldProps, inputProps, validationErrors, descriptionProps, errorMessageProps, isInvalid }: DateFieldAria =
     useTimeField(
       {
         ...otherProps,

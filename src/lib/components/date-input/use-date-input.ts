@@ -1,7 +1,7 @@
 'use client'
 
 import { createCalendar, type DateValue } from '@internationalized/date'
-import { useDateField } from '@react-aria/datepicker'
+import { type DateFieldAria, useDateField } from '@react-aria/datepicker'
 import { useLocale } from '@react-aria/i18n'
 import { useDateFieldState } from '@react-stately/datepicker'
 import type { AriaDateFieldProps } from '@react-types/datepicker'
@@ -66,7 +66,7 @@ export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
     shouldForceLeadingZeros: true,
   })
 
-  const { labelProps, fieldProps, inputProps, validationErrors, descriptionProps, errorMessageProps, isInvalid } =
+  const { labelProps, fieldProps, inputProps, validationErrors, descriptionProps, errorMessageProps, isInvalid }: DateFieldAria =
     useDateField(
       {
         ...otherProps,
