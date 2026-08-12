@@ -7,12 +7,23 @@ import { Typography } from "../typography";
 import { IconButton } from "../icon-button";
 import { AnimatePresence, motion } from "framer-motion";
 
+export interface DropzoneFileItem {
+  id: string;
+  name: string;
+  size: number;
+}
+
 // --- EXISTING DROPZONE ---
 export interface DropzoneProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "onDrop"
 > {
-  onDrop: (files: File[]) => void;
+  onDrop: (files: File[]) => void | Promise<void>;
+  files?: DropzoneFileItem[];
+  onRemove?: (
+    file: DropzoneFileItem,
+    index: number,
+  ) => void | Promise<void>;
   accept?: string;
   multiple?: boolean;
   maxSize?: number; // in bytes
@@ -26,6 +37,8 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
     {
       className,
       onDrop,
+      files,
+      onRemove,
       accept,
       multiple = true,
       maxSize,
@@ -38,8 +51,12 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
   ) => {
     const [isDragging, setIsDragging] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [selectedFiles, setSelectedFiles] = useState<DropzoneFileItem[]>([]);
+    const [removingId, setRemovingId] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const nextFileId = useRef(0);
+
+    const displayedFiles = files ?? selectedFiles;
 
     const handleDragEnter = useCallback(
       (e: React.DragEvent) => {
@@ -61,27 +78,38 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
       e.stopPropagation();
     }, []);
 
-    const processFiles = (files: File[]) => {
-      setError(null);
-      let validFiles = files;
+    const processFiles = useCallback(
+      (incomingFiles: File[]) => {
+        setError(null);
+        let validFiles = incomingFiles;
 
-      if (!multiple && files.length > 1) {
-        validFiles = [files[0]];
-      }
-
-      if (maxSize) {
-        const oversized = validFiles.find((f) => f.size > maxSize);
-        if (oversized) {
-          setError(`File ${oversized.name} exceeds the maximum size limit.`);
-          return;
+        if (!multiple && incomingFiles.length > 1) {
+          validFiles = [incomingFiles[0]];
         }
-      }
 
-      setSelectedFiles((prev) =>
-        multiple ? [...prev, ...validFiles] : validFiles,
-      );
-      onDrop(validFiles);
-    };
+        if (maxSize) {
+          const oversized = validFiles.find((f) => f.size > maxSize);
+          if (oversized) {
+            setError(`File ${oversized.name} exceeds the maximum size limit.`);
+            return;
+          }
+        }
+
+        if (files === undefined) {
+          const fileItems = validFiles.map((file) => ({
+            id: `${file.name}-${file.lastModified}-${nextFileId.current++}`,
+            name: file.name,
+            size: file.size,
+          }));
+
+          setSelectedFiles((prev) =>
+            multiple ? [...prev, ...fileItems] : fileItems,
+          );
+        }
+        onDrop(validFiles);
+      },
+      [files, maxSize, multiple, onDrop],
+    );
 
     const handleDrop = useCallback(
       (e: React.DragEvent) => {
@@ -93,7 +121,7 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
         const files = Array.from(e.dataTransfer.files);
         if (files.length > 0) processFiles(files);
       },
-      [disabled, multiple, maxSize, onDrop],
+      [disabled, processFiles],
     );
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,9 +130,33 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
       if (inputRef.current) inputRef.current.value = "";
     };
 
-    const removeFile = (index: number, e: React.MouseEvent) => {
-      e.stopPropagation();
-      setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    const removeFile = async (
+      file: DropzoneFileItem,
+      index: number,
+      event: React.MouseEvent,
+    ) => {
+      event.stopPropagation();
+
+      try {
+        setError(null);
+        setRemovingId(file.id);
+
+        await onRemove?.(file, index);
+
+        if (files === undefined) {
+          setSelectedFiles((current) =>
+            current.filter((_, currentIndex) => currentIndex !== index),
+          );
+        }
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "The file could not be removed.",
+        );
+      } finally {
+        setRemovingId(null);
+      }
     };
 
     return (
@@ -170,11 +222,11 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
           </Typography>
         )}
 
-        {selectedFiles.length > 0 && (
+        {displayedFiles.length > 0 && (
           <div className="flex flex-col gap-2 mt-4">
-            {selectedFiles.map((file, index) => (
+            {displayedFiles.map((file, index) => (
               <div
-                key={`${file.name}-${index}`}
+                key={file.id}
                 className="flex items-center justify-between p-3 bg-surface-container-low border border-outline-variant rounded-xl"
               >
                 <div className="flex items-center gap-3 overflow-hidden">
@@ -191,7 +243,9 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
                 <IconButton
                   variant="ghost"
                   size="sm"
-                  onClick={(e) => removeFile(index, e)}
+                  disabled={disabled || removingId === file.id}
+                  aria-label={`Remove ${file.name}`}
+                  onClick={(event) => void removeFile(file, index, event)}
                 >
                   <X className="h-4 w-4" />
                 </IconButton>
