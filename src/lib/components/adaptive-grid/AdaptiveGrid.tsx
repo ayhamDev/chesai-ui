@@ -1,6 +1,7 @@
 "use client";
 
-import React, {
+import type React from "react";
+import {
   useState,
   useEffect,
   useRef,
@@ -9,17 +10,26 @@ import React, {
 } from "react";
 import {
   DndContext,
-  DragStartEvent,
-  DragEndEvent,
-  DragMoveEvent,
+  type DragStartEvent,
+  type DragMoveEvent,
   PointerSensor,
-  UniqueIdentifier,
+  type UniqueIdentifier,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { GridItemConfig, GridGap, GAP_MAP, ResizeDirection } from "./types";
-import { GridItem, GridItemRect } from "./GridItem";
-import { resolveLayout, compactLayout } from "./layout-engine";
+import {
+  type GridItemConfig,
+  type GridGap,
+  GAP_MAP,
+  type ResizeDirection,
+} from "./types";
+import { GridItem, type GridItemRect } from "./GridItem";
+import {
+  resolveLayout,
+  compactLayout,
+  fitLayoutToColumns,
+  getResponsiveColumnCount,
+} from "./layout-engine";
 import { motion, AnimatePresence } from "framer-motion";
 
 export interface AdaptiveGridHandle {
@@ -28,9 +38,15 @@ export interface AdaptiveGridHandle {
   getLayout: () => GridItemConfig[];
 }
 
-interface AdaptiveGridProps {
+export interface AdaptiveGridProps {
   items: GridItemConfig[];
   columns?: number;
+  /**
+   * Minimum width (px) of an individual grid column. As the container narrows,
+   * the grid removes columns and reflows items before entering stacked mode.
+   * Pass false to keep a fixed column count. Default 40.
+   */
+  minColumnWidth?: number | false;
   rowHeight?: number;
   gap?: GridGap;
   useDragHandle?: boolean;
@@ -47,7 +63,7 @@ interface AdaptiveGridProps {
   renderItem: (
     item: GridItemConfig,
     isDragging: boolean,
-    dragHandleProps: Record<string, any>,
+    dragHandleProps: React.HTMLAttributes<HTMLElement>,
   ) => React.ReactNode;
   className?: string;
 }
@@ -57,6 +73,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     {
       items,
       columns = 12,
+      minColumnWidth = 40,
       rowHeight = 60,
       gap = "md",
       useDragHandle = false,
@@ -72,10 +89,20 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(0);
     const gapPx = GAP_MAP[gap];
+    const responsiveColumns =
+      minColumnWidth === false
+        ? columns
+        : getResponsiveColumnCount(
+            containerWidth,
+            columns,
+            gapPx,
+            minColumnWidth,
+          );
 
     const colWidth =
       containerWidth > 0
-        ? (containerWidth - (columns - 1) * gapPx) / columns
+        ? (containerWidth - (responsiveColumns - 1) * gapPx) /
+          responsiveColumns
         : 0;
     const isStacked =
       stackBelow !== false && containerWidth > 0 && containerWidth < stackBelow;
@@ -83,6 +110,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     const [activeId, setActiveId] = useState<string | null>(null);
     const [resizingId, setResizingId] = useState<string | null>(null);
     const [previewLayout, setPreviewLayout] = useState<GridItemConfig[]>(items);
+    const interactionLayoutRef = useRef<GridItemConfig[]>([]);
 
     const initialLayoutRef = useRef<GridItemConfig[]>([]);
     useEffect(() => {
@@ -102,9 +130,20 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
 
     useEffect(() => {
       if (!activeId && !resizingId) {
-        setPreviewLayout(compactLayout(items, undefined, gravityEnabled));
+        const nextLayout = compactLayout(items, undefined, gravityEnabled);
+        latestPreviewRef.current = nextLayout;
+        setPreviewLayout(nextLayout);
       }
     }, [items, activeId, resizingId, gravityEnabled]);
+
+    const displayLayout =
+      !isStacked && responsiveColumns < columns
+        ? fitLayoutToColumns(
+            previewLayout,
+            responsiveColumns,
+            gravityEnabled,
+          )
+        : previewLayout;
 
     // Width changes are frozen while dragging/resizing: on classic-scrollbar
     // browsers, container growth mid-drag toggles the page scrollbar, which
@@ -144,13 +183,17 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     // --- DND HANDLERS ---
     const handleDragStart = (e: DragStartEvent) => {
       interactingRef.current = true;
+      interactionLayoutRef.current = displayLayout;
+      latestPreviewRef.current = displayLayout;
+      setPreviewLayout(displayLayout);
       setActiveId(e.active.id as string);
     };
 
     const handleDragMove = (e: DragMoveEvent) => {
       if (isStacked) return;
       const { active, delta } = e;
-      const origItem = items.find((i) => i.id === active.id);
+      const interactionLayout = interactionLayoutRef.current;
+      const origItem = interactionLayout.find((i) => i.id === active.id);
       if (!origItem) return;
 
       const moveX = Math.round(delta.x / (colWidth + gapPx));
@@ -158,16 +201,26 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
 
       const newX = Math.max(
         0,
-        Math.min(columns - origItem.w, origItem.x + moveX),
+        Math.min(responsiveColumns - origItem.w, origItem.x + moveX),
       );
       // Clamp to the content's bottom edge: without this, page auto-scroll
       // feeds the drag delta, which grows the container, which allows more
       // scroll — a runaway loop when dragging toward the canvas bottom.
-      const maxBottom = Math.max(0, ...items.map((i) => i.y + i.h));
+      const maxBottom = Math.max(
+        0,
+        ...interactionLayout.map((i) => i.y + i.h),
+      );
       const newY = Math.min(Math.max(0, origItem.y + moveY), maxBottom);
 
       const simulatedActive = { ...origItem, x: newX, y: newY };
-      setPreviewLayout(resolveLayout(items, simulatedActive, columns, gravityEnabled));
+      const nextLayout = resolveLayout(
+        interactionLayout,
+        simulatedActive,
+        responsiveColumns,
+        gravityEnabled,
+      );
+      latestPreviewRef.current = nextLayout;
+      setPreviewLayout(nextLayout);
     };
 
     const handleDragEnd = () => {
@@ -177,7 +230,9 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     };
 
     const handleDragCancel = () => {
-      setPreviewLayout(compactLayout(items, undefined, gravityEnabled));
+      const nextLayout = compactLayout(items, undefined, gravityEnabled);
+      latestPreviewRef.current = nextLayout;
+      setPreviewLayout(nextLayout);
       setActiveId(null);
       flushWidth();
     };
@@ -190,8 +245,14 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       deltaY: number,
     ) => {
       if (isStacked) return;
-      const orig = items.find((i) => i.id === id);
+      const interactionLayout = interactionLayoutRef.current;
+      const orig = interactionLayout.find((i) => i.id === id);
       if (!orig) return;
+      const minWidth = Math.min(orig.minW || 1, responsiveColumns);
+      const maxWidth = Math.min(
+        orig.maxW || responsiveColumns,
+        responsiveColumns,
+      );
 
       let newX = orig.x;
       let newY = orig.y;
@@ -201,21 +262,21 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       // Horizontal Edges
       if (direction.includes("r")) {
         newW = Math.max(
-          orig.minW || 1,
-          Math.min(orig.maxW || columns, orig.w + deltaX),
+          minWidth,
+          Math.min(maxWidth, orig.w + deltaX),
         );
-        newW = Math.min(columns - newX, newW); // Clamp to right grid edge
+        newW = Math.min(responsiveColumns - newX, newW); // Clamp to right grid edge
       }
       if (direction.includes("l")) {
         let allowedDeltaX = deltaX;
         if (orig.x + allowedDeltaX < 0) allowedDeltaX = -orig.x; // Cannot break left edge
 
         let tempW = orig.w - allowedDeltaX;
-        if (tempW < (orig.minW || 1)) {
-          tempW = orig.minW || 1;
+        if (tempW < minWidth) {
+          tempW = minWidth;
           allowedDeltaX = orig.w - tempW;
-        } else if (tempW > (orig.maxW || columns)) {
-          tempW = orig.maxW || columns;
+        } else if (tempW > maxWidth) {
+          tempW = maxWidth;
           allowedDeltaX = orig.w - tempW;
         }
 
@@ -248,7 +309,14 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       }
 
       const simulatedActive = { ...orig, x: newX, y: newY, w: newW, h: newH };
-      setPreviewLayout(resolveLayout(items, simulatedActive, columns, gravityEnabled));
+      const nextLayout = resolveLayout(
+        interactionLayout,
+        simulatedActive,
+        responsiveColumns,
+        gravityEnabled,
+      );
+      latestPreviewRef.current = nextLayout;
+      setPreviewLayout(nextLayout);
     };
 
     // --- GEOMETRY ---
@@ -264,7 +332,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     const stackedRects = new Map<UniqueIdentifier, GridItemRect>();
     let stackedHeight = 0;
     if (isStacked) {
-      const ordered = [...previewLayout].sort(
+      const ordered = [...displayLayout].sort(
         (a, b) => a.y - b.y || a.x - b.x,
       );
       let top = 0;
@@ -277,11 +345,11 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       stackedHeight = Math.max(0, top - gapPx);
     }
 
-    const maxRow = Math.max(...previewLayout.map((i) => i.y + i.h), 0);
+    const maxRow = Math.max(...displayLayout.map((i) => i.y + i.h), 0);
     const containerHeight = isStacked
       ? stackedHeight
       : maxRow * rowHeight + Math.max(0, maxRow - 1) * gapPx;
-    const activePreviewItem = previewLayout.find(
+    const activePreviewItem = displayLayout.find(
       (i) => i.id === (activeId || resizingId),
     );
 
@@ -301,7 +369,12 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
               transition={{ duration: 0.2 }}
               className="absolute inset-0 pointer-events-none z-0"
             >
-              <svg width="100%" height="100%" opacity={0.3}>
+              <svg
+                width="100%"
+                height="100%"
+                opacity={0.3}
+                aria-hidden="true"
+              >
                 <defs>
                   <pattern
                     id="grid-blocks"
@@ -364,8 +437,10 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
               const isDragging = activeId === origItem.id;
               const isResizing = resizingId === origItem.id;
               const displayItem = isDragging
-                ? origItem
-                : previewLayout.find((p) => p.id === origItem.id) || origItem;
+                ? interactionLayoutRef.current.find(
+                    (item) => item.id === origItem.id,
+                  ) || origItem
+                : displayLayout.find((p) => p.id === origItem.id) || origItem;
               const rect = isStacked
                 ? stackedRects.get(origItem.id) ?? gridRect(displayItem)
                 : gridRect(displayItem);
@@ -388,6 +463,9 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
                   }
                   onResizeStart={() => {
                     interactingRef.current = true;
+                    interactionLayoutRef.current = displayLayout;
+                    latestPreviewRef.current = displayLayout;
+                    setPreviewLayout(displayLayout);
                     setResizingId(origItem.id as string);
                   }}
                   onResizeMove={(dir, dx, dy) =>

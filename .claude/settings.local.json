@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ide__getDiagnostics",
+      "Bash(python -)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"---tsc done \\(exit $?\\)---\")",
+      "Bash(npx @biomejs/biome check src/lib/components/chat/)",
+      "Bash(npx @biomejs/biome check --write src/lib/components/chat/)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-String -Pattern \"loadingIndicator\" ; Write-Host \"tsc exit: $LASTEXITCODE\")",
+      "PowerShell(npx @biomejs/biome check .\\\\src\\\\lib\\\\components\\\\loadingIndicator)"
+    ]
+  }
+}

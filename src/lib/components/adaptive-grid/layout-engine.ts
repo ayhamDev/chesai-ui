@@ -1,4 +1,4 @@
-import { GridItemConfig } from "./types";
+import type { GridItemConfig } from "./types";
 
 export const hasCollision = (a: GridItemConfig, b: GridItemConfig): boolean => {
   if (a.id === b.id) return false;
@@ -44,13 +44,57 @@ export const compactLayout = (
   return compacted;
 };
 
+/**
+ * Returns the largest number of columns that can fit without making a column
+ * narrower than `minColumnWidth`.
+ */
+export const getResponsiveColumnCount = (
+  containerWidth: number,
+  maxColumns: number,
+  gap: number,
+  minColumnWidth: number,
+): number => {
+  if (containerWidth <= 0) return maxColumns;
+
+  const safeColumns = Math.max(1, Math.floor(maxColumns));
+  const safeColumnWidth = Math.max(1, minColumnWidth);
+  const availableColumns = Math.floor(
+    (containerWidth + gap) / (safeColumnWidth + gap),
+  );
+
+  return Math.max(1, Math.min(safeColumns, availableColumns));
+};
+
+/**
+ * Creates a display-only layout that fits a narrower column count. The source
+ * layout is left untouched so it can be restored when the container grows.
+ */
+export const fitLayoutToColumns = (
+  layout: GridItemConfig[],
+  columns: number,
+  gravityEnabled = true,
+): GridItemConfig[] => {
+  const safeColumns = Math.max(1, Math.floor(columns));
+  const fitted = layout.map((item) => {
+    const width = Math.min(item.w, safeColumns);
+
+    return {
+      ...item,
+      x: Math.max(0, Math.min(item.x, safeColumns - width)),
+      w: width,
+    };
+  });
+
+  return compactLayout(fitted, undefined, gravityEnabled);
+};
+
 export const resolveLayout = (
   items: GridItemConfig[],
   activeItem: GridItemConfig,
-  columns: number,
+  _columns: number,
   gravityEnabled = true
 ): GridItemConfig[] => {
-  let layout = [activeItem, ...items.filter((i) => i.id !== activeItem.id)].map(
+  const layout = [activeItem, ...items.filter((i) => i.id !== activeItem.id)].map(
     (i) => ({ ...i })
   );
 
