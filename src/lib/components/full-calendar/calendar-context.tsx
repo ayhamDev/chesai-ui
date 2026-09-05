@@ -6,7 +6,6 @@ import {
   addMonths,
   addWeeks,
   addYears,
-  differenceInDays,
   endOfDay,
   endOfMonth,
   endOfWeek,
@@ -25,9 +24,11 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
 } from "react";
+import { getCalendarDateRange } from "./calendar-range";
 import type {
   CalendarEvent,
   CalendarVariant,
@@ -159,6 +160,27 @@ export const FullCalendarProvider = ({
 }: FullCalendarProps & { children: React.ReactNode }) => {
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [view, setViewState] = useState<CalendarView>(initialView);
+  const dateRangeCallbackRef = useRef(onDateRangeChange);
+  dateRangeCallbackRef.current = onDateRangeChange;
+
+  const visibleRange = useMemo(
+    () => getCalendarDateRange(currentDate, view),
+    [currentDate, view],
+  );
+  const visibleRangeStart = visibleRange.start.getTime();
+  const visibleRangeEnd = visibleRange.end.getTime();
+  const lastNotifiedRangeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const rangeKey = `${visibleRangeStart}:${visibleRangeEnd}`;
+    if (lastNotifiedRangeRef.current === rangeKey) return;
+
+    lastNotifiedRangeRef.current = rangeKey;
+    dateRangeCallbackRef.current?.(
+      new Date(visibleRangeStart),
+      new Date(visibleRangeEnd),
+    );
+  }, [visibleRangeStart, visibleRangeEnd]);
 
   const [popover, setPopover] = useState<PopoverState>({
     isOpen: false,

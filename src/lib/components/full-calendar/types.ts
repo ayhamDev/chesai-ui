@@ -110,6 +110,11 @@ export interface FullCalendarProps<T = any> {
   onEventDelete?: (eventId: string | number) => void | Promise<void>;
 
   onViewChange?: (view: CalendarView) => void;
+  /**
+   * Called on initial render and whenever the visible range changes. The range
+   * is half-open: `start` is inclusive and `end` is exclusive. Month ranges
+   * include all 42 days rendered in the six-week grid.
+   */
   onDateRangeChange?: (start: Date, end: Date) => void;
 
   renderPopoverHeader?: (

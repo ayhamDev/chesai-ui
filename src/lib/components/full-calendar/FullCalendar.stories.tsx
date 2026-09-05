@@ -1,5 +1,6 @@
 // src/lib/components/full-calendar/FullCalendar.stories.tsx
 import type { Meta, StoryObj } from "@storybook/react";
+import { fn } from "storybook/test";
 import React, { useState } from "react";
 import { LayoutProvider } from "../../context/layout-context";
 import { Input } from "../input";
@@ -12,6 +13,11 @@ const meta: Meta<typeof FullCalendar> = {
   tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
+  },
+  args: {
+    // The calendar reports its initial visible range on mount. Storybook 8+
+    // requires callbacks invoked during rendering to be explicit spies.
+    onDateRangeChange: fn(),
   },
   argTypes: {
     onEventClick: {

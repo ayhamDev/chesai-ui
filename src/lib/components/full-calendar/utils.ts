@@ -2,20 +2,17 @@
 import {
   addDays,
   differenceInDays,
-  endOfMonth,
-  endOfWeek,
   format,
   isAfter,
   isBefore,
   isSameDay,
   setMonth,
   startOfDay,
-  startOfMonth,
-  startOfWeek,
   startOfYear,
 } from 'date-fns'
 import { RRule } from 'rrule'
 import type { CSSProperties } from 'react'
+import { getCalendarDateRange } from './calendar-range'
 import type { CalendarEvent, CalendarVariant } from './types'
 
 type RGB = { r: number; g: number; b: number }
@@ -470,13 +467,12 @@ export const updateRecurringSeries = (
 }
 
 export const getDaysForMonthView = (currentDate: Date) => {
-  const start = startOfWeek(startOfMonth(currentDate))
-  const end = endOfWeek(endOfMonth(currentDate))
+  const { start, end } = getCalendarDateRange(currentDate, 'month')
 
   const days: Date[] = []
   let day = start
 
-  while (days.length < 42) {
+  while (day < end) {
     days.push(day)
     day = addDays(day, 1)
   }
@@ -485,10 +481,10 @@ export const getDaysForMonthView = (currentDate: Date) => {
 }
 
 export const getDaysForWeekView = (currentDate: Date) => {
-  const start = startOfWeek(currentDate)
+  const { start, end } = getCalendarDateRange(currentDate, 'week')
   const days: Date[] = []
   let day = start
-  for (let i = 0; i < 7; i++) {
+  while (day < end) {
     days.push(day)
     day = addDays(day, 1)
   }

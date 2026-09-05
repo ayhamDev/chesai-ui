@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.11 (2026-09-05)
+
+### Bug Fixes
+
+* notify `onDateRangeChange` on initial render, navigation, and view changes using inclusive-start/exclusive-end visible ranges
+
 ## [3.0.1](https://github.com/IgnacioNMiranda/vite-component-library-template/compare/v3.0.0...v3.0.1) (2025-06-22)
 
 
