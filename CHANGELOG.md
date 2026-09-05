@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.0](https://github.com/ayhamDev/chesai-ui/compare/v0.17.10...v0.18.0) (2026-09-05)
+
+
+### Features
+
+* make adaptive grid responsive ([7f12cec](https://github.com/ayhamDev/chesai-ui/commit/7f12cecdbe4155f58c53d9506c0fa8dd65fd5dec))
+
+
+### Bug Fixes
+
+* **calendar:** report visible date range ([28f6f23](https://github.com/ayhamDev/chesai-ui/commit/28f6f232789d1258c8f4a654770ca2b747e477f1))
+
 ## 0.17.11 (2026-09-05)
 
 ### Bug Fixes
