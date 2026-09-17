@@ -52,6 +52,12 @@ export interface AdaptiveGridProps {
   useDragHandle?: boolean;
   gravityEnabled?: boolean;
   /**
+   * How long (ms) the dragged item must remain in the same grid position
+   * before the preview layout reflows. The dragged item itself still follows
+   * the pointer immediately. Set to 0 to restore instant reflow. Default 300.
+   */
+  collisionDelay?: number;
+  /**
    * Container width (px) below which items render as a full-width vertical
    * stack (ordered by y, then x) with drag/resize disabled. The stored layout
    * is never mutated by stacking. Pass false to disable. Default 600.
@@ -78,6 +84,7 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       gap = "md",
       useDragHandle = false,
       gravityEnabled = true,
+      collisionDelay = 300,
       stackBelow = 600,
       stackedItemHeight,
       onChange,
@@ -111,6 +118,11 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     const [resizingId, setResizingId] = useState<string | null>(null);
     const [previewLayout, setPreviewLayout] = useState<GridItemConfig[]>(items);
     const interactionLayoutRef = useRef<GridItemConfig[]>([]);
+    const dragCandidateRef = useRef<GridItemConfig | null>(null);
+    const dragCandidateKeyRef = useRef<string | null>(null);
+    const dragReactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+      null,
+    );
 
     const initialLayoutRef = useRef<GridItemConfig[]>([]);
     useEffect(() => {
@@ -123,6 +135,15 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     useEffect(() => {
       latestPreviewRef.current = previewLayout;
     }, [previewLayout]);
+
+    useEffect(
+      () => () => {
+        if (dragReactionTimerRef.current !== null) {
+          clearTimeout(dragReactionTimerRef.current);
+        }
+      },
+      [],
+    );
 
     const sensors = useSensors(
       useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -181,12 +202,37 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
     }));
 
     // --- DND HANDLERS ---
+    const clearDragReactionTimer = () => {
+      if (dragReactionTimerRef.current !== null) {
+        clearTimeout(dragReactionTimerRef.current);
+        dragReactionTimerRef.current = null;
+      }
+    };
+
+    const applyDragCandidate = (candidate: GridItemConfig) => {
+      const nextLayout = resolveLayout(
+        interactionLayoutRef.current,
+        candidate,
+        responsiveColumns,
+        gravityEnabled,
+      );
+      latestPreviewRef.current = nextLayout;
+      setPreviewLayout(nextLayout);
+    };
+
     const handleDragStart = (e: DragStartEvent) => {
+      clearDragReactionTimer();
       interactingRef.current = true;
       interactionLayoutRef.current = displayLayout;
       latestPreviewRef.current = displayLayout;
       setPreviewLayout(displayLayout);
       setActiveId(e.active.id as string);
+
+      const activeItem = displayLayout.find((item) => item.id === e.active.id);
+      dragCandidateRef.current = activeItem ? { ...activeItem } : null;
+      dragCandidateKeyRef.current = activeItem
+        ? `${activeItem.x}:${activeItem.y}`
+        : null;
     };
 
     const handleDragMove = (e: DragMoveEvent) => {
@@ -213,26 +259,58 @@ export const AdaptiveGrid = forwardRef<AdaptiveGridHandle, AdaptiveGridProps>(
       const newY = Math.min(Math.max(0, origItem.y + moveY), maxBottom);
 
       const simulatedActive = { ...origItem, x: newX, y: newY };
-      const nextLayout = resolveLayout(
-        interactionLayout,
-        simulatedActive,
-        responsiveColumns,
-        gravityEnabled,
-      );
-      latestPreviewRef.current = nextLayout;
-      setPreviewLayout(nextLayout);
+      const candidateKey = `${newX}:${newY}`;
+      dragCandidateRef.current = simulatedActive;
+
+      // Pointer movement within the same snapped grid position must not keep
+      // restarting the dwell timer. Only entering a different position does.
+      if (candidateKey === dragCandidateKeyRef.current) return;
+
+      dragCandidateKeyRef.current = candidateKey;
+      clearDragReactionTimer();
+
+      if (collisionDelay <= 0) {
+        applyDragCandidate(simulatedActive);
+        return;
+      }
+
+      dragReactionTimerRef.current = setTimeout(() => {
+        dragReactionTimerRef.current = null;
+        // Read the ref so a stale timer can never apply an abandoned position.
+        const candidate = dragCandidateRef.current;
+        if (candidate && `${candidate.x}:${candidate.y}` === candidateKey) {
+          applyDragCandidate(candidate);
+        }
+      }, collisionDelay);
     };
 
     const handleDragEnd = () => {
-      onChange(latestPreviewRef.current);
+      clearDragReactionTimer();
+      const candidate = dragCandidateRef.current;
+      const finalLayout = candidate
+        ? resolveLayout(
+            interactionLayoutRef.current,
+            candidate,
+            responsiveColumns,
+            gravityEnabled,
+          )
+        : latestPreviewRef.current;
+      latestPreviewRef.current = finalLayout;
+      setPreviewLayout(finalLayout);
+      onChange(finalLayout);
+      dragCandidateRef.current = null;
+      dragCandidateKeyRef.current = null;
       setActiveId(null);
       flushWidth();
     };
 
     const handleDragCancel = () => {
+      clearDragReactionTimer();
       const nextLayout = compactLayout(items, undefined, gravityEnabled);
       latestPreviewRef.current = nextLayout;
       setPreviewLayout(nextLayout);
+      dragCandidateRef.current = null;
+      dragCandidateKeyRef.current = null;
       setActiveId(null);
       flushWidth();
     };
