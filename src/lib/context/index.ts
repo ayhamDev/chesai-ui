@@ -3,3 +3,5 @@ export * from './ChesaiProvider'
 export * from './DialogProvider' // Added
 export * from './layout-context'
 export * from './ThemeProvider'
+
+export { DirectionProvider, useDirection } from "./direction"

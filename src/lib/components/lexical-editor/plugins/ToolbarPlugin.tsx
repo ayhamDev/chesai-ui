@@ -465,7 +465,7 @@ export const ToolbarPlugin = ({
         <DropdownMenuTrigger asChild>
           <Toolbar.Button
             tooltip="Typography Styles"
-            className="w-fit justify-between gap-2 px-3 text-left font-medium"
+            className="w-fit justify-between gap-2 px-3 text-start font-medium"
           >
             <span className="truncate text-xs font-semibold">
               {blockTypeToLabel[blockType] || "Normal Text"}
@@ -505,7 +505,7 @@ export const ToolbarPlugin = ({
             <span className="title-small !text-xs font-medium">Heading 6</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={formatQuote}>
-            <span className="blockquote !text-xs italic pl-2 border-l-2 border-primary">
+            <span className="blockquote !text-xs italic ps-2 border-l-2 border-primary">
               Quote
             </span>
           </DropdownMenuItem>

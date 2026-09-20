@@ -172,7 +172,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                       <ContextMenu.Trigger asChild>
                         <div
                           className={clsx(
-                            "flex items-center justify-between gap-2 w-full pr-2 group/item text-left pointer-events-auto",
+                            "flex items-center justify-between gap-2 w-full pe-2 group/item text-start pointer-events-auto",
                             isDragging && "opacity-80",
                           )}
                           onDoubleClick={() => startRename(node.id)}
@@ -205,7 +205,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                               <Typography
                                 variant="label-small"
                                 className={clsx(
-                                  "truncate flex-1 text-left font-mono",
+                                  "truncate flex-1 text-start font-mono",
                                   isSelected
                                     ? "font-bold"
                                     : "font-medium text-on-surface-variant",
@@ -235,7 +235,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                                   startRename(node.id);
                                 }}
                               >
-                                <Edit2 className="w-4 h-4 mr-2" /> Rename
+                                <Edit2 className="w-4 h-4 me-2" /> Rename
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
 
@@ -245,7 +245,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                                   copyNodes(targetIds);
                                 }}
                               >
-                                <Copy className="w-4 h-4 mr-2" /> Copy
+                                <Copy className="w-4 h-4 me-2" /> Copy
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 disabled={clipboard.length === 0}
@@ -254,7 +254,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                                   pasteNodes(node.id, pastePosition);
                                 }}
                               >
-                                <Clipboard className="w-4 h-4 mr-2" /> Paste
+                                <Clipboard className="w-4 h-4 me-2" /> Paste
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => {
@@ -262,7 +262,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                                   duplicateNodes(targetIds);
                                 }}
                               >
-                                <Copy className="w-4 h-4 mr-2" /> Duplicate
+                                <Copy className="w-4 h-4 me-2" /> Duplicate
                               </DropdownMenuItem>
 
                               <DropdownMenuSeparator />
@@ -274,7 +274,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                                   openComponentPicker("replace", node.id);
                                 }}
                               >
-                                <RefreshCw className="w-4 h-4 mr-2" /> Replace
+                                <RefreshCw className="w-4 h-4 me-2" /> Replace
                                 with...
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -284,7 +284,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                                   openComponentPicker("before", node.id);
                                 }}
                               >
-                                <ArrowUpToLine className="w-4 h-4 mr-2" />{" "}
+                                <ArrowUpToLine className="w-4 h-4 me-2" />{" "}
                                 Insert Before...
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -294,7 +294,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                                   openComponentPicker("after", node.id);
                                 }}
                               >
-                                <ArrowDownToLine className="w-4 h-4 mr-2" />{" "}
+                                <ArrowDownToLine className="w-4 h-4 me-2" />{" "}
                                 Insert After...
                               </DropdownMenuItem>
                               {acceptsChildren && (
@@ -305,7 +305,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                                     openComponentPicker("inside", node.id);
                                   }}
                                 >
-                                  <CornerDownRight className="w-4 h-4 mr-2" />{" "}
+                                  <CornerDownRight className="w-4 h-4 me-2" />{" "}
                                   Insert Inside...
                                 </DropdownMenuItem>
                               )}
@@ -319,7 +319,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                                   removeNodes(targetIds);
                                 }}
                               >
-                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                <Trash2 className="w-4 h-4 me-2" /> Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -328,23 +328,23 @@ export const LayersTab: React.FC<LayersTabProps> = ({
 
                       <ContextMenu.Content>
                         <ContextMenu.Item onClick={() => startRename(node.id)}>
-                          <Edit2 className="w-4 h-4 mr-2" /> Rename
+                          <Edit2 className="w-4 h-4 me-2" /> Rename
                         </ContextMenu.Item>
                         <ContextMenu.Separator />
 
                         <ContextMenu.Item onClick={() => copyNodes(targetIds)}>
-                          <Copy className="w-4 h-4 mr-2" /> Copy
+                          <Copy className="w-4 h-4 me-2" /> Copy
                         </ContextMenu.Item>
                         <ContextMenu.Item
                           disabled={clipboard.length === 0}
                           onClick={() => pasteNodes(node.id, pastePosition)}
                         >
-                          <Clipboard className="w-4 h-4 mr-2" /> Paste
+                          <Clipboard className="w-4 h-4 me-2" /> Paste
                         </ContextMenu.Item>
                         <ContextMenu.Item
                           onClick={() => duplicateNodes(targetIds)}
                         >
-                          <Copy className="w-4 h-4 mr-2" /> Duplicate
+                          <Copy className="w-4 h-4 me-2" /> Duplicate
                         </ContextMenu.Item>
 
                         <ContextMenu.Separator />
@@ -355,20 +355,20 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                             openComponentPicker("replace", node.id)
                           }
                         >
-                          <RefreshCw className="w-4 h-4 mr-2" /> Replace with...
+                          <RefreshCw className="w-4 h-4 me-2" /> Replace with...
                         </ContextMenu.Item>
                         <ContextMenu.Item
                           disabled={!isSingleSelection}
                           onClick={() => openComponentPicker("before", node.id)}
                         >
-                          <ArrowUpToLine className="w-4 h-4 mr-2" /> Insert
+                          <ArrowUpToLine className="w-4 h-4 me-2" /> Insert
                           Before...
                         </ContextMenu.Item>
                         <ContextMenu.Item
                           disabled={!isSingleSelection}
                           onClick={() => openComponentPicker("after", node.id)}
                         >
-                          <ArrowDownToLine className="w-4 h-4 mr-2" /> Insert
+                          <ArrowDownToLine className="w-4 h-4 me-2" /> Insert
                           After...
                         </ContextMenu.Item>
                         {acceptsChildren && (
@@ -378,7 +378,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                               openComponentPicker("inside", node.id)
                             }
                           >
-                            <CornerDownRight className="w-4 h-4 mr-2" /> Insert
+                            <CornerDownRight className="w-4 h-4 me-2" /> Insert
                             Inside...
                           </ContextMenu.Item>
                         )}
@@ -388,7 +388,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                           className="text-error hover:!bg-error/10 hover:!text-error"
                           onClick={() => removeNodes(targetIds)}
                         >
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
+                          <Trash2 className="w-4 h-4 me-2" /> Delete
                         </ContextMenu.Item>
                       </ContextMenu.Content>
                     </ContextMenu>
@@ -410,7 +410,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
               <ContextMenu.Item
                 onClick={() => openComponentPicker("inside", "ROOT")}
               >
-                <Plus className="w-4 h-4 mr-2" /> Insert Component...
+                <Plus className="w-4 h-4 me-2" /> Insert Component...
               </ContextMenu.Item>
               <ContextMenu.Separator />
             </>
@@ -420,7 +420,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
             disabled={selectedNodeIds.length === 0}
             onClick={() => copyNodes(selectedNodeIds)}
           >
-            <Copy className="w-4 h-4 mr-2" /> Copy
+            <Copy className="w-4 h-4 me-2" /> Copy
           </ContextMenu.Item>
           <ContextMenu.Item
             disabled={clipboard.length === 0}
@@ -450,13 +450,13 @@ export const LayersTab: React.FC<LayersTabProps> = ({
               pasteNodes(targetId, canAcceptChildren ? "inside" : "after");
             }}
           >
-            <Clipboard className="w-4 h-4 mr-2" /> Paste
+            <Clipboard className="w-4 h-4 me-2" /> Paste
           </ContextMenu.Item>
           <ContextMenu.Item
             disabled={selectedNodeIds.length === 0}
             onClick={() => duplicateNodes(selectedNodeIds)}
           >
-            <Copy className="w-4 h-4 mr-2" /> Duplicate
+            <Copy className="w-4 h-4 me-2" /> Duplicate
           </ContextMenu.Item>
 
           <ContextMenu.Separator />
@@ -468,19 +468,19 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                   openComponentPicker("replace", selectedNodeIds[0])
                 }
               >
-                <RefreshCw className="w-4 h-4 mr-2" /> Replace with...
+                <RefreshCw className="w-4 h-4 me-2" /> Replace with...
               </ContextMenu.Item>
               <ContextMenu.Item
                 onClick={() =>
                   openComponentPicker("before", selectedNodeIds[0])
                 }
               >
-                <ArrowUpToLine className="w-4 h-4 mr-2" /> Insert Before...
+                <ArrowUpToLine className="w-4 h-4 me-2" /> Insert Before...
               </ContextMenu.Item>
               <ContextMenu.Item
                 onClick={() => openComponentPicker("after", selectedNodeIds[0])}
               >
-                <ArrowDownToLine className="w-4 h-4 mr-2" /> Insert After...
+                <ArrowDownToLine className="w-4 h-4 me-2" /> Insert After...
               </ContextMenu.Item>
               {(() => {
                 let canAcceptChildren = false;
@@ -507,7 +507,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
                       openComponentPicker("inside", selectedNodeIds[0])
                     }
                   >
-                    <CornerDownRight className="w-4 h-4 mr-2" /> Insert
+                    <CornerDownRight className="w-4 h-4 me-2" /> Insert
                     Inside...
                   </ContextMenu.Item>
                 ) : null;
@@ -521,7 +521,7 @@ export const LayersTab: React.FC<LayersTabProps> = ({
             className="text-error hover:!bg-error/10 hover:!text-error"
             onClick={() => removeNodes(selectedNodeIds)}
           >
-            <Trash2 className="w-4 h-4 mr-2" /> Delete
+            <Trash2 className="w-4 h-4 me-2" /> Delete
           </ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu>

@@ -40,7 +40,7 @@ h4.ce-header { font-size: 1.25rem; line-height: 1.75rem; }
 
 /* Lists */
 .cdx-list {
-  padding-left: 20px;
+  padding-inline-start: 20px;
   margin: 0.5rem 0;
 }
 .cdx-list__item {
@@ -85,7 +85,7 @@ h4.ce-header { font-size: 1.25rem; line-height: 1.75rem; }
     background-color: var(--toolbar-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding-right: 0;
+    padding-inline-end: 0;
   }
 }
 

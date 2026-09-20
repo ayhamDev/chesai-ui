@@ -48,7 +48,7 @@ const MiniMonth = ({
       <Typography
         variant="label-large"
         className={clsx(
-          "font-bold mb-3 pl-1 transition-colors",
+          "font-bold mb-3 ps-1 transition-colors",
           !isPrintMode && "cursor-pointer hover:text-primary text-on-surface",
           isPrintMode && "text-black mb-1",
         )}

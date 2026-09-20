@@ -22,7 +22,8 @@ import { IconButton } from "../icon-button";
 import { Select } from "../select";
 import { Typography } from "../typography";
 import { TooltipProvider, Tooltip, TooltipTrigger } from "../tooltip";
-import { useLayout } from "../../context/layout-context";
+import { useDirection } from "../../context/direction";
+
 import {
   FullCalendarProvider,
   useFullCalendar,
@@ -366,7 +367,7 @@ const FullCalendarToolbar = ({ className }: { className?: string }) => {
     openPrintPreview,
   } = useFullCalendar();
 
-  const { isRtl } = useLayout();
+  const isRtl = useDirection() === "rtl";
 
   const headerText = React.useMemo(() => {
     if (view === "day") return format(currentDate, "MMMM d, yyyy");
@@ -468,7 +469,7 @@ export const FullCalendarViewDispatcher = () => {
     >
       {showSideCalendar && (
         <div className={clsx(
-            "w-[350px] shrink-0 border-r border-outline-variant/30 p-2 flex flex-col",
+            "w-[350px] shrink-0 border-e border-outline-variant/30 p-2 flex flex-col",
             getCalendarSidePanelBgClasses(variant)
           )}>
           <Calendar

@@ -1,5 +1,7 @@
 // src/lib/components/select/index.tsx
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { useMediaQuery } from "@uidotdev/usehooks";
@@ -103,6 +105,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
     },
     ref,
   ) => {
+    const direction = useDirection(undefined, props.dir);
     const [internalValue, setInternalValue] = useState(defaultValue || "");
     const [internalOpen, setInternalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -313,7 +316,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
           >
             {mobileLayout === "bottom-sheet" && (
               <SheetHeader className="px-4 py-3 border-b border-outline-variant/20 shrink-0">
-                <SheetTitle className="text-left">
+                <SheetTitle className="text-start">
                   {label || placeholder || "Select"}
                 </SheetTitle>
               </SheetHeader>
@@ -349,7 +352,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                           onClick={() => handleValueChange(item.value)}
                           disabled={item.disabled}
                           className={clsx(
-                            "flex items-center justify-between w-full px-4 py-3 text-left text-sm rounded-lg transition-colors shrink-0",
+                            "flex items-center justify-between w-full px-4 py-3 text-start text-sm rounded-lg transition-colors shrink-0",
                             isSelected
                               ? "bg-secondary-container text-on-secondary-container font-semibold"
                               : "text-on-surface hover:bg-surface-container-highest",
@@ -385,7 +388,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
           open={open}
           onOpenChange={setOpen}
           disabled={disabled}
-          {...props}
+          {...props} dir={direction}
         >
           <div
             className={clsx(

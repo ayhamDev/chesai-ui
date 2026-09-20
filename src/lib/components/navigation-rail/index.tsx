@@ -15,7 +15,8 @@ import React, {
   useState,
 } from "react";
 import useRipple from "use-ripple-hook";
-import { useLayout } from "../../context/layout-context";
+import { useDirection } from "../../context/direction";
+
 import { Divider } from "../divider";
 import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
@@ -516,7 +517,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   const indicatorId = React.useId();
   const [internalExpanded, setInternalExpanded] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { isRtl } = useLayout();
+  const isRtl = useDirection() === "rtl";
 
   const effectiveItemLayout = isMobile ? "inline" : itemLayout;
   const effectivelyExpandable =

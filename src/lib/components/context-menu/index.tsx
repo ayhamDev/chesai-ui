@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as RadixContextMenu from "@radix-ui/react-context-menu";
 import { cva } from "class-variance-authority";
@@ -94,7 +96,7 @@ const ContextMenuRoot: React.FC<ContextMenuProps> = ({
 }) => {
   return (
     <ContextMenuContext.Provider value={{ shape, size, glass }}>
-      <RadixContextMenu.Root {...props} />
+      <RadixContextMenu.Root {...props} dir={useDirection(undefined, props.dir)} />
     </ContextMenuContext.Provider>
   );
 };
@@ -148,7 +150,7 @@ const ContextMenuItem: React.ForwardRefExoticComponent<
       onPointerDown={event}
       className={clsx(
         itemVariants({ size, shape }),
-        inset && "pl-8",
+        inset && "ps-8",
         className,
       )}
       {...props}
@@ -177,10 +179,10 @@ const ContextMenuCheckboxItem: React.ForwardRefExoticComponent<
     <RadixContextMenu.CheckboxItem
       ref={localRef}
       onPointerDown={event}
-      className={clsx(itemVariants({ size, shape }), "pl-8", className)}
+      className={clsx(itemVariants({ size, shape }), "ps-8", className)}
       {...props}
     >
-      <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
+      <span className="absolute start-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixContextMenu.ItemIndicator>
           <Check className="h-4 w-4 animate-check-in text-primary" />
         </RadixContextMenu.ItemIndicator>
@@ -207,10 +209,10 @@ const ContextMenuRadioItem: React.ForwardRefExoticComponent<
     <RadixContextMenu.RadioItem
       ref={localRef}
       onPointerDown={event}
-      className={clsx(itemVariants({ size, shape }), "pl-8", className)}
+      className={clsx(itemVariants({ size, shape }), "ps-8", className)}
       {...props}
     >
-      <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
+      <span className="absolute start-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixContextMenu.ItemIndicator>
           <Circle className="h-2 w-2 fill-current animate-check-in text-primary" />
         </RadixContextMenu.ItemIndicator>
@@ -239,14 +241,14 @@ const ContextMenuSubTrigger: React.ForwardRefExoticComponent<
       onPointerDown={event}
       className={clsx(
         itemVariants({ size, shape }),
-        inset && "pl-8",
+        inset && "ps-8",
         className,
       )}
       {...props}
     >
       <span className="relative z-10 flex flex-1 items-center gap-2">
         {children}
-        <ChevronRight className="ml-auto h-4 w-4" />
+        <ChevronRight className="rtl:rotate-180 ms-auto h-4 w-4" />
       </span>
     </RadixContextMenu.SubTrigger>
   );
@@ -281,7 +283,7 @@ const ContextMenuLabel: React.ForwardRefExoticComponent<
     ref={ref}
     className={clsx(
       "px-3 py-2 text-xs font-medium text-on-surface-variant tracking-wide",
-      inset && "pl-8",
+      inset && "ps-8",
       className,
     )}
     {...props}
@@ -307,7 +309,7 @@ const ContextMenuShortcut = ({
   return (
     <span
       className={clsx(
-        "ml-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
+        "ms-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
         className,
       )}
       {...props}

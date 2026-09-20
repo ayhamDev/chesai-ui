@@ -36,7 +36,7 @@ export const textareaSlots = {
   base: 'group flex flex-col data-[hidden=true]:hidden w-full',
   label: [
     'absolute z-10 block subpixel-antialiased text-on-surface-variant/70 pointer-events-none',
-    'origin-top-left transition-all duration-200 ease-out will-change-transform',
+    'origin-top-left rtl:origin-top-right transition-all duration-200 ease-out will-change-transform',
     'cursor-text group-data-[filled=true]:cursor-default',
   ],
   mainWrapper: 'h-full flex flex-col',
@@ -53,7 +53,7 @@ export const textareaSlots = {
   clearButton: [
     'p-2 -m-2 z-10 hidden group-data-[filled-within=true]:block select-none transition-opacity',
     'text-on-surface-variant hover:text-on-surface cursor-pointer active:opacity-70 rounded-full',
-    'absolute right-2 top-2',
+    'absolute end-2 top-2',
   ],
   helperWrapper: 'p-1 relative flex flex-col gap-1.5',
   description: 'text-xs text-on-surface-variant',
@@ -122,15 +122,15 @@ export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaSty
   let py = 'py-2'
   let px = 'px-3'
   let minHeight = 'min-h-[60px]'
-  let labelClasses = 'left-3'
+  let labelClasses = 'start-3'
   let inputPadding = ''
 
   if (shape === 'full') {
     px = 'px-5'
-    labelClasses = 'left-5'
+    labelClasses = 'start-5'
   } else {
     px = 'px-4'
-    labelClasses = 'left-4'
+    labelClasses = 'start-4'
   }
 
   if (size === 'sm') {
@@ -165,12 +165,12 @@ export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaSty
       else inputPadding = 'pt-5'
     }
   } else {
-    labelClasses = 'static mb-1.5 ml-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
+    labelClasses = 'static mb-1.5 ms-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
   }
 
   if (variant === 'underlined') {
     px = 'px-0'
-    labelClasses = labelClasses.replace(/left-\d+/, 'left-0')
+    labelClasses = labelClasses.replace(/start-\d+/, 'start-0')
   }
 
   return {

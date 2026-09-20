@@ -362,8 +362,7 @@ const ResizableRoot = React.forwardRef<HTMLDivElement, ResizableRootProps>(
 
         // Detect if the document is currently in RTL layout mode
         const isRtl =
-          typeof document !== "undefined" &&
-          document.documentElement.dir === "rtl";
+          getComputedStyle(e.currentTarget as HTMLElement).direction === "rtl";
 
         // Reverse the inversion logic dynamically in RTL mode
         const finalInvert = isRtl ? !invert : invert;

@@ -84,7 +84,7 @@ export const PagesTab: React.FC<PagesTabProps> = ({
           renderItem={(node, { isSelected }) => (
             <ContextMenu shape="minimal">
               <ContextMenu.Trigger asChild>
-                <div className="flex items-center justify-between gap-3 w-full pr-2 text-left min-w-0 pointer-events-auto">
+                <div className="flex items-center justify-between gap-3 w-full pe-2 text-start min-w-0 pointer-events-auto">
                   <div className="flex items-center gap-3 w-full min-w-0">
                     <div className="shrink-0 opacity-70">
                       {node.slug === "/" ? (
@@ -129,7 +129,7 @@ export const PagesTab: React.FC<PagesTabProps> = ({
                           openEditPage(node.pageId);
                         }}
                       >
-                        <Edit3 className="w-4 h-4 mr-2" /> Edit
+                        <Edit3 className="w-4 h-4 me-2" /> Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={(e) => {
@@ -137,7 +137,7 @@ export const PagesTab: React.FC<PagesTabProps> = ({
                           duplicatePage(node.pageId);
                         }}
                       >
-                        <Copy className="w-4 h-4 mr-2" /> Duplicate
+                        <Copy className="w-4 h-4 me-2" /> Duplicate
                       </DropdownMenuItem>
 
                       {customPageActions?.map((action) => (
@@ -157,7 +157,7 @@ export const PagesTab: React.FC<PagesTabProps> = ({
                           }
                         >
                           {action.icon && (
-                            <span className="mr-2">{action.icon}</span>
+                            <span className="me-2">{action.icon}</span>
                           )}
                           {action.label}
                         </DropdownMenuItem>
@@ -171,7 +171,7 @@ export const PagesTab: React.FC<PagesTabProps> = ({
                           removePage(node.pageId);
                         }}
                       >
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                        <Trash2 className="w-4 h-4 me-2" /> Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -180,10 +180,10 @@ export const PagesTab: React.FC<PagesTabProps> = ({
 
               <ContextMenu.Content>
                 <ContextMenu.Item onClick={() => openEditPage(node.pageId)}>
-                  <Edit3 className="w-4 h-4 mr-2" /> Edit
+                  <Edit3 className="w-4 h-4 me-2" /> Edit
                 </ContextMenu.Item>
                 <ContextMenu.Item onClick={() => duplicatePage(node.pageId)}>
-                  <Copy className="w-4 h-4 mr-2" /> Duplicate
+                  <Copy className="w-4 h-4 me-2" /> Duplicate
                 </ContextMenu.Item>
 
                 {customPageActions?.map((action) => (
@@ -201,7 +201,7 @@ export const PagesTab: React.FC<PagesTabProps> = ({
                         : ""
                     }
                   >
-                    {action.icon && <span className="mr-2">{action.icon}</span>}
+                    {action.icon && <span className="me-2">{action.icon}</span>}
                     {action.label}
                   </ContextMenu.Item>
                 ))}
@@ -211,7 +211,7 @@ export const PagesTab: React.FC<PagesTabProps> = ({
                   className="text-error hover:!bg-error/10 hover:!text-error"
                   onClick={() => removePage(node.pageId)}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                  <Trash2 className="w-4 h-4 me-2" /> Delete
                 </ContextMenu.Item>
               </ContextMenu.Content>
             </ContextMenu>

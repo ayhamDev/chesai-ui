@@ -268,7 +268,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
       selectSlots.trigger,
       dynamicStyles.trigger,
       classNames?.trigger,
-      isClearable && currentValue ? "pr-12" : "pr-8", // Add padding to accommodate both icons
+      isClearable && currentValue ? "pe-12" : "pe-8", // Add padding to accommodate both icons
     );
 
     const BaseWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -323,7 +323,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
                       onClick={() => handleValueChange(option.value)}
                       disabled={option.disabled}
                       className={clsx(
-                        "flex items-center justify-between w-full px-4 py-3 text-left text-sm rounded-lg transition-colors shrink-0",
+                        "flex items-center justify-between w-full px-4 py-3 text-start text-sm rounded-lg transition-colors shrink-0",
                         isSelected
                           ? "bg-secondary-container text-on-secondary-container font-semibold"
                           : "text-on-surface hover:bg-surface-container-highest",
@@ -385,7 +385,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
           >
             {mobileLayout === "bottom-sheet" && (
               <SheetHeader className="px-4 py-3 border-b border-outline-variant/20 shrink-0">
-                <SheetTitle className="text-left">
+                <SheetTitle className="text-start">
                   {label || placeholder || "Select Option"}
                 </SheetTitle>
               </SheetHeader>
@@ -434,14 +434,14 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
                     >
                       <Check
                         className={clsx(
-                          "mr-2 h-4 w-4 text-primary transition-opacity",
+                          "me-2 h-4 w-4 text-primary transition-opacity",
                           currentValue === option.value
                             ? "opacity-100"
                             : "opacity-0",
                         )}
                       />
                       {option.icon && (
-                        <span className="mr-2 opacity-70">{option.icon}</span>
+                        <span className="me-2 opacity-70">{option.icon}</span>
                       )}
                       <span className="truncate">{option.label}</span>
                     </CommandItem>

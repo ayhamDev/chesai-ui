@@ -279,14 +279,14 @@ const getCardGroupShapeClasses = (
     }
   } else {
     if (shape === "full") {
-      if (isFirst) return "!rounded-l-3xl !rounded-r-md";
-      if (isLast) return "!rounded-l-md !rounded-r-3xl";
-      return "!rounded-l-md !rounded-r-md";
+      if (isFirst) return "!rounded-s-3xl !rounded-e-md";
+      if (isLast) return "!rounded-s-md !rounded-e-3xl";
+      return "!rounded-s-md !rounded-e-md";
     }
     if (shape === "minimal") {
-      if (isFirst) return "!rounded-l-xl !rounded-r-sm";
-      if (isLast) return "!rounded-l-sm !rounded-r-xl";
-      return "!rounded-l-sm !rounded-r-sm";
+      if (isFirst) return "!rounded-s-xl !rounded-e-sm";
+      if (isLast) return "!rounded-s-sm !rounded-e-xl";
+      return "!rounded-s-sm !rounded-e-sm";
     }
   }
   return "";

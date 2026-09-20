@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import { clsx } from "clsx";
 import React, {
@@ -85,6 +87,7 @@ export const VirtualMasonry = <T,>({
 }: VirtualMasonryProps<T>) => {
   const { ref: containerRef, width: containerWidth } =
     useContainerWidth<HTMLDivElement>();
+  const isRtl = useDirection(containerRef) === "rtl";
   const [scrollTop, setScrollTop] = useState(0);
   const [measurements, setMeasurements] = useState<Record<number, number>>({});
 
@@ -206,11 +209,11 @@ export const VirtualMasonry = <T,>({
             <div
               key={index}
               className={clsx(
-                "absolute top-0 left-0",
+                "absolute top-0 start-0",
                 animate && "animate-virtual-fade-in"
               )}
               style={{
-                transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
+                transform: `translate3d(${isRtl ? -pos.x : pos.x}px, ${pos.y}px, 0)`,
                 width: itemWidth,
                 willChange: "transform", // Hint to browser to keep this layer ready
               }}

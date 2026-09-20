@@ -163,10 +163,10 @@ export const ArtboardNode = ({ data, selected }: NodeProps<any>) => {
             className="w-7 h-7 bg-primary text-on-primary rounded-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all cursor-pointer"
             title="Preview Page"
           >
-            <Play size={12} className="fill-current ml-0.5" />
+            <Play size={12} className="fill-current ms-0.5" />
           </button>
 
-          <div className="flex items-center gap-1.5 ml-1">
+          <div className="flex items-center gap-1.5 ms-1">
             <Typography
               variant="label-medium"
               className="font-bold text-on-surface"

@@ -486,7 +486,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                         padding="md"
                         className="w-full flex-1 flex flex-col gap-4 shadow-2xl border border-outline-variant/30 overflow-hidden"
                       >
-                        <ElasticScrollArea className="flex-1 w-full h-full pr-2">
+                        <ElasticScrollArea className="flex-1 w-full h-full pe-2">
                           <div className="flex flex-col gap-4 pb-4">
                             {aiConfig.logsContent || (
                               <div className="text-sm text-on-surface-variant italic opacity-70 p-4 text-center">
@@ -524,7 +524,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                           <span className="truncate max-w-[250px]">
                             {suggestion}
                           </span>
-                          <span className="text-on-surface-variant font-mono text-[10px] ml-1 opacity-70">
+                          <span className="text-on-surface-variant font-mono text-[10px] ms-1 opacity-70">
                             {idx + 1}
                           </span>
                         </button>
@@ -584,7 +584,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                                 endIcon={
                                   <X
                                     size={12}
-                                    className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-1"
+                                    className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer ms-1"
                                     onClick={() => handleDeselectStudioNode(id)}
                                   />
                                 }
@@ -614,7 +614,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                               endIcon={
                                 <X
                                   size={12}
-                                  className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer ml-1"
+                                  className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer ms-1"
                                   onClick={() => removeFile(idx)}
                                 />
                               }
@@ -683,7 +683,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                           <DropdownMenuItem
                             onClick={() => fileInputRef.current?.click()}
                           >
-                            <File className="w-4 h-4 mr-2" /> Upload File
+                            <File className="w-4 h-4 me-2" /> Upload File
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -711,7 +711,7 @@ const CanvasInner = ({ aiConfig }: CanvasInnerProps) => {
                                 }}
                               >
                                 {activeModel === model && (
-                                  <Check className="w-4 h-4 mr-2" />
+                                  <Check className="w-4 h-4 me-2" />
                                 )}
                                 {model}
                               </DropdownMenuItem>

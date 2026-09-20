@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as RadixNavigationMenu from "@radix-ui/react-navigation-menu";
 import { cva } from "class-variance-authority";
@@ -16,7 +18,7 @@ export const navigationMenuTriggerStyle = cva(
 );
 
 const contentItemVariants = cva([
-  "relative block w-full select-none space-y-1 rounded-lg p-3 text-left leading-none no-underline outline-none transition-colors duration-150 ease-in-out overflow-hidden z-0",
+  "relative block w-full select-none space-y-1 rounded-lg p-3 text-start leading-none no-underline outline-none transition-colors duration-150 ease-in-out overflow-hidden z-0",
   "focus:bg-graphite-secondary",
   "focus-visible:ring-2 focus-visible:ring-graphite-ring focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-card",
   "after:absolute after:inset-0 after:z-[-1] after:bg-graphite-secondary after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
@@ -33,7 +35,7 @@ const NavigationMenuRoot: React.ForwardRefExoticComponent<
       "relative z-10 flex max-w-max flex-1 items-center justify-center",
       className,
     )}
-    {...props}
+    {...props} dir={useDirection(undefined, props.dir)}
   >
     {children}
     <NavigationMenuViewport />
@@ -69,7 +71,7 @@ const NavigationMenuTrigger: React.ForwardRefExoticComponent<
     <span className="relative z-10 flex items-center">
       {children}
       <ChevronDown
-        className="relative top-[1px] ml-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
+        className="relative top-[1px] ms-1 h-4 w-4 transition duration-200 group-data-[state=open]:rotate-180"
         aria-hidden="true"
       />
     </span>

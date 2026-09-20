@@ -76,7 +76,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
           <label
             htmlFor={checkboxId}
             className={clsx(
-              "ml-3 text-sm font-medium select-none transition-colors",
+              "ms-3 text-sm font-medium select-none transition-colors",
               "text-on-surface group-hover:text-on-surface-variant",
               props.disabled && "opacity-50",
             )}

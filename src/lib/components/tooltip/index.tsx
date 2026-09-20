@@ -1,3 +1,4 @@
+import { useDirection } from "../../context/direction";
 // src/lib/components/tooltip/index.tsx
 import {
   arrow,
@@ -215,6 +216,7 @@ export const TooltipTrigger = React.forwardRef<
 export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
   ({ className, variant, size, shape, style, children, ...props }, ref) => {
     const context = useTooltip();
+    const direction = useDirection(undefined, props.dir);
     const [isMounted, setIsMounted] = useState(false);
     const mergedRef = useMemo(
       () => mergeRefs([ref, context.refs.setFloating]),
@@ -248,6 +250,7 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
       <FloatingPortal>
         <div
           ref={mergedRef}
+          dir={direction}
           className={tooltipVariants({ variant, size, shape, className })}
           style={{
             ...context.floatingStyles,

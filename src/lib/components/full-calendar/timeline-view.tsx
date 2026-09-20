@@ -6,7 +6,7 @@ import { addDays, format, isSameDay, isToday, startOfDay } from "date-fns";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Typography } from "../typography";
 import { useFullCalendar, PrintModeContext } from "./calendar-context";
-import { useLayout } from "../../context/layout-context";
+import { useDirection } from "../../context/direction";
 import {
   expandEvents,
   getDaysForWeekView,
@@ -39,7 +39,7 @@ const COLOR_MAP = {
 
 export const TimelineView = () => {
   const isPrintMode = React.useContext(PrintModeContext);
-  const { isRtl } = useLayout();
+  const isRtl = useDirection() === "rtl";
 
   const {
     currentDate,
@@ -467,8 +467,8 @@ export const TimelineView = () => {
                 className={clsx(
                   "relative flex min-h-0", // min-h-0 prevents flex overflow bounds
                   isRtl
-                    ? "justify-end pl-3"
-                    : "justify-end pr-2",
+                    ? "justify-end ps-3"
+                    : "justify-end pe-2",
                   isPrintMode ? "flex-1" : "h-[60px]",
                 )}
               >
@@ -619,7 +619,7 @@ export const TimelineView = () => {
                     <div
                       className={clsx(
                         "w-full h-full rounded-md p-1.5 overflow-hidden shadow-sm flex flex-col relative group",
-                        isRtl ? "border-r-4" : "border-l-4",
+                        isRtl ? "border-e-4" : "border-s-4",
                         !isCurrentlyDraft &&
                           !isPrintMode &&
                           (onEventClick || !disableEventPopover) &&

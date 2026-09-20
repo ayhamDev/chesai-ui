@@ -75,7 +75,7 @@ const CountryOptionRow = React.memo(({ option, selected, density, onSelect }: Co
       type="button"
       onClick={handleClick}
       className={clsx(
-        'flex items-center gap-3 px-3 text-sm rounded-lg text-left transition-colors shrink-0',
+        'flex items-center gap-3 px-3 text-sm rounded-lg text-start transition-colors shrink-0',
         density === 'comfortable' ? 'py-2.5' : 'py-2',
         selected
           ? 'bg-secondary-container text-on-secondary-container font-semibold'
@@ -83,7 +83,7 @@ const CountryOptionRow = React.memo(({ option, selected, density, onSelect }: Co
       )}
     >
       <span className="text-xl leading-none">{getFlagEmoji(option.country)}</span>
-      <span className="flex-1 truncate rtl:text-right">{option.name}</span>
+      <span className="flex-1 truncate text-start">{option.name}</span>
       <span className="text-on-surface-variant opacity-70" dir="ltr">
         +{option.callingCode}
       </span>
@@ -183,7 +183,7 @@ const CountryPicker = React.memo(
       >
         <span className={clsx('font-medium', textSize)}>{value}</span>
         <span className={clsx('font-medium opacity-60', textSize)}>+{getCountryCallingCode(value)}</span>
-        <ChevronDown size={14} className="opacity-50 ml-0.5" />
+        <ChevronDown size={14} className="opacity-50 ms-0.5" />
       </button>
     )
 
@@ -235,7 +235,7 @@ const CountryPicker = React.memo(
           <SheetTrigger asChild>{triggerElement}</SheetTrigger>
           <SheetContent shape="minimal" className="p-0 flex flex-col overflow-hidden max-h-[85vh] h-[500px]">
             <SheetHeader className="px-4 py-3 border-b border-outline-variant/20 shrink-0">
-              <SheetTitle className="text-left rtl:text-right">Select Country</SheetTitle>
+              <SheetTitle className="text-start rtl:text-end">Select Country</SheetTitle>
             </SheetHeader>
             {listContent}
           </SheetContent>
@@ -409,7 +409,7 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
     const composedStartContent = useMemo(
       () => (
         <>
-          <div className="flex items-center self-stretch my-1 border-r border-outline-variant/30 pr-1.5 mr-1.5 shrink-0">
+          <div className="flex items-center self-stretch my-1 border-r border-outline-variant/30 pe-1.5 me-1.5 shrink-0">
             <CountryPicker
               value={selectedCountry}
               onChange={handleCountryChange}

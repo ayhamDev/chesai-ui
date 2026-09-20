@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { clsx } from "clsx";
@@ -78,6 +80,7 @@ export const BarLineSlider = React.forwardRef<
     },
     ref,
   ) => {
+    const direction = useDirection(undefined, props.dir);
     const isVert = orientation === "vertical";
 
     let rootDimensionClass = thickness;
@@ -120,6 +123,7 @@ export const BarLineSlider = React.forwardRef<
           className,
         )}
         {...props}
+        dir={direction}
       >
         <SliderPrimitive.Track className="relative h-full w-full grow">
           {/* The Inactive Line (Centered) */}
@@ -154,7 +158,7 @@ export const BarLineSlider = React.forwardRef<
             <div
               className={clsx(
                 "absolute aspect-square flex items-center justify-center pointer-events-none",
-                isVert ? "top-0 left-0 w-full" : "right-0 top-0 h-full",
+                isVert ? `${props.inverted ? "bottom-0" : "top-0"} left-0 w-full` : `${props.inverted ? "start-0" : "end-0"} top-0 h-full`,
               )}
             >
               <div className="text-black">{icon}</div>

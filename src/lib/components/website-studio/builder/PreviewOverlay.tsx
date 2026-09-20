@@ -427,7 +427,7 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
                   <Tooltip>Toggle Pages Sidebar</Tooltip>
                 </TooltipProvider>
 
-                <div className="flex flex-col ml-2">
+                <div className="flex flex-col ms-2">
                   <Typography
                     variant="label-medium"
                     className="font-bold leading-none"
@@ -527,7 +527,7 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
                 animate={{ width: 260, opacity: 1 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="h-full bg-surface border-r border-outline-variant/30 flex flex-col shrink-0"
+                className="h-full bg-surface border-e border-outline-variant/30 flex flex-col shrink-0"
               >
                 <div className="p-4 border-b border-outline-variant/20 shrink-0 flex flex-col gap-3">
                   <Typography
@@ -561,7 +561,7 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
                     size="md"
                     shape="minimal"
                     renderItem={(node, { isSelected }) => (
-                      <div className="flex items-center gap-3 w-full pr-2 text-left min-w-0">
+                      <div className="flex items-center gap-3 w-full pe-2 text-start min-w-0">
                         <div className="shrink-0 opacity-70">
                           {node.slug === "/" ? (
                             <Home size={16} />
@@ -631,7 +631,7 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
               {!isDesktop && spec.notch && (
                 <>
                   <div className="absolute top-3 left-1/2 -translate-x-1/2 w-[110px] h-[30px] rounded-full bg-black z-50 flex items-center justify-center">
-                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-900 border border-zinc-800 ml-auto mr-4" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-900 border border-zinc-800 ms-auto me-4" />
                   </div>
                   <div className="absolute top-0 left-0 right-0 h-11 flex items-end pb-1 px-8 justify-between z-40 text-on-surface pointer-events-none mix-blend-difference">
                     <span className="text-xs font-bold font-mono tracking-tight leading-none text-white">

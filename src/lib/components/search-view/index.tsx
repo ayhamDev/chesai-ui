@@ -444,7 +444,7 @@ export const SearchView = ({
                     : "text-on-surface",
                 )}
               >
-                <ArrowLeft className="h-6 w-6" />
+                <ArrowLeft className="rtl:rotate-180 h-6 w-6" />
               </IconButton>
             </div>
 
@@ -465,7 +465,7 @@ export const SearchView = ({
               />
             </form>
 
-            <div className="flex items-center pr-2 shrink-0">
+            <div className="flex items-center pe-2 shrink-0">
               {value && (
                 <IconButton
                   variant="ghost"
@@ -515,7 +515,7 @@ export const SearchView = ({
             )}
 
             {triggerVariant !== "icon" && dockedTrailingIcon && (
-              <div className="flex items-center pl-2 shrink-0">
+              <div className="flex items-center ps-2 shrink-0">
                 {dockedTrailingIcon}
               </div>
             )}
@@ -615,7 +615,7 @@ export const SearchView = ({
           {value || placeholder}
         </div>
         {dockedTrailingIcon && (
-          <div className="flex items-center pl-2 shrink-0">
+          <div className="flex items-center ps-2 shrink-0">
             {dockedTrailingIcon}
           </div>
         )}

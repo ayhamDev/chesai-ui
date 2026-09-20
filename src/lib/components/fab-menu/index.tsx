@@ -168,9 +168,9 @@ const FABMenuList = forwardRef<
   if (direction === "right") base += "left-full ml-4 flex-row ";
 
   if (direction === "up" || direction === "down") {
-    if (align === "start") base += "left-0 items-start";
+    if (align === "start") base += "start-0 items-start";
     if (align === "center") base += "left-1/2 -translate-x-1/2 items-center";
-    if (align === "end") base += "right-0 items-end";
+    if (align === "end") base += "end-0 items-end";
   } else {
     if (align === "start") base += "top-0 items-start";
     if (align === "center") base += "top-1/2 -translate-y-1/2 items-center";

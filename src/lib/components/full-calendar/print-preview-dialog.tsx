@@ -91,7 +91,7 @@ export const PrintPreviewDialog = () => {
         className="flex flex-col md:flex-row gap-0 p-0 overflow-hidden max-w-full w-[95vw] h-[85vh] bg-surface-container"
         shape="minimal"
       >
-        <div className="w-[400px] flex-shrink-0 bg-surface-container-high border-r border-outline-variant/30 flex flex-col h-full z-10 shadow-lg relative">
+        <div className="w-[400px] flex-shrink-0 bg-surface-container-high border-e border-outline-variant/30 flex flex-col h-full z-10 shadow-lg relative">
           <div className="p-6 pb-2 overflow-y-auto">
             <Typography variant="title-large" className="font-medium mb-6">
               Print preview

@@ -57,10 +57,10 @@ export const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
       >
         <span className="relative z-10 flex items-center justify-center">
           {startIcon && (
-            <span className="mr-2 flex items-center">{startIcon}</span>
+            <span className="me-2 flex items-center">{startIcon}</span>
           )}
           {children}
-          {endIcon && <span className="ml-2 flex items-center">{endIcon}</span>}
+          {endIcon && <span className="ms-2 flex items-center">{endIcon}</span>}
         </span>
       </button>
     );

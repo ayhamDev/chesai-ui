@@ -26,7 +26,7 @@ const variants = {
   "label-small": "label-small",
 
   blockquote:
-    "body-large border-l-4 border-primary pl-4 italic my-4 opacity-80",
+    "body-large border-s-4 border-primary ps-4 italic my-4 opacity-80",
 };
 
 const variantToTagMap: Record<keyof typeof variants, React.ElementType> = {

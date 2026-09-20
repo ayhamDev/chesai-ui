@@ -19,7 +19,7 @@ import { Input } from "../input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../sheet";
 import { TimePicker } from "../time-picker";
 import { Switch } from "../switch";
-import { useLayout } from "../../context/layout-context";
+import { useDirection } from "../../context/direction";
 
 import { useFullCalendar } from "./calendar-context";
 import { RecurrenceSelect } from "./recurrence-select";
@@ -52,7 +52,7 @@ export const EventPopover = () => {
     renderPopoverCustomFields,
     requestRecurrenceScope,
   } = calendar;
-  const { isRtl } = useLayout();
+  const isRtl = useDirection() === "rtl";
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -242,7 +242,7 @@ export const EventPopover = () => {
       )}
 
       {!hidePopoverTitle && (
-        <div className="pl-10 pr-2">
+        <div className="ps-10 pe-2">
           <Input
             variant="underlined"
             placeholder="Add title"
@@ -471,6 +471,7 @@ export const EventPopover = () => {
       <AnimatePresence>
         {popover.isOpen && (
           <motion.div
+            dir={isRtl ? "rtl" : "ltr"}
             ref={popoverRef}
             drag
             dragMomentum={false}

@@ -5,7 +5,8 @@ import { clsx } from "clsx";
 import { motion, Transition } from "framer-motion";
 import { Check, X } from "lucide-react";
 import React, { useState } from "react";
-import { useLayout } from "../../context/layout-context";
+import { useDirection } from "../../context/direction";
+
 
 // --- VARIANTS ---
 
@@ -75,18 +76,9 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
     const uniqueId = React.useId();
     const switchId = id || uniqueId;
 
-    // Detect RTL status safely from layout context or document fallback
-    let isRtl = false;
-    try {
-      const layout = useLayout();
-      isRtl = layout.isRtl;
-    } catch {
-      if (typeof window !== "undefined") {
-        isRtl =
-          document.documentElement.dir === "rtl" ||
-          document.documentElement.classList.contains("rtl");
-      }
-    }
+    const directionRef = React.useRef<HTMLDivElement>(null);
+    const direction = useDirection(directionRef, props.dir);
+    const isRtl = direction === "rtl";
 
     const [internalChecked, setInternalChecked] = useState(
       defaultChecked ?? false,
@@ -142,7 +134,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
     const iconSizePixel = size === "sm" ? 10 : size === "lg" ? 20 : 16;
 
     return (
-      <div className={clsx("inline-flex items-center gap-3", className)}>
+      <div ref={directionRef} dir={props.dir} className={clsx("inline-flex items-center gap-3", className)}>
         <label
           htmlFor={switchId}
           className={clsx(

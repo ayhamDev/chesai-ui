@@ -53,7 +53,7 @@ export const dateInputSlots = {
   base: 'group flex flex-col data-[hidden=true]:hidden w-full',
   label: [
     'absolute z-10 block subpixel-antialiased text-on-surface-variant/70 pointer-events-none',
-    'origin-top-left transition-all duration-200 ease-out will-change-transform',
+    'origin-top-left rtl:origin-top-right transition-all duration-200 ease-out will-change-transform',
     'cursor-text group-data-[filled=true]:cursor-default',
   ],
   inputWrapper: [
@@ -154,9 +154,9 @@ export const getDateInputSlotClassNames = (
 
   if (labelPlacement === 'inside') {
     if (shape === 'full') {
-      labelClasses += ' left-5 top-1/2 -translate-y-1/2'
+      labelClasses += ' start-5 top-1/2 -translate-y-1/2'
     } else {
-      labelClasses += ' left-3 top-1/2 -translate-y-1/2'
+      labelClasses += ' start-3 top-1/2 -translate-y-1/2'
     }
 
     const filledLabelState = [
@@ -172,13 +172,13 @@ export const getDateInputSlotClassNames = (
       else inputPadding = 'pt-4'
     }
   } else {
-    labelClasses = 'static mb-1.5 ml-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
+    labelClasses = 'static mb-1.5 ms-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
   }
 
   if (variant === 'underlined') {
     paddingX = 'px-0'
     if (labelPlacement === 'inside') {
-      labelClasses = labelClasses.replace(/left-\d+/, 'left-0')
+      labelClasses = labelClasses.replace(/start-\d+/, 'start-0')
     }
   }
 

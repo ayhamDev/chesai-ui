@@ -51,7 +51,7 @@ export const FontPicker = () => {
                     {PRESET_FONTS[fontName].name}
                   </span>
                   {fonts.brand === fontName && (
-                    <Check className="ml-2 h-4 w-4" />
+                    <Check className="ms-2 h-4 w-4" />
                   )}
                 </DropdownMenuItem>
               ))}
@@ -86,7 +86,7 @@ export const FontPicker = () => {
                     {PRESET_FONTS[fontName].name}
                   </span>
                   {fonts.plain === fontName && (
-                    <Check className="ml-2 h-4 w-4" />
+                    <Check className="ms-2 h-4 w-4" />
                   )}
                 </DropdownMenuItem>
               ))}
@@ -95,7 +95,7 @@ export const FontPicker = () => {
         </DropdownMenu>
       </div>
 
-      <div className="flex items-center gap-3 pl-0 sm:pl-4 sm:border-l border-outline-variant">
+      <div className="flex items-center gap-3 ps-0 sm:ps-4 sm:border-s border-outline-variant">
         <label
           htmlFor="expressive-toggle"
           className="text-sm font-medium text-on-surface cursor-pointer select-none flex items-center gap-2"

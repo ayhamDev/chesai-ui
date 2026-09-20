@@ -408,7 +408,7 @@ export const Builder: React.FC<BuilderProps> = ({
       <div className="flex flex-col w-full h-screen bg-background text-on-background overflow-hidden font-manrope">
         <header className="h-14 bg-surface border-b border-outline-variant/30 flex items-center justify-between px-4 shrink-0 z-50 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 border-r border-outline-variant/30 pr-3 mr-1">
+            <div className="flex items-center gap-1 border-e border-outline-variant/30 pe-3 me-1">
               <IconButton
                 variant="ghost"
                 size="sm"
@@ -428,7 +428,7 @@ export const Builder: React.FC<BuilderProps> = ({
                 <Redo2 size={16} className="opacity-70" />
               </IconButton>
             </div>
-            <div className="border-r border-outline-variant/30 pr-3">
+            <div className="border-e border-outline-variant/30 pe-3">
               <Button
                 variant="ghost"
                 shape="minimal"
@@ -454,7 +454,7 @@ export const Builder: React.FC<BuilderProps> = ({
           </div>
           <div className="flex items-center gap-4">
             {topBarRight}
-            <div className="flex items-center gap-1 border-l border-outline-variant/30 pl-4 pr-2">
+            <div className="flex items-center gap-1 border-s border-outline-variant/30 ps-4 pe-2">
               <IconButton
                 variant="secondary"
                 size="sm"
@@ -462,7 +462,7 @@ export const Builder: React.FC<BuilderProps> = ({
                 className="h-8 w-8 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest"
                 title="Preview Interactive Site (Ctrl+Enter)"
               >
-                <Play size={16} className="ml-0.5 fill-current" />
+                <Play size={16} className="ms-0.5 fill-current" />
               </IconButton>
             </div>
             {onExit && (
@@ -482,7 +482,7 @@ export const Builder: React.FC<BuilderProps> = ({
           <Resizable.Pane
             id="left-navigator"
             defaultWidth={300}
-            className="bg-surface flex flex-col z-40 border-r border-outline-variant/30"
+            className="bg-surface flex flex-col z-40 border-e border-outline-variant/30"
           >
             <Tabs
               defaultValue="layers"
@@ -578,7 +578,7 @@ export const Builder: React.FC<BuilderProps> = ({
               <Resizable.Pane
                 id="right-inspector"
                 defaultWidth={300}
-                className="bg-surface flex flex-col z-40 border-l border-outline-variant/30"
+                className="bg-surface flex flex-col z-40 border-s border-outline-variant/30"
               >
                 <InspectorPanel selectedNodeIds={selectedNodeIds} />
               </Resizable.Pane>

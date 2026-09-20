@@ -21,7 +21,7 @@ export function DataTableViewOptions<TData>() {
         <Button
           variant="secondary"
           size="sm"
-          className="ml-auto hidden h-8 lg:flex"
+          className="ms-auto hidden h-8 lg:flex"
           startIcon={<Settings2 className="h-4 w-4" />}
         >
           View

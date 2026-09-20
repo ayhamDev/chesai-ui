@@ -34,11 +34,11 @@ export const SplitButton = ({
     className: clsx(
       mainAction.props.className,
       shape === "full"
-        ? "!rounded-l-[40px]"
+        ? "!rounded-s-[40px]"
         : shape === "minimal"
-          ? "!rounded-l-lg"
-          : "!rounded-l-none",
-      shape === "sharp" ? "!rounded-r-none" : "!rounded-r-[5px]",
+          ? "!rounded-s-lg"
+          : "!rounded-s-none",
+      shape === "sharp" ? "!rounded-e-none" : "!rounded-e-[5px]",
     ),
   });
 
@@ -46,11 +46,11 @@ export const SplitButton = ({
     className: clsx(
       dropdownTrigger.props.className,
       shape === "full"
-        ? "!rounded-r-[40px]"
+        ? "!rounded-e-[40px]"
         : shape === "minimal"
-          ? "!rounded-r-lg"
-          : "!rounded-r-none",
-      shape === "sharp" ? "!rounded-l-none" : "!rounded-l-[5px]",
+          ? "!rounded-e-lg"
+          : "!rounded-e-none",
+      shape === "sharp" ? "!rounded-s-none" : "!rounded-s-[5px]",
     ),
   });
 

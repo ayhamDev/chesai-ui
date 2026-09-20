@@ -170,7 +170,7 @@ export const LexicalEditor = ({
   const labelContent = label ? (
     <span
       className={clsx(
-        "ml-1 mb-1.5 text-sm font-semibold block transition-colors",
+        "ms-1 mb-1.5 text-sm font-semibold block transition-colors",
         isInvalid ? "text-error" : "text-on-surface-variant/70",
       )}
     >

@@ -60,10 +60,10 @@ export function DataTableNumericFilter<TData, TValue>({
           size="sm"
           className="h-8 data-[state=open]:bg-graphite-secondary"
         >
-          <Filter className="mr-2 h-3.5 w-3.5" />
+          <Filter className="me-2 h-3.5 w-3.5" />
           {title}
           {isActive && (
-            <span className="ml-2 rounded-full bg-graphite-primary h-2 w-2" />
+            <span className="ms-2 rounded-full bg-graphite-primary h-2 w-2" />
           )}
         </Button>
       </DropdownMenuTrigger>

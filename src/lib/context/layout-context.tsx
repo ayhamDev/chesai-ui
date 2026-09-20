@@ -8,7 +8,9 @@ import React, {
   useEffect,
 } from "react";
 
-export type Direction = "ltr" | "rtl";
+import { DirectionProvider as RadixDirectionProvider } from "@radix-ui/react-direction";
+import { DirectionContext, type Direction } from "./direction";
+export type { Direction } from "./direction";
 
 interface LayoutContextType {
   direction: Direction;
@@ -82,7 +84,9 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({
         isRtl: direction === "rtl",
       }}
     >
-      {children}
+      <DirectionContext.Provider value={direction}>
+        <RadixDirectionProvider dir={direction}>{children}</RadixDirectionProvider>
+      </DirectionContext.Provider>
     </LayoutContext.Provider>
   );
 };

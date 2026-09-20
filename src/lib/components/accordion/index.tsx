@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { cva } from "class-variance-authority";
@@ -192,7 +194,7 @@ const AccordionRoot = React.forwardRef<
             layout === "separated" && gapClasses[resolvedGap],
             className,
           )}
-          {...props}
+          {...props} dir={useDirection(undefined, props.dir)}
         >
           {children}
         </AccordionPrimitive.Root>

@@ -1,5 +1,8 @@
 "use client";
 
+import { useDirection } from "../../context/direction";
+
+
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { animate, motion, type PanInfo, useMotionValue } from "framer-motion";
@@ -205,6 +208,7 @@ interface TabsListProps extends React.HTMLAttributes<HTMLDivElement> {}
 const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
   ({ children, className, ...props }, ref) => {
     const listRef = useRef<HTMLDivElement>(null);
+    const isRtl = useDirection(listRef, props.dir) === "rtl";
     const [isOverflowing, setIsOverflowing] = useState(false);
     const [scrollPosition, setScrollPosition] = useState<
       "start" | "middle" | "end"
@@ -224,8 +228,9 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
         return;
       }
 
-      const isAtStart = el.scrollLeft <= 1;
-      const isAtEnd = el.scrollLeft >= el.scrollWidth - el.clientWidth - 1;
+      const offset = isRtl ? -el.scrollLeft : el.scrollLeft;
+      const isAtStart = offset <= 1;
+      const isAtEnd = offset >= el.scrollWidth - el.clientWidth - 1;
 
       if (isAtStart) {
         setScrollPosition("start");
@@ -234,7 +239,7 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
       } else {
         setScrollPosition("middle");
       }
-    }, []);
+    }, [isRtl]);
 
     useEffect(() => {
       const el = listRef.current;
@@ -260,14 +265,14 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
     const maskStyles: Record<string, React.CSSProperties> = {
       start: {
         maskImage:
-          "linear-gradient(to right, black calc(100% - 48px), transparent 100%)",
+          `linear-gradient(to ${isRtl ? "left" : "right"}, black calc(100% - 48px), transparent 100%)`,
       },
       middle: {
         maskImage:
-          "linear-gradient(to right, transparent 0%, black 48px, black calc(100% - 48px), transparent 100%)",
+          `linear-gradient(to ${isRtl ? "left" : "right"}, transparent 0%, black 48px, black calc(100% - 48px), transparent 100%)`,
       },
       end: {
-        maskImage: "linear-gradient(to right, transparent 0%, black 48px)",
+        maskImage: `linear-gradient(to ${isRtl ? "left" : "right"}, transparent 0%, black 48px)`,
       },
     };
 
@@ -448,8 +453,39 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
   ({ children, className, ...props }, ref) => {
     const { activeTab, setActiveTab, pageTransition } = useTabs();
     const containerRef = useRef<HTMLDivElement>(null);
+    const isRtl = useDirection(containerRef, props.dir) === "rtl";
+    const slideSign = isRtl ? 1 : -1;
     const [containerWidth, setContainerWidth] = useState(0);
     const x = useMotionValue(0);
+
+    const panels = React.Children.toArray(children).filter(
+      React.isValidElement,
+    ) as React.ReactElement<TabsPanelProps>[];
+    const tabValues = panels.map((panel) => panel.props.value);
+    const activeIndex = tabValues.indexOf(activeTab);
+
+    useEffect(() => {
+      const measureWidth = () => {
+        if (containerRef.current) {
+          setContainerWidth(containerRef.current.offsetWidth);
+        }
+      };
+      measureWidth();
+      window.addEventListener("resize", measureWidth);
+      return () => window.removeEventListener("resize", measureWidth);
+    }, [pageTransition]);
+
+    useEffect(() => {
+      if (containerWidth > 0) {
+        const targetX = slideSign * activeIndex * containerWidth;
+        const animation = animate(x, targetX, {
+          type: "spring",
+          stiffness: 400,
+          damping: 40,
+        });
+        return () => animation.stop();
+      }
+    }, [activeIndex, containerWidth, x, slideSign]);
 
     if (pageTransition === "fade") {
       const panels = React.Children.toArray(children).filter(
@@ -467,50 +503,23 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
       );
     }
 
-    const panels = React.Children.toArray(children).filter(
-      React.isValidElement,
-    ) as React.ReactElement<TabsPanelProps>[];
-    const tabValues = panels.map((panel) => panel.props.value);
-    const activeIndex = tabValues.indexOf(activeTab);
-
-    useEffect(() => {
-      const measureWidth = () => {
-        if (containerRef.current) {
-          setContainerWidth(containerRef.current.offsetWidth);
-        }
-      };
-      measureWidth();
-      window.addEventListener("resize", measureWidth);
-      return () => window.removeEventListener("resize", measureWidth);
-    }, []);
-
-    useEffect(() => {
-      if (containerWidth > 0) {
-        const targetX = -activeIndex * containerWidth;
-        animate(x, targetX, {
-          type: "spring",
-          stiffness: 400,
-          damping: 40,
-        });
-      }
-    }, [activeIndex, containerWidth, x]);
 
     const handleDragEnd = (event: MouseEvent | TouchEvent, info: PanInfo) => {
       const { offset, velocity } = info;
       const velocityThreshold = 300;
       const distanceThreshold = containerWidth * 0.3;
 
-      if (velocity.x < -velocityThreshold || offset.x < -distanceThreshold) {
+      if (velocity.x * slideSign > velocityThreshold || offset.x * slideSign > distanceThreshold) {
         const nextIndex = Math.min(activeIndex + 1, panels.length - 1);
         setActiveTab(tabValues[nextIndex]);
       } else if (
-        velocity.x > velocityThreshold ||
-        offset.x > distanceThreshold
+        velocity.x * slideSign < -velocityThreshold ||
+        offset.x * slideSign < -distanceThreshold
       ) {
         const prevIndex = Math.max(activeIndex - 1, 0);
         setActiveTab(tabValues[prevIndex]);
       } else {
-        animate(x, -activeIndex * containerWidth, {
+        animate(x, slideSign * activeIndex * containerWidth, {
           type: "spring",
           stiffness: 400,
           damping: 40,
@@ -531,8 +540,8 @@ const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
           style={{ x }}
           drag="x"
           dragConstraints={{
-            left: -containerWidth * (panels.length - 1),
-            right: 0,
+            left: isRtl ? 0 : -containerWidth * (panels.length - 1),
+            right: isRtl ? containerWidth * (panels.length - 1) : 0,
           }}
           onDragEnd={handleDragEnd}
         >

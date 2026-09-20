@@ -215,14 +215,14 @@ const getShapeClasses = (
     }
   } else {
     if (shape === "full") {
-      if (isFirst) return "!rounded-l-[32px] !rounded-r-md";
-      if (isLast) return "!rounded-l-md !rounded-r-[32px]";
-      return "!rounded-l-md !rounded-r-[32px]";
+      if (isFirst) return "!rounded-s-[32px] !rounded-e-md";
+      if (isLast) return "!rounded-s-md !rounded-e-[32px]";
+      return "!rounded-s-md !rounded-e-[32px]";
     }
     if (shape === "minimal") {
-      if (isFirst) return "!rounded-l-xl !rounded-r-sm";
-      if (isLast) return "!rounded-l-sm !rounded-r-xl";
-      return "!rounded-l-sm !rounded-r-sm";
+      if (isFirst) return "!rounded-s-xl !rounded-e-sm";
+      if (isLast) return "!rounded-s-sm !rounded-e-xl";
+      return "!rounded-s-sm !rounded-e-sm";
     }
   }
   return "";
@@ -812,7 +812,7 @@ const ItemActions = React.forwardRef<
       className={twMerge(
         clsx(
           "flex items-center gap-2 z-10",
-          direction === "horizontal" ? "ml-auto pl-4" : "mt-2",
+          direction === "horizontal" ? "ms-auto ps-4" : "mt-2",
           className,
         ),
       )}

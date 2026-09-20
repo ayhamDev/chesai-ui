@@ -116,7 +116,7 @@ function DataDisplaySortControl<TData>({
         >
           Sort
           {currentSort && (
-            <span className="ml-2 opacity-60 font-normal">
+            <span className="ms-2 opacity-60 font-normal">
               : {currentSort.id} ({currentSort.desc ? "Desc" : "Asc"})
             </span>
           )}

@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
@@ -11,9 +13,9 @@ import { useTheme } from "../../context/ThemeProvider";
 const toastVariants = cva(
   // Base Layout & Typography
   // CHANGED: Added 'flex-wrap' to allow items to flow to the next line.
-  // CHANGED: Added '[&>[data-button]:first-of-type]:ml-auto' to target the first action button
+  // CHANGED: Added '[&>[data-button]:first-of-type]:ms-auto' to target the first action button
   // (whichever comes first in DOM) and push it to the right, effectively aligning the button row to the end.
-  "group toast group-[.toaster]:flex group-[.toaster]:flex-wrap group-[.toaster]:gap-3 group-[.toaster]:items-start group-[.toaster]:w-full md:group-[.toaster]:w-[356px] group-[.toaster]:p-4 group-[.toaster]:font-manrope group-[.toaster]:text-sm group-[.toaster]:pointer-events-auto group-[.toaster]:transition-all group-[.toaster]:border group-[.toaster]:select-none [&>[data-button]:first-of-type]:ml-auto",
+  "group toast group-[.toaster]:flex group-[.toaster]:flex-wrap group-[.toaster]:gap-3 group-[.toaster]:items-start group-[.toaster]:w-full md:group-[.toaster]:w-[356px] group-[.toaster]:p-4 group-[.toaster]:font-manrope group-[.toaster]:text-sm group-[.toaster]:pointer-events-auto group-[.toaster]:transition-all group-[.toaster]:border group-[.toaster]:select-none [&>[data-button]:first-of-type]:ms-auto",
   {
     variants: {
       variant: {
@@ -65,9 +67,11 @@ const Toaster = ({
   ...props
 }: ToasterProps) => {
   const { resolvedTheme } = useTheme();
+  const direction = useDirection(undefined, props.dir);
 
   return (
     <Sonner
+      dir={direction}
       theme={resolvedTheme as "light" | "dark"}
       className="toaster group"
       position={position}

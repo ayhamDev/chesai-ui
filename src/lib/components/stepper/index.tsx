@@ -1,3 +1,4 @@
+import { useDirection } from "../../context/direction";
 // src/lib/components/stepper/index.tsx
 "use client";
 
@@ -201,8 +202,7 @@ const StepperSeparator = React.forwardRef<
   const isComplete = status === "complete";
 
   // Check the document direction layout state dynamically on runtime
-  const isRtl =
-    typeof document !== "undefined" && document.documentElement.dir === "rtl";
+  const isRtl = useDirection() === "rtl";
 
   return (
     <div

@@ -1,3 +1,4 @@
+import { useDirection } from "../../context/direction";
 // src/lib/components/elastic-scroll-area/index.tsx
 'use client'
 
@@ -94,6 +95,7 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
     ref,
   ) => {
     const localViewportRef = useRef<HTMLDivElement>(null)
+    const isRtl = useDirection(localViewportRef, props.dir) === "rtl"
     useImperativeHandle(ref, () => localViewportRef.current as HTMLDivElement, [])
 
     const motionValue = useMotionValue(0)
@@ -130,10 +132,10 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
       setEdges({
         top: hasScrollY && scrollTop > 4,
         bottom: hasScrollY && scrollTop < scrollHeight - clientHeight - 4,
-        left: hasScrollX && scrollLeft > 4,
-        right: hasScrollX && scrollLeft < scrollWidth - clientWidth - 4,
+        left: hasScrollX && (isRtl ? -scrollLeft < scrollWidth - clientWidth - 4 : scrollLeft > 4),
+        right: hasScrollX && (isRtl ? -scrollLeft > 4 : scrollLeft < scrollWidth - clientWidth - 4),
       })
-    }, [dimmingEdges])
+    }, [dimmingEdges, isRtl])
 
     useEffect(() => {
       const viewport = localViewportRef.current

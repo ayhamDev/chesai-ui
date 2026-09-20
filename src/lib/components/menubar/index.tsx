@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as RadixNavigationMenu from "@radix-ui/react-navigation-menu";
 import { clsx } from "clsx";
@@ -99,12 +101,12 @@ const MenubarRoot = React.forwardRef<
             "relative z-10 flex h-10 w-max items-center space-x-1 rounded-lg bg-transparent p-1",
             className,
           )}
-          {...props}
+          {...props} dir={useDirection(undefined, props.dir)}
         >
           <RadixNavigationMenu.List className="flex items-center space-x-1">
             {children}
           </RadixNavigationMenu.List>
-          <div className="absolute left-0 top-full flex justify-start">
+          <div className="absolute start-0 top-full flex justify-start">
             <RadixNavigationMenu.Viewport
               className={clsx(
                 "origin-top-left relative mt-2 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden border border-outline-variant bg-surface-container text-on-surface shadow-lg transition-[width,height] duration-300 data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out sm:w-[var(--radix-navigation-menu-viewport-width)]",
@@ -196,7 +198,7 @@ const MenubarContent: React.ForwardRefExoticComponent<
         "data-[motion^=from-]:animate-nav-enter-from data-[motion^=to-]:animate-nav-exit-to",
         "data-[motion=from-end]:animate-nav-enter-from-right data-[motion=from-start]:animate-nav-enter-from-left",
         "data-[motion=to-end]:animate-nav-exit-to-right data-[motion=to-start]:animate-nav-exit-to-left",
-        "absolute top-0 left-0",
+        "absolute top-0 start-0",
         className,
       )}
       {...props}
@@ -241,7 +243,7 @@ const MenubarItem: React.ForwardRefExoticComponent<
           className={clsx(
             itemStyles,
             "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-            inset && "pl-8",
+            inset && "ps-8",
             shape === "sharp" && "!rounded-none",
             className,
           )}
@@ -295,7 +297,7 @@ const MenubarLabel: React.ForwardRefExoticComponent<
         ref={ref as any}
         className={clsx(
           "px-3 py-2 text-xs font-medium text-on-surface-variant tracking-wide",
-          inset && "pl-8",
+          inset && "ps-8",
           className,
         )}
         {...props}
@@ -365,7 +367,7 @@ const MenubarSubTrigger: React.ForwardRefExoticComponent<
             itemStyles,
             "data-[state=open]:bg-secondary-container/60",
             "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-            inset && "pl-8",
+            inset && "ps-8",
             shape === "sharp" && "!rounded-none",
             className,
           )}
@@ -373,7 +375,7 @@ const MenubarSubTrigger: React.ForwardRefExoticComponent<
         >
           <span className="relative z-10 flex flex-1 items-center gap-2">
             {children}
-            <ChevronRight className="ml-auto h-4 w-4" />
+            <ChevronRight className="rtl:rotate-180 ms-auto h-4 w-4" />
           </span>
         </button>
       </DropdownMenuTrigger>
@@ -427,7 +429,7 @@ const MenubarShortcut = ({
   return (
     <span
       className={clsx(
-        "ml-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
+        "ms-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
         className,
       )}
       {...props}
@@ -465,7 +467,7 @@ const MenubarCheckboxItem: React.ForwardRefExoticComponent<
           onPointerDown={event}
           className={clsx(
             itemStyles,
-            "pl-8 pr-3",
+            "ps-8 pe-3",
             shape === "sharp" && "!rounded-none",
             className,
           )}
@@ -476,7 +478,7 @@ const MenubarCheckboxItem: React.ForwardRefExoticComponent<
           }}
           {...(props as any)}
         >
-          <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
+          <span className="absolute start-2 flex h-4 w-4 items-center justify-center z-10">
             {checked && (
               <Check className="h-4 w-4 animate-check-in text-primary" />
             )}
@@ -567,7 +569,7 @@ const MenubarRadioItem: React.ForwardRefExoticComponent<
           onPointerDown={event}
           className={clsx(
             itemStyles,
-            "pl-8 pr-3",
+            "ps-8 pe-3",
             shape === "sharp" && "!rounded-none",
             className,
           )}
@@ -578,7 +580,7 @@ const MenubarRadioItem: React.ForwardRefExoticComponent<
           }}
           {...(props as any)}
         >
-          <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
+          <span className="absolute start-2 flex h-4 w-4 items-center justify-center z-10">
             {checked && (
               <Circle className="h-2 w-2 fill-current animate-check-in text-primary" />
             )}

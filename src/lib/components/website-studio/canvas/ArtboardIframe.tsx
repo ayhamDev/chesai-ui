@@ -745,7 +745,7 @@ export const ArtboardIframe = ({
               <ContextMenu.Item
                 onClick={() => openComponentPicker("inside", "ROOT")}
               >
-                <Plus className="w-4 h-4 mr-2" /> Insert Component...
+                <Plus className="w-4 h-4 me-2" /> Insert Component...
               </ContextMenu.Item>
               <ContextMenu.Separator />
             </>
@@ -755,7 +755,7 @@ export const ArtboardIframe = ({
             disabled={selectedNodeIds.length === 0}
             onClick={() => copyNodes(selectedNodeIds)}
           >
-            <Copy className="w-4 h-4 mr-2" /> Copy
+            <Copy className="w-4 h-4 me-2" /> Copy
           </ContextMenu.Item>
           <ContextMenu.Item
             disabled={clipboard.length === 0}
@@ -772,13 +772,13 @@ export const ArtboardIframe = ({
               pasteNodes(targetId, canAcceptChildren ? "inside" : "after");
             }}
           >
-            <Clipboard className="w-4 h-4 mr-2" /> Paste
+            <Clipboard className="w-4 h-4 me-2" /> Paste
           </ContextMenu.Item>
           <ContextMenu.Item
             disabled={selectedNodeIds.length === 0}
             onClick={() => duplicateNodes(selectedNodeIds)}
           >
-            <Copy className="w-4 h-4 mr-2" /> Duplicate
+            <Copy className="w-4 h-4 me-2" /> Duplicate
           </ContextMenu.Item>
 
           <ContextMenu.Separator />
@@ -790,19 +790,19 @@ export const ArtboardIframe = ({
                   openComponentPicker("replace", selectedNodeIds[0])
                 }
               >
-                <RefreshCw className="w-4 h-4 mr-2" /> Replace with...
+                <RefreshCw className="w-4 h-4 me-2" /> Replace with...
               </ContextMenu.Item>
               <ContextMenu.Item
                 onClick={() =>
                   openComponentPicker("before", selectedNodeIds[0])
                 }
               >
-                <ArrowUpToLine className="w-4 h-4 mr-2" /> Insert Before...
+                <ArrowUpToLine className="w-4 h-4 me-2" /> Insert Before...
               </ContextMenu.Item>
               <ContextMenu.Item
                 onClick={() => openComponentPicker("after", selectedNodeIds[0])}
               >
-                <ArrowDownToLine className="w-4 h-4 mr-2" /> Insert After...
+                <ArrowDownToLine className="w-4 h-4 me-2" /> Insert After...
               </ContextMenu.Item>
               {(() => {
                 let canAcceptChildren = false;
@@ -821,7 +821,7 @@ export const ArtboardIframe = ({
                       openComponentPicker("inside", selectedNodeIds[0])
                     }
                   >
-                    <CornerDownRight className="w-4 h-4 mr-2" /> Insert
+                    <CornerDownRight className="w-4 h-4 me-2" /> Insert
                     Inside...
                   </ContextMenu.Item>
                 ) : null;
@@ -835,7 +835,7 @@ export const ArtboardIframe = ({
             className="text-error hover:!bg-error/10 hover:!text-error"
             onClick={() => removeNodes(selectedNodeIds)}
           >
-            <Trash2 className="w-4 h-4 mr-2" /> Delete
+            <Trash2 className="w-4 h-4 me-2" /> Delete
           </ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu>

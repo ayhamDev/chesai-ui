@@ -24,7 +24,8 @@ import React, {
   forwardRef,
 } from "react";
 import useRipple from "use-ripple-hook";
-import { useLayout } from "../../context/layout-context";
+import { useDirection } from "../../context/direction";
+
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
 import { Sheet } from "../sheet";
@@ -98,7 +99,7 @@ export const SidebarProvider = ({
   );
   const [openMobile, setOpenMobile] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { isRtl } = useLayout();
+  const isRtl = useDirection() === "rtl";
   const indicatorId = React.useId();
 
   const toggleSidebar = () => {

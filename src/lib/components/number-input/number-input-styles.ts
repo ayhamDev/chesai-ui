@@ -38,7 +38,7 @@ export const numberInputSlots = {
   base: 'group flex flex-col data-[hidden=true]:hidden w-full',
   label: [
     'absolute z-10 block subpixel-antialiased text-on-surface-variant/70 pointer-events-none',
-    'origin-top-left transition-all duration-200 ease-out will-change-transform',
+    'origin-top-left rtl:origin-top-right transition-all duration-200 ease-out will-change-transform',
     'cursor-text group-data-[filled=true]:cursor-default',
   ],
   mainWrapper: 'h-full flex flex-col',
@@ -59,7 +59,7 @@ export const numberInputSlots = {
   helperWrapper: 'p-1 relative flex flex-col gap-1.5',
   description: 'text-xs text-on-surface-variant',
   errorMessage: 'text-xs text-error',
-  stepperWrapper: 'flex flex-col h-full right-0 absolute divide-y divide-outline-variant/20 overflow-hidden',
+  stepperWrapper: 'flex flex-col h-full end-0 absolute divide-y divide-outline-variant/20 overflow-hidden',
   stepperButton:
     'w-8 flex-1 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest hover:text-primary active:scale-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden',
 }
@@ -152,16 +152,16 @@ export const getNumberInputSlotClassNames = (
   let height = 'h-14'
   let py = 'py-2'
   let px = 'px-3'
-  let labelClasses = 'left-3'
+  let labelClasses = 'start-3'
   let inputPadding = ''
-  const paddingRight = hideStepper ? '' : 'pr-8'
+  const paddingRight = hideStepper ? '' : 'pe-8'
 
   if (shape === 'full') {
     px = 'px-5'
-    labelClasses = 'left-5'
+    labelClasses = 'start-5'
   } else {
     px = 'px-4'
-    labelClasses = 'left-4'
+    labelClasses = 'start-4'
   }
 
   if (size === 'sm') {
@@ -177,8 +177,8 @@ export const getNumberInputSlotClassNames = (
 
   if (labelPlacement === 'inside') {
     if (hasStartContent) {
-      if (shape === 'full') labelClasses = size === 'sm' ? 'left-10' : size === 'lg' ? 'left-14' : 'left-12'
-      else labelClasses = size === 'sm' ? 'left-9' : size === 'lg' ? 'left-12' : 'left-11'
+      if (shape === 'full') labelClasses = size === 'sm' ? 'start-10' : size === 'lg' ? 'start-14' : 'start-12'
+      else labelClasses = size === 'sm' ? 'start-9' : size === 'lg' ? 'start-12' : 'start-11'
     }
 
     labelClasses += ' absolute top-1/2 -translate-y-1/2 font-normal'
@@ -197,26 +197,26 @@ export const getNumberInputSlotClassNames = (
     }
   } else {
     height = size === 'sm' ? 'h-10' : size === 'lg' ? 'h-14' : 'h-12'
-    labelClasses = 'static mb-1.5 ml-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
+    labelClasses = 'static mb-1.5 ms-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
   }
 
   if (variant === 'underlined') {
     px = 'px-0'
-    labelClasses = labelClasses.replace(/left-\d+/, 'left-0')
+    labelClasses = labelClasses.replace(/start-\d+/, 'start-0')
   }
 
   let stepperRoundClass = ''
-  if (shape === 'full') stepperRoundClass = 'rounded-r-full'
-  else if (shape === 'minimal') stepperRoundClass = 'rounded-r-2xl'
-  else stepperRoundClass = 'rounded-r-none'
+  if (shape === 'full') stepperRoundClass = 'rounded-e-full'
+  else if (shape === 'minimal') stepperRoundClass = 'rounded-e-2xl'
+  else stepperRoundClass = 'rounded-e-none'
 
-  if (variant === 'underlined') stepperRoundClass = 'rounded-r-none'
+  if (variant === 'underlined') stepperRoundClass = 'rounded-e-none'
 
   return {
     base: '',
     label: [labelColor, labelClasses].join(' '),
     inputWrapper: [wrapperClasses.join(' '), height, py, px].join(' '),
     input: [inputColor, placeholderColor, inputPadding, paddingRight].join(' '),
-    stepperWrapper: ['absolute right-0 top-0 bottom-0 z-20', stepperRoundClass].join(' '),
+    stepperWrapper: ['absolute end-0 top-0 bottom-0 z-20', stepperRoundClass].join(' '),
   }
 }

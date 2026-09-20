@@ -167,7 +167,7 @@ export const InstallCommand = React.forwardRef<
             1
           </span>
           <code className="text-sm sm:text-base flex items-center whitespace-pre shrink-0">
-            <span className="text-primary/40 mr-3 select-none font-bold">
+            <span className="text-primary/40 me-3 select-none font-bold">
               $
             </span>
             <div className="flex flex-wrap gap-x-2.5">{tokens}</div>

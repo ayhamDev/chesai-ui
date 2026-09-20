@@ -1,5 +1,8 @@
 "use client";
 
+import { useDirection } from "../../context/direction";
+
+
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
@@ -313,17 +316,9 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
   ) => {
     const [view, setView] = useState<"days" | "months" | "years">("days");
     const [direction, setDirection] = useState(0);
-    const [isRtl, setIsRtl] = useState(false);
-
-    // Detect RTL configuration safely inside the browser execution loop
-    useEffect(() => {
-      if (typeof document !== "undefined") {
-        setIsRtl(
-          document.documentElement.dir === "rtl" ||
-            document.documentElement.classList.contains("rtl"),
-        );
-      }
-    }, []);
+    const directionRef = useRef<HTMLDivElement>(null);
+    React.useImperativeHandle(ref, () => directionRef.current!);
+    const isRtl = useDirection(directionRef, props.dir) === "rtl";
 
     const {
       cursorDate,
@@ -395,7 +390,7 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(
 
     return (
       <div
-        ref={ref}
+        ref={directionRef}
         className={clsx(calendarVariants({ shape, variant, className }))}
         {...props}
       >

@@ -36,17 +36,17 @@ export const multiSelectSlots = {
   base: 'group flex flex-col w-full relative',
   label: [
     'absolute z-10 block subpixel-antialiased text-on-surface-variant/70 pointer-events-none',
-    'origin-top-left transition-all duration-200 ease-out will-change-transform',
+    'origin-top-left rtl:origin-top-right transition-all duration-200 ease-out will-change-transform',
     'cursor-text group-data-[filled=true]:cursor-default',
   ],
   trigger: [
     'relative w-full inline-flex tap-highlight-transparent flex-row items-center flex-wrap gap-2 transition-colors duration-200 ease-out overflow-hidden outline-none',
-    'min-h-14 pr-10',
+    'min-h-14 pe-10',
   ],
-  value: 'text-left font-normal bg-transparent text-on-surface select-none',
+  value: 'text-start font-normal bg-transparent text-on-surface select-none',
   placeholder: 'text-on-surface-variant/50 font-normal select-none',
   selectorIcon:
-    'absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-on-surface-variant/50 pointer-events-none',
+    'absolute end-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-on-surface-variant/50 pointer-events-none',
   chip: 'text-xs',
   helperWrapper: 'p-1 relative flex flex-col gap-1.5',
   description: 'text-xs text-on-surface-variant',
@@ -119,15 +119,15 @@ export const getMultiSelectSlotClassNames = (
   }
 
   let px = 'px-3'
-  let labelClasses = 'left-3'
+  let labelClasses = 'start-3'
   let triggerPadding = 'py-3'
 
   if (shape === 'full') {
     px = 'px-5'
-    labelClasses = 'left-5'
+    labelClasses = 'start-5'
   } else {
     px = 'px-4'
-    labelClasses = 'left-4'
+    labelClasses = 'start-4'
   }
 
   if (labelPlacement === 'inside') {
@@ -149,13 +149,13 @@ export const getMultiSelectSlotClassNames = (
       triggerPadding = 'py-3'
     }
   } else {
-    labelClasses = 'static mb-1.5 ml-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
+    labelClasses = 'static mb-1.5 ms-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
     triggerPadding = 'py-2'
   }
 
   if (variant === 'underlined') {
     px = 'px-0'
-    labelClasses = labelClasses.replace(/left-\d+/, 'left-0')
+    labelClasses = labelClasses.replace(/start-\d+/, 'start-0')
   }
 
   return {

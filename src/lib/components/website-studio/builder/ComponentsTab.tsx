@@ -78,7 +78,7 @@ export const ComponentsTab: React.FC<ComponentsTabProps> = ({
                         }}
                         onClick={() => handleShowStandalone(comp.id)}
                         className={clsx(
-                          "flex items-center gap-3 p-2.5 rounded-xl border transition-colors text-left group w-full",
+                          "flex items-center gap-3 p-2.5 rounded-xl border transition-colors text-start group w-full",
                           isSelected
                             ? "bg-primary/10 border-primary text-primary"
                             : "bg-surface-container-highest/40 border-transparent hover:bg-surface-container-highest",
@@ -110,7 +110,7 @@ export const ComponentsTab: React.FC<ComponentsTabProps> = ({
                       <ContextMenu.Item
                         onClick={() => handleShowStandalone(comp.id)}
                       >
-                        <Eye className="w-4 h-4 mr-2" /> Show Standalone
+                        <Eye className="w-4 h-4 me-2" /> Show Standalone
                       </ContextMenu.Item>
 
                       {/* Optional: Quick Add action to append to active page */}
@@ -126,7 +126,7 @@ export const ComponentsTab: React.FC<ComponentsTabProps> = ({
                           });
                         }}
                       >
-                        <Plus className="w-4 h-4 mr-2" /> Add to Page
+                        <Plus className="w-4 h-4 me-2" /> Add to Page
                       </ContextMenu.Item>
                     </ContextMenu.Content>
                   </ContextMenu>

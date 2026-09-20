@@ -622,7 +622,7 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
                     "z-0 min-w-0 flex-1 relative h-full flex items-center transform-gpu",
                     variant === "center"
                       ? "absolute inset-0 justify-center pointer-events-none px-16"
-                      : "pl-2",
+                      : "ps-2",
                     isExpandingVariant && !topRowContent && "invisible",
                   )}
                 >
@@ -642,7 +642,7 @@ export const AppBar = React.forwardRef<HTMLElement, AppBarProps>(
               )}
 
               {trailingIcons && (
-                <div className="z-10 ml-auto flex shrink-0 items-center gap-1 -mr-2 text-inherit">
+                <div className="z-10 ms-auto flex shrink-0 items-center gap-1 -mr-2 text-inherit">
                   {trailingIcons}
                 </div>
               )}

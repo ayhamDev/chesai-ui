@@ -127,7 +127,7 @@ export const MonthView = () => {
                     <div
                       key={day.toISOString()}
                       className={clsx(
-                        "border-r last:border-r-0 p-1 flex flex-col transition-colors",
+                        "border-e last:border-e-0 p-1 flex flex-col transition-colors",
                         borderClass,
                         !isCurrentMonth &&
                           (isPrintMode
@@ -269,7 +269,7 @@ export const MonthView = () => {
                           >
                             <span
                               className={clsx(
-                                "mr-1",
+                                "me-1",
                                 isPrintMode ? "opacity-100" : "opacity-70",
                               )}
                             >

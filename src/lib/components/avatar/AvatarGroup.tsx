@@ -49,7 +49,7 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
         };
 
         if (index > 0) {
-          newStyle.marginLeft = overlapMargin;
+          newStyle.marginInlineStart = overlapMargin;
         }
 
         return React.cloneElement(child, {
@@ -70,7 +70,7 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
           className={clsx("ring-2 ring-surface", hoverEffectClasses)}
           style={{
             zIndex: max,
-            marginLeft: overlapMargin,
+            marginInlineStart: overlapMargin,
           }}
         />
       )}

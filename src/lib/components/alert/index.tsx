@@ -105,7 +105,7 @@ const AlertAction = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={clsx("shrink-0 ml-auto flex items-start", className)}
+    className={clsx("shrink-0 ms-auto flex items-start", className)}
     {...props}
   />
 ));

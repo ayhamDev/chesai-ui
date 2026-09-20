@@ -81,7 +81,7 @@ const HeaderLeft = <T extends Record<string, object | undefined>>({
   if (navigation.canGoBack()) {
     return (
       <IconButton variant="ghost" onClick={navigation.goBack}>
-        <ArrowLeft />
+        <ArrowLeft className="rtl:rotate-180" />
       </IconButton>
     );
   }

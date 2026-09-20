@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as RadixDropdownMenu from "@radix-ui/react-dropdown-menu";
 import { cva } from "class-variance-authority";
@@ -34,7 +36,7 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
 }) => {
   return (
     <DropdownMenuContext.Provider value={{ shape, glass }}>
-      <RadixDropdownMenu.Root {...props} />
+      <RadixDropdownMenu.Root {...props} dir={useDirection(undefined, props.dir)} />
     </DropdownMenuContext.Provider>
   );
 };
@@ -132,7 +134,7 @@ const DropdownMenuItem = React.forwardRef<
       className={clsx(
         itemStyles,
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-        inset && "pl-8",
+        inset && "ps-8",
         shape === "sharp" && "!rounded-none",
         className,
       )}
@@ -165,13 +167,13 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       onPointerDown={event}
       className={clsx(
         itemStyles,
-        "pl-8 pr-3",
+        "ps-8 pe-3",
         shape === "sharp" && "!rounded-none",
         className,
       )}
       {...props}
     >
-      <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
+      <span className="absolute start-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixDropdownMenu.ItemIndicator>
           <Check className="h-4 w-4 animate-check-in text-primary" />
         </RadixDropdownMenu.ItemIndicator>
@@ -207,13 +209,13 @@ const DropdownMenuRadioItem = React.forwardRef<
       onPointerDown={event}
       className={clsx(
         itemStyles,
-        "pl-8 pr-3",
+        "ps-8 pe-3",
         shape === "sharp" && "!rounded-none",
         className,
       )}
       {...props}
     >
-      <span className="absolute left-2 flex h-4 w-4 items-center justify-center z-10">
+      <span className="absolute start-2 flex h-4 w-4 items-center justify-center z-10">
         <RadixDropdownMenu.ItemIndicator>
           <Circle className="h-2 w-2 fill-current animate-check-in text-primary" />
         </RadixDropdownMenu.ItemIndicator>
@@ -252,7 +254,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
         itemStyles,
         "data-[state=open]:after:opacity-100 data-[state=open]:after:scale-100",
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-        inset && "pl-8",
+        inset && "ps-8",
         shape === "sharp" && "!rounded-none",
         className,
       )}
@@ -260,7 +262,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     >
       <span className="relative z-10 flex flex-1 items-center gap-2">
         {children}
-        <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] group-data-[state=open]:rotate-90" />
+        <ChevronRight className="rtl:rotate-180 ms-auto h-4 w-4 transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] group-data-[state=open]:rotate-90" />
       </span>
     </RadixDropdownMenu.SubTrigger>
   );
@@ -314,7 +316,7 @@ const DropdownMenuLabel = React.forwardRef<
     ref={ref}
     className={clsx(
       "px-3 py-2 text-xs font-medium text-on-surface-variant tracking-wide",
-      inset && "pl-8",
+      inset && "ps-8",
       className,
     )}
     {...props}
@@ -352,7 +354,7 @@ const DropdownMenuShortcut = ({
   return (
     <span
       className={clsx(
-        "ml-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
+        "ms-auto text-xs font-mono tracking-wider text-on-surface-variant/50",
         className,
       )}
       {...props}

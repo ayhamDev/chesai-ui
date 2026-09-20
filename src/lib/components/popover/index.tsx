@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as RadixPopover from "@radix-ui/react-popover";
 import { cva } from "class-variance-authority";
@@ -236,10 +238,12 @@ const PopoverContent = React.forwardRef<
   PopoverContentProps
 >(({ className, align = "center", sideOffset = 8, ...props }, ref) => {
   const { shape, variant, glass } = usePopoverContext();
+  const direction = useDirection(undefined, props.dir);
 
   return (
     <RadixPopover.Portal>
       <RadixPopover.Content
+        dir={direction}
         ref={ref}
         align={align}
         sideOffset={sideOffset}

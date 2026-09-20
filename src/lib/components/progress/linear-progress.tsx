@@ -189,8 +189,10 @@ export const LinearProgress = React.forwardRef<
           role="progressbar"
           {...props}
         >
-          <div className="absolute top-0 bottom-0 left-0 w-full bg-primary origin-left animate-progress-indeterminate-1 rounded-full" />
-          <div className="absolute top-0 bottom-0 left-0 w-full bg-primary origin-left animate-progress-indeterminate-2 rounded-full" />
+          <div className="absolute inset-0 rtl:-scale-x-100">
+            <div className="absolute top-0 bottom-0 left-0 w-full bg-primary origin-left animate-progress-indeterminate-1 rounded-full" />
+            <div className="absolute top-0 bottom-0 left-0 w-full bg-primary origin-left animate-progress-indeterminate-2 rounded-full" />
+          </div>
         </div>
       );
     }
@@ -210,7 +212,7 @@ export const LinearProgress = React.forwardRef<
           animate={{ width: `${percentage}%` }}
           transition={{ type: "spring", stiffness: 80, damping: 20 }}
           style={{
-            marginRight: percentage < 100 && percentage > 0 ? gap : 0,
+            marginInlineEnd: percentage < 100 && percentage > 0 ? gap : 0,
           }}
         />
         <div className="h-full flex-1 bg-secondary-container rounded-full min-w-0 transition-all duration-300" />

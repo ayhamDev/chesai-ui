@@ -112,7 +112,7 @@ const LinkControl = ({
                   <button
                     key={page.id}
                     type="button"
-                    className="flex flex-col text-left px-2 py-1.5 hover:bg-surface-container-highest rounded-md cursor-pointer w-full"
+                    className="flex flex-col text-start px-2 py-1.5 hover:bg-surface-container-highest rounded-md cursor-pointer w-full"
                     onClick={() => handleSelectPage(page.slug)}
                   >
                     <span className="font-semibold text-sm truncate text-on-surface">

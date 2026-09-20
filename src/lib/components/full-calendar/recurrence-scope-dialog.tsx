@@ -2,7 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
-import { useLayout } from "../../context/layout-context";
+import { useDirection } from "../../context/direction";
 import { Button } from "../button";
 import { useFullCalendar } from "./calendar-context";
 
@@ -11,7 +11,7 @@ export const RecurrenceScopeDialog = () => {
     recurrenceScopeRequest,
     resolveRecurrenceScope,
   } = useFullCalendar();
-  const { isRtl } = useLayout();
+  const isRtl = useDirection() === "rtl";
 
   useEffect(() => {
     if (!recurrenceScopeRequest) return;

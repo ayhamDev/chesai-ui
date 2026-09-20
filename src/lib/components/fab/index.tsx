@@ -126,8 +126,8 @@ export const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
           {isExtended && (
             <motion.div
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: "auto", opacity: 1, marginLeft: "0.75rem" }}
-              exit={{ width: 0, opacity: 0, marginLeft: 0 }}
+              animate={{ width: "auto", opacity: 1, marginInlineStart: "0.75rem" }}
+              exit={{ width: 0, opacity: 0, marginInlineStart: 0 }}
               transition={transition}
               className="whitespace-nowrap overflow-hidden"
             >

@@ -1,3 +1,4 @@
+import { useDirection } from "../../context/direction";
 // src/lib/components/material3-carousel/Carousel.tsx
 import React, {
   useState,
@@ -23,6 +24,7 @@ const Carousel: React.FC<CarouselProps> = ({
   orientation = "horizontal",
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isRtl = useDirection(containerRef) === "rtl";
   const [containerSize, setContainerSize] = useState(0);
   const [currentSlidesPerView, setCurrentSlidesPerView] =
     useState(slidesPerView);
@@ -242,7 +244,7 @@ const Carousel: React.FC<CarouselProps> = ({
     if (containerSize === 0) return;
 
     // Read the correct axis
-    const delta = isVert ? info.delta.y : info.delta.x;
+    const delta = isVert ? info.delta.y : info.delta.x * (isRtl ? -1 : 1);
 
     const dragFactor = containerSize / currentSlidesPerView;
     const deltaIndex = -delta / dragFactor;
@@ -262,7 +264,7 @@ const Carousel: React.FC<CarouselProps> = ({
   const handleDragEnd = (_: any, info: PanInfo) => {
     setIsDragging(false);
     const current = progress.get();
-    const velocity = isVert ? info.velocity.y : info.velocity.x;
+    const velocity = isVert ? info.velocity.y : info.velocity.x * (isRtl ? -1 : 1);
     let target = Math.round(current);
 
     const FLICK_THRESHOLD = 400;
@@ -314,7 +316,7 @@ const Carousel: React.FC<CarouselProps> = ({
         ref={containerRef}
         className={clsx(
           "flex w-full h-full items-center",
-          isVert ? "flex-col pt-1" : "flex-row pl-1",
+          isVert ? "flex-col pt-1" : "flex-row ps-1",
         )}
         onPanStart={handleDragStart}
         onPan={handleDrag}

@@ -70,7 +70,7 @@ const CommandInput = React.forwardRef<
     className="flex items-center border-b border-outline-variant/30 px-4"
     cmdk-input-wrapper=""
   >
-    <Search className="mr-3 h-5 w-5 shrink-0 opacity-50 text-on-surface" />
+    <Search className="me-3 h-5 w-5 shrink-0 opacity-50 text-on-surface" />
     <CommandPrimitive.Input
       ref={ref}
       className={clsx(
@@ -162,7 +162,7 @@ const CommandShortcut = ({
   return (
     <span
       className={clsx(
-        "ml-auto text-xs font-mono tracking-wider text-on-surface-variant opacity-60",
+        "ms-auto text-xs font-mono tracking-wider text-on-surface-variant opacity-60",
         className,
       )}
       {...props}
@@ -201,7 +201,7 @@ const NavigationHints = () => (
       <CornerDownLeft className="w-3.5 h-3.5" />
       <span>to select</span>
     </div>
-    <div className="flex items-center gap-1.5 ml-auto font-medium">
+    <div className="flex items-center gap-1.5 ms-auto font-medium">
       <span className="text-[10px] font-mono border border-on-surface-variant/30 px-1 rounded-sm">
         ESC
       </span>

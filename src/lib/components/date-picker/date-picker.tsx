@@ -371,7 +371,7 @@ export const DatePicker = ({
               isFullscreen={isFullscreen}
             />
           </div>
-          <DialogFooter className="flex justify-end gap-2 border-t border-transparent p-3 pr-4 shrink-0 z-30">
+          <DialogFooter className="flex justify-end gap-2 border-t border-transparent p-3 pe-4 shrink-0 z-30">
             <Button variant="ghost" onClick={handleCancel} shape={shape}>
               Cancel
             </Button>

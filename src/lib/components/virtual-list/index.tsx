@@ -1,5 +1,7 @@
 /** biome-ignore-all lint/correctness/useHookAtTopLevel: VirtualListInner is a generic React.forwardRef render component. */
 'use client'
+import { useDirection } from "../../context/direction";
+
 
 import { useVirtualizer, type Virtualizer, type VirtualizerOptions } from '@tanstack/react-virtual'
 import { clsx } from 'clsx'
@@ -76,6 +78,7 @@ interface VirtualListRowProps<T> {
   start: number
   direction: NonNullable<VirtualListProps<T>['direction']>
   gap: number
+  isRtl: boolean
   renderItem: VirtualListProps<T>['renderItem']
   measureElement?: (node: HTMLDivElement | null) => void
 }
@@ -86,6 +89,7 @@ function VirtualListRowInner<T>({
   start,
   direction,
   gap,
+  isRtl,
   renderItem,
   measureElement,
 }: VirtualListRowProps<T>) {
@@ -96,8 +100,8 @@ function VirtualListRowInner<T>({
       : direction === 'vertical-reverse'
         ? 'bottom-0 left-0'
         : direction === 'horizontal'
-          ? 'top-0 left-0'
-          : 'top-0 right-0'
+          ? 'top-0 start-0'
+          : 'top-0 end-0'
 
   const transform =
     direction === 'vertical'
@@ -105,8 +109,8 @@ function VirtualListRowInner<T>({
       : direction === 'vertical-reverse'
         ? `translateY(-${start}px)`
         : direction === 'horizontal'
-          ? `translateX(${start}px)`
-          : `translateX(-${start}px)`
+          ? `translateX(${isRtl ? -start : start}px)`
+          : `translateX(${isRtl ? start : -start}px)`
 
   return (
     <div
@@ -119,8 +123,8 @@ function VirtualListRowInner<T>({
         transform,
         paddingTop: direction === 'vertical-reverse' ? `${gap}px` : undefined,
         paddingBottom: direction === 'vertical' ? `${gap}px` : undefined,
-        paddingLeft: direction === 'horizontal-reverse' ? `${gap}px` : undefined,
-        paddingRight: direction === 'horizontal' ? `${gap}px` : undefined,
+        paddingInlineStart: direction === 'horizontal-reverse' ? `${gap}px` : undefined,
+        paddingInlineEnd: direction === 'horizontal' ? `${gap}px` : undefined,
       }}
     >
       {renderItem(item, index)}
@@ -155,6 +159,7 @@ function VirtualListInner<T>(
 ) {
   const parentRef = useRef<HTMLElement>(null)
 
+  const isRtl = useDirection(parentRef, containerProps.dir) === "rtl"
   const isHorizontal = direction.includes('horizontal')
   const isReverse = direction.includes('reverse')
 
@@ -181,11 +186,12 @@ function VirtualListInner<T>(
     estimateSize: () => estimateSize + gap, // Add gap to estimation
     overscan,
     horizontal: isHorizontal,
+    isRtl: isHorizontal && (isRtl !== isReverse),
     useAnimationFrameWithResizeObserver: measureItems,
     getItemKey: resolveItemKey,
 
     // Conditionally spread overrides so we don't pass undefined and break TanStack defaults
-    ...(isReverse
+    ...((isHorizontal ? isRtl !== isReverse : isReverse)
       ? {
           // Intercept scroll tracking for reverse layouts because browsers track
           // reverse-flex scroll coordinates using negative numbers.
@@ -213,12 +219,12 @@ function VirtualListInner<T>(
           },
 
           // Intercept programmatic scrolling for negative coordinates
-          scrollToFn: (offset, canSmooth, instance) => {
+          scrollToFn: (offset, { adjustments = 0, behavior }, instance) => {
             const element = instance.scrollElement
             if (!element) return
 
-            const finalOffset = -offset
-            if (canSmooth) {
+            const finalOffset = -(offset + adjustments)
+            if (behavior === "smooth") {
               element.scrollTo({
                 [isHorizontal ? 'left' : 'top']: finalOffset,
                 behavior: 'smooth',
@@ -249,6 +255,7 @@ function VirtualListInner<T>(
         index={virtualItem.index}
         start={virtualItem.start}
         direction={direction}
+        isRtl={isRtl}
         gap={gap}
         renderItem={renderItem}
         measureElement={measureItems ? virtualizer.measureElement : undefined}

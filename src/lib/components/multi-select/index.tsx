@@ -212,7 +212,7 @@ export const MultiSelect = React.forwardRef<
               >
                 <div
                   className={clsx(
-                    "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                    "me-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
                     isSelected ? "bg-primary text-on-primary" : "opacity-50",
                   )}
                 >
@@ -220,7 +220,7 @@ export const MultiSelect = React.forwardRef<
                 </div>
                 {option.icon && (
                   // @ts-ignore
-                  <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <option.icon className="me-2 h-4 w-4 text-muted-foreground" />
                 )}
                 <span>{option.label}</span>
               </div>
@@ -300,15 +300,15 @@ export const MultiSelect = React.forwardRef<
                 key={option.value}
                 variant="secondary"
                 shape={shape === "full" ? "full" : "minimal"}
-                className="pr-1 pl-2 h-6 pointer-events-auto z-10"
+                className="pe-1 ps-2 h-6 pointer-events-auto z-10"
                 onClick={(e) => handleRemoveOne(e, option.value)}
               >
                 {option.icon && (
                   // @ts-ignore
-                  <option.icon className="mr-1 h-3 w-3" />
+                  <option.icon className="me-1 h-3 w-3" />
                 )}
                 {option.label}
-                <div className="ml-1 rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer transition-colors">
+                <div className="ms-1 rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer transition-colors">
                   <X className="h-3 w-3" />
                 </div>
               </Badge>
@@ -415,7 +415,7 @@ export const MultiSelect = React.forwardRef<
           >
             {mobileLayout === "bottom-sheet" && (
               <SheetHeader className="px-4 py-3 border-b border-outline-variant/20 shrink-0">
-                <SheetTitle className="text-left">
+                <SheetTitle className="text-start">
                   {label || "Select Items"}
                 </SheetTitle>
               </SheetHeader>

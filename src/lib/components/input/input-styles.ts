@@ -50,7 +50,7 @@ export const inputStyles = cva('group flex flex-col data-[hidden=true]:hidden w-
 })
 
 export const inputWrapperVariants = cva(
-  // CHANGED: text-left to text-start
+  // Align with the inherited inline direction.
   'relative w-full inline-flex tap-highlight-transparent flex-row items-center gap-3 transition-colors duration-200 ease-out overflow-hidden outline-none text-start',
   {
     variants: {
@@ -121,8 +121,8 @@ export const inputSlots = {
   base: 'group flex flex-col data-[hidden=true]:hidden w-full',
   label: [
     'absolute z-10 block subpixel-antialiased text-on-surface-variant/70 pointer-events-none',
-    // CHANGED: origin-top-left to origin-top-start for correct scale origin in RTL
-    'origin-top-start transition-all duration-200 ease-out will-change-transform',
+    // Scale floating labels from their inline start edge.
+    'origin-top-left rtl:origin-top-right transition-all duration-200 ease-out will-change-transform',
     'cursor-text group-data-[filled=true]:cursor-default',
   ],
   mainWrapper: 'h-full flex flex-col',
@@ -231,7 +231,7 @@ export const getInputSlotClassNames = (
     }
   } else {
     height = size === 'sm' ? 'h-10' : size === 'lg' ? 'h-14' : 'h-12'
-    // CHANGED: ml-1 to ms-1 (margin-start)
+    // Use inline-start spacing for outside labels.
     labelClasses = 'static mb-1.5 ms-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
   }
 

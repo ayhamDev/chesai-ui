@@ -49,11 +49,11 @@ const CarouselItem: React.FC<CarouselItemProps> = memo(
         style={{
           width: isVert ? "100%" : size,
           height: isVert ? size : "100%",
-          marginRight: isVert ? "0px" : gap,
+          marginInlineEnd: isVert ? "0px" : gap,
           marginBottom: isVert ? gap : "0px",
           flexShrink: 0,
           flexGrow: 0,
-          willChange: isVert ? "height, margin-bottom" : "width, margin-right",
+          willChange: isVert ? "height, margin-bottom" : "width, margin-inline-end",
           transform: "translateZ(0)",
         }}
         onClick={onClick}

@@ -5,7 +5,7 @@ export const lexicalTheme: EditorThemeClasses = {
   ltr: 'text-left',
   rtl: 'text-right',
   paragraph: 'body-large mb-4 text-on-surface',
-  quote: 'body-large border-l-4 border-primary pl-4 italic my-4 opacity-80',
+  quote: 'body-large border-s-4 border-primary ps-4 italic my-4 opacity-80',
   heading: {
     h1: 'display-small mb-4 mt-6 text-on-surface',
     h2: 'headline-large mb-4 mt-5 text-on-surface',
@@ -15,8 +15,8 @@ export const lexicalTheme: EditorThemeClasses = {
     h6: 'title-small mb-2 mt-2 text-on-surface',
   },
   list: {
-    ol: 'list-decimal ml-6 mb-4 body-large text-on-surface',
-    ul: 'list-disc ml-6 mb-4 body-large text-on-surface',
+    ol: 'list-decimal ms-6 mb-4 body-large text-on-surface',
+    ul: 'list-disc ms-6 mb-4 body-large text-on-surface',
     listitem: 'mb-1',
     listitemChecked: 'line-through opacity-50',
     listitemUnchecked: '',

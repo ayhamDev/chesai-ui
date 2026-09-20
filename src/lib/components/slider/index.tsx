@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { cva } from "class-variance-authority";
@@ -157,7 +159,7 @@ const endDotVariants = cva("absolute w-[5px] h-[5px] rounded-full", {
       error: "bg-error",
     },
     orientation: {
-      horizontal: "right-3 top-1/2 -translate-y-1/2",
+      horizontal: "end-3 top-1/2 -translate-y-1/2",
       vertical: "top-3 left-1/2 -translate-x-1/2",
     },
   },
@@ -221,7 +223,9 @@ const Ticks = ({
   activeRange,
   visual,
   orientation,
+  reversed,
 }: {
+  reversed: boolean;
   count: number;
   min: number;
   max: number;
@@ -243,8 +247,8 @@ const Ticks = ({
 
           const posStyle =
             orientation === "horizontal"
-              ? { left: `${percentage}%` }
-              : { bottom: `${percentage}%` };
+              ? { [reversed ? "right" : "left"]: `${percentage}%` }
+              : { [reversed ? "top" : "bottom"]: `${percentage}%` };
 
           return (
             <div
@@ -252,8 +256,8 @@ const Ticks = ({
               className={clsx(
                 "absolute rounded-full transition-colors",
                 orientation === "horizontal"
-                  ? "top-1/2 -translate-x-1/2 -translate-y-1/2"
-                  : "left-1/2 -translate-x-1/2 translate-y-1/2",
+                  ? `top-1/2 ${reversed ? "translate-x-1/2" : "-translate-x-1/2"} -translate-y-1/2`
+                  : `left-1/2 -translate-x-1/2 ${reversed ? "-translate-y-1/2" : "translate-y-1/2"}`,
                 visual === "bar" ? "w-1 h-1" : "w-1 h-1",
                 isActive ? "bg-on-primary/50" : "bg-on-surface-variant/30",
               )}
@@ -335,6 +339,9 @@ export const Slider = React.forwardRef<
     },
     ref,
   ) => {
+    const directionRef = React.useRef<HTMLDivElement>(null);
+    const direction = useDirection(directionRef, props.dir);
+    const reversed = orientation === "horizontal" ? (direction === "rtl") !== !!props.inverted : !!props.inverted;
     const [internalValue, setInternalValue] = useState<number[]>(
       propValue ||
         defaultValue ||
@@ -438,14 +445,14 @@ export const Slider = React.forwardRef<
 
       if (orientation === "horizontal") {
         return {
-          left: `min(100%, max(0px, ${posStr}))`,
+          [reversed ? "right" : "left"]: `min(100%, max(0px, ${posStr}))`,
           width: `max(0px, ${lenStr})`,
           top: 0,
           height: "100%",
         };
       } else {
         return {
-          bottom: `min(100%, max(0px, ${posStr}))`,
+          [reversed ? "top" : "bottom"]: `min(100%, max(0px, ${posStr}))`,
           height: `max(0px, ${lenStr})`,
           left: 0,
           width: "100%",
@@ -602,10 +609,18 @@ export const Slider = React.forwardRef<
       ];
     }
 
+    const segmentCorners = (start: number, end: number) => {
+      const corners = roundingClassForSegment(start, end);
+      if (!reversed) return corners;
+      return corners.replace(/rounded-([lrbt])-/g, (_, side: string) => `rounded-${({ l: "r", r: "l", b: "t", t: "b" } as Record<string, string>)[side]}-`);
+    };
+
     const isTailwindClass = (val: string) => /^(h-|w-)/.test(val);
 
     return (
       <div
+        ref={directionRef}
+        dir={props.dir}
         className={clsx(
           "flex items-center gap-4",
           orientation === "horizontal"
@@ -637,6 +652,7 @@ export const Slider = React.forwardRef<
           onPointerLeave={() => setIsHovered(false)}
           className={rootVariants({ visual, size, orientation })}
           {...props}
+          dir={direction}
         >
           <SliderPrimitive.Track
             className={trackVariants({ visual, orientation, shape })}
@@ -648,7 +664,7 @@ export const Slider = React.forwardRef<
                 className={clsx(
                   seg.className,
                   "absolute transition-[border-radius] duration-300 ease-in-out",
-                  roundingClassForSegment(seg.start, seg.end),
+                  segmentCorners(seg.start, seg.end),
                 )}
                 style={seg.style}
               />
@@ -657,6 +673,7 @@ export const Slider = React.forwardRef<
             {/* Ticks */}
             {withTicks && (
               <Ticks
+                reversed={reversed}
                 count={tickCount}
                 min={min}
                 max={max}
@@ -671,7 +688,7 @@ export const Slider = React.forwardRef<
             {visual === "bar" && orientation === "horizontal" && startIcon && (
               <div
                 className={clsx(
-                  "absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none [&_svg]:w-5 [&_svg]:h-5",
+                  "absolute start-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none [&_svg]:w-5 [&_svg]:h-5",
                   variant === "standard"
                     ? contentColorClass
                     : "text-on-surface-variant",
@@ -681,7 +698,7 @@ export const Slider = React.forwardRef<
               </div>
             )}
             {visual === "bar" && orientation === "horizontal" && endIcon && (
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-on-surface-variant pointer-events-none [&_svg]:w-5 [&_svg]:h-5">
+              <div className="absolute end-4 top-1/2 -translate-y-1/2 z-10 text-on-surface-variant pointer-events-none [&_svg]:w-5 [&_svg]:h-5">
                 {endIcon}
               </div>
             )}

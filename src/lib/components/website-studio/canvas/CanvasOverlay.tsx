@@ -185,7 +185,7 @@ export const CanvasOverlay = ({
                   className={clsx(
                     "bg-primary text-on-primary text-[10px] font-bold px-2 flex items-center justify-center whitespace-nowrap",
                     selectedNodeIds.length === 1
-                      ? "rounded-l-md"
+                      ? "rounded-s-md"
                       : "rounded-md",
                   )}
                 >
@@ -194,7 +194,7 @@ export const CanvasOverlay = ({
 
                 {/* Streamlined Action Toolbar */}
                 {selectedNodeIds.length === 1 && (
-                  <div className="bg-surface text-on-surface border-y border-r border-outline-variant/50 flex items-center divide-x divide-outline-variant/30 rounded-r-md overflow-hidden shadow-sm">
+                  <div className="bg-surface text-on-surface border-y border-e border-outline-variant/50 flex items-center divide-x divide-outline-variant/30 rounded-e-md overflow-hidden shadow-sm">
                     <div
                       data-toolbar-action="insert"
                       data-toolbar-target={id}
@@ -262,7 +262,7 @@ export const CanvasOverlay = ({
               <Type size={12} />
               Editing
             </span>
-            <span className="opacity-70 font-mono font-normal tracking-wide pl-2 border-l border-on-primary/30">
+            <span className="opacity-70 font-mono font-normal tracking-wide ps-2 border-s border-on-primary/30">
               ↵ Save &nbsp; Esc Cancel
             </span>
           </div>

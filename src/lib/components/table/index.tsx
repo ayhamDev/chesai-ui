@@ -60,7 +60,7 @@ export const tableVariants = cva(
 
 // Header Variants
 export const thVariants = cva(
-  "h-12 px-4 text-left align-middle font-semibold [&:has([role=checkbox])]:pr-0 transition-colors",
+  "h-12 px-4 text-start align-middle font-semibold [&:has([role=checkbox])]:pe-0 transition-colors",
   {
     variants: {
       variant: {
@@ -103,7 +103,7 @@ export const trVariants = cva(
 );
 
 export const tdVariants = cva(
-  "p-4 align-middle [&:has([role=checkbox])]:pr-0",
+  "p-4 align-middle [&:has([role=checkbox])]:pe-0",
   {
     variants: {
       density: {

@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { clsx } from "clsx";
@@ -265,6 +267,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       glass: glassContext,
     } = useDialogContext();
     const dragControls = useDragControls();
+    const direction = useDirection(undefined, props.dir);
 
     const glass = glassProp !== undefined ? glassProp : glassContext;
 
@@ -317,6 +320,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
               )}
             >
               <DialogPrimitive.Content
+              dir={direction}
                 asChild
                 forceMount
                 onEscapeKeyDown={(e) => {
@@ -473,7 +477,7 @@ const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
       className={clsx(
-        variant === "basic" && "flex flex-col space-y-1.5 text-left",
+        variant === "basic" && "flex flex-col space-y-1.5 text-start",
         variant === "fullscreen" && [
           "flex shrink-0 flex-row items-center justify-between",
           "px-6 py-4 sm:px-8 sm:py-6",

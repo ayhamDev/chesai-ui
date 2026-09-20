@@ -63,7 +63,7 @@ export const selectSlots = {
   base: 'group flex flex-col w-full relative',
   label: [
     'absolute z-10 block subpixel-antialiased text-on-surface-variant/70 pointer-events-none',
-    'origin-top-left transition-all duration-200 ease-out will-change-transform',
+    'origin-top-left rtl:origin-top-right transition-all duration-200 ease-out will-change-transform',
     'cursor-text group-data-[filled=true]:cursor-default',
   ],
   trigger: [
@@ -73,7 +73,7 @@ export const selectSlots = {
   innerWrapper: 'inline-flex h-full w-full gap-2 box-border overflow-hidden',
   selectorIcon:
     'absolute top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant transition-transform duration-200 group-data-[open=true]:rotate-180',
-  value: 'w-full h-full flex items-center text-left truncate font-normal bg-transparent',
+  value: 'w-full h-full flex items-center text-start truncate font-normal bg-transparent',
   helperWrapper: 'p-1 relative flex flex-col gap-1.5',
   description: 'text-xs text-on-surface-variant',
   errorMessage: 'text-xs text-error',
@@ -144,16 +144,16 @@ export const getSelectSlotClassNames = (
   let height = 'h-14'
   let py = 'py-2'
   let px = 'px-3'
-  let labelClasses = 'left-3'
+  let labelClasses = 'start-3'
   let valuePadding = ''
-  const paddingRight = 'pr-8'
+  const paddingRight = 'pe-8'
 
   if (shape === 'full') {
     px = 'px-6'
-    labelClasses = 'left-6'
+    labelClasses = 'start-6'
   } else {
     px = 'px-4'
-    labelClasses = 'left-4'
+    labelClasses = 'start-4'
   }
 
   if (size === 'sm') {
@@ -173,8 +173,8 @@ export const getSelectSlotClassNames = (
     if (hasLabel) {
       innerWrapperAlign = 'items-end'
       if (hasStartContent) {
-        if (shape === 'full') labelClasses = size === 'sm' ? 'left-12' : 'left-14'
-        else labelClasses = 'left-11'
+        if (shape === 'full') labelClasses = size === 'sm' ? 'start-12' : 'start-14'
+        else labelClasses = 'start-11'
       }
       labelClasses += ' absolute top-1/2 -translate-y-1/2 font-normal'
       const filledLabelState = [
@@ -190,12 +190,12 @@ export const getSelectSlotClassNames = (
     }
   } else {
     height = size === 'sm' ? 'h-10' : size === 'lg' ? 'h-14' : 'h-12'
-    labelClasses = 'static mb-1.5 ml-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
+    labelClasses = 'static mb-1.5 ms-1 text-sm font-medium pointer-events-auto scale-100 translate-y-0'
   }
 
   if (variant === 'underlined') {
     px = 'px-0'
-    labelClasses = labelClasses.replace(/left-\d+/, 'left-0')
+    labelClasses = labelClasses.replace(/start-\d+/, 'start-0')
   }
 
   return {
@@ -206,6 +206,6 @@ export const getSelectSlotClassNames = (
     trigger: [triggerClasses.join(' '), height, py, px, paddingRight].join(' '),
     value: [valuePadding].join(' '),
     innerWrapper: innerWrapperAlign,
-    selectorIcon: shape === 'full' ? 'right-5' : 'right-3',
+    selectorIcon: shape === 'full' ? 'end-5' : 'end-3',
   }
 }

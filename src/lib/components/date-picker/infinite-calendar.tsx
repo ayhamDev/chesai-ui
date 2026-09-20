@@ -55,7 +55,7 @@ const MonthGrid = memo(
       <div className="mb-4 px-4">
         <Typography
           variant="label-large"
-          className="mb-4 block font-bold text-on-surface capitalize pl-2"
+          className="mb-4 block font-bold text-on-surface capitalize ps-2"
         >
           {format(monthDate, "MMMM yyyy")}
         </Typography>

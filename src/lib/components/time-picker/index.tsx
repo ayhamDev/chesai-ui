@@ -84,7 +84,7 @@ const NumberInputBlock = memo(
             className="h-full w-full bg-transparent text-center text-[57px] leading-[64px] font-normal text-on-surface outline-none selection:bg-primary/20 p-0"
           />
         </div>
-        <span className="text-xs text-on-surface-variant ml-1 font-medium">
+        <span className="text-xs text-on-surface-variant ms-1 font-medium">
           {label}
         </span>
       </div>
@@ -172,7 +172,7 @@ const MaterialTimeInput = memo(
           onBlur={validateMinute}
           label="Minute"
         />
-        <div className="ml-3 flex flex-col gap-[1px] h-[80px] rounded-lg border border-outline-variant bg-outline-variant overflow-hidden">
+        <div className="ms-3 flex flex-col gap-[1px] h-[80px] rounded-lg border border-outline-variant bg-outline-variant overflow-hidden">
           <button
             type="button"
             onClick={() => handlePeriodChange("AM")}
@@ -402,8 +402,8 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
         )}
         {...props}
       >
-        <Clock className="mr-2 h-4 w-4 opacity-50 shrink-0" />
-        <span className="flex-1 text-left truncate">
+        <Clock className="me-2 h-4 w-4 opacity-50 shrink-0" />
+        <span className="flex-1 text-start truncate">
           {formattedValue || placeholder}
         </span>
       </button>
@@ -418,7 +418,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
       return (
         <div className="flex w-full flex-col gap-1.5">
           {label && (
-            <label className="ml-1 text-sm font-medium text-on-surface-variant">
+            <label className="ms-1 text-sm font-medium text-on-surface-variant">
               {label}
             </label>
           )}
@@ -481,7 +481,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
     return (
       <div className="flex w-full flex-col gap-1.5">
         {label && (
-          <label className="ml-1 text-sm font-medium text-on-surface-variant">
+          <label className="ms-1 text-sm font-medium text-on-surface-variant">
             {label}
           </label>
         )}

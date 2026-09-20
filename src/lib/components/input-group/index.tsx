@@ -23,9 +23,9 @@ const addonVariants = cva(
   {
     variants: {
       align: {
-        start: "left-3 top-1/2 -translate-y-1/2",
-        end: "right-3 top-1/2 -translate-y-1/2",
-        "block-end": "bottom-3 right-3",
+        start: "start-3 top-1/2 -translate-y-1/2",
+        end: "end-3 top-1/2 -translate-y-1/2",
+        "block-end": "bottom-3 end-3",
       },
     },
     defaultVariants: {

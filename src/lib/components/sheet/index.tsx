@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { type VariantProps, cva } from "class-variance-authority";
@@ -461,6 +463,7 @@ const SheetContent = forwardRef<
       width: widthContext,
     } = useSheetContext();
 
+    const textDirection = useDirection(undefined, props.dir);
     const shape = shapeProp || shapeContext;
     const variant = variantProp || variantContext;
     const glass = glassProp !== undefined ? glassProp : glassContext;
@@ -478,6 +481,7 @@ const SheetContent = forwardRef<
           onClick={(e) => isLocked && e.stopPropagation()}
         />
         <VaulDrawer.Content
+          dir={textDirection}
           ref={ref}
           style={{ ...props.style, ...style }}
           className={twMerge(
@@ -509,7 +513,7 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={clsx(
-      "flex flex-col gap-1 p-6 text-center sm:text-left",
+      "flex flex-col gap-1 p-6 text-center sm:text-start",
       className,
     )}
     {...props}

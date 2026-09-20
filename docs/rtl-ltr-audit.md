@@ -1,5 +1,7 @@
 # RTL/LTR component audit
 
+> This is the pre-fix audit snapshot. The subsequent implementation and verification are described in [RTL/LTR support](rtl-ltr.md). Findings below are retained as the original evidence, not a list of currently unresolved defects.
+
 Date: 2026-09-20. This is a source audit of the current working tree, including existing uncommitted changes. No component implementation was changed for this audit.
 
 ## Scope and confidence

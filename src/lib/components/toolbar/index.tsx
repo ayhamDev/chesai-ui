@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import * as ToolbarPrimitive from "@radix-ui/react-toolbar";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -224,7 +226,7 @@ const ToolbarRoot = React.forwardRef<
             }),
             className,
           )}
-          {...props}
+          {...props} dir={useDirection(undefined, props.dir)}
         >
           {children}
         </ToolbarPrimitive.Root>

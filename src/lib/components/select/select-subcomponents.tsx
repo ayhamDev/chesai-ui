@@ -60,10 +60,10 @@ export const SelectItem = React.forwardRef<
     <SelectPrimitive.Item
       ref={localRef}
       onPointerDown={event}
-      className={clsx(selectItemVariants({}), "pl-8", className)}
+      className={clsx(selectItemVariants({}), "ps-8", className)}
       {...props}
     >
-      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center z-10">
+      <span className="absolute start-2 flex h-3.5 w-3.5 items-center justify-center z-10">
         <SelectPrimitive.ItemIndicator>
           <Check className="h-4 w-4 animate-check-in text-primary" />
         </SelectPrimitive.ItemIndicator>
@@ -86,7 +86,7 @@ export const SelectLabel = React.forwardRef<
     ref={ref}
     className={clsx(
       "px-3 py-2 text-xs font-medium text-on-surface-variant tracking-wide",
-      "pl-8",
+      "ps-8",
       className,
     )}
     {...props}

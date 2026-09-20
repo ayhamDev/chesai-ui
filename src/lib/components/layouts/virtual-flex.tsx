@@ -1,4 +1,6 @@
 "use client";
+import { useDirection } from "../../context/direction";
+
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { clsx } from "clsx";
@@ -24,6 +26,7 @@ export const VirtualFlex = <T,>({
   padding = 0,
 }: VirtualFlexProps<T>) => {
   const parentRef = useRef<HTMLDivElement>(null);
+  const isRtl = useDirection(parentRef) === "rtl";
   const isHorizontal = direction === "horizontal";
 
   const virtualizer = useVirtualizer({
@@ -31,6 +34,16 @@ export const VirtualFlex = <T,>({
     getScrollElement: () => parentRef.current,
     estimateSize: () => estimateSize + gap, // Account for gap in estimation
     horizontal: isHorizontal,
+    isRtl: isHorizontal && isRtl,
+    scrollToFn: (offset, { adjustments = 0, behavior }, instance) => {
+      // TanStack normalizes observed RTL offsets, but its default scroll writer
+      // still expects physical coordinates (including measurement adjustments).
+      instance.scrollElement?.scrollTo({
+        [isHorizontal ? "left" : "top"]:
+          (offset + adjustments) * (isHorizontal && isRtl ? -1 : 1),
+        behavior,
+      });
+    },
     overscan: 5,
   });
 
@@ -67,17 +80,17 @@ export const VirtualFlex = <T,>({
               style={{
                 position: "absolute",
                 top: 0,
-                left: 0,
+                insetInlineStart: 0,
                 width: isHorizontal ? undefined : "100%",
                 height: isHorizontal ? "100%" : undefined,
                 // Pure GPU Transform
                 transform: isHorizontal
-                  ? `translateX(${start}px)`
+                  ? `translateX(${isRtl ? -start : start}px)`
                   : `translateY(${start}px)`,
                 // Padding simulates the gap
                 paddingBottom: isHorizontal ? 0 : gap,
-                paddingRight: isHorizontal ? gap : 0,
-                paddingLeft: isHorizontal ? 0 : padding,
+                paddingInlineEnd: isHorizontal ? gap : 0,
+                paddingInlineStart: isHorizontal ? 0 : padding,
                 paddingTop: isHorizontal ? padding : 0,
               }}
             >

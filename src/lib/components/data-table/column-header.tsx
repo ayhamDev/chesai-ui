@@ -62,29 +62,29 @@ export function DataTableColumnHeader<TData, TValue>({
             >
               <span>{title}</span>
               {column.getIsSorted() === "desc" ? (
-                <ArrowDown className="ml-2 h-4 w-4" />
+                <ArrowDown className="ms-2 h-4 w-4" />
               ) : column.getIsSorted() === "asc" ? (
-                <ArrowUp className="ml-2 h-4 w-4" />
+                <ArrowUp className="ms-2 h-4 w-4" />
               ) : (
-                <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                <ChevronsUpDown className="ms-2 h-4 w-4 opacity-50" />
               )}
-              {isFiltered && <Filter className="ml-1 h-3 w-3 fill-current" />}
+              {isFiltered && <Filter className="ms-1 h-3 w-3 fill-current" />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             {column.getCanSort() && (
               <>
                 <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-                  <ArrowUp className="mr-2 h-3.5 w-3.5 opacity-50" />
+                  <ArrowUp className="me-2 h-3.5 w-3.5 opacity-50" />
                   Ascending
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-                  <ArrowDown className="mr-2 h-3.5 w-3.5 opacity-50" />
+                  <ArrowDown className="me-2 h-3.5 w-3.5 opacity-50" />
                   Descending
                 </DropdownMenuItem>
                 {column.getIsSorted() && (
                   <DropdownMenuItem onClick={() => column.clearSorting()}>
-                    <X className="mr-2 h-3.5 w-3.5 opacity-50" />
+                    <X className="me-2 h-3.5 w-3.5 opacity-50" />
                     Clear Sort
                   </DropdownMenuItem>
                 )}
@@ -94,13 +94,13 @@ export function DataTableColumnHeader<TData, TValue>({
 
             {column.getCanFilter() && (
               <DropdownMenuItem onSelect={() => setIsFilterOpen(true)}>
-                <Filter className="mr-2 h-3.5 w-3.5 opacity-50" />
+                <Filter className="me-2 h-3.5 w-3.5 opacity-50" />
                 {isFiltered ? "Edit Filter" : "Filter..."}
               </DropdownMenuItem>
             )}
 
             <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-              <EyeOff className="mr-2 h-3.5 w-3.5 opacity-50" />
+              <EyeOff className="me-2 h-3.5 w-3.5 opacity-50" />
               Hide Column
             </DropdownMenuItem>
           </DropdownMenuContent>

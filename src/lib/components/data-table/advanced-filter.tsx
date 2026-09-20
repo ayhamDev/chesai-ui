@@ -152,7 +152,7 @@ export function DataTableAdvancedFilter<TData>({
             <Badge
               variant="primary"
               shape="minimal"
-              className="ml-2 h-5 px-1 text-[10px]"
+              className="ms-2 h-5 px-1 text-[10px]"
             >
               {activeFilters.length}
             </Badge>

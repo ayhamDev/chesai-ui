@@ -31,7 +31,7 @@ import { useCallback, useMemo, useState } from "react";
 // --- VARIANTS ---
 
 const treeItemVariants = cva(
-  "relative z-0 flex items-center justify-start text-left w-full cursor-pointer select-none transition-colors duration-200 overflow-visible group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset " +
+  "relative z-0 flex items-center justify-start text-start w-full cursor-pointer select-none transition-colors duration-200 overflow-visible group outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset " +
     "after:absolute after:inset-0 after:z-[-1] after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out hover:after:opacity-100 hover:after:scale-100",
   {
     variants: {
@@ -263,7 +263,7 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
   const basePadding = 4;
 
   return (
-    <div className="flex flex-col w-full justify-start text-left relative">
+    <div className="flex flex-col w-full justify-start text-start relative">
       <button
         data-tree-node-id={id} // <-- ADDED: Lets us locate this node in the DOM to scroll to it
         ref={context.enableDragAndDrop ? setDraggableRef : undefined}
@@ -274,12 +274,12 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
             shape: context.shape ?? undefined,
             size: context.size ?? undefined,
           }),
-          "mb-[2px] pr-2 relative",
+          "mb-[2px] pe-2 relative",
           isDropInside && "ring-2 ring-primary bg-primary/10",
           isDragging && "opacity-40",
         )}
         style={{
-          paddingLeft: `calc(0.25rem + ${depth * context.indentSize}px)`,
+          paddingInlineStart: `calc(0.25rem + ${depth * context.indentSize}px)`,
           touchAction: "none",
         }}
         data-selected={selected}
@@ -300,7 +300,7 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
             className="absolute top-0 w-px bg-outline-variant/40 pointer-events-none z-0"
             style={{
               height: "calc(100% + 2px)",
-              left: `${basePadding + i * context.indentSize + chevronOffset}px`,
+              insetInlineStart: `${basePadding + i * context.indentSize + chevronOffset}px`,
             }}
           />
         ))}
@@ -312,7 +312,7 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
               id={`${id}::before`}
               data={{ id, type: "before" }}
               className={clsx(
-                "left-0 w-full",
+                "start-0 w-full",
                 canHaveChildren ? "top-0 h-1/4" : "top-0 h-1/2",
               )}
             />
@@ -320,14 +320,14 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
               <DropZone
                 id={`${id}::inside`}
                 data={{ id, type: "inside" }}
-                className="top-1/4 left-0 w-full h-2/4"
+                className="top-1/4 start-0 w-full h-2/4"
               />
             )}
             <DropZone
               id={`${id}::after`}
               data={{ id, type: "after" }}
               className={clsx(
-                "left-0 w-full",
+                "start-0 w-full",
                 canHaveChildren ? "bottom-0 h-1/4" : "bottom-0 h-1/2",
               )}
             />
@@ -337,17 +337,17 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
         {/* VISUAL DROP INDICATORS (LINES) */}
         {isDropBefore && (
           <div
-            className="absolute top-0 right-0 h-0.5 bg-primary z-20 rounded-full"
+            className="absolute top-0 end-0 h-0.5 bg-primary z-20 rounded-full"
             style={{
-              left: `${basePadding + depth * context.indentSize + chevronOffset}px`,
+              insetInlineStart: `${basePadding + depth * context.indentSize + chevronOffset}px`,
             }}
           />
         )}
         {isDropAfter && (
           <div
-            className="absolute bottom-0 right-0 h-0.5 bg-primary z-20 rounded-full"
+            className="absolute bottom-0 end-0 h-0.5 bg-primary z-20 rounded-full"
             style={{
-              left: `${basePadding + depth * context.indentSize + chevronOffset}px`,
+              insetInlineStart: `${basePadding + depth * context.indentSize + chevronOffset}px`,
             }}
           />
         )}
@@ -376,7 +376,7 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
             <ChevronRight
               className={clsx(
                 "transition-transform duration-200 ease-in-out",
-                expanded && "rotate-90",
+                expanded ? "rotate-90" : "rtl:rotate-180",
                 context.size === "sm"
                   ? "w-3 h-3"
                   : context.size === "lg" || context.size === "xl"
@@ -389,7 +389,7 @@ function TreeNode<T>({ item, depth, isDraggingAncestor }: TreeNodeProps<T>) {
           )}
         </div>
 
-        <div className="flex-1 min-w-0 flex items-center justify-start text-left h-full pointer-events-none relative z-10">
+        <div className="flex-1 min-w-0 flex items-center justify-start text-start h-full pointer-events-none relative z-10">
           {context.renderItem(item, {
             isExpanded: expanded,
             isSelected: selected,
@@ -725,7 +725,7 @@ export function TreeView<T>({
   return (
     <TreeContext.Provider value={contextValue as TreeContextValue<unknown>}>
       <div
-        className={clsx("flex flex-col w-full text-left", className)}
+        className={clsx("flex flex-col w-full text-start", className)}
         {...props}
       >
         {enableDragAndDrop ? (
@@ -748,7 +748,7 @@ export function TreeView<T>({
               {activeId && activeItem ? (
                 <div className="relative inline-flex items-center pointer-events-none">
                   <div className="opacity-95 shadow-md bg-surface-container-highest/95 backdrop-blur-md rounded-md border border-outline-variant/50 px-3 py-1.5 flex items-center gap-2 max-w-[300px] w-max ring-1 ring-black/5">
-                    <div className="flex-1 min-w-0 flex items-center justify-start text-left text-sm font-medium text-on-surface">
+                    <div className="flex-1 min-w-0 flex items-center justify-start text-start text-sm font-medium text-on-surface">
                       {renderItem(activeItem, {
                         isExpanded: false,
                         isSelected: true,
