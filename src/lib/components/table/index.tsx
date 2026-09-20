@@ -11,6 +11,7 @@ import { AnimatePresence, motion } from "framer-motion"; // Add Framer Motion
 import React, { createContext, useContext, useMemo } from "react";
 import { ContextMenu } from "../context-menu";
 import { Skeleton } from "../skeleton";
+import { useStickyHeader } from "./use-sticky-header";
 
 // --- Types & Context ---
 type TableDensity = "default" | "compact";
@@ -122,6 +123,7 @@ export const TableHead = React.forwardRef<
 
   return (
     <th
+      role="columnheader"
       ref={ref}
       className={clsx(thVariants({ density, variant }), className)}
       {...props}
@@ -138,6 +140,7 @@ export const TableCell = React.forwardRef<
 
   return (
     <td
+      role="cell"
       ref={ref}
       className={clsx(tdVariants({ density }), className)}
       {...props}
@@ -157,6 +160,7 @@ export const TableRow = <TData extends {}>({
 
   const RowContent = (
     <tr
+      role="row"
       data-state={row.getIsSelected() && "selected"}
       className={clsx(trVariants({ variant }), rest.className)}
       {...rest}
@@ -186,6 +190,7 @@ export const TableRow = <TData extends {}>({
       <AnimatePresence initial={false}>
         {renderExpandedRow && isExpanded && (
           <motion.tr
+            role="row"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -195,7 +200,7 @@ export const TableRow = <TData extends {}>({
               variant !== "ghost" && "border-b border-outline-variant",
             )}
           >
-            <td colSpan={row.getVisibleCells().length} className="p-0">
+            <td role="cell" colSpan={row.getVisibleCells().length} className="p-0">
               <motion.div
                 initial={{ height: 0 }}
                 animate={{ height: "auto" }}
@@ -225,6 +230,12 @@ export interface TableRootProps<
   renderExpandedRow?: (row: Row<TData>) => React.ReactNode; // Add prop
   isLoading?: boolean;
   skeletonCount?: number;
+  /** Follow the outer vertical scroller while preserving horizontal scrolling. */
+  stickyHeader?: boolean;
+  /** Space below a sticky app bar, in pixels relative to the outer scroller. */
+  stickyHeaderOffset?: number;
+  /** Access the horizontal scroll container, e.g. for an external scrollbar. */
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const TableRoot = <TData extends {}>({
@@ -236,8 +247,17 @@ export const TableRoot = <TData extends {}>({
   renderExpandedRow, // Accept prop
   isLoading = false,
   skeletonCount = 10,
+  stickyHeader = false,
+  stickyHeaderOffset = 0,
+  scrollContainerRef,
   ...props
 }: TableRootProps<TData>) => {
+  const { containerRef, headerRef, stickyViewportRef, stickyTableRef } =
+    useStickyHeader(stickyHeader);
+  const setContainerRef = React.useCallback((node: HTMLDivElement | null) => {
+    containerRef.current = node;
+    if (scrollContainerRef) scrollContainerRef.current = node;
+  }, [containerRef, scrollContainerRef]);
   const contextValue = useMemo(
     () => ({
       table,
@@ -249,33 +269,42 @@ export const TableRoot = <TData extends {}>({
     [table, density, variant, renderContextMenu, renderExpandedRow],
   );
 
-  return (
-    <TableContext.Provider value={contextValue}>
+  const renderHeaderRows = () => table.getHeaderGroups().map(headerGroup => (
+    <tr key={headerGroup.id} role="row">
+      {headerGroup.headers.map(header => (
+        <TableHead key={header.id} colSpan={header.colSpan}>
+          {header.isPlaceholder
+            ? null
+            : flexRender(header.column.columnDef.header, header.getContext())}
+        </TableHead>
+      ))}
+    </tr>
+  ));
+
+  const bodyTable = (
       <div
-        className={clsx(tableContainerVariants({ variant }), className)}
+        ref={setContainerRef}
+        className={clsx(
+          tableContainerVariants({ variant }),
+          stickyHeader && "col-start-1 row-start-1 min-w-0",
+          className,
+        )}
         {...props}
       >
-        <table className={tableVariants()}>
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                ))}
-              </tr>
-            ))}
+        <table data-table-body="" role={stickyHeader ? "presentation" : undefined} className={tableVariants()}>
+          <thead
+            ref={headerRef}
+            role="rowgroup"
+            aria-hidden={stickyHeader || undefined}
+            inert={stickyHeader || undefined}
+            style={stickyHeader ? { visibility: "hidden" } : undefined}
+          >
+            {renderHeaderRows()}
           </thead>
-          <tbody>
+          <tbody role="rowgroup" className={stickyHeader ? "relative z-0 isolate" : undefined}>
             {isLoading ? (
               Array.from({ length: skeletonCount }).map((_, rowIndex) => (
-                <tr key={rowIndex} className={trVariants({ variant })}>
+                <tr role="row" key={rowIndex} className={trVariants({ variant })}>
                   {table.getVisibleLeafColumns().map((column) => (
                     <TableCell key={column.id}>
                       <Skeleton className="h-6 w-full" />
@@ -288,8 +317,9 @@ export const TableRoot = <TData extends {}>({
                 .getRowModel()
                 .rows.map((row) => <TableRow key={row.id} row={row} />)
             ) : (
-              <tr>
+              <tr role="row">
                 <td
+                  role="cell"
                   colSpan={table.getAllColumns().length}
                   className="h-24 text-center text-on-surface-variant"
                 >
@@ -300,6 +330,28 @@ export const TableRoot = <TData extends {}>({
           </tbody>
         </table>
       </div>
+  );
+
+  return (
+    <TableContext.Provider value={contextValue}>
+      {stickyHeader ? (
+        <div role="table" className="relative grid grid-cols-1 min-w-0">
+          <div
+            ref={stickyViewportRef}
+            data-sticky-header=""
+            className="sticky col-start-1 row-start-1 self-start z-10 overflow-x-auto overflow-y-hidden border-transparent bg-surface-container-low [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ top: stickyHeaderOffset }}
+          >
+            <table ref={stickyTableRef} role="presentation" className={tableVariants()} style={{ tableLayout: "fixed" }}>
+              <colgroup>
+                {table.getVisibleLeafColumns().map(column => <col key={column.id} />)}
+              </colgroup>
+              <thead role="rowgroup">{renderHeaderRows()}</thead>
+            </table>
+          </div>
+          {bodyTable}
+        </div>
+      ) : bodyTable}
     </TableContext.Provider>
   );
 };

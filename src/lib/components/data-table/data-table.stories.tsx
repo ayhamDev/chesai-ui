@@ -45,6 +45,7 @@ import {
   createDataTableUrlCodec,
   type DataTableState,
   type DataTableUrlState,
+  type DataTableVisibility,
 } from "./index";
 
 const meta: Meta<typeof DataTable> = {
@@ -64,6 +65,12 @@ const meta: Meta<typeof DataTable> = {
     isLoading: { control: "boolean" },
     hideToolbar: { control: "boolean" },
     visibility: { control: "object" },
+    stickyHeader: { control: "boolean" },
+    stickyHeaderOffset: { control: "number" },
+    stickyFooter: { control: "boolean" },
+    stickyFooterOffset: { control: "number" },
+    stickyScrollbar: { control: "boolean" },
+    stickyScrollbarOffset: { control: "number" },
   },
 };
 
@@ -290,6 +297,100 @@ export const WithoutToolbar: Story = {
       hideToolbar={args.hideToolbar}
     />
   ),
+};
+
+function StickyTableExample({
+  pageScroll = false,
+  stickyHeader,
+  stickyFooter,
+  stickyHeaderOffset,
+  stickyFooterOffset,
+  stickyScrollbar,
+  stickyScrollbarOffset,
+  visibility,
+  hideToolbar,
+}: {
+  pageScroll?: boolean;
+  stickyHeader?: boolean;
+  stickyFooter?: boolean;
+  stickyHeaderOffset?: number;
+  stickyFooterOffset?: number;
+  stickyScrollbar?: boolean;
+  stickyScrollbarOffset?: number;
+  visibility?: Partial<DataTableVisibility>;
+  hideToolbar?: boolean;
+}) {
+  const [rtl, setRtl] = useState(false);
+  return (
+    <div
+      dir={rtl ? "rtl" : "ltr"}
+      className="bg-surface text-on-surface"
+      style={pageScroll ? undefined : { height: "100dvh", overflow: "auto" }}
+    >
+      <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-outline-variant bg-surface-container px-6">
+        <strong>Purchasing workspace</strong>
+        <Button size="sm" variant="outlined" onClick={() => setRtl(value => !value)}>
+          {rtl ? "Switch to LTR" : "Switch to RTL"}
+        </Button>
+      </div>
+      <div className="flex flex-col justify-center gap-1 px-6 py-5">
+        <Typography variant="title-large">Payment plans</Typography>
+        <p>Scroll down through the rows. The horizontal scrollbar lets you see more columns.</p>
+      </div>
+      <div className="mx-6 rounded-xl border border-outline-variant bg-surface-container-low p-4">
+        <DataTable
+          data={sampleData}
+          columns={columns}
+          variant="secondary"
+          initialState={{ pagination: { pageIndex: 0, pageSize: 20 } }}
+          className="[&_table]:min-w-[1400px]"
+          stickyHeader={stickyHeader}
+          stickyFooter={stickyFooter}
+          stickyHeaderOffset={stickyHeaderOffset}
+          stickyFooterOffset={stickyFooterOffset}
+          stickyScrollbar={stickyScrollbar}
+          stickyScrollbarOffset={stickyScrollbarOffset}
+          visibility={visibility}
+          hideToolbar={hideToolbar}
+        />
+      </div>
+      <div className="flex h-[700px] items-center justify-center p-6">
+        End of table — the header and pagination stay with their table.
+      </div>
+    </div>
+  );
+}
+
+export const StickyOuterScroll: Story = {
+  name: "Sticky Header and Footer / Outer Container",
+  parameters: { layout: "fullscreen" },
+  args: {
+    stickyHeader: true,
+    stickyFooter: true,
+    stickyHeaderOffset: 64,
+    stickyFooterOffset: 0,
+  },
+  render: args => <StickyTableExample {...args} />,
+};
+
+export const StickyPageScroll: Story = {
+  name: "Sticky Header and Footer / Page Scroll",
+  parameters: { layout: "fullscreen" },
+  args: StickyOuterScroll.args,
+  render: args => <StickyTableExample {...args} pageScroll />,
+};
+
+export const StickyScrollbarOnly: Story = {
+  name: "Sticky Header and Scrollbar / Normal Pagination",
+  parameters: { layout: "fullscreen" },
+  args: {
+    stickyHeader: true,
+    stickyHeaderOffset: 64,
+    stickyFooter: false,
+    stickyScrollbar: true,
+    stickyScrollbarOffset: 0,
+  },
+  render: args => <StickyTableExample {...args} />,
 };
 
 export const GranularControls: Story = {

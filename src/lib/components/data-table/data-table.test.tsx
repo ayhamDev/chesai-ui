@@ -78,6 +78,125 @@ const serverState = {
 } satisfies Parameters<typeof DataTable<Item>>[0]["state"];
 
 describe("DataTable", () => {
+  it("can stick the scrollbar independently of visible or hidden pagination", () => {
+    const { container, rerender } = render(
+      <DataTable data={data} columns={columns} stickyScrollbar stickyScrollbarOffset={12}
+        visibility={{ toolbar: false }} />,
+    );
+    const scrollbar = container.querySelector('[aria-label="Scroll table horizontally"]') as HTMLDivElement;
+    const stickyArea = scrollbar.parentElement!;
+    const scroller = container.querySelector("[data-table-body]")!.parentElement!;
+    vi.spyOn(scroller, "clientWidth", "get").mockReturnValue(500);
+    vi.spyOn(scroller, "scrollWidth", "get").mockReturnValue(1400);
+    fireEvent(window, new Event("resize"));
+    expect(stickyArea.hidden).toBe(false);
+    expect(stickyArea.style.bottom).toBe("12px");
+    expect(stickyArea.contains(screen.getByText("Rows per page"))).toBe(false);
+    scrollbar.scrollLeft = 120;
+    fireEvent.scroll(scrollbar);
+    expect(scroller.scrollLeft).toBe(120);
+
+    rerender(
+      <DataTable data={data} columns={columns} stickyScrollbar
+        visibility={{ toolbar: false, pagination: false }} />,
+    );
+    expect(container.querySelector('[aria-label="Scroll table horizontally"]')).toBe(scrollbar);
+    expect(screen.queryByText("Rows per page")).toBeNull();
+    expect(scroller.className).toContain("[scrollbar-width:none]");
+
+    rerender(<DataTable data={data} columns={columns} visibility={{ toolbar: false }} />);
+    expect(container.querySelector('[aria-label="Scroll table horizontally"]')).toBeNull();
+    expect(scroller.className).not.toContain("[scrollbar-width:none]");
+  });
+
+  it.each([300, -300])("synchronizes the footer scrollbar in both directions (%i)", async scrollLeft => {
+    const { container, rerender } = render(
+      <DataTable data={data} columns={columns} stickyFooter
+        visibility={{ toolbar: false }} />,
+    );
+    const tableScroller = container.querySelector("table")!.parentElement!;
+    const scrollbar = container.querySelector('[aria-label="Scroll table horizontally"]') as HTMLDivElement;
+    let contentWidth = 1400;
+    vi.spyOn(tableScroller, "clientWidth", "get").mockReturnValue(500);
+    vi.spyOn(tableScroller, "scrollWidth", "get").mockImplementation(() => contentWidth);
+    vi.spyOn(scrollbar, "clientWidth", "get").mockReturnValue(502);
+    fireEvent(window, new Event("resize"));
+    await waitFor(() => expect(scrollbar.hidden).toBe(false));
+    expect((scrollbar.firstElementChild as HTMLElement).style.width).toBe("1402px");
+
+    scrollbar.scrollLeft = scrollLeft;
+    fireEvent.scroll(scrollbar);
+    expect(tableScroller.scrollLeft).toBe(scrollLeft);
+    tableScroller.scrollLeft = scrollLeft / 2;
+    fireEvent.scroll(tableScroller);
+    expect(scrollbar.scrollLeft).toBe(scrollLeft / 2);
+
+    contentWidth = 500;
+    tableScroller.scrollLeft = 0;
+    fireEvent(window, new Event("resize"));
+    await waitFor(() => expect(scrollbar.hidden).toBe(true));
+
+    // With no pagination footer, keep the original scrollbar available.
+    rerender(
+      <DataTable data={data} columns={columns} stickyFooter
+        visibility={{ toolbar: false, pagination: false }} />,
+    );
+    expect(container.querySelector('[aria-label="Scroll table horizontally"]')).toBeNull();
+    expect(tableScroller.className).not.toContain("[scrollbar-width:none]");
+  });
+
+  it("keeps the footer connected when sticky header mode is toggled", () => {
+    const { container, rerender } = render(
+      <DataTable data={data} columns={columns} stickyFooter visibility={{ toolbar: false }} />,
+    );
+    rerender(
+      <DataTable data={data} columns={columns} stickyHeader stickyFooter visibility={{ toolbar: false }} />,
+    );
+    const scrollbar = container.querySelector('[aria-label="Scroll table horizontally"]') as HTMLDivElement;
+    const scroller = container.querySelector("[data-table-body]")!.parentElement!;
+    scrollbar.scrollLeft = 120;
+    fireEvent.scroll(scrollbar);
+    expect(scroller.scrollLeft).toBe(120);
+  });
+
+  it("uses native sticky positioning and only synchronizes horizontal geometry", () => {
+    const { container } = render(
+      <DataTable data={data} columns={columns} stickyHeader stickyHeaderOffset={24}
+        visibility={{ toolbar: false, pagination: false }} />,
+    );
+    const sourceTable = container.querySelector("[data-table-body]") as HTMLTableElement;
+    const sourceHeader = sourceTable.querySelector("thead")!;
+    const scroller = sourceTable.parentElement!;
+    const sticky = container.querySelector("[data-sticky-header]") as HTMLDivElement;
+    const rect = (width: number, height = 48) => ({
+      top: 0, bottom: height, height, left: 0, right: width, width,
+      x: 0, y: 0, toJSON: () => ({}),
+    });
+    vi.spyOn(sourceTable, "getBoundingClientRect").mockReturnValue(rect(500));
+    vi.spyOn(sourceHeader, "getBoundingClientRect").mockReturnValue(rect(500));
+    vi.spyOn(sourceHeader.rows[0].cells[0], "getBoundingClientRect").mockReturnValue(rect(200));
+    vi.spyOn(sourceHeader.rows[0].cells[1], "getBoundingClientRect").mockReturnValue(rect(300));
+    fireEvent(window, new Event("resize"));
+
+    expect(sticky.className).toContain("sticky");
+    expect(sticky.style.top).toBe("24px");
+    expect(sticky.style.height).toBe("48px");
+    expect([...sticky.querySelectorAll("col")].map(col => col.style.width)).toEqual(["200px", "300px"]);
+    expect(screen.getAllByRole("table")).toHaveLength(1);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(2);
+    expect(sourceHeader.hasAttribute("inert")).toBe(true);
+
+    scroller.scrollLeft = 150;
+    fireEvent.scroll(scroller);
+    expect(sticky.scrollLeft).toBe(150);
+    sticky.scrollLeft = 75;
+    fireEvent.scroll(sticky);
+    expect(scroller.scrollLeft).toBe(75);
+    fireEvent.scroll(window);
+    expect(sticky.style.transform).toBe("");
+    expect(sourceHeader.style.transform).toBe("");
+  });
+
   it("does not transform server-provided rows locally", () => {
     render(
       <DataTable

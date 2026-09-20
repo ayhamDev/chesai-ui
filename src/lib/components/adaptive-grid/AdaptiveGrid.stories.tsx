@@ -11,7 +11,14 @@ import { AreaChart } from "../charts/area-chart";
 import { BarChart } from "../charts/bar-chart";
 import { Badge } from "../badge";
 import { ChesaiProvider } from "../../context/ChesaiProvider";
-import { Sparkles, DollarSign, Users, Activity, BarChart3, Undo2 } from "lucide-react";
+import {
+  Sparkles,
+  DollarSign,
+  Users,
+  Activity,
+  BarChart3,
+  Undo2,
+} from "lucide-react";
 
 const meta: Meta<typeof AdaptiveGrid> = {
   title: "Components/Layout/AdaptiveGrid",
@@ -53,29 +60,49 @@ const INITIAL_LAYOUT: DemoItem[] = [
     id: "revenue-card",
     type: "revenue",
     title: "Financial Yield",
-    x: 0, y: 0, w: 6, h: 3,
-    minW: 4, maxW: 10, minH: 3, maxH: 5
+    x: 0,
+    y: 0,
+    w: 6,
+    h: 3,
+    minW: 4,
+    maxW: 10,
+    minH: 3,
+    maxH: 5,
   },
   {
     id: "users-card",
     type: "users",
     title: "Audience Engagement",
-    x: 6, y: 0, w: 6, h: 3,
-    minW: 4, maxW: 10, minH: 3, maxH: 5
+    x: 6,
+    y: 0,
+    w: 6,
+    h: 3,
+    minW: 4,
+    maxW: 10,
+    minH: 3,
+    maxH: 5,
   },
   {
     id: "revenue-chart",
     type: "chart-line",
     title: "Quarterly Inflow Details",
-    x: 0, y: 3, w: 12, h: 6,
-    minW: 6, minH: 5
+    x: 0,
+    y: 3,
+    w: 12,
+    h: 6,
+    minW: 6,
+    minH: 5,
   },
   {
     id: "bar-graph",
     type: "chart-bar",
     title: "Operational Velocities",
-    x: 12, y: 0, w: 12, h: 9,
-    minW: 8, minH: 6
+    x: 12,
+    y: 0,
+    w: 12,
+    h: 9,
+    minW: 8,
+    minH: 6,
   },
 ];
 
@@ -121,6 +148,7 @@ export const ImperativeWorkspace: StoryObj = {
           columns={24}
           rowHeight={40}
           gap="md"
+          collisionDelay={0}
           useDragHandle={true}
           gravityEnabled={false}
           onChange={(newLayout) => setItems(newLayout as DemoItem[])}
@@ -131,7 +159,9 @@ export const ImperativeWorkspace: StoryObj = {
                 variant={isInteracting ? "surface-container-high" : "surface"}
                 padding="none"
                 className={`w-full h-full border border-outline-variant/50 overflow-hidden flex flex-col transition-all duration-300 ${
-                  isInteracting ? "shadow-xl ring-2 ring-primary/20 scale-[0.99]" : "shadow-sm"
+                  isInteracting
+                    ? "shadow-xl ring-2 ring-primary/20 scale-[0.99]"
+                    : "shadow-sm"
                 }`}
               >
                 <div
@@ -139,11 +169,22 @@ export const ImperativeWorkspace: StoryObj = {
                   className="px-4 py-2.5 border-b border-outline-variant/30 flex items-center justify-between bg-surface-container-low/40 cursor-grab active:cursor-grabbing touch-none"
                 >
                   <div className="flex items-center gap-2">
-                    {layoutItem.type === "revenue" && <DollarSign size={16} className="text-primary" />}
-                    {layoutItem.type === "users" && <Users size={16} className="text-primary" />}
-                    {layoutItem.type === "chart-line" && <Activity size={16} className="text-primary" />}
-                    {layoutItem.type === "chart-bar" && <BarChart3 size={16} className="text-primary" />}
-                    <Typography variant="label-small" className="font-bold uppercase tracking-wider opacity-75">
+                    {layoutItem.type === "revenue" && (
+                      <DollarSign size={16} className="text-primary" />
+                    )}
+                    {layoutItem.type === "users" && (
+                      <Users size={16} className="text-primary" />
+                    )}
+                    {layoutItem.type === "chart-line" && (
+                      <Activity size={16} className="text-primary" />
+                    )}
+                    {layoutItem.type === "chart-bar" && (
+                      <BarChart3 size={16} className="text-primary" />
+                    )}
+                    <Typography
+                      variant="label-small"
+                      className="font-bold uppercase tracking-wider opacity-75"
+                    >
                       {layoutItem.title}
                     </Typography>
                   </div>
@@ -151,11 +192,21 @@ export const ImperativeWorkspace: StoryObj = {
 
                 <div className="flex-1 min-h-0 p-4 relative pointer-events-auto">
                   {layoutItem.type === "revenue" && (
-                    <Typography variant="headline-medium" className="font-black">$42,500</Typography>
+                    <Typography
+                      variant="headline-medium"
+                      className="font-black"
+                    >
+                      $42,500
+                    </Typography>
                   )}
 
                   {layoutItem.type === "users" && (
-                    <Typography variant="headline-medium" className="font-black">1,284</Typography>
+                    <Typography
+                      variant="headline-medium"
+                      className="font-black"
+                    >
+                      1,284
+                    </Typography>
                   )}
 
                   {layoutItem.type === "chart-line" && (

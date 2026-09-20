@@ -6,14 +6,18 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, type HTMLAttributes } from "react";
+import { clsx } from "clsx";
 import { IconButton } from "../icon-button";
 import { Input } from "../input";
 import { Select } from "../select";
 import { Typography } from "../typography";
 import { useDataTable } from "./context";
 
-export function DataTablePagination<TData>() {
+export function DataTablePagination<TData>({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement> = {}) {
   const {
     table,
     visibility,
@@ -67,7 +71,13 @@ export function DataTablePagination<TData>() {
   if (visibility?.pagination === false) return null;
 
   return (
-    <div className="flex flex-col items-center justify-between gap-4 px-2 py-4 sm:flex-row flex-wrap">
+    <div
+      className={clsx(
+        "flex flex-col items-center justify-between gap-4 px-2 py-4 sm:flex-row flex-wrap",
+        className,
+      )}
+      {...props}
+    >
       {/* Selected Count */}
       {visibility?.selectionSummary !== false && (
         <div className="text-sm text-graphite-foreground/70 order-2 sm:order-1">

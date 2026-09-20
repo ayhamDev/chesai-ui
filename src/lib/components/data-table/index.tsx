@@ -23,6 +23,7 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 import React from "react";
+import { clsx } from "clsx";
 import { Table, type TableRootProps } from "../table";
 import { DataTableColumnHeader } from "./column-header";
 import {
@@ -38,6 +39,7 @@ import {
 import type { DataTableExportConfig } from "./export";
 import { DataTableExportButton } from "./export-button";
 import { DataTablePagination } from "./pagination";
+import { DataTableStickyFooter } from "./sticky-footer";
 import { DataTableToolbar } from "./toolbar";
 import {
   defaultDataTableState,
@@ -102,7 +104,7 @@ type ControlledServerState = DataTableUrlState &
   Partial<Pick<DataTableState, "rowSelection" | "expanded">>;
 
 interface DataTableBaseProps<TData extends {}>
-  extends Omit<TableRootProps<TData>, "table"> {
+  extends Omit<TableRootProps<TData>, "table" | "scrollContainerRef"> {
   data: TData[];
   columns: ColumnDef<TData>[];
   variant?: "primary" | "secondary";
@@ -143,6 +145,14 @@ interface DataTableBaseProps<TData extends {}>
   searchDebounceMs?: number;
   exportOptions?: DataTableExportConfig<TData>;
   visibility?: Partial<DataTableVisibility>;
+  /** Keep pagination at the bottom of the outer scrollport within this table. */
+  stickyFooter?: boolean;
+  /** Space above a sticky app footer, in pixels. */
+  stickyFooterOffset?: number;
+  /** Keep only the horizontal scrollbar sticky, independently of pagination. */
+  stickyScrollbar?: boolean;
+  /** Bottom offset for the standalone sticky scrollbar, in pixels. */
+  stickyScrollbarOffset?: number;
   /** @deprecated Prefer `visibility={{ toolbar: false }}`. */
   hideToolbar?: boolean;
 }
@@ -167,6 +177,7 @@ export type DataTableProps<TData extends {}> = DataTableBaseProps<TData> &
 type StatePatch = Partial<DataTableState>;
 
 export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const {
     data,
     columns,
@@ -202,6 +213,10 @@ export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
     searchDebounceMs = 300,
     exportOptions,
     visibility,
+    stickyFooter = false,
+    stickyFooterOffset = 0,
+    stickyScrollbar = false,
+    stickyScrollbarOffset = 0,
     hideToolbar = false,
     ...tableProps
   } = props;
@@ -420,6 +435,8 @@ export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
       ? false
       : (visibility?.toolbar ?? defaultDataTableVisibility.toolbar),
   };
+  const showStickyFooter = stickyFooter && resolvedVisibility.pagination;
+  const showStickyScrollbar = stickyScrollbar || showStickyFooter;
 
   return (
     <DataTableContext.Provider
@@ -447,8 +464,20 @@ export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
           renderExpandedRow={renderExpandedRow}
           isLoading={isLoading}
           {...tableProps}
+          scrollContainerRef={scrollContainerRef}
+          className={clsx(
+            tableProps.className,
+            showStickyScrollbar && "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          )}
         />
-        <DataTablePagination />
+        {showStickyScrollbar && (
+          <DataTableStickyFooter
+            scrollContainerRef={scrollContainerRef}
+            bottomOffset={showStickyFooter ? stickyFooterOffset : stickyScrollbarOffset}
+            includePagination={showStickyFooter}
+          />
+        )}
+        {!showStickyFooter && <DataTablePagination />}
       </div>
     </DataTableContext.Provider>
   );
