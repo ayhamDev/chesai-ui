@@ -75,6 +75,11 @@ export interface SelectProps extends React.ComponentPropsWithoutRef<
   mobileLayout?: "default" | "bottom-sheet" | "dialog";
 }
 
+const renderSelectViewport = (viewport: React.ReactElement) => (
+  // ElasticScrollArea owns the per-axis overflow styles on this shared element.
+  <SelectPrimitive.Viewport asChild style={{ overflow: undefined }}>{viewport}</SelectPrimitive.Viewport>
+);
+
 export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
   (
     {
@@ -340,7 +345,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             </div>
 
             <div className="flex-1 min-h-0 relative">
-              <ElasticScrollArea className="h-full w-full">
+              <ElasticScrollArea elasticity={false} viewportClassName="overscroll-contain" className="h-full w-full">
                 <div className="p-2 flex flex-col gap-1 pb-safe">
                   {filteredItems.length > 0 ? (
                     filteredItems.map((item) => {
@@ -413,18 +418,28 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             <SelectPrimitive.Portal>
               <SelectPrimitive.Content
                 position={position}
+                style={position === "popper" ? {
+                  minWidth: 0,
+                  width: "var(--radix-select-trigger-width)",
+                  maxWidth: "var(--radix-select-content-available-width)",
+                } : undefined}
                 className={clsx(
                   selectContentVariants({
                     position,
                     shape,
                   }),
                 )}
-                sideOffset={position === "popper" ? 4 : 0}
+                sideOffset={position === "popper" ? 8 : 0}
+                collisionPadding={12}
+                sticky="always"
                 align={position === "popper" ? "center" : undefined}
               >
-                <SelectPrimitive.Viewport
-                  className={clsx(
-                    "w-full",
+                <ElasticScrollArea
+                  elasticity={false}
+                  renderViewport={renderSelectViewport}
+                  className="h-auto! min-h-0 flex-1"
+                  viewportClassName={clsx(
+                    "max-h-[min(20rem,calc(var(--radix-select-content-available-height,100dvh)-1rem))] overscroll-contain",
                     position === "popper" ? "p-1" : "p-0",
                   )}
                 >
@@ -439,7 +454,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                         </SelectItem>
                       ))
                     : children}
-                </SelectPrimitive.Viewport>
+                </ElasticScrollArea>
               </SelectPrimitive.Content>
             </SelectPrimitive.Portal>
           </div>

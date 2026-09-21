@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.17.13 (2026-09-21)
+
+### Bug Fixes
+
+* Use ElasticScrollArea with elasticity disabled for ComboBox and Select options, and constrain popups to the available viewport space.
+* Preserve ComboBox search focus and trigger focus inside dialogs, and align Radix popup dependencies.
+
 ## 0.17.11 (2026-09-05)
 
 ### Bug Fixes

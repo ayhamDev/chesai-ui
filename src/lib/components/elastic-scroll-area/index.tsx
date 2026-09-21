@@ -12,6 +12,8 @@ import {
   forwardRef,
   type ForwardRefExoticComponent,
   type FC,
+  type ReactElement,
+  type ReactNode,
   type RefAttributes,
   useCallback,
   useEffect,
@@ -45,6 +47,8 @@ export interface ElasticScrollAreaProps extends ComponentPropsWithoutRef<typeof 
   RefreshIndicatorComponent?: ComponentType<RefreshIndicatorProps>
   onScrollUp?: () => void
   onScrollDown?: () => void
+  /** Compose a primitive (for example Select.Viewport asChild) onto the actual scroll viewport. */
+  renderViewport?: (viewport: ReactElement) => ReactNode
   viewportClassName?: string
   dimmingEdges?: boolean
 }
@@ -89,6 +93,7 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
       onScrollUp,
       onScrollDown,
       viewportClassName,
+      renderViewport = viewport => viewport,
       dimmingEdges = false,
       ...props
     },
@@ -226,7 +231,7 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
           }}
           className="h-full w-full"
         >
-          <ScrollAreaPrimitive.Viewport
+          {renderViewport(<ScrollAreaPrimitive.Viewport
             ref={localViewportRef}
             className={clsx('h-full w-full rounded-[inherit]', viewportClassName)}
             style={{
@@ -238,7 +243,7 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
             onScroll={handleScroll}
           >
             {children}
-          </ScrollAreaPrimitive.Viewport>
+          </ScrollAreaPrimitive.Viewport>)}
         </motion.div>
         <ScrollBar scrollbarVisibility={scrollbarVisibility} orientation="vertical" />
         <ScrollBar scrollbarVisibility={scrollbarVisibility} orientation="horizontal" />

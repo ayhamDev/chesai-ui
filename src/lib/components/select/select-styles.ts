@@ -43,7 +43,7 @@ export const selectContentVariants = cva(
   {
     variants: {
       position: {
-        popper: 'data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
+        popper: '',
         'item-aligned': 'shadow-xl',
       },
       shape: {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useDirection } from "../../context/direction";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
@@ -99,6 +100,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
     },
     ref,
   ) => {
+    const direction = useDirection();
     const [internalValue, setInternalValue] = useState(defaultValue || "");
     const [internalOpen, setInternalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -271,7 +273,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
       isClearable && currentValue ? "pe-12" : "pe-8", // Add padding to accommodate both icons
     );
 
-    const BaseWrapper = ({ children }: { children: React.ReactNode }) => (
+    const renderBase = (children: React.ReactNode) => (
       <div
         className={clsx(
           selectSlots.base,
@@ -311,7 +313,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
           />
         </div>
         <div className="flex-1 min-h-0 relative">
-          <ElasticScrollArea className="h-full w-full">
+          <ElasticScrollArea elasticity={false} viewportClassName="overscroll-contain" className="h-full w-full">
             <div className="p-1 flex flex-col gap-0.5 pb-safe">
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((option) => {
@@ -360,7 +362,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
 
       return (
         <MobileWrapper open={open} onOpenChange={setOpen}>
-          <BaseWrapper>
+          {renderBase(
             <MobileTrigger asChild>
               <button
                 ref={ref}
@@ -371,7 +373,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
                 {triggerContent}
               </button>
             </MobileTrigger>
-          </BaseWrapper>
+          )}
 
           <MobileContent
             padding="none"
@@ -397,8 +399,8 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
     }
 
     return (
-      <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
-        <BaseWrapper>
+      <PopoverPrimitive.Root modal open={open} onOpenChange={setOpen}>
+        {renderBase(
           <PopoverPrimitive.Trigger asChild>
             <button
               ref={ref}
@@ -409,45 +411,60 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
               {triggerContent}
             </button>
           </PopoverPrimitive.Trigger>
-        </BaseWrapper>
+        )}
 
         <PopoverPrimitive.Portal>
           <PopoverPrimitive.Content
+            dir={direction}
             align="start"
-            sideOffset={4}
+            sideOffset={8}
+            collisionPadding={12}
+            sticky="always"
+            style={{
+              width: "var(--radix-popover-trigger-width)",
+              minWidth: 0,
+              maxWidth: "var(--radix-popover-content-available-width)",
+              maxHeight: "var(--radix-popover-content-available-height)",
+            }}
             className={clsx(
               selectContentVariants({ position: "popper", shape }),
-              "z-[1000] min-w-[var(--radix-popover-trigger-width)] w-[var(--radix-popover-trigger-width)] p-0 flex flex-col",
+              "z-[1000] p-0! flex flex-col",
             )}
           >
-            <Command className="w-full bg-transparent">
+            <Command className="h-auto! min-h-0 w-full bg-transparent rounded-[inherit] [&_[cmdk-input-wrapper]]:shrink-0">
               <CommandInput placeholder={searchPlaceholder} />
-              <CommandList className="max-h-64">
-                <CommandEmpty>{emptyMessage}</CommandEmpty>
-                <CommandGroup>
-                  {options.map((option) => (
-                    <CommandItem
-                      key={option.value}
-                      value={option.label} // Cmdk matches against this
-                      disabled={option.disabled}
-                      onSelect={() => handleValueChange(option.value)}
-                    >
-                      <Check
-                        className={clsx(
-                          "me-2 h-4 w-4 text-primary transition-opacity",
-                          currentValue === option.value
-                            ? "opacity-100"
-                            : "opacity-0",
+              <ElasticScrollArea
+                elasticity={false}
+                className="h-auto! min-h-0"
+                viewportClassName="h-auto! max-h-[min(16rem,max(0px,calc(var(--radix-popover-content-available-height,100dvh)-4rem)))] overscroll-contain"
+              >
+                <CommandList className="max-h-none! overflow-visible!">
+                  <CommandEmpty>{emptyMessage}</CommandEmpty>
+                  <CommandGroup>
+                    {options.map((option) => (
+                      <CommandItem
+                        key={option.value}
+                        value={option.label} // Cmdk matches against this
+                        disabled={option.disabled}
+                        onSelect={() => handleValueChange(option.value)}
+                      >
+                        <Check
+                          className={clsx(
+                            "me-2 h-4 w-4 text-primary transition-opacity",
+                            currentValue === option.value
+                              ? "opacity-100"
+                              : "opacity-0",
+                          )}
+                        />
+                        {option.icon && (
+                          <span className="me-2 opacity-70">{option.icon}</span>
                         )}
-                      />
-                      {option.icon && (
-                        <span className="me-2 opacity-70">{option.icon}</span>
-                      )}
-                      <span className="truncate">{option.label}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
+                        <span className="truncate">{option.label}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </ElasticScrollArea>
             </Command>
           </PopoverPrimitive.Content>
         </PopoverPrimitive.Portal>
