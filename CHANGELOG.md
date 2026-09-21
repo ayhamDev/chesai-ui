@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.18.0](https://github.com/ayhamDev/chesai-ui/compare/v0.17.10...v0.18.0) (2026-09-21)
+
+
+### Features
+
+* make adaptive grid responsive ([7f12cec](https://github.com/ayhamDev/chesai-ui/commit/7f12cecdbe4155f58c53d9506c0fa8dd65fd5dec))
+
+
+### Bug Fixes
+
+* **adaptive-grid:** delay drag collision reflow ([cda08c1](https://github.com/ayhamDev/chesai-ui/commit/cda08c1b97d0c0e5b9f49f3d58773a7bde407f6b))
+* **calendar:** report visible date range ([28f6f23](https://github.com/ayhamDev/chesai-ui/commit/28f6f232789d1258c8f4a654770ca2b747e477f1))
+* improve popup scrolling and bump version to 0.17.13 ([98d3e8a](https://github.com/ayhamDev/chesai-ui/commit/98d3e8a87cd52175a942eca84d58c7085cff91ba))
+
 ## 0.17.13 (2026-09-21)
 
 ### Bug Fixes
