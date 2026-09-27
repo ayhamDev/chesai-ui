@@ -5,7 +5,7 @@ import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
 import { Check, ChevronDown, Search, X } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Command,
   CommandEmpty,
@@ -23,6 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  type SheetProps,
 } from "../sheet";
 import { Typography } from "../typography";
 import {
@@ -41,6 +42,17 @@ export interface ComboboxOption {
 
 export interface ComboboxProps {
   options: ComboboxOption[];
+  /** Preserve a remotely loaded selection when it is absent from the current results. */
+  selectedOption?: ComboboxOption;
+  searchValue?: string;
+  onSearchChange?: (search: string) => void;
+  /** Disable local filtering when options already contain server search results. */
+  shouldFilter?: boolean;
+  isLoading?: boolean;
+  loadingMessage?: React.ReactNode;
+  hasMore?: boolean;
+  /** Append the next page to options. Set isLoading while fetching. */
+  onLoadMore?: () => void;
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
@@ -69,6 +81,10 @@ export interface ComboboxProps {
   className?: string;
   classNames?: Partial<Record<keyof typeof selectSlots, string>>;
   mobileLayout?: "default" | "bottom-sheet" | "dialog";
+  /** Use mobileLayout at every screen size. "default" still uses the dropdown. */
+  forceMobileLayout?: boolean;
+  /** Basic appearance options for mobileLayout="bottom-sheet", including on desktop. */
+  sheetProps?: Pick<SheetProps, "mode" | "shape" | "variant" | "glass">;
   name?: string;
 }
 
@@ -76,6 +92,14 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
   (
     {
       options,
+      selectedOption: suppliedSelectedOption,
+      searchValue,
+      onSearchChange,
+      shouldFilter = true,
+      isLoading = false,
+      loadingMessage = "Loading...",
+      hasMore = false,
+      onLoadMore,
       value,
       defaultValue,
       onValueChange,
@@ -96,6 +120,8 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
       className,
       classNames,
       mobileLayout = "bottom-sheet",
+      forceMobileLayout = false,
+      sheetProps,
       name,
     },
     ref,
@@ -103,19 +129,29 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
     const direction = useDirection();
     const [internalValue, setInternalValue] = useState(defaultValue || "");
     const [internalOpen, setInternalOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [internalSearch, setInternalSearch] = useState("");
+    const searchQuery = searchValue ?? internalSearch;
+    const cachedSelection = useRef<ComboboxOption | undefined>(undefined);
+    const loadRequested = useRef(false);
+    const [loadSentinel, setLoadSentinel] = useState<HTMLDivElement | null>(null);
+
+    const setSearchQuery = (query: string) => {
+      if (searchValue === undefined) setInternalSearch(query);
+      onSearchChange?.(query);
+    };
 
     const isControlled = value !== undefined;
     const currentValue = isControlled ? value : internalValue;
     const open = internalOpen;
 
     const isMobile = useMediaQuery("(max-width: 768px)");
-    const shouldUseMobileLayout = isMobile && mobileLayout !== "default";
+    const shouldUseMobileLayout =
+      (isMobile || forceMobileLayout) && mobileLayout !== "default";
 
     const setOpen = (newOpen: boolean) => {
       setInternalOpen(newOpen);
       if (!newOpen) {
-        setTimeout(() => setSearchQuery(""), 200);
+        setSearchQuery("");
       }
     };
 
@@ -133,17 +169,59 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
     };
 
     const selectedOption = useMemo(
-      () => options.find((opt) => opt.value === currentValue),
-      [options, currentValue],
+      () => options.find((opt) => opt.value === currentValue)
+        ?? (suppliedSelectedOption?.value === currentValue ? suppliedSelectedOption : undefined)
+        ?? (cachedSelection.current?.value === currentValue ? cachedSelection.current : undefined),
+      [options, currentValue, suppliedSelectedOption],
     );
 
+    useEffect(() => {
+      if (selectedOption) cachedSelection.current = selectedOption;
+    }, [selectedOption]);
+
+    useEffect(() => {
+      loadRequested.current = false;
+    }, [options, searchQuery, isLoading, open]);
+
+    const requestMore = () => {
+      if (!open || isLoading || !hasMore || !onLoadMore || loadRequested.current) return;
+      loadRequested.current = true;
+      onLoadMore();
+    };
+
+    useEffect(() => {
+      if (!loadSentinel || !open || isLoading || !hasMore || !onLoadMore
+        || typeof IntersectionObserver === "undefined") return;
+      const observer = new IntersectionObserver(([entry]) => {
+        if (entry?.isIntersecting) requestMore();
+      }, {
+        root: loadSentinel.closest('[data-radix-scroll-area-viewport]'),
+        rootMargin: "0px 0px 80px 0px",
+      });
+      observer.observe(loadSentinel);
+      return () => observer.disconnect();
+    }, [loadSentinel, open, isLoading, hasMore, onLoadMore, options, searchQuery]);
+
+    const handleScroll = (event: React.UIEvent) => {
+      const viewport = event.target as HTMLElement;
+      if (!viewport.hasAttribute('data-radix-scroll-area-viewport')) return;
+      if (viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= 80) requestMore();
+    };
+
+    const paginationContent = <>
+      {isLoading && <div role="status" className="px-4 py-3 text-center text-sm">{loadingMessage}</div>}
+      {hasMore && onLoadMore && <div ref={setLoadSentinel} className="shrink-0">
+        {!isLoading && <button type="button" className="w-full px-4 py-3 text-sm" onClick={requestMore}>Load more</button>}
+      </div>}
+    </>;
+
     const filteredOptions = useMemo(() => {
-      if (!searchQuery) return options;
+      if (!shouldFilter || !searchQuery) return options;
       const lowerQuery = searchQuery.toLowerCase();
       return options.filter((op) =>
         op.label.toLowerCase().includes(lowerQuery),
       );
-    }, [options, searchQuery]);
+    }, [options, searchQuery, shouldFilter]);
 
     const isFilled = !!currentValue || !!placeholder || open === true;
 
@@ -313,7 +391,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
           />
         </div>
         <div className="flex-1 min-h-0 relative">
-          <ElasticScrollArea elasticity={false} viewportClassName="overscroll-contain" className="h-full w-full">
+          <ElasticScrollArea elasticity={false} viewportClassName="overscroll-contain" className="h-full w-full" onScrollCapture={handleScroll}>
             <div className="p-1 flex flex-col gap-0.5 pb-safe">
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((option) => {
@@ -342,11 +420,12 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
                     </button>
                   );
                 })
-              ) : (
+              ) : !isLoading ? (
                 <div className="py-8 text-center text-on-surface-variant">
                   <Typography variant="body-small">{emptyMessage}</Typography>
                 </div>
-              )}
+              ) : null}
+              {paginationContent}
             </div>
           </ElasticScrollArea>
         </div>
@@ -354,14 +433,29 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
     );
 
     if (shouldUseMobileLayout) {
-      const MobileWrapper = mobileLayout === "bottom-sheet" ? Sheet : Dialog;
+      const renderMobileWrapper = (children: React.ReactNode) =>
+        mobileLayout === "bottom-sheet" ? (
+          <Sheet
+            open={open}
+            onOpenChange={setOpen}
+            mode={sheetProps?.mode}
+            shape={sheetProps?.shape ?? shape}
+            variant={sheetProps?.variant}
+            glass={sheetProps?.glass}
+            forceBottomSheet
+          >
+            {children}
+          </Sheet>
+        ) : (
+          <Dialog open={open} onOpenChange={setOpen}>{children}</Dialog>
+        );
       const MobileTrigger =
         mobileLayout === "bottom-sheet" ? SheetTrigger : DialogTrigger;
       const MobileContent =
         mobileLayout === "bottom-sheet" ? SheetContent : DialogContent;
 
       return (
-        <MobileWrapper open={open} onOpenChange={setOpen}>
+        renderMobileWrapper(<>
           {renderBase(
             <MobileTrigger asChild>
               <button
@@ -383,7 +477,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
               mobileLayout === "bottom-sheet" && "max-h-[85vh] h-[500px]",
             )}
             // @ts-ignore
-            shape={shape}
+            {...(mobileLayout === "dialog" ? { shape } : {})}
           >
             {mobileLayout === "bottom-sheet" && (
               <SheetHeader className="px-4 py-3 border-b border-outline-variant/20 shrink-0">
@@ -394,7 +488,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
             )}
             {renderMobileListContent()}
           </MobileContent>
-        </MobileWrapper>
+        </>)
       );
     }
 
@@ -431,15 +525,16 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
               "z-[1000] p-0! flex flex-col",
             )}
           >
-            <Command className="h-auto! min-h-0 w-full bg-transparent rounded-[inherit] [&_[cmdk-input-wrapper]]:shrink-0">
-              <CommandInput placeholder={searchPlaceholder} />
+            <Command shouldFilter={shouldFilter} className="h-auto! min-h-0 w-full bg-transparent rounded-[inherit] [&_[cmdk-input-wrapper]]:shrink-0">
+              <CommandInput placeholder={searchPlaceholder} value={searchQuery} onValueChange={setSearchQuery} />
               <ElasticScrollArea
                 elasticity={false}
+                onScrollCapture={handleScroll}
                 className="h-auto! min-h-0"
                 viewportClassName="h-auto! max-h-[min(16rem,max(0px,calc(var(--radix-popover-content-available-height,100dvh)-4rem)))] overscroll-contain"
               >
                 <CommandList className="max-h-none! overflow-visible!">
-                  <CommandEmpty>{emptyMessage}</CommandEmpty>
+                  {!isLoading && <CommandEmpty>{emptyMessage}</CommandEmpty>}
                   <CommandGroup>
                     {options.map((option) => (
                       <CommandItem
@@ -463,6 +558,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
                       </CommandItem>
                     ))}
                   </CommandGroup>
+                  {paginationContent}
                 </CommandList>
               </ElasticScrollArea>
             </Command>

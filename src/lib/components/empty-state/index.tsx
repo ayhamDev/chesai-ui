@@ -23,21 +23,28 @@ const emptyStateVariants = cva(
 export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "default" | "card";
   icon?: React.ReactNode;
+  /** Custom artwork or component above the title. Replaces icon without resizing or cloning it. */
+  visual?: React.ReactNode;
+  classNames?: Partial<Record<"visual" | "icon" | "title" | "description" | "action", string>>;
   title: string;
   description?: string;
   action?: React.ReactNode;
 }
 
 export const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
-  ({ className, variant, icon, title, description, action, ...props }, ref) => {
+  ({ className, classNames, variant, icon, visual, title, description, action, ...props }, ref) => {
     return (
       <div
         ref={ref}
         className={clsx(emptyStateVariants({ variant }), className)}
         {...props}
       >
-        {icon && (
-          <div className="mb-2 flex h-20 w-20 items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant">
+        {visual != null ? (
+          <div className={clsx("mb-2 flex max-w-full items-center justify-center", classNames?.visual)}>
+            {visual}
+          </div>
+        ) : icon && (
+          <div className={clsx("mb-2 flex h-20 w-20 items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant", classNames?.icon)}>
             {/* Clone icon to ensure consistent sizing if it's an SVG */}
             {React.isValidElement(icon)
               ? React.cloneElement(icon as React.ReactElement, {
@@ -52,19 +59,19 @@ export const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         )}
         <Typography
           variant="title-medium"
-          className="font-bold text-on-surface"
+          className={clsx("font-bold text-on-surface", classNames?.title)}
         >
           {title}
         </Typography>
         {description && (
           <Typography
             variant="body-medium"
-            className="max-w-sm text-on-surface-variant opacity-80"
+            className={clsx("max-w-sm text-on-surface-variant opacity-80", classNames?.description)}
           >
             {description}
           </Typography>
         )}
-        {action && <div>{action}</div>}
+        {action && <div className={classNames?.action}>{action}</div>}
       </div>
     );
   },

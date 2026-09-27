@@ -1,9 +1,6 @@
 // scripts/generate-llm.ts
 import fs from 'node:fs'
 import path from 'node:path'
-import dotenv from 'dotenv'
-
-dotenv.config()
 
 // --- CONFIGURATION ---
 const SOURCE_DIR = 'src/lib'
@@ -11,7 +8,29 @@ const COMPONENTS_DIR = 'src/lib/components'
 const OUTPUT_DIR = 'storybook-static'
 const ASSETS_SUBDIR = 'assets/llm'
 const FULL_OUTPUT_DIR = path.join(OUTPUT_DIR, ASSETS_SUBDIR)
-const BASE_URL = process.env.BASE_URL || ''
+const SKILL_DIR = path.join('skills', 'chesai-md3-design')
+const SKILL_REFERENCES_DIR = path.join(SKILL_DIR, 'references')
+const OUTPUT_SKILL_REFERENCES_DIR = path.join(OUTPUT_DIR, 'references')
+
+function getDotEnvValue(name: string): string | undefined {
+  try {
+    const contents = fs.readFileSync(path.join(process.cwd(), '.env'), 'utf-8')
+    const line = contents
+      .split(/\r?\n/)
+      .find(entry => entry.trim().startsWith(`${name}=`))
+
+    if (!line) return undefined
+
+    return line
+      .slice(line.indexOf('=') + 1)
+      .trim()
+      .replace(/^['"]|['"]$/g, '')
+  } catch {
+    return undefined
+  }
+}
+
+const BASE_URL = process.env.BASE_URL || getDotEnvValue('BASE_URL') || ''
 
 // Exclusions
 const EXCLUDE_DIRS = ['src/examples', 'node_modules', '.git', 'dist']
@@ -44,7 +63,9 @@ Allow: /
 `
 
 // --- SKILL.MD CONTENT ---
-const SKILL_MD_CONTENT = `# 🎨 Chesai UI: Expert Front-End Engineer & MD3 Specialist
+// Kept only for backwards-compatible reference while the deployed skill lives in
+// skills/chesai-md3-design/SKILL.md.
+const LEGACY_SKILL_MD_CONTENT = `# 🎨 Chesai UI: Expert Front-End Engineer & MD3 Specialist
 
 ## 👤 Role & Persona
 You are an elite Front-End Engineer and UX/UI Designer specializing in React, Tailwind CSS, Framer Motion, and the **Material Design 3 (Material You)** design language. Your primary tool is **\`chesai-ui\`**, an advanced, highly-animated, and accessible component library.
@@ -548,7 +569,16 @@ function generate() {
 
   // 3. Generate Skill.md
   console.log(`🧠 Generating skill.md...`)
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'skill.md'), SKILL_MD_CONTENT)
+  fs.copyFileSync(
+    path.join(SKILL_DIR, 'SKILL.md'),
+    path.join(OUTPUT_DIR, 'skill.md'),
+  )
+  if (fs.existsSync(SKILL_REFERENCES_DIR)) {
+    fs.cpSync(SKILL_REFERENCES_DIR, OUTPUT_SKILL_REFERENCES_DIR, {
+      recursive: true,
+      force: true,
+    })
+  }
 
   // 4. Generate Individual Assets & Full Context
   const allFiles = getAllFiles(SOURCE_DIR)

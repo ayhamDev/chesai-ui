@@ -17,7 +17,6 @@ import React, {
 import useRipple from "use-ripple-hook";
 import { useDirection } from "../../context/direction";
 
-import { Divider } from "../divider";
 import { IconButton } from "../icon-button";
 import { Typography } from "../typography";
 
@@ -90,10 +89,10 @@ const navigatorVariants = cva(
       { variant: "tertiary", bordered: true, className: "border-transparent!" },
     ],
     defaultVariants: {
-      variant: "primary",
+      variant: "surface",
       behavior: "push",
-      shape: "minimal",
-      bordered: true,
+      shape: "sharp",
+      bordered: false,
     },
   },
 );
@@ -495,17 +494,17 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   children,
   activeTab,
   onTabPress,
-  shape = "minimal",
-  bordered = true,
-  variant = "primary",
+  shape = "sharp",
+  bordered = false,
+  variant = "surface",
   itemVariant = "secondary",
-  itemLayout = "inline",
+  itemLayout = "stacked",
   width = "6rem",
   expandedWidth = "12rem",
   forceExpanded = false,
   expandOnHover = false,
   overlay = false,
-  expandable = true,
+  expandable = false,
   pillStyle = "full",
   disableRipple = false,
   indicatorAnimation = "slide",

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Combobox } from "./index";
 import { Code, Database, Palette, Zap } from "lucide-react";
 
@@ -32,6 +32,8 @@ const meta: Meta<typeof Combobox> = {
     },
     disabled: { control: "boolean" },
     isClearable: { control: "boolean" },
+    forceMobileLayout: { control: "boolean" },
+    sheetProps: { control: "object" },
     mobileLayout: {
       control: "select",
       options: ["default", "bottom-sheet", "dialog"],
@@ -69,10 +71,79 @@ export const Default: Story = {
     const [value, setValue] = useState("");
     return (
       <div className="w-80">
-        <Combobox {...args} value={value} onChange={setValue} />
+        <Combobox {...args} value={value} onValueChange={setValue} />
       </div>
     );
   },
+};
+
+export const DesktopSheet: Story = {
+  args: {
+    label: "Framework",
+    options: frameworks,
+    mobileLayout: "bottom-sheet",
+    forceMobileLayout: true,
+  },
+};
+
+export const DetachedSheet: Story = {
+  args: {
+    ...DesktopSheet.args,
+    sheetProps: { mode: "detached", shape: "full", variant: "secondary", glass: true },
+  },
+};
+
+const remoteOptions = Array.from({ length: 100 }, (_, index) => ({
+  value: String(index + 1), label: `Customer ${index + 1}`,
+}));
+
+function RemoteExample({ forceMobileLayout = false }: { forceMobileLayout?: boolean }) {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [options, setOptions] = useState<typeof remoteOptions>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+
+  useEffect(() => {
+    setIsLoading(true);
+    // Simulated paginated server request; cleanup discards stale searches.
+    const timer = setTimeout(() => {
+      const results = remoteOptions.filter(option => option.label.toLowerCase().includes(search.toLowerCase()));
+      setOptions(results.slice(0, (page + 1) * 20));
+      setHasMore(results.length > (page + 1) * 20);
+      setIsLoading(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, page]);
+
+  return <div className="w-80">
+    <Combobox
+      label="Customer"
+      options={options}
+      searchValue={search}
+      onSearchChange={query => {
+        if (query === search) return;
+        setSearch(query);
+        setPage(0);
+        setOptions([]);
+        setIsLoading(true);
+      }}
+      shouldFilter={false}
+      isLoading={isLoading}
+      hasMore={hasMore}
+      onLoadMore={() => setPage(previous => previous + 1)}
+      forceMobileLayout={forceMobileLayout}
+      description="Simulated server search and pages of 20 customers."
+    />
+  </div>;
+}
+
+export const ServerSearchAndInfiniteScroll: Story = {
+  render: () => <RemoteExample />,
+};
+
+export const ServerSearchAndInfiniteScrollSheet: Story = {
+  render: () => <RemoteExample forceMobileLayout />,
 };
 
 export const Variations: StoryObj = {

@@ -15,6 +15,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  type SheetProps,
 } from "../sheet";
 import { Input } from "../input";
 import { ElasticScrollArea } from "../elastic-scroll-area";
@@ -73,6 +74,10 @@ export interface SelectProps extends React.ComponentPropsWithoutRef<
   children?: React.ReactNode;
   position?: "item-aligned" | "popper";
   mobileLayout?: "default" | "bottom-sheet" | "dialog";
+  /** Use mobileLayout at every screen size. Requires items; "default" still uses the dropdown. */
+  forceMobileLayout?: boolean;
+  /** Basic appearance options for mobileLayout="bottom-sheet", including on desktop. */
+  sheetProps?: Pick<SheetProps, "mode" | "shape" | "variant" | "glass">;
 }
 
 const renderSelectViewport = (viewport: React.ReactElement) => (
@@ -106,6 +111,8 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       disabled,
       position = "popper",
       mobileLayout = "bottom-sheet",
+      forceMobileLayout = false,
+      sheetProps,
       ...props
     },
     ref,
@@ -129,7 +136,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 
     const isMobile = useMediaQuery("(max-width: 768px)");
     const shouldUseMobileLayout =
-      isMobile && mobileLayout !== "default" && !!items;
+      (isMobile || forceMobileLayout) && mobileLayout !== "default" && !!items;
 
     const isFilled = !!currentValue || !!placeholder || open === true;
 
@@ -275,14 +282,29 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
     );
 
     if (shouldUseMobileLayout) {
-      const MobileWrapper = mobileLayout === "bottom-sheet" ? Sheet : Dialog;
+      const renderMobileWrapper = (children: React.ReactNode) =>
+        mobileLayout === "bottom-sheet" ? (
+          <Sheet
+            open={open}
+            onOpenChange={setOpen}
+            mode={sheetProps?.mode}
+            shape={sheetProps?.shape ?? shape}
+            variant={sheetProps?.variant}
+            glass={sheetProps?.glass}
+            forceBottomSheet
+          >
+            {children}
+          </Sheet>
+        ) : (
+          <Dialog open={open} onOpenChange={setOpen}>{children}</Dialog>
+        );
       const MobileTrigger =
         mobileLayout === "bottom-sheet" ? SheetTrigger : DialogTrigger;
       const MobileContent =
         mobileLayout === "bottom-sheet" ? SheetContent : DialogContent;
 
       return (
-        <MobileWrapper open={open} onOpenChange={setOpen}>
+        renderMobileWrapper(<>
           <div
             className={clsx(
               selectSlots.base,
@@ -317,7 +339,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
               mobileLayout === "bottom-sheet" && "max-h-[85vh] h-[500px]",
             )}
             // @ts-ignore
-            shape={shape}
+            {...(mobileLayout === "dialog" ? { shape } : {})}
           >
             {mobileLayout === "bottom-sheet" && (
               <SheetHeader className="px-4 py-3 border-b border-outline-variant/20 shrink-0">
@@ -380,7 +402,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
               </ElasticScrollArea>
             </div>
           </MobileContent>
-        </MobileWrapper>
+        </>)
       );
     }
 

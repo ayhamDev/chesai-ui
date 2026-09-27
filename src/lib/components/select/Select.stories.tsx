@@ -37,6 +37,8 @@ const meta: Meta<typeof Select> = {
       options: ["default", "bottom-sheet", "dialog"],
     },
     disabled: { control: "boolean" },
+    forceMobileLayout: { control: "boolean" },
+    sheetProps: { control: "object" },
     isInvalid: { control: "boolean" },
   },
 };
@@ -60,6 +62,23 @@ export const Default: Story = {
     labelPlacement: "inside",
     variant: "filled",
     mobileLayout: "dialog",
+  },
+};
+
+export const DesktopSheet: Story = {
+  args: {
+    label: "Favorite Animal",
+    placeholder: "Select an animal",
+    items: animals,
+    mobileLayout: "bottom-sheet",
+    forceMobileLayout: true,
+  },
+};
+
+export const DetachedSheet: Story = {
+  args: {
+    ...DesktopSheet.args,
+    sheetProps: { mode: "detached", shape: "full", variant: "secondary", glass: true },
   },
 };
 
