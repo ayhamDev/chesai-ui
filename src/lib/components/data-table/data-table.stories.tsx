@@ -399,7 +399,7 @@ export const GranularControls: Story = {
     docs: {
       description: {
         story:
-          "The search, filter builder, view menu, reset action, pagination, and selection summary can be hidden independently without disabling controlled state.",
+          "The search, filter controls (including column-menu actions), view menu, reset action, pagination, and selection summary can be hidden independently without disabling controlled state. Edit visibility in Controls to toggle them.",
       },
     },
   },
@@ -411,9 +411,12 @@ export const GranularControls: Story = {
       variant="secondary"
       visibility={{
         search: false,
+        filters: false,
+        reset: false,
         viewOptions: false,
         export: false,
         selectionSummary: false,
+        ...args.visibility,
       }}
     />
   ),

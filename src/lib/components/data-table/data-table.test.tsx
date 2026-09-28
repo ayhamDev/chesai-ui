@@ -2,6 +2,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DataTable, type DataTableState } from "./index";
+import { DataTableColumnHeader } from "./column-header";
 
 Object.defineProperty(window, "matchMedia", {
   writable: true,
@@ -235,6 +236,63 @@ describe("DataTable", () => {
     expect(screen.queryByText("Filter")).toBeNull();
     expect(screen.queryByText("View")).toBeNull();
     expect(screen.queryByText("Export")).toBeNull();
+    expect(screen.getByText("Alpha")).toBeTruthy();
+  });
+
+  it("hides column filter actions while preserving controlled filtering and sorting", async () => {
+    const customColumns: ColumnDef<Item>[] = [
+      { accessorKey: "name", header: ({ column }) => <DataTableColumnHeader column={column} title="Name" /> },
+      columns[1],
+    ];
+    const { rerender } = render(
+      <DataTable data={data} columns={customColumns}
+        state={{ columnFilters: [{ id: "status", value: { operator: "eq", value: "pending" } }] }}
+        visibility={{ search: false, filters: false, reset: false, export: false, viewOptions: false, pagination: false }} />,
+    );
+    expect(screen.getByText("Alpha")).toBeTruthy();
+    expect(screen.queryByText("Beta")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Filter", exact: true })).toBeNull();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Name", exact: true }), { key: "Enter" });
+    expect(await screen.findByRole("menuitem", { name: "Ascending" })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: "Hide Column" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: /Filter/ })).toBeNull();
+
+    rerender(<DataTable data={data} columns={customColumns}
+      visibility={{ search: false, export: false, viewOptions: true, pagination: false }} />);
+    expect(await screen.findByRole("menuitem", { name: "Filter..." })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Hide Column" })).toBeTruthy();
+  });
+
+  it.each(["toolbar", "locked"])("does not offer column hiding when %s prevents restoring it", async mode => {
+    const customColumns: ColumnDef<Item>[] = [{
+      accessorKey: "name", enableHiding: mode !== "locked",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+    }];
+    render(<DataTable data={data} columns={customColumns}
+      visibility={{ toolbar: mode !== "toolbar", filters: false, search: false, export: false, pagination: false }} />);
+    fireEvent.keyDown(screen.getByRole("button", { name: "Name", exact: true }), { key: "Enter" });
+    expect(await screen.findByRole("menuitem", { name: "Ascending" })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: "Hide Column" })).toBeNull();
+    expect(screen.queryByRole("separator")).toBeNull();
+  });
+
+  it("can restore the last hidden custom display column through View", async () => {
+    const customColumns: ColumnDef<Item>[] = [{
+      id: "custom", cell: ({ row }) => row.original.name,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Custom" />,
+    }];
+    render(<DataTable data={data} columns={customColumns}
+      visibility={{ filters: false, search: false, export: false, pagination: false }} />);
+    const viewButton = screen.getByRole("button", { name: "View", exact: true });
+    expect(viewButton.className.split(" ")).not.toContain("hidden");
+    fireEvent.keyDown(screen.getByRole("button", { name: "Custom", exact: true }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Hide Column" }));
+    await waitFor(() => expect(screen.queryByRole("columnheader")).toBeNull());
+    fireEvent.keyDown(screen.getByRole("button", { name: "View", exact: true }), { key: "Enter" });
+    const restore = await screen.findByRole("menuitemcheckbox", { name: "custom" });
+    expect(restore.getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(restore);
+    await waitFor(() => expect(screen.getByRole("columnheader")).toBeTruthy());
     expect(screen.getByText("Alpha")).toBeTruthy();
   });
 

@@ -82,6 +82,17 @@ const drag = (dx: number, dy = 0, pointerType = 'mouse', cancel = false) => {
 }
 
 describe('WeekCalendar', () => {
+  it('shows an event dot for passed dates without changing day selection', () => {
+    render(<WeekCalendar defaultVisibleDate={date(23)} eventDates={[date(22), date(24)]} disableAnimation />)
+
+    expect(dayButton(22)).toHaveAttribute('data-has-event')
+    expect(dayButton(24)).toHaveAttribute('data-has-event')
+    expect(dayButton(23)).not.toHaveAttribute('data-has-event')
+    expect(dayButton(24)).toHaveAccessibleName(/September 24th, 2026, has events/)
+    expect(dayButton(24).querySelector('[data-slot="week-calendar-event-indicator"]')).toBeTruthy()
+    expect(dayButton(24).closest('[role="gridcell"]')).toHaveAttribute('aria-selected', 'false')
+  })
+
   it('supports navigation only without selection or form values', async () => {
     const { container } = render(
       <WeekCalendar mode="none" name="date" defaultVisibleDate={date(23)} disableAnimation />,

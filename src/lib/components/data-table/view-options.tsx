@@ -21,7 +21,7 @@ export function DataTableViewOptions<TData>() {
         <Button
           variant="secondary"
           size="sm"
-          className="ms-auto hidden h-8 lg:flex"
+          className="ms-auto flex h-8"
           startIcon={<Settings2 className="h-4 w-4" />}
         >
           View
@@ -31,10 +31,10 @@ export function DataTableViewOptions<TData>() {
         <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {table
-          .getAllColumns()
+          .getAllLeafColumns()
           .filter(
             (column) =>
-              typeof column.accessorFn !== "undefined" && column.getCanHide()
+              column.getCanHide()
           )
           .map((column) => {
             return (

@@ -10,7 +10,7 @@ import {
   Filter,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Button } from "../button";
 import { Dialog, DialogContent } from "../dialog";
 import {
@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "../dropdown-menu";
 import { ColumnFilterDialog } from "./column-filter-dialog";
+import { DataTableContext } from "./context";
 import { hasFilterValue } from "./filter-utils";
 
 interface DataTableColumnHeaderProps<
@@ -37,16 +38,27 @@ export function DataTableColumnHeader<TData, TValue>({
   className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const isFiltered = hasFilterValue(column.getFilterValue());
+  const context = useContext(DataTableContext);
+  const showFilters = context?.visibility?.filters ?? true;
+  const canFilter = showFilters && column.getCanFilter();
+  const canHide = !!context &&
+    context.visibility?.toolbar !== false &&
+    context.visibility?.viewOptions !== false &&
+    column.columns.length === 0 && column.getCanHide();
+  const isFiltered = showFilters && hasFilterValue(column.getFilterValue());
 
-  if (!column.getCanSort() && !column.getCanFilter()) {
+  useEffect(() => {
+    if (!canFilter) setIsFilterOpen(false);
+  }, [canFilter]);
+
+  if (!column.getCanSort() && !canFilter && !canHide) {
     return <div className={clsx(className)}>{title}</div>;
   }
 
   return (
     <div className={clsx("flex items-center space-x-2", className)}>
       <Dialog
-        open={isFilterOpen}
+        open={canFilter && isFilterOpen}
         onOpenChange={setIsFilterOpen}
         animation="material3"
       >
@@ -88,30 +100,34 @@ export function DataTableColumnHeader<TData, TValue>({
                     Clear Sort
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
+                {(canFilter || canHide) && <DropdownMenuSeparator />}
               </>
             )}
 
-            {column.getCanFilter() && (
+            {canFilter && (
               <DropdownMenuItem onSelect={() => setIsFilterOpen(true)}>
                 <Filter className="me-2 h-3.5 w-3.5 opacity-50" />
                 {isFiltered ? "Edit Filter" : "Filter..."}
               </DropdownMenuItem>
             )}
 
-            <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-              <EyeOff className="me-2 h-3.5 w-3.5 opacity-50" />
-              Hide Column
-            </DropdownMenuItem>
+            {canHide && (
+              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                <EyeOff className="me-2 h-3.5 w-3.5 opacity-50" />
+                Hide Column
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DialogContent variant="surface" className="p-0 w-auto">
-          <ColumnFilterDialog
-            column={column}
-            onClose={() => setIsFilterOpen(false)}
-          />
-        </DialogContent>
+        {canFilter && (
+          <DialogContent variant="surface" className="p-0 w-auto">
+            <ColumnFilterDialog
+              column={column}
+              onClose={() => setIsFilterOpen(false)}
+            />
+          </DialogContent>
+        )}
       </Dialog>
     </div>
   );

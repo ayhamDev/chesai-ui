@@ -88,8 +88,29 @@ The other toolbar switches are `search` and `reset`. Use
 toolbar content and bulk actions. This does not hide the table's column headers.
 `pagination` and `selectionSummary` control the footer elements independently.
 
+`visibility.filters: false` hides both the toolbar Filter button and the
+column-header Filter/Edit Filter actions, dialogs, and filter indicators.
+Filtering still works through controlled `state.columnFilters`, `state.globalFilter`,
+or your custom controls using the table API. Sorting remains available.
+For a fully custom filtering UI, hide search and reset separately:
+
+```tsx
+<DataTable
+  data={rows}
+  columns={columns}
+  visibility={{ filters: false, search: false, reset: false }}
+/>
+```
+
 In the sticky Storybook examples, edit the `visibility` object in Controls to
 try any combination.
+
+Column-header **Hide Column** actions are available only when the toolbar and
+its **View** menu are visible, and the column permits hiding (`enableHiding !== false`).
+This prevents users from hiding a column without a way to restore it. The View
+menu is available on small screens too and lists all hideable leaf columns,
+including custom display columns. Custom controls can still manage
+`state.columnVisibility` or use the table API when the built-in controls are hidden.
 
 ## State and URL integration
 

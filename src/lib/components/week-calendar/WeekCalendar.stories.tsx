@@ -52,6 +52,7 @@ const meta = {
     locale: { control: false },
     visibleDate: { control: false },
     defaultVisibleDate: { control: false },
+    eventDates: { control: false },
   },
 } satisfies Meta<typeof WeekCalendar>
 export default meta
@@ -122,6 +123,14 @@ export const Controlled: Story = {
         </button>
       </div>
     )
+  },
+}
+
+export const EventIndicators: Story = {
+  args: {
+    defaultVisibleDate: initialDate,
+    eventDates: [new Date(2026, 8, 21), new Date(2026, 8, 23), new Date(2026, 8, 26)],
+    showHeader: true,
   },
 }
 

@@ -41,8 +41,9 @@ Omit `value` and use `defaultValue` for internal state. Use `null` to clear a co
 | `shape`, `itemShape` | `full`, `minimal`, `sharp`; item shape inherits root shape by default |
 | `showHeader` | Display the localized full week interval, otherwise announced to screen readers |
 | `weekdayFormat` | `narrow`, `short` (default), `long` |
+| `eventDates` | `Date[]`; local dates that receive an event dot |
 
-The component fills its container. Use `size="sm"` and `weekdayFormat="narrow"` for compact mobile layouts. `className` styles the root; `classNames` provides `header`, `navigation`, `grid`, `day`, `weekday`, and `dayNumber` overrides. Exported CVA functions are available for styling integrations.
+The component fills its container. Use `size="sm"` and `weekdayFormat="narrow"` for compact mobile layouts. Pass `eventDates` to show a small dot for each date that has one or more events; it is a presentational indicator only and does not change selection or interaction. `className` styles the root; `classNames` provides `header`, `navigation`, `grid`, `day`, `weekday`, `dayNumber`, and `eventIndicator` overrides. Exported CVA functions are available for styling integrations.
 
 Unselected days and navigation controls use the same expanding bloom color, opacity, scale, and timing. Selected days have no hover bloom. Navigation hover areas match the day pills' size and shape. Every color comes from the existing semantic theme, including the softer container tones and neutral surface/inverse options.
 

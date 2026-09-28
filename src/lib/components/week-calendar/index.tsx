@@ -37,7 +37,7 @@ export interface WeekCalendarLabels {
   nextWeek: string
 }
 
-export type WeekCalendarSlot = 'header' | 'navigation' | 'grid' | 'day' | 'weekday' | 'dayNumber'
+export type WeekCalendarSlot = 'header' | 'navigation' | 'grid' | 'day' | 'weekday' | 'dayNumber' | 'eventIndicator'
 
 interface WeekCalendarBaseProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'defaultValue' | 'onSelect' | 'children' | 'color'> {
@@ -71,6 +71,8 @@ interface WeekCalendarBaseProps
   /** Carry the selected weekday into the interval reached by the previous/next buttons. */
   selectionFollowsNavigation?: boolean
   classNames?: Partial<Record<WeekCalendarSlot, string>>
+  /** Local dates that display a dot to indicate one or more events. Times of day are ignored. */
+  eventDates?: readonly Date[]
   /** Non-interactive content inside the accessible day button. */
   renderDay?: (date: Date, state: WeekCalendarDayState) => React.ReactNode
   /** Include event/availability details in the accessible date label when customizing day content. */
@@ -166,6 +168,7 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
     selectionFollowsNavigation = true,
     labels,
     classNames,
+    eventDates,
     renderDay,
     getDayLabel,
     name,
@@ -196,6 +199,7 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
     () => defaultVisibleDate ?? clamp(selectedDate ?? new Date()),
   )
   const selectedKey = selectedDate ? dayKey(selectedDate) : undefined
+  const eventDateKeys = new Set(eventDates?.map(dayKey))
   const lastSelectedKey = useRef(selectedKey)
   // External selection changes reveal the new date; browsing alone never changes selection.
   useEffect(() => {
@@ -433,6 +437,7 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
               {strip.items.map(({ date: day, index, visible }) => {
                 const state = stateFor(day)
                 const key = dayKey(day)
+                const hasEvent = eventDateKeys.has(key)
                 return (
                   // biome-ignore lint/a11y/useSemanticElements: Calendar grid cell; its button owns keyboard interaction.
                   // biome-ignore lint/a11y/useFocusableInteractive: Focus is managed on the child button, not the cell.
@@ -459,9 +464,13 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
                           data-range-start={state.isRangeStart || undefined}
                           data-range-end={state.isRangeEnd || undefined}
                           data-in-range={state.isInRange || undefined}
+                          data-has-event={hasEvent || undefined}
                           disabled={disabled}
                           aria-disabled={state.isDisabled || readOnly || mode === 'none' || undefined}
-                          aria-label={getDayLabel?.(day, state) ?? format(day, 'PPPP', { locale })}
+                          aria-label={
+                            getDayLabel?.(day, state) ??
+                            `${format(day, 'PPPP', { locale })}${hasEvent ? ', has events' : ''}`
+                          }
                           aria-current={state.isToday ? 'date' : undefined}
                           tabIndex={!disabled && isSameDay(day, tabDay) ? 0 : -1}
                           onFocus={() => setFocusedKey(key)}
@@ -507,6 +516,16 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
                                 {format(day, 'd', { locale })}
                               </span>
                             </>
+                          )}
+                          {hasEvent && (
+                            <span
+                              aria-hidden="true"
+                              data-slot="week-calendar-event-indicator"
+                              className={twMerge(
+                                'pointer-events-none absolute bottom-1 size-1 rounded-full bg-current',
+                                classNames?.eventIndicator,
+                              )}
+                            />
                           )}
                         </DayButton>
                       </TooltipTrigger>

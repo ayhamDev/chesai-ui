@@ -29,8 +29,10 @@ export type DataTableUrlState = Pick<
 export interface DataTableVisibility {
   toolbar: boolean;
   search: boolean;
+  /** Show the filter builder, column-menu filter actions and header filter indicators. Does not disable filtering. */
   filters: boolean;
   reset: boolean;
+  /** Show the column visibility menu. Hiding this also removes header Hide Column actions. */
   viewOptions: boolean;
   export: boolean;
   pagination: boolean;
