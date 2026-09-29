@@ -725,7 +725,7 @@
     {
       "folder": "button-group",
       "category": "actions",
-      "usage": "Visually related adjacent buttons. Compose Button children; grouping alone does not provide selection state or radio semantics.",
+      "usage": "Visually related adjacent buttons. Compose Button children. Expressive presses expand the active button and compress immediate neighbors while preserving total width; expressive=false opts out and expansion tunes the amount. Supports keyboard release, RTL and reduced motion. Grouping alone does not provide selection state or radio semantics.",
       "status": "public",
       "exports": [
         {
@@ -738,9 +738,20 @@
           "ownProps": [
             "activeShape",
             "children",
+            "expansion",
+            "expressive",
             "gap",
             "shape"
           ]
+        },
+        {
+          "name": "ButtonGroupProps",
+          "kind": "type",
+          "folder": "button-group",
+          "sourcePath": "src/lib/components/button-group/index.tsx",
+          "assetPath": "assets/llm/src-lib-components-button-group-index.tsx.md",
+          "members": [],
+          "ownProps": []
         }
       ],
       "sources": [

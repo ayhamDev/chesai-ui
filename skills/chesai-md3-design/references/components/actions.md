@@ -34,13 +34,15 @@ Text actions and form submission. Use Button with children, optional startIcon/e
 
 ## button-group
 
-Visually related adjacent buttons. Compose Button children; grouping alone does not provide selection state or radio semantics.
+Visually related adjacent buttons. Compose Button children. Expressive presses expand the active button and compress immediate neighbors while preserving total width; expressive=false opts out and expansion tunes the amount. Supports keyboard release, RTL and reduced motion. Grouping alone does not provide selection state or radio semantics.
 
 **Availability:** package-root public API.
 
 **Value exports:** `ButtonGroup`.
 
-- `ButtonGroup` own props: `activeShape`, `children`, `gap`, `shape`.
+**Type-only exports:** `ButtonGroupProps`. Use `import type`.
+
+- `ButtonGroup` own props: `activeShape`, `children`, `expansion`, `expressive`, `gap`, `shape`.
 
 **Source:** [index.tsx](../../../../src/lib/components/button-group/index.tsx)
 

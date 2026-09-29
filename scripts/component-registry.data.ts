@@ -10,7 +10,7 @@ export const categories: Record<string, string> = {
 export const guidance = `
 button|actions|Text actions and form submission. Use Button with children, optional startIcon/endIcon and isLoading; set type explicitly inside forms. asChild supports an appropriate link element.
 icon-button|actions|Compact icon actions. Supply an accessible name and an icon child; use Button when the action needs a visible label.
-button-group|actions|Visually related adjacent buttons. Compose Button children; grouping alone does not provide selection state or radio semantics.
+button-group|actions|Visually related adjacent buttons. Compose Button children. Expressive presses expand the active button and compress immediate neighbors while preserving total width; expressive=false opts out and expansion tunes the amount. Supports keyboard release, RTL and reduced motion. Grouping alone does not provide selection state or radio semantics.
 split-button|actions|Primary action with related alternatives. Compose the primary Button and menu trigger inside SplitButton; read its story for sizing and shared shape.
 fab|actions|Prominent screen-level creation/action. Supply icon and optional extended label. Do not add a floating action when an existing primary action already serves the task.
 fab-menu|actions|A small set of related floating actions. Compose Trigger, List and Item; keep open/onOpenChange coherent and label every action.
