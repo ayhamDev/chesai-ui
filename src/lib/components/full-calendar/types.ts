@@ -85,6 +85,8 @@ export interface PrintSettings {
 }
 
 export interface FullCalendarProps<T = any> {
+  /** Blur behind the calendar's dialogs and mobile event sheet. */
+  overlayBlur?: import('../../utils/overlay').OverlayBlur;
   events: CalendarEvent<T>[];
   initialDate?: Date;
   initialView?: CalendarView;

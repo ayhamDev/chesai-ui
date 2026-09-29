@@ -387,6 +387,7 @@ export const EventPopover = () => {
           <Repeat className="w-5 h-5 text-on-surface-variant shrink-0" />
           <div className="w-full">
             <RecurrenceSelect
+              overlayBlur={calendar.overlayBlur}
               variant="filled"
               size="sm"
               shape="full"
@@ -417,6 +418,7 @@ export const EventPopover = () => {
   if (isMobile) {
     return (
       <Sheet
+        overlayBlur={calendar.overlayBlur}
         open={popover.isOpen}
         onOpenChange={(open) => !open && closePopover()}
         forceBottomSheet

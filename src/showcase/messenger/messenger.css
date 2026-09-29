@@ -1,0 +1,41 @@
+/* Let the library Button's animated content span the width of an app list row. */
+.messenger-row {
+	min-width: 0 !important;
+}
+
+.messenger-row > [data-slot="button-content"] {
+	width: 100% !important;
+	min-width: 0;
+}
+
+.messenger-row > [data-slot="button-content"] > [data-slot="button-content-inner"] {
+	width: 100%;
+	min-width: 0;
+	gap: 12px;
+	justify-content: flex-start;
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+	.messenger-chat-visible {
+		animation: messenger-open 320ms cubic-bezier(0.2, 0, 0, 1);
+	}
+	.messenger-list-visible {
+		animation: messenger-back 280ms cubic-bezier(0.2, 0, 0, 1);
+	}
+}
+@keyframes messenger-open {
+	from {
+		transform: translateX(24px);
+	}
+	to {
+		transform: translateX(0);
+	}
+}
+@keyframes messenger-back {
+	from {
+		transform: translateX(-16px);
+	}
+	to {
+		transform: translateX(0);
+	}
+}

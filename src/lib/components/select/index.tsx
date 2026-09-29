@@ -49,6 +49,8 @@ export const useSelectContext = () => useContext(SelectContext);
 export interface SelectProps extends React.ComponentPropsWithoutRef<
   typeof SelectPrimitive.Root
 > {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   variant?:
     | "filled"
     | "filled-inverted"
@@ -91,6 +93,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
   (
     {
       children,
+      disableHover = false,
       variant = "filled",
       color = "primary",
       size = "md",
@@ -325,7 +328,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
               <button
                 ref={ref}
                 disabled={disabled}
-                className={triggerClassName}
+                data-disable-hover={disableHover || undefined} className={triggerClassName}
                 type="button"
               >
                 {triggerContent}
@@ -434,7 +437,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
           >
             {isOutside && labelContent}
 
-            <SelectPrimitive.Trigger ref={ref} className={triggerClassName}>
+            <SelectPrimitive.Trigger ref={ref} data-disable-hover={disableHover || undefined} className={triggerClassName}>
               {triggerContent}
             </SelectPrimitive.Trigger>
 

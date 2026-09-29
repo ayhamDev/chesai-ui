@@ -17,6 +17,11 @@ const meta: Meta<typeof Sheet> = {
     },
   },
   argTypes: {
+    overlayBlur: {
+      control: "select",
+      options: ["none", "xs", "sm", "md", "lg", "xl"],
+      description: "Blur behind the sheet overlay.",
+    },
     variant: {
       control: "select",
       options: [

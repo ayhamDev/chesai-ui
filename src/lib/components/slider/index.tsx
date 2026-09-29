@@ -276,6 +276,8 @@ export interface SliderProps extends Omit<
   React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>,
   "value" | "defaultValue"
 > {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   value?: number[];
   defaultValue?: number[];
   onValueChange?: (value: number[]) => void;
@@ -331,6 +333,7 @@ export const Slider = React.forwardRef<
       startIcon,
       endIcon,
       disabled,
+      disableHover = false,
       thumbRingColor,
       gap = 0,
       thumbHeight,
@@ -619,7 +622,7 @@ export const Slider = React.forwardRef<
 
     return (
       <div
-        ref={directionRef}
+        ref={directionRef} data-disable-hover={disableHover || undefined}
         dir={props.dir}
         className={clsx(
           "flex items-center gap-4",
@@ -794,7 +797,7 @@ export const Slider = React.forwardRef<
                 }}
               >
                 <AnimatePresence>
-                  {withLabel && (isHovered || isDragging) && (
+                  {withLabel && ((!disableHover && isHovered) || isDragging) && (
                     <ValueLabel value={val} orientation={orientation} />
                   )}
                 </AnimatePresence>

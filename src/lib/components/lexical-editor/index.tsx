@@ -89,6 +89,8 @@ const lexicalEditorVariants = cva(
 export interface LexicalEditorProps extends VariantProps<
   typeof lexicalEditorVariants
 > {
+  /** Disable pointer hover styling while preserving focus and editing. */
+  disableHover?: boolean;
   /** Placeholder text shown when empty */
   placeholder?: string;
   /** Markdown string to initialize the editor with */
@@ -137,6 +139,7 @@ export const LexicalEditor = ({
   markdown,
   onChange,
   readOnly = false,
+  disableHover = false,
   className,
   variant,
   shape = "minimal",
@@ -189,7 +192,7 @@ export const LexicalEditor = ({
   );
 
   return (
-    <div className="flex flex-col w-full relative">
+    <div data-disable-hover={disableHover || undefined} className="flex flex-col w-full relative">
       {labelContent}
 
       <div

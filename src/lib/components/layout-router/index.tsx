@@ -1,4 +1,5 @@
 "use client";
+import { overlayBlurClasses, type OverlayBlur } from "../../utils/overlay";
 
 import {
   animate,
@@ -222,12 +223,14 @@ const LayoutRouterScreen = ({
   id,
   children,
   presentation = "fullscreen",
+  overlayBlur = "none",
   dismissible = false,
   dismissDirection = "y",
 }: {
   id: string;
   children: ReactNode;
   presentation?: "fullscreen" | "modal";
+  overlayBlur?: OverlayBlur;
   dismissible?: boolean;
   dismissDirection?: "x" | "y";
 }) => {
@@ -288,7 +291,7 @@ const LayoutRouterScreen = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/50"
+            className={`absolute inset-0 bg-black/50 ${overlayBlurClasses[overlayBlur]}`}
             onClick={!dismissible ? goBack : undefined}
             style={{
               opacity: dismissible ? backdropOpacity : undefined,

@@ -21,16 +21,18 @@ const CheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 );
 
 export interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   label?: string;
 }
 
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, id, label, ...props }, ref) => {
+  ({ className, id, label, disableHover = false, ...props }, ref) => {
     const uniqueId = React.useId();
     const checkboxId = id || uniqueId;
 
     return (
-      <div className="group inline-flex items-center">
+      <div data-disable-hover={disableHover || undefined} className="group inline-flex items-center">
         <div className="relative flex items-center justify-center h-6 w-6">
           {/* --- HOLLOW BLOOM EFFECT (State Layer) --- */}
           <div

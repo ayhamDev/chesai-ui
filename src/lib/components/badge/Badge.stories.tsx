@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Badge } from "./index";
-import { Button } from "../button";
+import { Flex } from "../layouts";
 
 const meta: Meta<typeof Badge> = {
   title: "Components/Badge",
@@ -9,7 +9,7 @@ const meta: Meta<typeof Badge> = {
   argTypes: {
     variant: {
       control: "select",
-      options: ["primary", "secondary", "destructive", "outline"],
+      options: ["primary", "secondary", "tertiary", "destructive", "outline"],
     },
     shape: {
       control: "select",
@@ -34,19 +34,20 @@ export const Default: Story = {
 export const AllVariants: Story = {
   name: "All Variants",
   render: () => (
-    <div className="flex flex-wrap items-center gap-4">
+    <Flex wrap="wrap" align="center" gap="md">
       <Badge variant="primary">Primary</Badge>
       <Badge variant="secondary">Secondary</Badge>
+      <Badge variant="tertiary">Tertiary</Badge>
       <Badge variant="destructive">Destructive</Badge>
       <Badge variant="outline">Outline</Badge>
-    </div>
+    </Flex>
   ),
 };
 
 export const AllShapes: Story = {
   name: "All Shapes",
   render: () => (
-    <div className="flex flex-wrap items-center gap-4">
+    <Flex wrap="wrap" align="center" gap="md">
       <Badge variant="primary" shape="full">
         Full
       </Badge>
@@ -56,6 +57,14 @@ export const AllShapes: Story = {
       <Badge variant="primary" shape="sharp">
         Sharp
       </Badge>
-    </div>
+    </Flex>
   ),
+};
+
+export const Tertiary: Story = {
+  args: {
+    children: "Tertiary",
+    variant: "tertiary",
+    shape: "full",
+  },
 };

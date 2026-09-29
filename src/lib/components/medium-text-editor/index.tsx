@@ -12,6 +12,8 @@ import List from "@editorjs/list";
 import { clsx } from "clsx";
 
 export interface MediumTextEditorProps {
+  /** Disable pointer hover styling while preserving focus and editing. */
+  disableHover?: boolean;
   data?: OutputData;
   onChange?: (data: OutputData) => void;
   placeholder?: string;
@@ -29,6 +31,7 @@ export const MediumTextEditor = ({
   onChange,
   placeholder,
   readOnly = false,
+  disableHover = false,
   className,
   minHeight = 300,
 }: MediumTextEditorProps) => {
@@ -106,6 +109,7 @@ export const MediumTextEditor = ({
         defined in editor-styles.css
       */}
       <div
+        data-disable-hover={disableHover || undefined}
         id={holderId.current}
         className="chesai-editor w-full"
         style={{ minHeight }}

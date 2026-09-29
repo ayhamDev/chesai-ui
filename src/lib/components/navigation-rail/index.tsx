@@ -1,5 +1,7 @@
-// src/lib/components/navigation-rail/index.tsx
 "use client";
+import { overlayBlurClasses, type OverlayBlur } from "../../utils/overlay";
+// src/lib/components/navigation-rail/index.tsx
+
 
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva } from "class-variance-authority";
@@ -480,6 +482,7 @@ interface NavigatorProps extends React.HTMLAttributes<HTMLElement> {
   forceExpanded?: boolean;
   expandOnHover?: boolean;
   overlay?: boolean;
+  overlayBlur?: OverlayBlur;
   expandable?: boolean;
   pillStyle?: "full" | "icon";
   disableRipple?: boolean;
@@ -502,6 +505,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
   forceExpanded = false,
   expandOnHover = false,
   overlay = false,
+  overlayBlur = "none",
   expandable = false,
   pillStyle = "full",
   disableRipple = false,
@@ -604,7 +608,7 @@ const NavigationRailNavigator: React.FC<NavigatorProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-black/50 z-10 select-none"
+            className={clsx("fixed inset-0 bg-black/50 z-10 select-none", overlayBlurClasses[overlayBlur])}
             onClick={() => setInternalExpanded(false)}
           />
         )}

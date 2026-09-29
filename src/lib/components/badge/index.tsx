@@ -10,6 +10,8 @@ const badgeVariants = cva(
           "border-transparent bg-primary text-on-primary hover:bg-primary/80",
         secondary:
           "border-transparent bg-secondary-container text-on-secondary-container hover:bg-secondary-container/80",
+        tertiary:
+          "border-transparent bg-tertiary-container text-on-tertiary-container hover:bg-tertiary-container/80",
         destructive:
           "border-transparent bg-error text-on-error hover:bg-error/80",
         outline: "text-on-surface border-outline",
@@ -28,7 +30,7 @@ const badgeVariants = cva(
 );
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "primary" | "secondary" | "destructive" | "outline";
+  variant?: "primary" | "secondary" | "tertiary" | "destructive" | "outline";
   shape?: "full" | "minimal" | "sharp";
 }
 

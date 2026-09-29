@@ -4,6 +4,7 @@ import { type RefObject, useEffect, useRef, useState } from 'react'
 const MAX_STRETCH = 200
 const WHEEL_IDLE_MS = 120
 const SPRING = { type: 'spring', stiffness: 300, damping: 30 } as const
+export const normalizePullThreshold = (value: number) => (Number.isFinite(value) ? Math.max(1, value) : 80)
 
 interface Options {
   orientation: 'vertical' | 'horizontal'
@@ -33,20 +34,21 @@ export function useElasticAndRefresh(
   }, [])
   const callbacks = useRef(options)
   callbacks.current = options
+  const finishIndicator = useRef<(() => void) | undefined>(undefined)
   const reducedMotion = useReducedMotion()
   const { orientation, elasticity, damping, isRefreshEnabled, pullThreshold } = options
+  const hasRefreshCallback = typeof options.onRefresh === 'function'
 
   useEffect(() => {
     const viewport = viewportRef.current
     if (!viewport) return
     const vertical = orientation === 'vertical'
-    const refreshEnabled = vertical && isRefreshEnabled
+    const refreshEnabled = vertical && isRefreshEnabled && hasRefreshCallback
     const enabled = elasticity || refreshEnabled
     const resistance = Number.isFinite(damping) ? Math.max(0, damping) : 0.25
-    const threshold = Number.isFinite(pullThreshold) ? Math.max(1, pullThreshold) : 80
+    const threshold = normalizePullThreshold(pullThreshold)
     // Keep custom refresh thresholds reachable, while bounding huge deltas.
     const limit = refreshEnabled ? Math.max(MAX_STRETCH, threshold * 1.5) : MAX_STRETCH
-    let disposed = false
     let animation: ReturnType<typeof animate> | undefined
     let indicatorAnimation: ReturnType<typeof animate> | undefined
     let wheelTimer: ReturnType<typeof setTimeout> | undefined
@@ -66,6 +68,9 @@ export function useElasticAndRefresh(
       if (reducedMotion) indicator.set(value)
       else indicatorAnimation = animate(indicator, value, SPRING)
     }
+    // Completion uses the current effect's animation after options change.
+    finishIndicator.current = () => moveIndicator(0)
+    if (refreshing.current && refreshEnabled) moveIndicator(threshold)
     const settle = () => {
       clearWheel()
       rawPull = 0
@@ -98,16 +103,20 @@ export function useElasticAndRefresh(
       try {
         await callback()
       } catch (error) {
-        if (!disposed) {
-          if (callbacks.current.onRefreshError) callbacks.current.onRefreshError(error)
-          else console.error('ElasticScrollArea refresh failed', error)
+        if (mounted.current) {
+          try {
+            if (callbacks.current.onRefreshError) callbacks.current.onRefreshError(error)
+            else console.error('ElasticScrollArea refresh failed', error)
+          } catch (reportingError) {
+            // A failing error handler must not leak an unhandled event promise.
+            console.error('ElasticScrollArea onRefreshError failed', reportingError)
+          }
         }
       } finally {
         refreshing.current = false
         if (mounted.current) {
           setIsRefreshing(false)
-          if (!disposed) moveIndicator(0)
-          else indicator.set(0)
+          finishIndicator.current?.()
         }
       }
     }
@@ -137,14 +146,16 @@ export function useElasticAndRefresh(
       return false
     }
     const canPull = (delta: number) =>
-      enabled && resistance > 0 && atEdge(delta) && (elasticity || (refreshEnabled && delta > 0))
+      enabled && atEdge(delta) && ((elasticity && resistance > 0) || (refreshEnabled && delta > 0))
     const stretch = (delta: number) => {
       animation?.stop()
       rawPull += delta
       // Saturate the raw input too, so reversing a very large swipe responds promptly.
-      const cap = (limit * 4) / resistance
+      // Zero damping can disable stretching, but must not disable refresh recognition.
+      const pullResistance = resistance || 0.25
+      const cap = (limit * 4) / pullResistance
       rawPull = Math.max(-cap, Math.min(cap, rawPull))
-      offset.set(Math.sign(rawPull) * limit * (1 - Math.exp((-Math.abs(rawPull) * resistance) / limit)))
+      offset.set(Math.sign(rawPull) * limit * (1 - Math.exp((-Math.abs(rawPull) * pullResistance) / limit)))
     }
     const handleWheel = (event: WheelEvent) => {
       // Trackpad pinch is also delivered as Ctrl+wheel by browsers.
@@ -152,7 +163,8 @@ export function useElasticAndRefresh(
         settle()
         return
       }
-      if (!enabled || refreshing.current || mode !== 'idle' || event.defaultPrevented) return
+      // Refresh belongs to a deliberate touch release, never wheel momentum.
+      if (!elasticity || resistance === 0 || refreshing.current || mode !== 'idle' || event.defaultPrevented) return
       const primary = vertical ? event.deltaY : event.deltaX || (event.shiftKey ? event.deltaY : 0)
       const cross = vertical ? event.deltaX : event.shiftKey ? 0 : event.deltaY
       if (!primary || Math.abs(cross) > Math.abs(primary)) return
@@ -211,7 +223,7 @@ export function useElasticAndRefresh(
       }
       const position = vertical ? touch.clientY : touch.clientX
       const cross = vertical ? touch.clientX : touch.clientY
-      const delta = position - last
+      let delta = position - last
       last = position
       if (mode === 'pending') {
         const distance = position - origin
@@ -226,6 +238,7 @@ export function useElasticAndRefresh(
           return
         }
         mode = 'elastic'
+        delta = distance
       }
       if (mode === 'elastic') {
         event.preventDefault()
@@ -249,7 +262,12 @@ export function useElasticAndRefresh(
     }
     const handleTouchEnd = (event: TouchEvent) => {
       const shouldRefresh =
-        mode === 'elastic' && event.touches.length === 0 && refreshEnabled && offset.get() >= threshold
+        mode === 'elastic' &&
+        !event.defaultPrevented &&
+        event.touches.length === 0 &&
+        refreshEnabled &&
+        atEdge(1) &&
+        offset.get() >= threshold
       mode = 'idle'
       touchId = -1
       if (shouldRefresh) void refresh()
@@ -271,7 +289,6 @@ export function useElasticAndRefresh(
     viewport.addEventListener('touchcancel', cancelTouch, { passive: true })
     viewport.addEventListener('scroll', handleScroll, { passive: true })
     return () => {
-      disposed = true
       viewport.removeEventListener('wheel', handleWheel)
       viewport.removeEventListener('touchstart', handleTouchStart)
       viewport.removeEventListener('touchmove', handleTouchMove)
@@ -282,10 +299,22 @@ export function useElasticAndRefresh(
       animation?.stop()
       indicatorAnimation?.stop()
       unsubscribe()
+      finishIndicator.current = undefined
       offset.set(0)
       indicator.set(0)
     }
-  }, [viewportRef, offset, indicator, orientation, elasticity, damping, isRefreshEnabled, pullThreshold, reducedMotion])
+  }, [
+    viewportRef,
+    offset,
+    indicator,
+    orientation,
+    elasticity,
+    damping,
+    isRefreshEnabled,
+    hasRefreshCallback,
+    pullThreshold,
+    reducedMotion,
+  ])
 
   return { isRefreshing }
 }

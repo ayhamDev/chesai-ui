@@ -9,6 +9,7 @@ import React, {
   useCallback,
 } from "react";
 import { clsx } from "clsx";
+import { overlayBlurClasses, type OverlayBlur } from "../../utils/overlay";
 import { useMotionValueEvent, type MotionValue } from "framer-motion";
 import { Card } from "../card";
 import { Item, ItemGroup, ItemContent, ItemTitle, ItemMedia } from "../item";
@@ -211,6 +212,7 @@ const HUDControls: React.FC<HUDControlsProps> = ({
 
 // --- CORE PLAYBACK ENGINE (Resets entirely on unique key trigger) ---
 interface PlaylistPlayerCoreProps {
+  overlayBlur?: OverlayBlur;
   activeSchema: PlaylistSchema;
   components: PlaylistComponentRegistry;
   playing: boolean;
@@ -226,6 +228,7 @@ interface PlaylistPlayerCoreProps {
 }
 
 const PlaylistPlayerCore: React.FC<PlaylistPlayerCoreProps> = ({
+  overlayBlur = "md",
   activeSchema,
   components,
   playing,
@@ -500,7 +503,7 @@ const PlaylistPlayerCore: React.FC<PlaylistPlayerCoreProps> = ({
       >
         {/* Buffering/Preloading Overlay Indicator */}
         {showLoadingOverlay && (
-          <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm text-white select-none transition-all duration-300">
+          <div className={clsx("chesai-overlay-enter absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/60 text-white select-none transition-all duration-300", overlayBlurClasses[overlayBlur])}>
             <LoadingIndicator
               variant="material-morph"
               className="!w-16 !h-16 text-primary mb-4"
@@ -584,6 +587,8 @@ const PlaylistPlayerCore: React.FC<PlaylistPlayerCoreProps> = ({
 
 // --- ORCHESTRATOR COMPONENT (Maintains persistent UI, triggers key flushes) ---
 export interface PlaylistPlayerProps {
+  /** Blur behind the loading overlay and playlist sheet. */
+  overlayBlur?: OverlayBlur;
   schema?: PlaylistSchema;
   schemas?: PlaylistSchema | PlaylistSchema[];
   components?: PlaylistComponentRegistry;
@@ -597,6 +602,7 @@ export interface PlaylistPlayerProps {
 }
 
 export const PlaylistPlayer: React.FC<PlaylistPlayerProps> = ({
+  overlayBlur,
   schema,
   schemas,
   components = defaultPlaylistRegistry,
@@ -665,6 +671,7 @@ export const PlaylistPlayer: React.FC<PlaylistPlayerProps> = ({
         AnimationFrames, hardware video decoder decoders, and event systems) whenever index changes.
       */}
       <PlaylistPlayerCore
+        overlayBlur={overlayBlur}
         key={activeSchema.id || activeIndex}
         activeSchema={activeSchema}
         components={components}
@@ -683,6 +690,7 @@ export const PlaylistPlayer: React.FC<PlaylistPlayerProps> = ({
       {/* Playlist Selection Menu (Outer persistent layout, avoids scaling conflicts) */}
       {showControls && (
         <Sheet
+          overlayBlur={overlayBlur}
           open={isSheetOpen}
           onOpenChange={setIsSheetOpen}
           variant="surface-container-highest"

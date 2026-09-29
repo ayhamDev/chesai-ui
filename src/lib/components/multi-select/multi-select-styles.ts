@@ -77,8 +77,8 @@ export const getMultiSelectSlotClassNames = (
       break
     case 'filled-inverted':
       triggerClasses.push(
-        'bg-surface-container-low hover:bg-surface-container',
-        'data-[state=open]:bg-surface-container',
+        'bg-surface-container-lowest hover:bg-filled-inverted-hover',
+        'data-[state=open]:bg-surface-container-lowest',
       )
       break
     case 'outlined':

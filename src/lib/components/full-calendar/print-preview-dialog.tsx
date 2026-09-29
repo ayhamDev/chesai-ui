@@ -25,6 +25,7 @@ import {
 
 export const PrintPreviewDialog = () => {
   const {
+    overlayBlur,
     isPrintPreviewOpen,
     setPrintPreviewOpen,
     events,
@@ -83,6 +84,7 @@ export const PrintPreviewDialog = () => {
 
   return (
     <Dialog
+      overlayBlur={overlayBlur}
       open={isPrintPreviewOpen}
       onOpenChange={setPrintPreviewOpen}
       isLocked={true}

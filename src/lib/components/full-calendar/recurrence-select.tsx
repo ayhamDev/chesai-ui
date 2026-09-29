@@ -7,6 +7,7 @@ import { RecurrenceDialog } from "./recurrence-dialog";
 import type { RecurrenceRule } from "./types";
 
 export interface RecurrenceSelectProps {
+  overlayBlur?: import('../../utils/overlay').OverlayBlur;
   value?: RecurrenceRule;
   onChange: (rule?: RecurrenceRule) => void;
   startDate: Date;
@@ -90,6 +91,7 @@ const formatRecurrenceSummary = (rule: RecurrenceRule, startDate: Date) => {
 };
 
 export const RecurrenceSelect = ({
+  overlayBlur,
   value,
   onChange,
   startDate,
@@ -204,6 +206,7 @@ export const RecurrenceSelect = ({
       />
 
       <RecurrenceDialog
+        overlayBlur={overlayBlur}
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         value={value}

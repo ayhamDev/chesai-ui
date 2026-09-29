@@ -1,4 +1,5 @@
 "use client";
+import { overlayBlurClasses, type OverlayBlur } from "../../utils/overlay";
 
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
@@ -83,6 +84,7 @@ export interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   variant?: "default" | "bordered" | "elevated";
   aspectRatio?: "auto" | "square" | "video" | "portrait" | "wide";
   zoomOnHover?: boolean;
+  overlayBlur?: OverlayBlur;
 }
 
 export const Image = forwardRef<HTMLDivElement, ImageProps>(
@@ -96,6 +98,7 @@ export const Image = forwardRef<HTMLDivElement, ImageProps>(
       variant = "default",
       aspectRatio = "auto",
       zoomOnHover = false,
+      overlayBlur = "md",
       width,
       height,
       showSkeleton = true,
@@ -297,7 +300,7 @@ export const Image = forwardRef<HTMLDivElement, ImageProps>(
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                   // 'pointer-events-auto' overrides the body-level pointer-events block from Sheet/Dialog
-                  className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm cursor-zoom-out pointer-events-auto"
+                  className={clsx("fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 cursor-zoom-out pointer-events-auto", overlayBlurClasses[overlayBlur])}
                   onClick={() => setIsZoomed(false)}
                   // Stop pointer down event so underlying Sheet doesn't think you clicked outside of it
                   onPointerDown={(e) => e.stopPropagation()}

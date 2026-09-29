@@ -1,5 +1,7 @@
-// src/lib/components/full-calendar/recurrence-dialog.tsx
 "use client";
+import { overlayBlurClasses, type OverlayBlur } from "../../utils/overlay";
+// src/lib/components/full-calendar/recurrence-dialog.tsx
+
 
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
@@ -16,6 +18,7 @@ import type { RecurrenceRule } from "./types";
 
 export interface RecurrenceDialogProps {
   isOpen: boolean;
+  overlayBlur?: OverlayBlur;
   onClose: () => void;
   value?: RecurrenceRule;
   onChange: (rule: RecurrenceRule) => void;
@@ -101,6 +104,7 @@ const MONTH_NAMES = [
 ];
 
 export const RecurrenceDialog = ({
+  overlayBlur = "none",
   isOpen,
   onClose,
   value,
@@ -223,7 +227,7 @@ export const RecurrenceDialog = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/50"
+            className={clsx("absolute inset-0 bg-black/50", overlayBlurClasses[overlayBlur])}
             onClick={onClose}
           />
           <motion.div

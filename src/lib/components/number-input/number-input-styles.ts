@@ -61,7 +61,7 @@ export const numberInputSlots = {
   errorMessage: 'text-xs text-error',
   stepperWrapper: 'flex flex-col h-full end-0 absolute divide-y divide-outline-variant/20 overflow-hidden',
   stepperButton:
-    'w-8 flex-1 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest hover:text-primary active:scale-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden',
+    'w-8 flex-1 flex items-center justify-center text-on-surface-variant hover:text-primary active:scale-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden',
 }
 
 export const getNumberInputSlotClassNames = (
@@ -91,8 +91,8 @@ export const getNumberInputSlotClassNames = (
       break
     case 'filled-inverted':
       wrapperClasses.push(
-        'bg-surface-container-low hover:bg-surface-container',
-        'group-data-[focus=true]:bg-surface-container',
+        'bg-surface-container-lowest hover:bg-filled-inverted-hover',
+        'group-data-[focus=true]:bg-surface-container-lowest',
       )
       break
     case 'outlined':
@@ -218,5 +218,6 @@ export const getNumberInputSlotClassNames = (
     inputWrapper: [wrapperClasses.join(' '), height, py, px].join(' '),
     input: [inputColor, placeholderColor, inputPadding, paddingRight].join(' '),
     stepperWrapper: ['absolute end-0 top-0 bottom-0 z-20', stepperRoundClass].join(' '),
+    stepperButton: variant === 'filled-inverted' ? 'hover:bg-filled-inverted-hover' : 'hover:bg-surface-container-highest',
   }
 }

@@ -46,6 +46,8 @@ export interface SwitchProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "size"
 > {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   size?: "sm" | "md" | "lg";
   label?: string;
   description?: string;
@@ -68,6 +70,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
       defaultChecked,
       onCheckedChange,
       disabled,
+      disableHover = false,
       id,
       ...props
     },
@@ -134,7 +137,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
     const iconSizePixel = size === "sm" ? 10 : size === "lg" ? 20 : 16;
 
     return (
-      <div ref={directionRef} dir={props.dir} className={clsx("inline-flex items-center gap-3", disabled && "opacity-50 cursor-not-allowed", className)}>
+      <div ref={directionRef} data-disable-hover={disableHover || undefined} dir={props.dir} className={clsx("inline-flex items-center gap-3", disabled && "opacity-50 cursor-not-allowed", className)}>
         <label
           htmlFor={switchId}
           className={clsx(

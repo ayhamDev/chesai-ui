@@ -5,6 +5,7 @@ import { getNumberInputSlotClassNames, numberInputSlots, numberInputStyles } fro
 export interface UseNumberInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'color' | 'onChange'> {
   ref?: React.Ref<HTMLInputElement>
+  disableHover?: boolean
   as?: React.ElementType
   variant?:
     | 'filled'
@@ -69,6 +70,7 @@ export function useNumberInput(props: UseNumberInputProps) {
     defaultValue,
     readOnly,
     disabled,
+    disableHover = false,
     ...otherProps
   } = props
 
@@ -186,6 +188,7 @@ export function useNumberInput(props: UseNumberInputProps) {
   })
 
   const getBaseProps = () => ({
+    'data-disable-hover': disableHover || undefined,
     'data-slot': 'base',
     'data-filled': isFilled,
     'data-filled-within': isFilled || isFocused,
@@ -247,7 +250,7 @@ export function useNumberInput(props: UseNumberInputProps) {
     'data-slot': direction === 'up' ? 'increase-button' : 'decrease-button',
     type: 'button' as const,
     disabled: disabled || readOnly,
-    className: clsx(numberInputSlots.stepperButton, classNames?.stepperButton),
+    className: clsx(numberInputSlots.stepperButton, dynamicStyles.stepperButton, classNames?.stepperButton),
     onClick: direction === 'up' ? handleIncrement : handleDecrement,
     tabIndex: -1,
   })

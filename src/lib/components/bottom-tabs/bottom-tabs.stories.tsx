@@ -282,7 +282,7 @@ export const IconPillStyle: Story = {
     pillStyle: "icon",
     itemVariant: "secondary",
     shape: "full",
-    disableRipple: true,
+    disableRipple: false,
     size: "lg",
   },
   parameters: {

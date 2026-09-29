@@ -32,6 +32,8 @@ export interface MultiSelectOption {
 }
 
 export interface MultiSelectProps {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   options: MultiSelectOption[];
   defaultValue?: string[];
   value?: string[];
@@ -79,6 +81,7 @@ export const MultiSelect = React.forwardRef<
       searchPlaceholder = "Search...",
       emptyMessage = "No item found.",
       maxCount = 10,
+      disableHover = false,
       variant = "filled",
       size = "md",
       shape = "minimal",
@@ -284,7 +287,7 @@ export const MultiSelect = React.forwardRef<
     );
 
     const triggerElement = (
-      <button
+      <button data-disable-hover={disableHover || undefined}
         ref={ref}
         type="button"
         disabled={disabled}

@@ -1,5 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
+@source "../../showcase";
+
+/* Opt-in field setting, inherited by embedded controls; focus/active stay intact. */
+@custom-variant hover {
+  @media (hover: hover) {
+    &:hover:not(:where([data-disable-hover="true"], [data-disable-hover="true"] *)) {
+      @slot;
+    }
+  }
+}
 
 /* Match the effective direction, including nested opposite-direction scopes. */
 @custom-variant rtl (&:dir(rtl));
@@ -530,6 +540,12 @@ html {
   --color-surface-container-lowest: var(
     --md-sys-color-surface-container-lowest
   );
+  /* Keep inverted fields close to their own fill in both light and dark themes. */
+  --color-filled-inverted-hover: color-mix(
+    in srgb,
+    var(--md-sys-color-surface-container-lowest) 94%,
+    var(--md-sys-color-on-surface) 6%
+  );
   --color-surface-container-low: var(--md-sys-color-surface-container-low);
   --color-surface-container: var(--md-sys-color-surface-container);
   --color-surface-container-high: var(--md-sys-color-surface-container-high);
@@ -977,4 +993,12 @@ textarea {
 }
 [data-rmiz-portal] {
   pointer-events: auto !important;
+}
+
+/* Blur radius stays fixed; backdrop motion only composites opacity/color. */
+.chesai-overlay { transition-property: opacity, background-color !important; }
+@keyframes chesai-overlay-enter { from { opacity: 0; } to { opacity: 1; } }
+.chesai-overlay-enter { animation: chesai-overlay-enter 220ms cubic-bezier(0.2, 0, 0, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .chesai-overlay, .chesai-overlay-enter { animation: none !important; transition: none !important; }
 }

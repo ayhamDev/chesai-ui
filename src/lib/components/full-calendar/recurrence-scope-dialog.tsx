@@ -1,4 +1,5 @@
 "use client";
+import { overlayBlurClasses } from "../../utils/overlay";
 
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
@@ -8,6 +9,7 @@ import { useFullCalendar } from "./calendar-context";
 
 export const RecurrenceScopeDialog = () => {
   const {
+    overlayBlur = "none",
     recurrenceScopeRequest,
     resolveRecurrenceScope,
   } = useFullCalendar();
@@ -29,7 +31,7 @@ export const RecurrenceScopeDialog = () => {
   return createPortal(
     <div
       dir={isRtl ? "rtl" : "ltr"}
-      className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 p-4"
+      className={`chesai-overlay-enter fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 p-4 ${overlayBlurClasses[overlayBlur]}`}
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) resolveRecurrenceScope(null);

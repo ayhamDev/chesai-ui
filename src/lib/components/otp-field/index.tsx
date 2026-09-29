@@ -9,14 +9,14 @@ import { clsx } from "clsx";
 // --- VARIANTS ---
 
 const slotVariants = cva(
-  "relative flex items-center justify-center transition-all duration-200 ease-out text-sm font-semibold select-none group border-box outline-none",
+  "relative flex items-center justify-center transition-all duration-200 ease-out motion-reduce:transition-none text-sm font-semibold select-none group border-box outline-none",
   {
     variants: {
       variant: {
         filled:
           "bg-surface-container-highest/60 text-on-surface border-b-2 border-transparent hover:bg-surface-container-highest",
         "filled-inverted":
-          "bg-surface-container-low text-on-surface border-b-2 border-transparent hover:bg-surface-container",
+          "bg-surface-container-lowest text-on-surface border-b-2 border-transparent hover:bg-filled-inverted-hover",
         outlined:
           "bg-transparent border-2 border-outline-variant text-on-surface hover:border-on-surface-variant",
         "outlined-inverted":
@@ -41,6 +41,7 @@ const slotVariants = cva(
         sharp: "rounded-none!",
       },
       separated: { true: "", false: "" },
+      hasGap: { true: "", false: "" },
       isInvalid: {
         true: "",
         false: "",
@@ -62,7 +63,7 @@ const slotVariants = cva(
         variant: "filled-inverted",
         isActive: true,
         className:
-          "bg-surface-container border-transparent ring-inset ring-2 ring-primary",
+          "bg-surface-container-lowest border-transparent ring-inset ring-2 ring-primary",
       },
       {
         variant: "outlined",
@@ -112,10 +113,17 @@ const slotVariants = cva(
 
       // --- Grouped Rounding (Adjacent Slots) ---
       {
+        shape: ["full", "minimal"],
+        variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
+        separated: false,
+        hasGap: true,
+        className: "rounded-md",
+      },
+      {
         shape: "full",
         variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
         separated: false,
-        className: "first:rounded-s-full last:rounded-e-full",
+        className: "first:rounded-s-[32px] last:rounded-e-[32px]",
       },
       {
         shape: "minimal",
@@ -129,7 +137,7 @@ const slotVariants = cva(
         separated: true,
         shape: "full",
         variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
-        className: "rounded-full",
+        className: "rounded-[32px]",
       },
       {
         separated: true,
@@ -140,7 +148,7 @@ const slotVariants = cva(
       {
         shape: "full",
         variant: ["ghost", "ghost-inverted"],
-        className: "rounded-full",
+        className: "rounded-[32px]",
       },
       {
         shape: "minimal",
@@ -156,7 +164,18 @@ const slotVariants = cva(
   },
 );
 
+export type InputOTPGap = "none" | "xs" | "sm" | "md" | "lg";
+
+const gapClasses: Record<InputOTPGap, string> = {
+  none: "gap-0",
+  xs: "gap-px",
+  sm: "gap-0.5",
+  md: "gap-1",
+  lg: "gap-2",
+};
+
 interface InputOTPContextValue {
+  disableHover?: boolean;
   variant?:
     | "filled"
     | "filled-inverted"
@@ -168,8 +187,12 @@ interface InputOTPContextValue {
     | "ghost-inverted";
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
-  /** Space each digit apart without adding a separator glyph. */
+  /** Give every slot its own complete shape. Independent of group-style gap. */
   separated?: boolean;
+  /** Space slots within each group while retaining rounded outer ends and smaller inner corners. */
+  gap?: InputOTPGap;
+  /** Optional shape for the focused slot. Sharp base shapes remain sharp. */
+  activeShape?: "full" | "minimal" | "sharp";
   isInvalid?: boolean;
 }
 
@@ -190,16 +213,21 @@ const InputOTP = React.forwardRef<HTMLInputElement, InputOTPProps>(
     {
       className,
       containerClassName,
+      disableHover = false,
       variant = "filled",
       size = "md",
       shape = "minimal",
       isInvalid = false,
       separated = false,
+      gap,
+      activeShape,
       ...props
     },
     ref,
   ) => (
-    <InputOTPStyleContext.Provider value={{ variant, size, shape, isInvalid, separated }}>
+    <InputOTPStyleContext.Provider
+      value={{ variant, size, shape, isInvalid, separated, gap, activeShape, disableHover }}
+    >
       <OTPInput
         ref={ref}
         containerClassName={clsx(
@@ -214,26 +242,69 @@ const InputOTP = React.forwardRef<HTMLInputElement, InputOTPProps>(
 );
 InputOTP.displayName = "InputOTP";
 
-const InputOTPGroup = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  const { variant, separated } = React.useContext(InputOTPStyleContext);
-  const isSeparated =
-    separated || variant?.includes("underlined") || variant?.includes("ghost");
+export interface InputOTPGroupProps
+  extends React.HTMLAttributes<HTMLDivElement> {
+  /** Overrides the root gap for this group only. */
+  gap?: InputOTPGap;
+  shape?: InputOTPContextValue["shape"];
+  activeShape?: InputOTPContextValue["activeShape"];
+  separated?: boolean;
+}
 
-  return (
-    <div
-      ref={ref}
-      className={clsx(
-        "flex items-center",
-        isSeparated ? "gap-2" : "gap-0 [&>div:not(:first-child)]:-ms-[2px]",
-        className,
-      )}
-      {...props}
-    />
-  );
-});
+const InputOTPGroup = React.forwardRef<HTMLDivElement, InputOTPGroupProps>(
+  (
+    {
+      className,
+      gap: gapProp,
+      shape: shapeProp,
+      activeShape: activeShapeProp,
+      separated: separatedProp,
+      ...props
+    },
+    ref,
+  ) => {
+    const context = React.useContext(InputOTPStyleContext);
+    const { variant } = context;
+    const separated = separatedProp ?? context.separated;
+    const gap =
+      gapProp ??
+      context.gap ??
+      (separated ||
+      variant?.includes("underlined") ||
+      variant?.includes("ghost")
+        ? "lg"
+        : "none");
+    const mergeBorders =
+      gap === "none" && !separated && variant?.startsWith("outlined");
+
+    return (
+      <InputOTPStyleContext.Provider
+        value={{
+          ...context,
+          separated,
+          gap,
+          shape: shapeProp ?? context.shape,
+          activeShape: activeShapeProp ?? context.activeShape,
+        }}
+      >
+        <div
+          ref={ref}
+          data-otp-group=""
+          data-disable-hover={context.disableHover || undefined}
+          data-gap={gap}
+          data-separated={!!separated}
+          className={clsx(
+            "flex items-center",
+            gapClasses[gap],
+            mergeBorders && "[&>[data-otp-slot]:not(:first-child)]:-ms-[2px]",
+            className,
+          )}
+          {...props}
+        />
+      </InputOTPStyleContext.Provider>
+    );
+  },
+);
 InputOTPGroup.displayName = "InputOTPGroup";
 
 const InputOTPSlot = React.forwardRef<
@@ -241,16 +312,44 @@ const InputOTPSlot = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement> & { index: number }
 >(({ index, className, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext);
-  const { variant, size, shape, isInvalid, separated = false } =
-    React.useContext(InputOTPStyleContext);
+  const {
+    variant,
+    size,
+    shape,
+    isInvalid,
+    separated = false,
+    gap = "none",
+    activeShape,
+    disableHover,
+  } = React.useContext(InputOTPStyleContext);
 
   const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index];
 
   return (
     <div
       ref={ref}
+      data-otp-slot=""
+      data-disable-hover={disableHover || undefined}
+      data-active={isActive}
       className={clsx(
-        slotVariants({ variant, size, shape, isInvalid, isActive, separated }),
+        slotVariants({
+          variant,
+          size,
+          shape,
+          isInvalid,
+          isActive,
+          separated,
+          hasGap: gap !== "none",
+        }),
+        isActive &&
+          activeShape &&
+          shape !== "sharp" &&
+          !variant?.includes("underlined") &&
+          (activeShape === "full"
+            ? "rounded-[32px]!"
+            : activeShape === "minimal"
+              ? "rounded-2xl!"
+              : "rounded-none!"),
         className,
       )}
       {...props}

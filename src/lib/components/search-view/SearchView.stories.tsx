@@ -20,6 +20,11 @@ const meta: Meta<typeof SearchView> = {
     },
   },
   argTypes: {
+    overlayBlur: {
+      control: "select",
+      options: ["none", "xs", "sm", "md", "lg", "xl"],
+      description: "Backdrop blur when showOverlay is enabled.",
+    },
     showOverlay: {
       control: "boolean",
       description:

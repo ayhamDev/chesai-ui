@@ -87,6 +87,7 @@ export * from './table'
 export * from './tabs'
 export * from './taskbar'
 export * from './textarea'
+export * from './composer'
 export * from './theme-controls/FontPicker'
 export * from './timeline'
 export * from './time-picker'
@@ -102,3 +103,4 @@ export * from './website-studio'
 export * from "./playlist-studio"
 export * from "./reverse-infinite-scroll"
 export * from "./phone-input"
+export type { OverlayBlur } from '../utils/overlay'

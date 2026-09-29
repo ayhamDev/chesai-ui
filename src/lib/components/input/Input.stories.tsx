@@ -74,12 +74,12 @@ export const Variants: Story = {
       <Input
         label="Filled (Default)"
         variant="filled"
-        placeholder="Standard grey background"
+        placeholder="Standard tinted fill"
       />
       <Input
         label="Filled Inverted"
         variant="filled-inverted"
-        placeholder="Lighter background"
+        placeholder="White surface fill in light mode"
       />
       <Input label="Outlined" variant="outlined" placeholder="Bordered" />
       <Input

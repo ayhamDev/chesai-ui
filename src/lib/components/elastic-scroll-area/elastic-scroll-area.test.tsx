@@ -203,7 +203,7 @@ describe('elastic scroll gesture ownership', () => {
   })
 
   it('keeps bottom scrolling native in refresh-only mode', () => {
-    const s = setup({ elasticity: false, isRefreshEnabled: true })
+    const s = setup({ elasticity: false, isRefreshEnabled: true, onRefresh: vi.fn() })
     s.viewport.scrollTop = 800
     expect(s.wheel({ deltaY: 100 }).defaultPrevented).toBe(false)
     s.touch('touchstart', 500)
@@ -262,6 +262,8 @@ describe('elastic scroll gesture ownership', () => {
     s.touch('touchmove', 600)
     s.touch('touchend')
     s.rerender({ ...s.options, damping: 0.5 })
+    expect(s.result.current.isRefreshing).toBe(true)
+    expect(s.indicator.get()).toBe(80)
     await act(async () => {
       finish()
     })
@@ -277,5 +279,130 @@ describe('elastic scroll gesture ownership', () => {
     expect(vi.getTimerCount()).toBe(0)
     expect(s.offset.get()).toBe(0)
     expect(s.wheel({ deltaY: -100 }).defaultPrevented).toBe(false)
+  })
+
+  it.each([0, 0.25])('refreshes with elasticity off and damping %s, without claiming wheel input', async damping => {
+    let finish!: () => void
+    const onRefresh = vi.fn(
+      () =>
+        new Promise<void>(resolve => {
+          finish = resolve
+        }),
+    )
+    const s = setup({ elasticity: false, damping, isRefreshEnabled: true, onRefresh })
+    expect(s.wheel({ deltaY: -1000 }).defaultPrevented).toBe(false)
+    expect(s.offset.get()).toBe(0)
+    s.touch('touchstart')
+    expect(s.touch('touchmove', 600).defaultPrevented).toBe(true)
+    expect(s.indicator.get()).toBeGreaterThan(80)
+    expect(onRefresh).not.toHaveBeenCalled()
+    s.touch('touchend')
+    expect(onRefresh).toHaveBeenCalledTimes(1)
+    expect(s.result.current.isRefreshing).toBe(true)
+    await act(async () => finish())
+    expect(s.result.current.isRefreshing).toBe(false)
+    expect(s.indicator.get()).toBe(0)
+  })
+
+  it('does not claim a refresh gesture without a callback, including horizontal mode', () => {
+    const s = setup({ elasticity: false, isRefreshEnabled: true })
+    s.touch('touchstart')
+    expect(s.touch('touchmove', 600).defaultPrevented).toBe(false)
+    const refresh = vi.fn()
+    s.rerender({ ...s.options, orientation: 'horizontal', onRefresh: refresh })
+    s.touch('touchstart')
+    expect(s.touch('touchmove', 0, { x: 600 }).defaultPrevented).toBe(false)
+    s.touch('touchend')
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('ignores short, canceled and reversed pulls with elasticity disabled', () => {
+    const onRefresh = vi.fn()
+    const s = setup({ elasticity: false, isRefreshEnabled: true, onRefresh })
+    s.touch('touchstart')
+    s.touch('touchmove', 100)
+    s.touch('touchend')
+    s.touch('touchstart')
+    s.touch('touchmove', 600)
+    s.touch('touchcancel')
+    s.touch('touchstart')
+    s.touch('touchmove', 600)
+    s.touch('touchmove', 10)
+    s.touch('touchend')
+    expect(onRefresh).not.toHaveBeenCalled()
+    expect(s.indicator.get()).toBe(0)
+  })
+
+  it('reports a failed refresh after options change and allows retry', async () => {
+    let reject!: (error: unknown) => void
+    const onRefresh = vi.fn(
+      () =>
+        new Promise<void>((_, fail) => {
+          reject = fail
+        }),
+    )
+    const onRefreshError = vi.fn()
+    const s = setup({ elasticity: false, isRefreshEnabled: true, onRefresh, onRefreshError })
+    s.touch('touchstart')
+    s.touch('touchmove', 600)
+    s.touch('touchend')
+    s.rerender({ ...s.options, pullThreshold: 100 })
+    expect(s.indicator.get()).toBe(100)
+    const error = new Error('offline')
+    await act(async () => reject(error))
+    expect(onRefreshError).toHaveBeenCalledWith(error)
+    expect(s.indicator.get()).toBe(0)
+    s.touch('touchstart')
+    s.touch('touchmove', 1000)
+    s.touch('touchend')
+    expect(onRefresh).toHaveBeenCalledTimes(2)
+    await act(async () => reject(error))
+  })
+
+  it('handles a throwing error reporter and resets loading', async () => {
+    const reportError = new Error('reporter failed')
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const s = setup({
+        elasticity: false,
+        isRefreshEnabled: true,
+        onRefresh: async () => {
+          throw new Error('offline')
+        },
+        onRefreshError: () => {
+          throw reportError
+        },
+      })
+      s.touch('touchstart')
+      s.touch('touchmove', 600)
+      await act(async () => {
+        s.touch('touchend')
+      })
+      expect(s.result.current.isRefreshing).toBe(false)
+      expect(s.indicator.get()).toBe(0)
+      expect(logged).toHaveBeenCalledWith('ElasticScrollArea onRefreshError failed', reportError)
+    } finally {
+      logged.mockRestore()
+    }
+  })
+
+  it('ignores completion after unmount', async () => {
+    let reject!: (error: unknown) => void
+    const onRefreshError = vi.fn()
+    const s = setup({
+      isRefreshEnabled: true,
+      onRefreshError,
+      onRefresh: () =>
+        new Promise<void>((_, fail) => {
+          reject = fail
+        }),
+    })
+    s.touch('touchstart')
+    s.touch('touchmove', 600)
+    s.touch('touchend')
+    s.unmount()
+    await act(async () => reject(new Error('offline')))
+    expect(onRefreshError).not.toHaveBeenCalled()
+    expect(s.indicator.get()).toBe(0)
   })
 })

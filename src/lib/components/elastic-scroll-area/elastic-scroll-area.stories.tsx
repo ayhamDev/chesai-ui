@@ -27,7 +27,9 @@ const meta: Meta<typeof ElasticScrollArea> = {
     scrollbarVisibility: {
       control: 'select',
       options: ['auto', 'always', 'scroll', 'hidden', 'visible'],
+      description: 'Use hidden to hide both scrollbars while preserving scrolling.',
     },
+    hideScrollbarOnMobile: { control: 'boolean', description: 'Hide both scrollbars below the md breakpoint (768px by default).' },
     pullToRefresh: { control: 'boolean' },
     dimmingEdges: { control: 'boolean' },
   },
@@ -169,6 +171,7 @@ export const WithAppBarAndBottomTabs: Story = {
   name: '1. Advanced App Layout',
   args: {
     orientation: 'vertical',
+    scrollbarVisibility: 'hidden',
     elasticity: true,
     pullToRefresh: true,
     dimmingEdges: true,
@@ -182,6 +185,34 @@ export const WithAppBarAndBottomTabs: Story = {
 }
 
 // --- ADDITIONAL EXAMPLES ---
+
+const ScrollbarDemo: Story['render'] = args => (
+  <div className="w-[min(90vw,480px)] space-y-3 text-on-surface">
+    <p className="text-sm text-on-surface-variant">Scroll vertically or horizontally. Hiding the bars keeps the content scrollable.</p>
+    <div className="h-72">
+    <ElasticScrollArea {...args} type="always" className="rounded-xl border border-outline-variant bg-surface">
+      <div className="grid w-[800px] grid-cols-4 gap-3 p-4">
+        {Array.from({ length: 32 }, (_, index) => (
+          <div key={index} className="flex h-24 items-center justify-center rounded-xl bg-secondary-container text-on-secondary-container">Item {index + 1}</div>
+        ))}
+      </div>
+    </ElasticScrollArea>
+    </div>
+  </div>
+)
+
+export const HiddenScrollbars: Story = {
+  name: 'Hidden scrollbars (both axes)',
+  args: { scrollbarVisibility: 'hidden' },
+  render: ScrollbarDemo,
+}
+
+export const HideScrollbarsOnMobile: Story = {
+  name: 'Hide scrollbars on mobile',
+  args: { scrollbarVisibility: 'always', hideScrollbarOnMobile: true },
+  parameters: { docs: { description: { story: 'Resize the preview below 768px to hide the scrollbars. They return on larger screens; scroll position and gestures are preserved.' } } },
+  render: ScrollbarDemo,
+}
 
 export const HorizontalTags: Story = {
   name: '2. Horizontal Dimming Tags',
@@ -319,5 +350,31 @@ export const ChatLayout: Story = {
         </div>
       </div>
     )
+  },
+}
+
+export const RefreshWithoutElasticity: Story = {
+  name: 'Pull to refresh without elasticity',
+  args: { elasticity: false, pullToRefresh: true, scrollbarVisibility: 'hidden' },
+  render: function RefreshWithoutElasticityDemo(args) {
+    const [refreshes, setRefreshes] = useState(0)
+    const [error, setError] = useState('')
+    const [fail, setFail] = useState(false)
+    return <div className="w-[min(90vw,420px)] space-y-4 text-on-surface">
+      <h2 className="text-xl font-semibold">Refresh without bounce</h2>
+      <p className="text-sm text-on-surface-variant">On a touch screen, pull down from the top and release. The refresh indicator moves while the content stays in place.</p>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={fail} onChange={event => setFail(event.target.checked)} />Simulate a failed refresh</label>
+      <p role="status" className="text-sm">{error || `Completed refreshes: ${refreshes}`}</p>
+      <div className="h-[55vh] overflow-hidden rounded-2xl border border-outline-variant">
+        <ElasticScrollArea {...args} onRefresh={async () => {
+          setError('')
+          await new Promise(resolve => setTimeout(resolve, 800))
+          if (fail) throw new Error('Refresh failed. Pull again to retry.')
+          setRefreshes(count => count + 1)
+        }} onRefreshError={error => setError(error instanceof Error ? error.message : 'Refresh failed')}>
+          <div className="space-y-3 p-4">{Array.from({length: 15}, (_, index) => <div key={index} className="rounded-xl bg-surface-container p-5">Item {index + 1}</div>)}</div>
+        </ElasticScrollArea>
+      </div>
+    </div>
   },
 }

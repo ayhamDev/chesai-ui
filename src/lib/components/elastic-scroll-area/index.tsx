@@ -22,7 +22,7 @@ import {
   useState,
 } from 'react'
 import { LoadingIndicator } from '../loadingIndicator'
-import { useElasticAndRefresh } from './use-elastic-scroll'
+import { normalizePullThreshold, useElasticAndRefresh } from './use-elastic-scroll'
 
 // --- CONSTANTS ---
 const OVERSCROLL_DAMPING = 0.25
@@ -37,9 +37,13 @@ interface RefreshIndicatorProps {
 
 export interface ElasticScrollAreaProps extends ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> {
   orientation?: 'vertical' | 'horizontal'
+  /** Enable content bounce. Pull-to-refresh works independently when false. */
   elasticity?: boolean
   dampingFactor?: number
   scrollbarVisibility?: 'auto' | 'always' | 'scroll' | 'hidden' | 'visible'
+  /** Hide both scrollbars below the md breakpoint (768px by default), while keeping scrolling enabled. */
+  hideScrollbarOnMobile?: boolean
+  /** Enable top-edge touch refresh, including when elasticity is disabled. Requires onRefresh. */
   pullToRefresh?: boolean
   onRefresh?: () => Promise<unknown>
   onRefreshError?: (error: unknown) => void
@@ -85,6 +89,7 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
       elasticity = true,
       dampingFactor = OVERSCROLL_DAMPING,
       scrollbarVisibility = 'auto',
+      hideScrollbarOnMobile = false,
       pullToRefresh = false,
       onRefresh,
       onRefreshError,
@@ -106,15 +111,17 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
     const motionValue = useMotionValue(0)
     const indicatorY = useMotionValue(0)
     const isVertical = orientation === 'vertical'
+    const refreshEnabled = isVertical && pullToRefresh && typeof onRefresh === 'function'
+    const refreshThreshold = normalizePullThreshold(pullThreshold)
 
     const { isRefreshing } = useElasticAndRefresh(localViewportRef, motionValue, indicatorY, {
       orientation,
       elasticity,
       damping: dampingFactor,
-      isRefreshEnabled: pullToRefresh,
+      isRefreshEnabled: refreshEnabled,
       onRefresh,
       onRefreshError,
-      pullThreshold,
+      pullThreshold: refreshThreshold,
     })
 
     // Dynamic Edge Dimming State
@@ -155,7 +162,7 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
       return () => observer.disconnect()
     }, [dimmingEdges, updateEdgeStates])
 
-    const indicatorOpacity = useTransform(indicatorY, [0, pullThreshold * 0.5], [0, 1])
+    const indicatorOpacity = useTransform(indicatorY, [0, refreshThreshold * 0.5], [0, 1])
 
     const lastScrollTop = useRef(0)
     const handleScroll = useCallback(
@@ -204,8 +211,8 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
     }
 
     return (
-      <ScrollAreaPrimitive.Root className={clsx('relative h-full w-full overflow-hidden!', className)} {...props}>
-        {pullToRefresh && isVertical && (
+      <ScrollAreaPrimitive.Root className={clsx('relative isolate h-full w-full overflow-hidden!', className)} {...props}>
+        {refreshEnabled && (
           <motion.div
             key={'refresh'}
             className="pointer-events-none absolute inset-x-0 top-[-10px] z-50 flex justify-center"
@@ -218,7 +225,7 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
               <RefreshIndicatorComponent
                 pullProgress={indicatorY}
                 isRefreshing={isRefreshing}
-                pullThreshold={pullThreshold}
+                pullThreshold={refreshThreshold}
               />
             </div>
           </motion.div>
@@ -226,7 +233,7 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
 
         <motion.div
           style={{
-            [isVertical ? 'y' : 'x']: motionValue,
+            [isVertical ? 'y' : 'x']: elasticity ? motionValue : 0,
             ...getMaskStyle(),
           }}
           className="h-full w-full"
@@ -238,16 +245,17 @@ const ElasticScrollAreaRoot = forwardRef<HTMLDivElement, ElasticScrollAreaProps>
               touchAction: 'pan-x pan-y pinch-zoom',
               // Prevent native bounce from combining with the synthetic pull.
               overscrollBehaviorX: !isVertical && elasticity ? 'none' : undefined,
-              overscrollBehaviorY: isVertical && (elasticity || pullToRefresh) ? 'none' : undefined,
+              overscrollBehaviorY: isVertical && (elasticity || refreshEnabled) ? 'none' : undefined,
             }}
             onScroll={handleScroll}
           >
             {children}
           </ScrollAreaPrimitive.Viewport>)}
         </motion.div>
-        <ScrollBar scrollbarVisibility={scrollbarVisibility} orientation="vertical" />
-        <ScrollBar scrollbarVisibility={scrollbarVisibility} orientation="horizontal" />
-        <ScrollAreaPrimitive.Corner />
+        {/* Keep the bars mounted: Radix uses their presence to enable viewport scrolling. */}
+        <ScrollBar scrollbarVisibility={scrollbarVisibility} hideScrollbarOnMobile={hideScrollbarOnMobile} orientation="vertical" />
+        <ScrollBar scrollbarVisibility={scrollbarVisibility} hideScrollbarOnMobile={hideScrollbarOnMobile} orientation="horizontal" />
+        <ScrollAreaPrimitive.Corner className={clsx(scrollbarVisibility === 'hidden' && 'hidden!', hideScrollbarOnMobile && 'max-md:hidden!')} />
       </ScrollAreaPrimitive.Root>
     )
   },
@@ -258,9 +266,10 @@ ElasticScrollAreaRoot.displayName = 'ElasticScrollArea'
 const ScrollBar: ForwardRefExoticComponent<
   ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Scrollbar> & {
     scrollbarVisibility?: ElasticScrollAreaProps['scrollbarVisibility']
+    hideScrollbarOnMobile?: boolean
   } & RefAttributes<ElementRef<typeof ScrollAreaPrimitive.Scrollbar>>
 > = forwardRef(
-  ({ className, orientation = 'vertical', scrollbarVisibility = 'auto', onWheelCapture, ...props }, ref) => (
+  ({ className, orientation = 'vertical', scrollbarVisibility = 'auto', hideScrollbarOnMobile = false, onWheelCapture, ...props }, ref) => (
     <ScrollAreaPrimitive.Scrollbar
       ref={ref}
       orientation={orientation}
@@ -270,12 +279,14 @@ const ScrollBar: ForwardRefExoticComponent<
         if (event.ctrlKey || event.metaKey) event.stopPropagation()
       }}
       className={clsx(
-        'flex touch-none select-none transition-opacity duration-200 z-[100]',
+        'flex touch-none select-none transition-opacity duration-200 z-10',
         orientation === 'vertical' && 'h-full w-2.5 border-l border-l-transparent p-[1px]',
         orientation === 'horizontal' && 'h-2.5 border-t border-t-transparent p-[1px]',
         {
           'opacity-100': scrollbarVisibility === 'always' || scrollbarVisibility === 'visible',
-          hidden: scrollbarVisibility === 'hidden',
+          // Radix sets display:flex inline; hiding must take precedence over that style.
+          'hidden!': scrollbarVisibility === 'hidden',
+          'max-md:hidden!': hideScrollbarOnMobile,
           'data-[state=hidden]:opacity-0': scrollbarVisibility === 'scroll',
           'opacity-0 data-[state=visible]:opacity-100': scrollbarVisibility === 'auto',
         },

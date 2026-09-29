@@ -27,6 +27,8 @@ interface TimePickerProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
   "value" | "onChange" | "size"
 > {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   /** Show an outer popup border. Defaults to false. */
   bordered?: boolean;
   shape?: "full" | "minimal" | "sharp";
@@ -357,7 +359,9 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
       placeholder = "Select time",
       value: controlledValue,
       onChange,
+      disableHover = false,
       variant: variantProp,
+      inputVariant = "filled",
       shape = "minimal",
       bordered = false,
       size = "md",
@@ -388,19 +392,20 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
     }, [isOpen, valueTime]);
 
     const TriggerButton = (
-      <button
+      <button data-disable-hover={disableHover || undefined}
         ref={ref}
         type="button"
         disabled={disabled}
         className={clsx(
           inputWrapperVariants({
+            variant: inputVariant,
             shape,
             size,
             disabled,
             isErrored: !!error,
             isFocused: isOpen,
           }),
-          "text-on-surface bg-surface-container-low w-full justify-start font-normal",
+          "text-on-surface w-full justify-start font-normal",
           className,
         )}
         {...props}

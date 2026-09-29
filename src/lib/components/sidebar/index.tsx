@@ -1,5 +1,7 @@
-// src/lib/components/sidebar/index.tsx
 "use client";
+import { overlayBlurClasses, type OverlayBlur } from "../../utils/overlay";
+// src/lib/components/sidebar/index.tsx
+
 
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -294,6 +296,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   itemVariant?: SidebarItemVariant;
   expandOnHover?: boolean;
   overlay?: boolean;
+  overlayBlur?: OverlayBlur;
   indicatorAnimation?: "slide" | "bloom";
   layout?: "sidebar" | "floating" | "inset";
   variant?: SidebarVariant;
@@ -321,6 +324,7 @@ const SidebarRoot = forwardRef<HTMLDivElement, SidebarProps>(
       collapsible = true,
       expandOnHover = false,
       overlay = false,
+      overlayBlur,
       indicatorAnimation,
       raised,
       ...props
@@ -398,6 +402,7 @@ const SidebarRoot = forwardRef<HTMLDivElement, SidebarProps>(
           <Sheet
             open={openMobile}
             onOpenChange={setOpenMobile}
+            overlayBlur={overlayBlur}
             forceSideSheet
             side={physicalSide}
           >
@@ -460,7 +465,7 @@ const SidebarRoot = forwardRef<HTMLDivElement, SidebarProps>(
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   onClick={() => setOpenMobile(false)}
-                  className="fixed inset-0 select-none z-40 bg-black/10 backdrop-blur-[1px] lg:hidden"
+                  className={clsx("fixed inset-0 select-none z-40 bg-black/10 lg:hidden", overlayBlur ? overlayBlurClasses[overlayBlur] : "backdrop-blur-[1px]")}
                   aria-hidden="true"
                 />
               )}
@@ -524,7 +529,7 @@ const SidebarRoot = forwardRef<HTMLDivElement, SidebarProps>(
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                   onClick={handleBackdropClick}
-                  className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[4px] duration-300 transition-all"
+                  className={clsx("fixed inset-0 z-40 bg-black/40 duration-300 transition-all", overlayBlurClasses[overlayBlur ?? "sm"])}
                   aria-hidden="true"
                 />
               )}

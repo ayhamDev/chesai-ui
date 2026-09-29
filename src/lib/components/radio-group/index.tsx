@@ -5,17 +5,19 @@ import React from "react";
 
 // --- Individual Radio Item ---
 export interface RadioGroupItemProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   label?: string;
   value?: string;
 }
 
 const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemProps>(
-  ({ className, id, label, ...props }, ref) => {
+  ({ className, id, label, disableHover = false, ...props }, ref) => {
     const uniqueId = React.useId();
     const radioId = id || uniqueId;
 
     return (
-      <div className="group inline-flex items-center cursor-pointer">
+      <div data-disable-hover={disableHover || undefined} className="group inline-flex items-center cursor-pointer">
         <div className="relative flex h-5 w-5 items-center justify-center">
           {/* --- HALO / BLOOM EFFECT --- */}
           <div
@@ -82,6 +84,8 @@ RadioGroupItem.displayName = "RadioGroup.Item";
 
 // --- Radio Group Container ---
 interface RadioGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   label?: string;
   value?: string;
   onValueChange?: (value: string) => void;
@@ -99,6 +103,7 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
       onValueChange,
       name,
       disabled,
+      disableHover = false,
       ...props
     },
     ref,
@@ -108,7 +113,7 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
     const labelId = `radiogroup-label-${uniqueId}`;
 
     return (
-      <div className="flex flex-col gap-2">
+      <div data-disable-hover={disableHover || undefined} className="flex flex-col gap-2">
         {label && (
           <div
             id={labelId}

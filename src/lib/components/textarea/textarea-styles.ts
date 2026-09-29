@@ -74,7 +74,7 @@ export const getTextareaSlotClassNames = (props: VariantProps<typeof textareaSty
       wrapperClasses.push('bg-surface-container-highest/60 hover:bg-surface-container-highest')
       break
     case 'filled-inverted':
-      wrapperClasses.push('bg-surface-container-low hover:bg-surface-container')
+      wrapperClasses.push('bg-surface-container-lowest hover:bg-filled-inverted-hover')
       break
     case 'outlined':
       wrapperClasses.push(

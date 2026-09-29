@@ -10,6 +10,8 @@ import { useMemo, useRef, useState } from 'react'
 import { dateInputSlots, dateInputStyles, getDateInputSlotClassNames } from './date-input-styles'
 
 export interface UseDateInputProps<T extends DateValue> extends Omit<AriaDateFieldProps<T>, 'className'> {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   startContent?: React.ReactNode
   endContent?: React.ReactNode
   classNames?: Partial<typeof dateInputSlots>
@@ -49,6 +51,7 @@ export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
     shape = 'minimal',
     labelPlacement = 'inside',
     isInvalid: isInvalidProp = false,
+    disableHover = false,
     ...otherProps
   } = props
 
@@ -100,6 +103,7 @@ export function useDateInput<T extends DateValue>(props: UseDateInputProps<T>) {
     ref: domRef,
     className: clsx(dateInputSlots.base, dateInputStyles({ labelPlacement }), className, classNames?.base),
     'data-slot': 'base',
+    'data-disable-hover': disableHover || undefined,
     'data-filled': isFilled,
     'data-filled-within': isFilled || isFocused,
     'data-invalid': isInvalid,

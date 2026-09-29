@@ -1,5 +1,7 @@
-// src/lib/components/shape/shaped-components.tsx
 "use client";
+import { overlayBlurClasses, type OverlayBlur } from "../../utils/overlay";
+// src/lib/components/shape/shaped-components.tsx
+
 
 import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
@@ -180,6 +182,7 @@ export interface ShapedImageProps extends Omit<
   fallback?: React.ReactNode;
   effects?: ImageEffect[];
   zoomOnHover?: boolean;
+  overlayBlur?: OverlayBlur;
   aspectRatio?: "auto" | "square" | "video" | "portrait" | "wide";
   variant?: "default" | "bordered" | "elevated";
 }
@@ -198,6 +201,7 @@ export const ShapedImage = forwardRef<HTMLDivElement, ShapedImageProps>(
       fallback,
       effects = [],
       zoomOnHover = false,
+      overlayBlur = "md",
       aspectRatio = "auto",
       variant = "default",
       className,
@@ -491,7 +495,7 @@ export const ShapedImage = forwardRef<HTMLDivElement, ShapedImageProps>(
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm cursor-zoom-out"
+                  className={clsx("fixed inset-0 z-[100] flex items-center justify-center bg-black/90 cursor-zoom-out", overlayBlurClasses[overlayBlur])}
                   onClick={() => setIsZoomed(false)}
                 >
                   <button

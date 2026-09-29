@@ -73,8 +73,8 @@ h4.ce-header { font-size: 1.25rem; line-height: 1.75rem; }
   transition: all 0.2s ease;
 }
 
-.ce-toolbar__plus:hover,
-.ce-toolbar__settings-btn:hover {
+.ce-toolbar__plus:hover:not(:where([data-disable-hover="true"], [data-disable-hover="true"] *)),
+.ce-toolbar__settings-btn:hover:not(:where([data-disable-hover="true"], [data-disable-hover="true"] *)) {
   background-color: var(--hover-bg);
   color: var(--hover-text);
 }
@@ -143,7 +143,7 @@ h4.ce-header { font-size: 1.25rem; line-height: 1.75rem; }
   transition: background-color 0.15s ease;
 }
 
-.ce-popover-item:hover {
+.ce-popover-item:hover:not(:where([data-disable-hover="true"], [data-disable-hover="true"] *)) {
   background-color: var(--hover-bg) !important;
   color: var(--hover-text);
 }
@@ -156,7 +156,7 @@ h4.ce-header { font-size: 1.25rem; line-height: 1.75rem; }
   border: 1px solid var(--border-color);
 }
 
-.ce-popover-item:hover .ce-popover-item__icon {
+.ce-popover-item:hover:not(:where([data-disable-hover="true"], [data-disable-hover="true"] *)) .ce-popover-item__icon {
   background-color: var(--md-sys-color-surface);
 }
 
@@ -184,7 +184,7 @@ h4.ce-header { font-size: 1.25rem; line-height: 1.75rem; }
   width: 32px;
 }
 
-.ce-inline-tool:hover {
+.ce-inline-tool:hover:not(:where([data-disable-hover="true"], [data-disable-hover="true"] *)) {
   background-color: var(--hover-bg);
   color: var(--hover-text);
 }
@@ -219,7 +219,7 @@ h4.ce-header { font-size: 1.25rem; line-height: 1.75rem; }
   color: var(--muted-color);
 }
 
-.ce-settings__button:hover {
+.ce-settings__button:hover:not(:where([data-disable-hover="true"], [data-disable-hover="true"] *)) {
   background-color: var(--hover-bg);
   color: var(--hover-text);
 }

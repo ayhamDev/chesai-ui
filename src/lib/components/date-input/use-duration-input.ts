@@ -29,6 +29,8 @@ export interface DurationFieldState {
 }
 
 export interface UseDurationInputProps {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   ref?: React.Ref<HTMLDivElement>
   value?: DurationValue
   defaultValue?: DurationValue
@@ -92,6 +94,7 @@ export function useDurationInput(props: UseDurationInputProps) {
     labelPlacement = 'inside',
     isInvalid: isInvalidProp = false,
     isRequired = false,
+    disableHover = false,
     ...otherProps
   } = props
 
@@ -224,6 +227,7 @@ export function useDurationInput(props: UseDurationInputProps) {
     ref: domRef,
     className: clsx(dateInputSlots.base, dateInputStyles({ labelPlacement }), className, classNames?.base),
     'data-slot': 'base',
+    'data-disable-hover': disableHover || undefined,
     'data-filled': isFilled,
     'data-filled-within': isFilled || isFocused,
     'data-invalid': isInvalid,

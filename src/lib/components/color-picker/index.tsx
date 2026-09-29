@@ -14,6 +14,8 @@ import {
 } from "../select/select-styles";
 
 export interface ColorPickerProps {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   value?: string;
   onChange?: (color: string) => void;
   label?: string;
@@ -59,6 +61,7 @@ export const ColorPicker = React.forwardRef<
       description,
       errorMessage,
       disabled = false,
+      disableHover = false,
       isInvalid = false,
       shape = "minimal",
       bordered = false,
@@ -149,7 +152,7 @@ export const ColorPicker = React.forwardRef<
         {isOutside && labelContent}
 
         <PopoverPrimitive.Root open={open} onOpenChange={setOpen}>
-          <PopoverPrimitive.Trigger asChild>
+          <PopoverPrimitive.Trigger data-disable-hover={disableHover || undefined} asChild>
             <button
               ref={ref}
               type="button"

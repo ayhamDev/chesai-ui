@@ -14,6 +14,8 @@ import { createClassicRipple } from '../utils/classic-ripple'
 
 export interface UseRippleOptions {
   ref: RefObject<HTMLElement | null>
+  /** Optional visual host; keyboard and pointer events stay on ref. */
+  targetRef?: RefObject<HTMLElement | null>
   color?: string
   opacity?: number
   disabled?: boolean
@@ -29,10 +31,11 @@ export default function useRipple(options: UseRippleOptions) {
   const releases = useRef(new Map<number | string, () => void>())
   const start = useCallback((key: number | string, x: number, y: number) => {
     const o = latest.current
-    const el = o.ref.current
+    const el = o.targetRef?.current ?? o.ref.current
     if (
       !el ||
       o.disabled ||
+      o.ref.current?.matches(":disabled, [aria-disabled='true'], [data-disabled]") ||
       el.matches(":disabled, [aria-disabled='true'], [data-disabled]") ||
       releases.current.has(key)
     )
@@ -59,7 +62,8 @@ export default function useRipple(options: UseRippleOptions) {
     const up = (e: PointerEvent) => release(e.pointerId)
     const down = (e: KeyboardEvent) => {
       if (e.target !== el || e.defaultPrevented || e.repeat || (e.key !== ' ' && e.key !== 'Enter')) return
-      start(e.key, el.clientWidth / 2, el.clientHeight / 2)
+      const target = latest.current.targetRef?.current ?? el
+      start(e.key, target.clientWidth / 2, target.clientHeight / 2)
     }
     const keyup = (e: KeyboardEvent) => release(e.key)
     el.addEventListener('keydown', down)
@@ -79,17 +83,17 @@ export default function useRipple(options: UseRippleOptions) {
       win.removeEventListener('pointercancel', up)
       win.removeEventListener('blur', releaseAll)
     }
-  }, [options.ref, options.disabled, options.color, options.opacity, rippleSettings.style, start])
+  }, [options.ref, options.targetRef, options.disabled, options.color, options.opacity, rippleSettings.style, start])
   const pointerDown = useCallback(
     (e: ReactPointerEvent<HTMLElement>) => {
       if (e.defaultPrevented || (e.button !== undefined && e.button !== 0)) return
-      const el = latest.current.ref.current
+      const el = latest.current.targetRef?.current ?? latest.current.ref.current
       if (!el) return
       const rect = el.getBoundingClientRect()
       start(
         e.pointerId,
-        (e.clientX - rect.left) * (el.offsetWidth / (rect.width || 1)) - el.clientLeft,
-        (e.clientY - rect.top) * (el.offsetHeight / (rect.height || 1)) - el.clientTop,
+        Math.max(0, Math.min(el.clientWidth, (e.clientX - rect.left) * (el.offsetWidth / (rect.width || 1)) - el.clientLeft)),
+        Math.max(0, Math.min(el.clientHeight, (e.clientY - rect.top) * (el.offsetHeight / (rect.height || 1)) - el.clientTop)),
       )
     },
     [start],

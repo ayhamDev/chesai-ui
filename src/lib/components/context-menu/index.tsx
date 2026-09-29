@@ -8,6 +8,7 @@ import { clsx } from "clsx";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import React, { createContext, useContext, useRef } from "react";
 import useRipple from "../../hooks/useRipple";
+import { useMenuKeyboardNavigation } from "../../hooks/useMenuKeyboardNavigation";
 import { useTheme } from "../../context";
 
 type ContextMenuShape = "full" | "minimal" | "sharp";
@@ -18,6 +19,7 @@ interface ContextMenuContextProps {
   size: ContextMenuSize;
   glass: boolean;
   bordered: boolean;
+  keyboardNavigation: boolean;
 }
 
 const ContextMenuContext = createContext<ContextMenuContextProps>({
@@ -25,6 +27,7 @@ const ContextMenuContext = createContext<ContextMenuContextProps>({
   size: "md",
   glass: false,
   bordered: false,
+  keyboardNavigation: false,
 });
 
 const useContextMenuContext = () => useContext(ContextMenuContext);
@@ -60,7 +63,7 @@ const itemVariants = cva(
     "relative flex cursor-pointer select-none items-center gap-2 rounded-lg outline-none overflow-hidden z-0",
     "transition-colors duration-300 ease-[cubic-bezier(0.2,0,0,1)]",
     "focus:bg-secondary-container/60 data-[highlighted]:bg-secondary-container/60",
-    "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/20",
+    "[[data-menu-keyboard=true]_&]:focus:ring-2 [[data-menu-keyboard=true]_&]:focus:ring-inset [[data-menu-keyboard=true]_&]:focus:ring-primary/20",
     "data-[disabled]:pointer-events-none data-[disabled]:opacity-38",
     "[&_svg]:pointer-events-none [&_svg]:shrink-0",
     "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/60 after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] after:transition-all after:duration-200 after:ease-out",
@@ -100,8 +103,9 @@ const ContextMenuRoot: React.FC<ContextMenuProps> = ({
   bordered = false,
   ...props
 }) => {
+  const keyboardNavigation = useMenuKeyboardNavigation();
   return (
-    <ContextMenuContext.Provider value={{ shape, size, glass, bordered }}>
+    <ContextMenuContext.Provider value={{ shape, size, glass, bordered, keyboardNavigation }}>
       <RadixContextMenu.Root {...props} dir={useDirection(undefined, props.dir)} />
     </ContextMenuContext.Provider>
   );
@@ -116,10 +120,10 @@ const ContextMenuRadioGroup: typeof RadixContextMenu.RadioGroup = RadixContextMe
 const ContextMenuContent: React.ForwardRefExoticComponent<
   React.ComponentPropsWithoutRef<typeof RadixContextMenu.Content> & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.Content>>
 > = React.forwardRef(({ className, ...props }, ref) => {
-  const { shape, glass, bordered } = useContextMenuContext();
+  const { shape, glass, bordered, keyboardNavigation } = useContextMenuContext();
   return (
     <RadixContextMenu.Portal>
-      <RadixContextMenu.Content
+      <RadixContextMenu.Content data-menu-keyboard={keyboardNavigation}
         ref={ref}
         className={clsx(
           contentVariants({ shape, glass, bordered }),
@@ -260,9 +264,9 @@ ContextMenuSubTrigger.displayName = RadixContextMenu.SubTrigger.displayName;
 const ContextMenuSubContent: React.ForwardRefExoticComponent<
   React.ComponentPropsWithoutRef<typeof RadixContextMenu.SubContent> & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.SubContent>>
 > = React.forwardRef(({ className, ...props }, ref) => {
-  const { shape, glass, bordered } = useContextMenuContext();
+  const { shape, glass, bordered, keyboardNavigation } = useContextMenuContext();
   return (
-    <RadixContextMenu.SubContent
+    <RadixContextMenu.SubContent data-menu-keyboard={keyboardNavigation}
       ref={ref}
       className={clsx(
         contentVariants({ shape, glass, bordered }),

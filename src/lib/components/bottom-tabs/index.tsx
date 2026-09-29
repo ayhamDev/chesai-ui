@@ -169,9 +169,12 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
       break;
   }
 
+  const iconRippleRef = React.useRef<HTMLDivElement>(null);
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
     color: rippleColor,
+    targetRef: isIconPill ? iconRippleRef : undefined,
+    disabled: disableRipple,
   });
 
   const isShiftLayout = itemLayout === "inline";
@@ -238,10 +241,12 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
 
   const iconContainer = (
     <div
+      ref={iconRippleRef}
+      data-tab-indicator=""
       className={clsx(
         "relative flex items-center justify-center shrink-0 transition-colors",
         isIconPill ? iconContainerSize : "h-6 w-6",
-        isIconPill && shapeToClassName[finalShape],
+        isIconPill && [shapeToClassName[finalShape], "isolate overflow-hidden"],
         isIconPill ? iconColorClass : "text-inherit",
         isIconPill &&
           !isActive && [

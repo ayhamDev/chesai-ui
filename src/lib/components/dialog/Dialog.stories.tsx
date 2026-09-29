@@ -1,11 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { X } from "lucide-react";
-import { useRef, useState } from "react";
+import { FileText, Plus, X } from "lucide-react";
+import { useState } from "react";
 import { clsx } from "clsx";
-import { AppBar } from "../appbar";
 import { Button } from "../button";
 import { IconButton } from "../icon-button";
-import { Input } from "../input";
 import { Typography } from "../typography";
 import {
   Dialog,
@@ -15,6 +13,8 @@ import {
   type DialogContentProps,
   DialogDescription,
   DialogFooter,
+  DialogExpand,
+  type DialogSide,
   DialogHeader,
   type DialogProps,
   DialogTitle,
@@ -32,14 +32,19 @@ const meta: Meta<StoryComponentProps> = {
     docs: {
       description: {
         component:
-          "A fully accessible, custom-built dialog component with support for basic and fullscreen variants. Smoothly transitions styling and dimensions natively, bypassing any scaling artifacts.",
+          "Accessible dialogs and expandable edge sheets. Sheets open from any edge and expand into a full-page workspace while preserving content. The fullscreen variant remains a legacy alias for sheet.",
       },
     },
   },
   argTypes: {
+    overlayBlur: {
+      control: "select",
+      options: ["none", "xs", "sm", "md", "lg", "xl"],
+      description: "Blur behind the overlay. Enable overlay for edge sheets.",
+    },
     variant: {
       control: "select",
-      options: ["basic", "fullscreen"],
+      options: ["basic", "sheet"],
     },
     animation: {
       control: "select",
@@ -60,10 +65,6 @@ const meta: Meta<StoryComponentProps> = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
-
-const simulateRefresh = () => {
-  return new Promise((resolve) => setTimeout(resolve, 2000));
-};
 
 export const MorphingTransitions: Story = {
   name: "Morphing State Transitions",
@@ -389,58 +390,305 @@ export const MaterialAnimation: Story = {
   },
 };
 
+// Keep the existing story URL working while replacing the old fullscreen demo.
 export const FullScreen: Story = {
-  name: "Full-Screen Dialog",
-  args: { variant: "fullscreen" },
-  parameters: {
-    viewport: { defaultViewport: "mobile1" },
-  },
+  name: "Expandable Edge Sheet",
+  args: { variant: "sheet" },
   render: (args) => {
     const [isOpen, setIsOpen] = useState(false);
-    const scrollRef = useRef<HTMLDivElement>(null);
-
+    const [expanded, setExpanded] = useState(false);
+    const [side, setSide] = useState<DialogSide>("bottom");
+    const [coverage, setCoverage] = useState(0.48);
+    const [overlay, setOverlay] = useState(false);
+    const [showDragHandle, setShowDragHandle] = useState(true);
+    const [closeOnOutsideClick, setCloseOnOutsideClick] = useState(false);
+    const [items, setItems] = useState([
+      {
+        description: "Consulting services",
+        department: "Strategy",
+        account: "6200 · Professional services",
+        location: "Dublin HQ",
+        price: "$90,000.00",
+      },
+      {
+        description: "Advisory workshop",
+        department: "Engineering",
+        account: "6210 · IT consulting",
+        location: "San Francisco",
+        price: "$21,600.00",
+      },
+      {
+        description: "Training sessions",
+        department: "Strategy",
+        account: "6200 · Professional services",
+        location: "Dublin HQ",
+        price: "$16,800.00",
+      },
+      {
+        description: "On-site support",
+        department: "Engineering",
+        account: "6210 · IT consulting",
+        location: "San Francisco",
+        price: "$19,680.00",
+      },
+      {
+        description: "Quarterly retainer",
+        department: "Operations",
+        account: "6300 · Subscriptions",
+        location: "Dublin HQ",
+        price: "$12,720.00",
+      },
+    ]);
     return (
-      <div className="h-screen w-screen bg-gray-100 p-4">
-        <Dialog open={isOpen} onOpenChange={setIsOpen} variant={args.variant}>
-          <DialogTrigger asChild>
-            <Button>Open Full-Screen Dialog</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <AppBar
-              variant="center"
-              color="surface-container"
-              leadingIcon={
-                <DialogClose asChild>
-                  <IconButton variant="ghost" size="md">
-                    <X className="h-5 w-5" />
-                  </IconButton>
-                </DialogClose>
+      <div className="min-h-screen bg-surface text-on-surface">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant px-6 py-5">
+          <div className="flex items-center gap-3">
+            <FileText className="text-primary" />
+            <strong>Invoice 123-981-223</strong>
+            <span className="rounded-full bg-surface-container px-3 py-1 text-xs">
+              Draft
+            </span>
+          </div>
+          <Button size="sm" onClick={() => setIsOpen(true)}>
+            Review line items
+          </Button>
+        </header>
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-4 border-b border-outline-variant bg-surface-container-low px-6 py-4 text-sm">
+          <label className="flex items-center gap-3">
+            Partial coverage{" "}
+            <strong className="w-10 tabular-nums">
+              {Math.round(coverage * 100)}%
+            </strong>
+            <input
+              aria-label="Partial coverage"
+              type="range"
+              min="20"
+              max="90"
+              step="1"
+              value={Math.round(coverage * 100)}
+              onChange={(event) =>
+                setCoverage(Number(event.target.value) / 100)
               }
-              trailingIcons={
-                <Button key="save" size="sm" variant="secondary">
-                  Save
-                </Button>
-              }
-              title="Create New Event"
-              scrollContainerRef={scrollRef}
+              className="w-36 accent-primary"
             />
-
-            <DialogBody
-              ref={scrollRef}
-              className="px-4 pb-8 pt-[64px]"
-              pullToRefresh={false}
-              onRefresh={simulateRefresh}
-            >
-              <div className="grid gap-6 pt-[20px]">
-                <Input label="Event name" placeholder="Team Sync" />
-                <Input label="Location" placeholder="Conference Room 4" />
-                <div className="h-96 rounded-lg border-2 border-dashed border-outline-variant bg-surface-container-low" />
-                <div className="h-96 rounded-lg border-2 border-dashed border-outline-variant bg-surface-container-low" />
-                <Typography body-medium className="text-center">
-                  End of content.
-                </Typography>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={overlay}
+              onChange={(event) => setOverlay(event.target.checked)}
+              className="accent-primary"
+            />{" "}
+            Show overlay
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={closeOnOutsideClick}
+              onChange={(event) => setCloseOnOutsideClick(event.target.checked)}
+              className="accent-primary"
+            />{" "}
+            Close on outside click
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={showDragHandle}
+              onChange={(event) => setShowDragHandle(event.target.checked)}
+              className="accent-primary"
+            />
+            Show drag handle
+          </label>
+        </div>
+        <main className="mx-auto grid max-w-7xl gap-8 p-6 md:grid-cols-2 md:p-10">
+          <div className="rounded-2xl bg-surface-container-low p-6 md:p-10">
+            <div className="min-h-80 rounded-lg border border-outline-variant bg-surface p-8 shadow-sm">
+              <p className="text-xs uppercase tracking-widest text-on-surface-variant">
+                Lumen Consulting
+              </p>
+              <h1 className="mt-6 text-3xl font-semibold">Invoice</h1>
+              <p className="mt-2 text-sm text-on-surface-variant">
+                Professional services · September 2026
+              </p>
+              <div className="mt-10 flex justify-between border-t border-outline-variant pt-5 text-sm">
+                <span>Bill to</span>
+                <strong>Nest Studios Inc.</strong>
+              </div>
+              <div className="mt-5 flex justify-between text-sm">
+                <span>Total due</span>
+                <strong>$160,800.00</strong>
+              </div>
+            </div>
+          </div>
+          <section className="space-y-6 py-2">
+            <div>
+              <p className="text-sm text-primary">Invoice details</p>
+              <h2 className="mt-3 text-2xl font-semibold">Lumen Consulting</h2>
+              <p className="mt-2 text-sm text-on-surface-variant">
+                TIN •••• 3213 · VAT •••• 5453
+              </p>
+              <label className="mt-4 block text-sm">
+                Invoice reference
+                <input
+                  className="mt-2 block w-full rounded-lg border border-outline-variant bg-surface px-3 py-2 focus-visible:outline-primary"
+                  defaultValue="INV-2026-091"
+                />
+              </label>
+            </div>
+            <div className="rounded-xl border border-outline-variant p-5">
+              <h3 className="font-semibold">PO #87</h3>
+              <p className="mt-1 text-sm text-on-surface-variant">
+                Requested by Kevin Yoon
+              </p>
+              <p className="mt-5">
+                <strong>$39,200.00</strong> remaining
+              </p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-primary/20">
+                <div className="h-full w-4/5 bg-primary" />
+              </div>
+              <p className="mt-3 text-sm">Net billed USD $160,800</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium">Open sheet from</h3>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(["top", "bottom", "left", "right"] as const).map((edge) => (
+                  <Button
+                    key={edge}
+                    size="sm"
+                    variant={side === edge ? "primary" : "outline"}
+                    onClick={() => {
+                      setSide(edge);
+                      setExpanded(false);
+                      setIsOpen(true);
+                    }}
+                  >
+                    {edge.charAt(0).toUpperCase() + edge.slice(1)}
+                  </Button>
+                ))}
+              </div>
+              <p className="mt-3 text-sm text-on-surface-variant">
+                {showDragHandle
+                  ? "Drag anywhere on the handle row. Release to settle at the partial size or full page, or swipe toward the edge to dismiss."
+                  : "Use the expand control for a full-page workspace, or close the sheet to return to the invoice."}
+              </p>
+            </div>
+          </section>
+        </main>
+        <Dialog
+          open={isOpen}
+          onOpenChange={setIsOpen}
+          variant="sheet"
+          side={side}
+          expanded={expanded}
+          onExpandedChange={setExpanded}
+          glass={args.glass}
+          sheetSize={coverage}
+          overlay={overlay}
+          closeOnOutsideClick={closeOnOutsideClick}
+          showDragHandle={showDragHandle}
+        >
+          <DialogContent>
+            <DialogHeader className="gap-3 px-5 py-5 sm:px-6 sm:py-5">
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-lg font-semibold">
+                  {items.length} line items
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-xs text-on-surface-variant">
+                  Invoice 123-981-223 · Lumen Consulting
+                </DialogDescription>
+              </div>
+              <DialogExpand />
+              <DialogClose asChild>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Close line items"
+                >
+                  <X size={20} />
+                </IconButton>
+              </DialogClose>
+            </DialogHeader>
+            <DialogBody elasticity={false} className="px-5 sm:px-6">
+              <div className="overflow-x-auto pb-4">
+                <table className="w-full min-w-[760px] border-collapse text-start text-sm">
+                  <thead>
+                    <tr className="border-b border-outline-variant text-on-surface-variant">
+                      {[
+                        "Description",
+                        "Department",
+                        "Account",
+                        "Location",
+                        "Price",
+                      ].map((label) => (
+                        <th
+                          key={label}
+                          className="px-3 py-4 text-start text-xs font-medium"
+                        >
+                          {label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item, index) => (
+                      <tr
+                        key={index}
+                        className="border-b border-outline-variant/60"
+                      >
+                        <td className="px-3 py-4">
+                          <input
+                            aria-label={"Line " + (index + 1) + " description"}
+                            value={item.description}
+                            onChange={(event) =>
+                              setItems((current) =>
+                                current.map((row, i) =>
+                                  i === index
+                                    ? {
+                                        ...row,
+                                        description: event.target.value,
+                                      }
+                                    : row,
+                                ),
+                              )
+                            }
+                            className="w-full min-w-48 rounded bg-transparent py-2 outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          />
+                        </td>
+                        <td className="px-3 py-4">{item.department}</td>
+                        <td className="px-3 py-4">{item.account}</td>
+                        <td className="px-3 py-4">{item.location}</td>
+                        <td className="whitespace-nowrap px-3 py-4 font-medium">
+                          {item.price}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </DialogBody>
+            <DialogFooter className="items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-4">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  setItems((current) => [
+                    ...current,
+                    {
+                      description: "New line item",
+                      department: "Operations",
+                      account: "6300 · Subscriptions",
+                      location: "Dublin HQ",
+                      price: "$0.00",
+                    },
+                  ])
+                }
+              >
+                <Plus size={16} /> Add line
+              </Button>
+              <p className="text-sm">
+                Total USD <strong>$160,800.00</strong>
+              </p>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

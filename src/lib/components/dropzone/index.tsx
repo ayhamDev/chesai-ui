@@ -18,6 +18,8 @@ export interface DropzoneProps extends Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "onDrop"
 > {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   onDrop: (files: File[]) => void | Promise<void>;
   files?: DropzoneFileItem[];
   onRemove?: (
@@ -43,6 +45,7 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
       multiple = true,
       maxSize,
       disabled = false,
+      disableHover = false,
       label = "Click or drag files here",
       description = "SVG, PNG, JPG or GIF (max. 5MB)",
       ...props
@@ -160,7 +163,7 @@ export const Dropzone = React.forwardRef<HTMLDivElement, DropzoneProps>(
     };
 
     return (
-      <div className="flex flex-col gap-2 w-full">
+      <div data-disable-hover={disableHover || undefined} className="flex flex-col gap-2 w-full">
         <div
           ref={ref}
           onClick={() => !disabled && inputRef.current?.click()}

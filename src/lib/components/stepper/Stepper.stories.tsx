@@ -92,3 +92,27 @@ export const VerticalTimeline: Story = {
     </div>
   ),
 };
+
+export const ScrollableIndicators: Story = {
+  name: "Scrollable indicators",
+  args: { currentStep: 0, orientation: "horizontal" },
+  render: (args) => (
+    <div className="w-full max-w-80 space-y-6">
+      <LayoutDirectionToggle />
+      <Stepper {...args}>
+        {(["Account", "Payment", "Confirm"] as const).map((title) => (
+          <Stepper.Step key={title} size="lg">
+            <Stepper.Indicator shape="diamond" />
+            <Stepper.Separator />
+            <Stepper.Content>
+              <Stepper.Title>{title}</Stepper.Title>
+              <Stepper.Description>
+                Scroll to see every step.
+              </Stepper.Description>
+            </Stepper.Content>
+          </Stepper.Step>
+        ))}
+      </Stepper>
+    </div>
+  ),
+};

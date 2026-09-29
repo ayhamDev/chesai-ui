@@ -28,6 +28,7 @@ export function useTextarea(props: UseTextareaProps) {
     classNames,
     className,
     isInvalid: isInvalidProp,
+    disableHover,
     ...otherProps
   } = props
 
@@ -65,18 +66,37 @@ export function useTextarea(props: UseTextareaProps) {
 
     const textarea = textareaRef.current
     const adjustHeight = () => {
-      textarea.style.height = 'auto'
-      const singleRowHeight = 24
-      const minHeight = minRows * singleRowHeight
-      const maxHeight = maxRows * singleRowHeight
-      const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight)
+      // `auto` retains the browser's default two rows and prevents one-row
+      // composers from shrinking. Measure content independently of that height.
+      textarea.style.height = '0px'
+      const computed = getComputedStyle(textarea)
+      const singleRowHeight = Number.parseFloat(computed.lineHeight) || 24
+      const padding = (Number.parseFloat(computed.paddingTop) || 0) + (Number.parseFloat(computed.paddingBottom) || 0)
+      const border = (Number.parseFloat(computed.borderTopWidth) || 0) + (Number.parseFloat(computed.borderBottomWidth) || 0)
+      const minHeight = Math.max(1, minRows) * singleRowHeight
+      const maxHeight = Math.max(minRows, maxRows, 1) * singleRowHeight
+      const contentHeight = textarea.scrollHeight - padding
+      const boxOffset = computed.boxSizing === 'border-box' ? padding + border : 0
+      const newHeight = Math.min(Math.max(contentHeight, minHeight), maxHeight) + boxOffset
       textarea.style.height = `${newHeight}px`
-      textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden'
+      textarea.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden'
     }
 
     textarea.addEventListener('input', adjustHeight)
     adjustHeight()
-    return () => textarea.removeEventListener('input', adjustHeight)
+    let previousWidth = textarea.getBoundingClientRect().width
+    const observer = new ResizeObserver(() => {
+      const width = textarea.getBoundingClientRect().width
+      if (width !== previousWidth) {
+        previousWidth = width
+        adjustHeight()
+      }
+    })
+    observer.observe(textarea)
+    return () => {
+      textarea.removeEventListener('input', adjustHeight)
+      observer.disconnect()
+    }
     // We intentionally include value dependencies to trigger resize when controlled value changes
     // biome-ignore lint/correctness/useExhaustiveDependencies: value/defaultValue changes affect DOM scrollHeight
   }, [minRows, maxRows, disableAutosize, props.value, props.defaultValue])

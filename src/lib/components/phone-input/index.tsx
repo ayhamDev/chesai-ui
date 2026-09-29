@@ -156,6 +156,7 @@ const CountryPicker = React.memo(
 
     const bloomColor = useMemo(() => {
       if (isInvalid) return 'after:bg-error/20 text-error'
+      if (variant === 'filled-inverted') return 'after:bg-filled-inverted-hover text-on-surface-variant hover:text-on-surface'
       if (variant.includes('inverted')) return 'after:bg-primary/20 text-primary'
       return 'after:bg-on-surface/10 text-on-surface-variant hover:text-on-surface'
     }, [isInvalid, variant])

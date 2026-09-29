@@ -5,6 +5,8 @@ import React, { useCallback, useRef, useState } from 'react'
 import { getInputSlotClassNames, inputSlots, inputStyles } from './input-styles'
 
 export interface UseInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'color'> {
+  /** Disable hover styling while preserving focus, active, and editing behavior. */
+  disableHover?: boolean
   ref?: React.Ref<HTMLInputElement>
   as?: React.ElementType
   variant?:
@@ -60,6 +62,7 @@ export function useInput(props: UseInputProps) {
     defaultValue,
     readOnly,
     disabled,
+    disableHover = false,
     ...otherProps
   } = props
 
@@ -114,6 +117,7 @@ export function useInput(props: UseInputProps) {
   })
 
   const getBaseProps = () => ({
+    'data-disable-hover': disableHover || undefined,
     'data-slot': 'base',
     'data-filled': isFilled,
     'data-filled-within': isFilled || isFocused,

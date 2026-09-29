@@ -1,14 +1,12 @@
 "use client";
 import { useDirection } from "../../context/direction";
 
-
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { clsx } from "clsx";
 import {
   AnimatePresence,
   motion,
-  type PanInfo,
-  useDragControls,
+  useReducedMotion,
   type Variants,
 } from "framer-motion";
 import {
@@ -16,6 +14,10 @@ import {
   forwardRef,
   useContext,
   useEffect,
+  useState,
+  useRef,
+  useCallback,
+  type PointerEvent as ReactPointerEvent,
   type ButtonHTMLAttributes,
   type FC,
   type HTMLAttributes,
@@ -29,16 +31,16 @@ import {
 } from "../elastic-scroll-area";
 import { DURATION, EASING } from "../stack-router/transitions";
 import { Typography } from "../typography";
+import { Maximize2, Minimize2 } from "lucide-react";
+import FocusTrap from "focus-trap-react";
+import { resolveSheetSnap, sheetSizeToCss } from "./sheet-motion";
+import { overlayBlurClasses, type OverlayBlur } from "../../utils/overlay";
 
 // --- HELPERS ---
-const smShapeStyles = {
-  full: "sm:rounded-[28px]",
-  minimal: "sm:rounded-xl",
-  sharp: "sm:rounded-none",
-};
+export type DialogSide = "top" | "bottom" | "left" | "right";
 
 // --- CONTEXT ---
-type DialogVariant = "basic" | "fullscreen";
+type DialogVariant = "basic" | "sheet" | "fullscreen";
 type DialogAnimationType = "default" | "material3";
 
 interface DialogContextProps {
@@ -48,6 +50,14 @@ interface DialogContextProps {
   animation: DialogAnimationType;
   isLocked: boolean;
   glass: boolean;
+  side: DialogSide;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
+  sheetSize?: string | number;
+  overlay: boolean;
+  overlayBlur: OverlayBlur;
+  closeOnOutsideClick: boolean;
+  showDragHandle: boolean;
 }
 
 const DialogContext = createContext<DialogContextProps | null>(null);
@@ -69,6 +79,20 @@ export interface DialogProps {
   animation?: DialogAnimationType;
   isLocked?: boolean;
   glass?: boolean;
+  /** Edge used by the sheet variant (fullscreen is a legacy alias). */
+  side?: DialogSide;
+  expanded?: boolean;
+  defaultExpanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
+  /** Partial coverage: a fraction (0–1) or CSS size, e.g. "40dvh", "480px", "min(640px, 90vw)". */
+  sheetSize?: string | number;
+  /** Dim and block the page while a sheet is partially open. Defaults to false. */
+  overlay?: boolean;
+  overlayBlur?: OverlayBlur;
+  /** Dismiss on outside pointer interaction. Defaults to overlay (true for basic dialogs). */
+  closeOnOutsideClick?: boolean;
+  /** Render the drag handle and reserve its space. Defaults to true. */
+  showDragHandle?: boolean;
 }
 
 const Dialog: FC<DialogProps> = ({
@@ -79,7 +103,22 @@ const Dialog: FC<DialogProps> = ({
   animation = "default",
   isLocked = false,
   glass = false,
+  side = "bottom",
+  expanded: expandedProp,
+  defaultExpanded = false,
+  onExpandedChange,
+  sheetSize,
+  overlay = false,
+  overlayBlur = "none",
+  closeOnOutsideClick = variant === "basic" || overlay,
+  showDragHandle = true,
 }) => {
+  const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
+  const expanded = expandedProp ?? internalExpanded;
+  const setExpanded = (value: boolean) => {
+    if (expandedProp === undefined) setInternalExpanded(value);
+    onExpandedChange?.(value);
+  };
   return (
     <DialogContext.Provider
       value={{
@@ -89,9 +128,21 @@ const Dialog: FC<DialogProps> = ({
         animation,
         isLocked,
         glass,
+        side,
+        expanded,
+        onExpandedChange: setExpanded,
+        sheetSize,
+        overlay,
+        overlayBlur,
+        closeOnOutsideClick,
+        showDragHandle,
       }}
     >
-      <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Root
+        open={open}
+        onOpenChange={onOpenChange}
+        modal={variant === "basic"}
+      >
         {children}
       </DialogPrimitive.Root>
     </DialogContext.Provider>
@@ -148,24 +199,37 @@ const basicDialogVariants: Variants = {
   },
 };
 
-const fullscreenDialogVariants: Variants = {
-  hidden: { y: "100%", opacity: 0 },
-  visible: {
-    y: "0%",
-    opacity: 1,
-    transition: {
-      duration: DURATION.long1,
-      ease: EASING.emphasizedDecelerate,
+const sheetDialogVariants = (
+  side: DialogSide,
+  reducedMotion: boolean,
+): Variants => {
+  const offset = reducedMotion
+    ? {}
+    : side === "left" || side === "right"
+      ? { x: side === "left" ? "-100%" : "100%" }
+      : { y: side === "top" ? "-100%" : "100%" };
+  return {
+    hidden: offset,
+    visible: {
+      x: "0%",
+      y: "0%",
+      transition: reducedMotion
+        ? { duration: 0 }
+        : {
+            type: "spring",
+            stiffness: 380,
+            damping: 38,
+            mass: 1,
+          },
     },
-  },
-  exit: {
-    y: "100%",
-    opacity: 1,
-    transition: {
-      duration: DURATION.medium2,
-      ease: EASING.emphasizedAccelerate,
+    exit: {
+      ...offset,
+      transition: {
+        duration: reducedMotion ? 0 : 0.24,
+        ease: [0.4, 0, 1, 1],
+      },
     },
-  },
+  };
 };
 
 const material3DialogVariants: Variants = {
@@ -217,19 +281,6 @@ const material3ScrimVariants: Variants = {
   },
 };
 
-const materialContentVariants: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: DURATION.medium1,
-      delay: 0.1,
-      ease: EASING.standardDecelerate,
-    },
-  },
-};
-
 // --- CONTENT ---
 export interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
   shape?: CardProps["shape"];
@@ -237,6 +288,8 @@ export interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
   padding?: CardProps["padding"];
   layout?: boolean | "size" | "position" | "preserve-aspect";
   glass?: boolean;
+  /** Collapsed sheet height (top/bottom) or width (left/right). */
+  sheetSize?: string | number;
 }
 
 const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
@@ -250,6 +303,7 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       layout = false, // Default to false to handle dimension changes purely through CSS transitions
       glass: glassProp,
       style,
+      sheetSize,
       onDrag,
       onDragStart,
       onDragEnd,
@@ -265,174 +319,420 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
       animation,
       isLocked,
       glass: glassContext,
+      side,
+      expanded,
+      onExpandedChange,
+      sheetSize: rootSheetSize,
+      overlay,
+      overlayBlur,
+      closeOnOutsideClick,
+      showDragHandle,
     } = useDialogContext();
-    const dragControls = useDragControls();
+    const contentRef = useRef<HTMLDivElement | null>(null);
+    const sizeProbeRef = useRef<HTMLDivElement | null>(null);
+    const [contentNode, setContentNode] = useState<HTMLDivElement | null>(null);
+    const resizeRef = useRef<{
+      pointerId: number;
+      start: number;
+      initialSize: number;
+      size: number;
+      extent: number;
+      moved: boolean;
+      partial: number;
+      lastPosition: number;
+      lastTime: number;
+      velocity: number;
+    } | null>(null);
+    const [dragSize, setDragSize] = useState<number | null>(null);
+    const [sizePercentage, setSizePercentage] = useState(0);
+    const setContentRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        contentRef.current = node;
+        setContentNode(node);
+        if (typeof ref === "function") ref(node);
+        else if (ref) ref.current = node;
+      },
+      [ref],
+    );
+    const reducedMotion = useReducedMotion();
     const direction = useDirection(undefined, props.dir);
 
     const glass = glassProp !== undefined ? glassProp : glassContext;
 
     useEffect(() => {
-      if (open && dialogVariant === "fullscreen") {
-        document.body.style.overscrollBehavior = "none";
-      }
+      if (!open || dialogVariant === "basic" || (!expanded && !overlay)) return;
+      const previous = document.body.style.overscrollBehavior;
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overscrollBehavior = "none";
+      document.body.style.overflow = "hidden";
       return () => {
-        document.body.style.overscrollBehavior = "";
+        document.body.style.overscrollBehavior = previous;
+        document.body.style.overflow = previousOverflow;
       };
-    }, [open, dialogVariant]);
+    }, [open, dialogVariant, expanded, overlay]);
 
-    const isFullscreen = dialogVariant === "fullscreen";
+    useEffect(() => {
+      if (!open) return;
+      resizeRef.current = null;
+      setDragSize(null);
+    }, [side, sheetSize, rootSheetSize, open]);
+
+    const isSheet = dialogVariant !== "basic";
+    const horizontal = side === "left" || side === "right";
+    const partialSize = sheetSizeToCss(
+      sheetSize ?? rootSheetSize ?? (horizontal ? "min(520px, 90vw)" : "55dvh"),
+    );
+    useEffect(() => {
+      const content = contentNode;
+      if (
+        !open ||
+        !isSheet ||
+        !content ||
+        typeof ResizeObserver === "undefined"
+      )
+        return;
+      const observer = new ResizeObserver(() => {
+        const bounds = content.parentElement!.getBoundingClientRect();
+        const rect = content.getBoundingClientRect();
+        const extent = horizontal ? bounds.width : bounds.height;
+        if (extent > 0)
+          setSizePercentage(
+            Math.round(
+              ((horizontal ? rect.width : rect.height) / extent) * 100,
+            ),
+          );
+      });
+      observer.observe(content);
+      return () => observer.disconnect();
+    }, [open, isSheet, horizontal, contentNode]);
+    const sheetRadius = shape === "sharp" ? 0 : shape === "full" ? 28 : 12;
+    const corners =
+      expanded && dragSize === null
+        ? 0
+        : {
+            bottom: `${sheetRadius}px ${sheetRadius}px 0 0`,
+            top: `0 0 ${sheetRadius}px ${sheetRadius}px`,
+            left: `0 ${sheetRadius}px ${sheetRadius}px 0`,
+            right: `${sheetRadius}px 0 0 ${sheetRadius}px`,
+          }[side];
     const isMD3 = animation === "material3";
 
-    const handleDragEndInternal = (
-      _event: MouseEvent | TouchEvent | PointerEvent,
-      info: PanInfo,
-    ) => {
-      if (isLocked) return;
-      if (info.offset.y > 150 || info.velocity.y > 400) onOpenChange(false);
+    const startResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (isLocked || event.button !== 0 || !contentRef.current) return;
+      const rect = contentRef.current.getBoundingClientRect();
+      const bounds = contentRef.current.parentElement!.getBoundingClientRect();
+      const size = horizontal ? rect.width : rect.height;
+      const probe = sizeProbeRef.current!.getBoundingClientRect();
+      const position = horizontal ? event.clientX : event.clientY;
+      resizeRef.current = {
+        pointerId: event.pointerId,
+        start: horizontal ? event.clientX : event.clientY,
+        initialSize: size,
+        size,
+        extent: horizontal ? bounds.width : bounds.height,
+        moved: false,
+        partial: horizontal ? probe.width : probe.height,
+        lastPosition: position,
+        lastTime: event.timeStamp,
+        velocity: 0,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.preventDefault();
+      setDragSize(size);
     };
+
+    const moveResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+      const resize = resizeRef.current;
+      if (!resize || resize.pointerId !== event.pointerId) return;
+      const sign = side === "top" || side === "left" ? 1 : -1;
+      const delta =
+        ((horizontal ? event.clientX : event.clientY) - resize.start) * sign;
+      resize.moved ||= Math.abs(delta) > 3;
+      const position = horizontal ? event.clientX : event.clientY;
+      const elapsed = Math.max(16, event.timeStamp - resize.lastTime);
+      resize.velocity = ((position - resize.lastPosition) * sign) / elapsed;
+      resize.lastTime = event.timeStamp;
+      resize.lastPosition = position;
+      resize.size = Math.min(
+        resize.extent,
+        Math.max(0, resize.initialSize + delta),
+      );
+      setDragSize(resize.size);
+    };
+
+    const finishResize = (
+      event: ReactPointerEvent<HTMLDivElement>,
+      cancelled = false,
+    ) => {
+      const resize = resizeRef.current;
+      if (!resize || resize.pointerId !== event.pointerId) return;
+      resizeRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      if (!cancelled && resize.moved) {
+        const velocity =
+          event.timeStamp - resize.lastTime > 80 ? 0 : resize.velocity;
+        const snap = resolveSheetSnap(
+          resize.size,
+          resize.partial,
+          resize.extent,
+          velocity,
+        );
+        if (snap === "closed") {
+          // Keep the released geometry during the slide-out; don't jump back to partial size.
+          onOpenChange(false);
+          return;
+        }
+        onExpandedChange(snap === "expanded");
+      }
+      setDragSize(null);
+    };
+    const currentSize =
+      dragSize !== null ? `${dragSize}px` : expanded ? "100%" : partialSize;
 
     return (
       <AnimatePresence mode="wait">
         {open && (
           <DialogPrimitive.Portal forceMount>
-            <DialogPrimitive.Overlay asChild forceMount>
+            {!isSheet && (
+              <DialogPrimitive.Overlay asChild forceMount>
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  variants={
+                    isMD3 ? material3ScrimVariants : defaultBackdropVariants
+                  }
+                  className={clsx(
+                    "fixed inset-0 z-50 pointer-events-auto",
+                    isMD3 && !isSheet ? "bg-black/30" : "bg-black/50",
+                    overlayBlurClasses[overlayBlur],
+                  )}
+                  style={{ willChange: "opacity" }}
+                />
+              </DialogPrimitive.Overlay>
+            )}
+            {isSheet && overlay && (
               <motion.div
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                variants={
-                  isMD3 ? material3ScrimVariants : defaultBackdropVariants
-                }
-                className={clsx(
-                  "fixed inset-0 z-50 pointer-events-auto",
-                  isMD3 && !isFullscreen ? "bg-black/30" : "bg-black/50",
-                )}
-                style={{ willChange: "opacity" }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: reducedMotion ? 0 : 0.22, ease: [0.2, 0, 0, 1] }}
+                data-sheet-overlay=""
+                aria-hidden="true"
+                className={clsx("fixed inset-0 z-50 bg-black/35", overlayBlurClasses[overlayBlur])}
+                onClick={() => {
+                  if (closeOnOutsideClick && !isLocked) onOpenChange(false);
+                }}
               />
-            </DialogPrimitive.Overlay>
+            )}
 
             <div
               className={clsx(
                 "fixed inset-0 z-50 flex pointer-events-none",
-                !isFullscreen && "items-center justify-center p-4 sm:p-8",
-                isFullscreen &&
-                  "items-end sm:items-center sm:justify-center sm:p-8",
+                !isSheet && "items-center justify-center p-4 sm:p-8",
+                isSheet && "overflow-hidden",
               )}
             >
-              <DialogPrimitive.Content
-              dir={direction}
-                asChild
-                forceMount
-                onEscapeKeyDown={(e) => {
-                  if (isLocked) e.preventDefault();
-                }}
-                onInteractOutside={(e) => {
-                  if (isLocked) e.preventDefault();
+              {isSheet && (
+                <div
+                  ref={sizeProbeRef}
+                  data-sheet-size-probe=""
+                  aria-hidden="true"
+                  className="invisible absolute pointer-events-none"
+                  style={{
+                    width: horizontal ? partialSize : 0,
+                    height: horizontal ? 0 : partialSize,
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                  }}
+                />
+              )}
+              <FocusTrap
+                active={isSheet && (expanded || overlay) && open}
+                focusTrapOptions={{
+                  initialFocus: false,
+                  fallbackFocus: () => contentRef.current!,
+                  escapeDeactivates: false,
+                  returnFocusOnDeactivate: false,
+                  allowOutsideClick: true,
                 }}
               >
-                <motion.div
-                  ref={ref}
-                  layout={layout}
-                  variants={
-                    isFullscreen
-                      ? fullscreenDialogVariants
-                      : isMD3
-                        ? material3DialogVariants
-                        : basicDialogVariants
-                  }
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  drag={isFullscreen && !isLocked ? "y" : false}
-                  dragControls={dragControls}
-                  dragListener={false}
-                  dragConstraints={{ top: 0, bottom: 0 }}
-                  dragElastic={{ top: 0, bottom: 1 }}
-                  onDragEnd={handleDragEndInternal}
-                  style={{
-                    willChange: "transform, opacity",
-                    touchAction: isFullscreen && !isLocked ? "none" : "auto",
-                    // Custom layout-safe transitions targeting only styling and bounds updates
-                    transitionProperty:
-                      "max-width, max-height, background-color, border-color, color, border-radius, box-shadow",
-                    transitionDuration:
-                      "var(--theme-transition-duration, 300ms)",
-                    transitionTimingFunction:
-                      "var(--theme-transition-ease, cubic-bezier(0.2, 0, 0, 1))",
-                    ...style,
+                <DialogPrimitive.Content
+                  dir={direction}
+                  aria-modal={isSheet ? expanded || overlay : true}
+                  asChild
+                  forceMount
+                  onEscapeKeyDown={(e) => {
+                    if (isLocked) e.preventDefault();
                   }}
-                  className={twMerge(
-                    clsx(
-                      "relative z-10 flex flex-col shadow-2xl pointer-events-auto",
-                      isFullscreen
-                        ? [
-                            "w-full",
-                            "h-full sm:max-h-[90vh] sm:max-w-2xl",
-                            "rounded-none",
-                            smShapeStyles[shape as keyof typeof smShapeStyles],
-                            "overflow-hidden",
-                            glass
-                              ? "bg-surface-container-high/6 backdrop-blur-xl border border-white/20 dark:border-white/10"
-                              : "bg-surface-container-high",
-                          ]
-                        : [
-                            "w-full max-w-lg", // FIXED: Added standard max-w-md as fallback base style for basic dialogs
-                            cardVariants({
-                              shape,
-                              variant,
-                              padding,
-                              glass,
-                              elevation: "none",
-                              bordered: false,
-                            }),
-                          ],
-                      className,
-                    ),
-                  )}
-                  {...props}
-                >
-                  {isFullscreen && (
-                    <div className="absolute left-1/2 top-2 z-50 -translate-x-1/2 opacity-80 pointer-events-none">
-                      <div className="h-1.5 w-12 rounded-full bg-on-surface-variant/40" />
-                    </div>
-                  )}
-
-                  {isFullscreen ? (
-                    <motion.div
-                      className="flex h-full flex-col"
-                      initial="hidden"
-                      animate="visible"
-                      variants={materialContentVariants}
-                      style={{
-                        willChange: "opacity",
-                        transform: "translate3d(0, 0, 0)",
-                      }}
-                      onPointerDown={(e) => {
-                        if (isLocked) return;
-                        const target = e.target as HTMLElement;
-                        if (
-                          target.closest(
-                            "button, a, input, select, textarea, [role='button']",
-                          )
+                  onInteractOutside={(e) => {
+                    if (isLocked || isSheet || !closeOnOutsideClick)
+                      e.preventDefault();
+                  }}
+                  onPointerDownOutside={(e) => {
+                    if (
+                      isSheet &&
+                      !overlay &&
+                      !expanded &&
+                      closeOnOutsideClick &&
+                      !isLocked
+                    ) {
+                      const target = e.detail.originalEvent.target;
+                      // The trigger already owns its open/close action.
+                      if (
+                        !(
+                          target instanceof Element &&
+                          target.closest('[aria-haspopup="dialog"]')
                         )
-                          return;
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        if (e.clientY - rect.top > 72) return;
-                        dragControls.start(e);
-                      }}
-                    >
+                      )
+                        onOpenChange(false);
+                    }
+                  }}
+                >
+                  <motion.div
+                    ref={setContentRef}
+                    data-side={isSheet ? side : undefined}
+                    data-expanded={isSheet ? expanded : undefined}
+                    layout={isSheet ? false : layout}
+                    variants={
+                      isSheet
+                        ? sheetDialogVariants(side, !!reducedMotion)
+                        : isMD3
+                          ? material3DialogVariants
+                          : basicDialogVariants
+                    }
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    style={{
+                      willChange: isSheet ? "transform" : "transform, opacity",
+                      touchAction: "auto",
+                      // Custom layout-safe transitions targeting only styling and bounds updates
+                      transitionProperty:
+                        "width, height, max-width, max-height, background-color, border-color, color, border-radius, box-shadow",
+                      transitionDuration:
+                        reducedMotion || dragSize !== null
+                          ? "0ms"
+                          : isSheet
+                            ? "480ms"
+                            : "var(--theme-transition-duration, 300ms)",
+                      transitionTimingFunction: isSheet
+                        ? "cubic-bezier(0.22, 1, 0.36, 1)"
+                        : "var(--theme-transition-ease, cubic-bezier(0.2, 0, 0, 1))",
+                      ...style,
+                      ...(isSheet
+                        ? ({
+                            position: "absolute",
+                            [side]: 0,
+                            ...(horizontal ? { top: 0 } : { left: 0 }),
+                            width: horizontal ? currentSize : "100%",
+                            height: horizontal ? "100%" : currentSize,
+                            maxWidth: "100%",
+                            maxHeight: "100%",
+                            borderRadius: corners,
+                            ...(isLocked || !showDragHandle
+                              ? {}
+                              : {
+                                  [{
+                                    bottom: "paddingTop",
+                                    top: "paddingBottom",
+                                    left: "paddingRight",
+                                    right: "paddingLeft",
+                                  }[side]]: 44,
+                                }),
+                          } as const)
+                        : {}),
+                    }}
+                    className={twMerge(
+                      clsx(
+                        "relative z-10 flex flex-col shadow-2xl pointer-events-auto",
+                        isSheet
+                          ? [
+                              "min-h-0 min-w-0 overflow-hidden",
+                              glass
+                                ? "bg-surface-container-high/6 backdrop-blur-xl border border-white/20 dark:border-white/10"
+                                : "bg-surface-container-high",
+                            ]
+                          : [
+                              "w-full max-w-lg", // FIXED: Added standard max-w-md as fallback base style for basic dialogs
+                              cardVariants({
+                                shape,
+                                variant,
+                                padding,
+                                glass,
+                                elevation: "none",
+                                bordered: false,
+                              }),
+                            ],
+                        className,
+                      ),
+                    )}
+                    {...props}
+                  >
+                    {isSheet && showDragHandle && !isLocked && (
                       <div
-                        className="flex h-full w-full flex-col"
-                        style={{ touchAction: "pan-y" }}
+                        role="separator"
+                        tabIndex={0}
+                        aria-label="Resize sheet"
+                        aria-orientation={
+                          horizontal ? "vertical" : "horizontal"
+                        }
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={sizePercentage}
+                        className={clsx(
+                          "absolute z-20 flex items-center justify-center touch-none select-none focus-visible:outline-2 focus-visible:outline-primary",
+                          horizontal
+                            ? "inset-y-0 w-11 cursor-ew-resize"
+                            : "inset-x-0 h-11 cursor-ns-resize",
+                          side === "bottom" && "top-0",
+                          side === "top" && "bottom-0",
+                          side === "left" && "right-0",
+                          side === "right" && "left-0",
+                        )}
+                        onPointerDown={startResize}
+                        onPointerMove={moveResize}
+                        onPointerUp={(event) => finishResize(event)}
+                        onPointerCancel={(event) => finishResize(event, true)}
+                        onLostPointerCapture={(event) =>
+                          finishResize(event, true)
+                        }
+                        onKeyDown={(event) => {
+                          if (event.key === "Home" || event.key === "End") {
+                            event.preventDefault();
+                            onExpandedChange(event.key === "End");
+                          } else if (
+                            (horizontal
+                              ? ["ArrowLeft", "ArrowRight"]
+                              : ["ArrowUp", "ArrowDown"]
+                            ).includes(event.key) &&
+                            contentRef.current
+                          ) {
+                            event.preventDefault();
+                            const growKey = {
+                              left: "ArrowRight",
+                              right: "ArrowLeft",
+                              top: "ArrowDown",
+                              bottom: "ArrowUp",
+                            }[side];
+                            if (event.key === growKey) onExpandedChange(true);
+                            else if (expanded) onExpandedChange(false);
+                            else onOpenChange(false);
+                          }
+                        }}
                       >
-                        {children}
+                        <div
+                          className={clsx(
+                            "rounded-full bg-on-surface-variant/30",
+                            horizontal ? "h-10 w-1" : "h-1 w-10",
+                          )}
+                        />
                       </div>
-                    </motion.div>
-                  ) : (
-                    children
-                  )}
-                </motion.div>
-              </DialogPrimitive.Content>
+                    )}
+                    {children}
+                  </motion.div>
+                </DialogPrimitive.Content>
+              </FocusTrap>
             </div>
           </DialogPrimitive.Portal>
         )}
@@ -441,6 +741,38 @@ const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
   },
 );
 DialogContent.displayName = "DialogContent";
+
+/** Accessible toggle between the edge sheet and full-page view. */
+const DialogExpand = forwardRef<
+  HTMLButtonElement,
+  ButtonHTMLAttributes<HTMLButtonElement>
+>(({ children, className, onClick, ...props }, ref) => {
+  const { variant, expanded, onExpandedChange } = useDialogContext();
+  if (variant === "basic") return null;
+  const label = expanded ? "Collapse to sheet" : "Expand to full page";
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-label={label}
+      aria-expanded={expanded}
+      title={label}
+      className={twMerge(
+        "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full hover:bg-on-surface/10 focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50",
+        className,
+      )}
+      {...props}
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) onExpandedChange(!expanded);
+      }}
+    >
+      {children ??
+        (expanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />)}
+    </button>
+  );
+});
+DialogExpand.displayName = "DialogExpand";
 
 // --- HELPERS ---
 interface DialogCloseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -472,37 +804,43 @@ const DialogClose = forwardRef<HTMLButtonElement, DialogCloseProps>(
 );
 DialogClose.displayName = "DialogClose";
 
-const DialogHeader = (props: HTMLAttributes<HTMLDivElement>) => {
+const DialogHeader = ({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) => {
   const { variant } = useDialogContext();
   return (
     <div
       className={clsx(
         variant === "basic" && "flex flex-col space-y-1.5 text-start",
-        variant === "fullscreen" && [
+        variant !== "basic" && [
           "flex shrink-0 flex-row items-center justify-between",
           "px-6 py-4 sm:px-8 sm:py-6",
           "bg-transparent border-b border-outline-variant",
           "touch-none select-none",
         ],
-        props.className,
+        className,
       )}
       {...props}
     />
   );
 };
 
-const DialogFooter = (props: HTMLAttributes<HTMLDivElement>) => {
+const DialogFooter = ({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) => {
   const { variant } = useDialogContext();
   return (
     <div
       className={clsx(
         variant === "basic" && "mt-6 flex justify-end gap-2",
-        variant === "fullscreen" && [
+        variant !== "basic" && [
           "flex shrink-0 flex-row gap-3",
           "px-6 py-4 sm:px-8 sm:py-6",
           "bg-transparent border-t border-outline-variant",
         ],
-        props.className,
+        className,
       )}
       {...props}
     />
@@ -552,12 +890,12 @@ const DialogBody = forwardRef<HTMLDivElement, DialogBodyProps>(
     ref,
   ) => {
     const { variant } = useDialogContext();
-    if (variant === "fullscreen") {
+    if (variant !== "basic") {
       return (
         <ElasticScrollArea
           ref={ref}
           className={clsx(
-            "flex-1 pt-0!",
+            "min-h-0 flex-1 pt-0!",
             "px-6 py-4 transition-all sm:px-8 sm:py-6",
             "touch-pan-y",
             className,
@@ -583,6 +921,7 @@ DialogBody.displayName = "DialogBody";
 export {
   Dialog,
   DialogBody,
+  DialogExpand,
   DialogClose,
   DialogContent,
   DialogDescription,

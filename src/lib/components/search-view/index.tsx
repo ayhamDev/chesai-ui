@@ -1,4 +1,5 @@
 "use client";
+import { overlayBlurClasses, type OverlayBlur } from "../../utils/overlay";
 
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { clsx } from "clsx";
@@ -41,6 +42,7 @@ export interface SearchViewProps {
   expandedMinHeight?: number | string;
   expandedMaxHeight?: number | string;
   showOverlay?: boolean;
+  overlayBlur?: OverlayBlur;
   shape?: SearchViewShape;
   duration?: number;
   easing?: Easing;
@@ -111,6 +113,7 @@ export const SearchView = ({
   expandedMinHeight,
   expandedMaxHeight,
   showOverlay = true,
+  overlayBlur = "none",
   shape = "full",
   duration = DURATION.medium3,
   easing = EASING.expressiveDefaultEffects,
@@ -391,6 +394,7 @@ export const SearchView = ({
         className={clsx(
           "absolute inset-0 transition-colors",
           showOverlay ? "bg-black/40" : "bg-transparent",
+          showOverlay && overlayBlurClasses[overlayBlur],
         )}
         onClick={handleClose}
       />

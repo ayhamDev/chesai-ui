@@ -31,6 +31,8 @@ export type DatePickerInputVariant =
   | "ghost-inverted";
 
 export interface DatePickerProps {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   /** Show an outer docked popup border. Defaults to false. */
   bordered?: boolean;
   value?: Date;
@@ -209,6 +211,7 @@ const DatePickerBody = ({
 export const DatePicker = ({
   value,
   onChange,
+  disableHover = false,
   variant = "docked",
   inputVariant = "filled",
   size = "md",
@@ -250,7 +253,7 @@ export const DatePicker = ({
   const displayValue = isValidValue ? format(value, "PP") : placeholder;
 
   const TriggerButton = (
-    <button
+    <button data-disable-hover={disableHover || undefined}
       type="button"
       disabled={disabled}
       onClick={() => setOpen(true)}

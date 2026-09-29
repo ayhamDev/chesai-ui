@@ -1,7 +1,7 @@
 import React from 'react'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { InputOTP, InputOTPGroup, InputOTPSlot } from './index'
+import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot, type InputOTPProps } from './index'
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -13,6 +13,48 @@ beforeEach(() => {
     },
   )
   document.elementFromPoint = vi.fn()
+})
+
+it('preserves entered digits and focus when changing grouped spacing or separated mode', () => {
+  function Example({ gap, separated }: Pick<InputOTPProps, 'gap' | 'separated'>) {
+    return <InputOTP maxLength={4} gap={gap} separated={separated} aria-label="Code">
+      <InputOTPGroup>{[0, 1, 2, 3].map(index => <InputOTPSlot key={index} index={index} data-testid={`digit-${index}`} />)}</InputOTPGroup>
+    </InputOTP>
+  }
+  const { rerender } = render(<Example gap="none" />)
+  const input = screen.getByRole('textbox') as HTMLInputElement
+  act(() => input.focus())
+  fireEvent.change(input, { target: { value: '123' } })
+  for (const gap of ['xs', 'sm', 'md', 'lg', 'none'] as const) {
+    rerender(<Example gap={gap} />)
+    expect(screen.getByRole('textbox')).toBe(input)
+    expect(document.activeElement).toBe(input)
+    expect(input.value).toBe('123')
+    expect(screen.getByTestId('digit-2').textContent).toBe('3')
+    expect(input.hasAttribute('gap')).toBe(false)
+  }
+  rerender(<Example separated gap="lg" />)
+  expect(screen.getByRole('textbox')).toBe(input)
+  expect(input.value).toBe('123')
+  fireEvent.change(input, { target: { value: '1234' } })
+  expect(screen.getByTestId('digit-3').textContent).toBe('4')
+})
+
+it('keeps one input and completion across groups with independent layout overrides', () => {
+  const complete = vi.fn()
+  render(<InputOTP maxLength={4} gap="none" shape="full" onComplete={complete} aria-label="Code">
+    <InputOTPGroup data-testid="joined"><InputOTPSlot index={0} /><InputOTPSlot index={1} /></InputOTPGroup>
+    <InputOTPSeparator />
+    <InputOTPGroup gap="md" shape="minimal" activeShape="full" data-testid="gapped"><InputOTPSlot index={2} /><InputOTPSlot index={3} /></InputOTPGroup>
+  </InputOTP>)
+  expect(screen.getAllByRole('textbox')).toHaveLength(1)
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: '9876' } })
+  expect(screen.getByTestId('joined').textContent).toBe('98')
+  expect(screen.getByTestId('gapped').textContent).toBe('76')
+  expect(screen.getByTestId('joined').getAttribute('data-gap')).toBe('none')
+  expect(screen.getByTestId('gapped').getAttribute('data-gap')).toBe('md')
+  expect(screen.getByTestId('gapped').getAttribute('data-separated')).toBe('false')
+  expect(complete).toHaveBeenCalledWith('9876')
 })
 afterEach(() => {
   cleanup()

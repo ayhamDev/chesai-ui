@@ -292,6 +292,7 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
       initialDate,
       initialView,
       variant,
+      overlayBlur,
       onDateClick,
       onEventClick,
       onViewChange,
@@ -326,6 +327,7 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
         initialDate={initialDate}
         initialView={initialView}
         variant={variant}
+        overlayBlur={overlayBlur}
         onDateClick={onDateClick}
         onEventClick={onEventClick}
         onViewChange={onViewChange}

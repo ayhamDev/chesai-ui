@@ -15,6 +15,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogExpand,
+  type DialogProps,
   DialogTitle,
 } from "../components/dialog";
 import { Typography } from "../components/typography";
@@ -33,7 +35,14 @@ export interface DialogConfig {
    * Called when the dialog opening state changes (mainly for closing).
    */
   onOpenChange?: (isOpen: boolean) => void;
-  variant?: "basic" | "fullscreen";
+  variant?: DialogProps["variant"];
+  side?: DialogProps["side"];
+  sheetSize?: DialogProps["sheetSize"];
+  overlay?: boolean;
+  overlayBlur?: DialogProps["overlayBlur"];
+  closeOnOutsideClick?: boolean;
+  showDragHandle?: boolean;
+  defaultExpanded?: boolean;
   shape?: "full" | "minimal" | "sharp";
   destructive?: boolean;
   contentProps?: Partial<React.ComponentProps<typeof DialogContent>>;
@@ -116,8 +125,13 @@ const StandardDialogRenderer = ({
     <DialogContent shape={shape} {...contentProps}>
       {(title || description) && (
         <DialogHeader>
-          {title && <DialogTitle>{title}</DialogTitle>}
-          {description && <DialogDescription>{description}</DialogDescription>}
+          <div>
+            {title && <DialogTitle>{title}</DialogTitle>}
+            {description && (
+              <DialogDescription>{description}</DialogDescription>
+            )}
+          </div>
+          <DialogExpand />
         </DialogHeader>
       )}
       {body && (
@@ -212,7 +226,7 @@ export const DialogProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   const openDialog = useCallback(
-    <T = any,>(name: string, props?: T): Promise<any> => {
+    <T = any>(name: string, props?: T): Promise<any> => {
       return new Promise((resolve) => {
         const id = crypto.randomUUID();
 
@@ -293,6 +307,19 @@ export const DialogProvider = ({ children }: { children: React.ReactNode }) => {
               }
             }}
             variant={isStandard ? instance.props?.variant || "basic" : "basic"}
+            side={isStandard ? instance.props?.side : undefined}
+            sheetSize={isStandard ? instance.props?.sheetSize : undefined}
+            overlay={isStandard ? instance.props?.overlay : undefined}
+            overlayBlur={isStandard ? instance.props?.overlayBlur : undefined}
+            showDragHandle={
+              isStandard ? instance.props?.showDragHandle : undefined
+            }
+            closeOnOutsideClick={
+              isStandard ? instance.props?.closeOnOutsideClick : undefined
+            }
+            defaultExpanded={
+              isStandard ? instance.props?.defaultExpanded : undefined
+            }
             animation="material3"
           >
             <div style={{ zIndex, position: "relative" }}>

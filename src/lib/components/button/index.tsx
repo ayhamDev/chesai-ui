@@ -197,6 +197,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         />
 
         <motion.div
+          data-slot="button-content"
           initial={false}
           animate={{
             width: isLoading ? 0 : "auto",
@@ -205,7 +206,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className="flex items-center justify-center overflow-hidden whitespace-nowrap"
         >
-          <div className="flex items-center justify-center">
+          <div data-slot="button-content-inner" className="flex items-center justify-center">
             {/* Animated Start Icon Container */}
             <AnimatePresence initial={false}>
               {startIcon && (

@@ -41,6 +41,8 @@ export interface ComboboxOption {
 }
 
 export interface ComboboxProps {
+  /** Disable pointer hover styling; keyboard focus and active states are preserved. */
+  disableHover?: boolean;
   options: ComboboxOption[];
   /** Preserve a remotely loaded selection when it is absent from the current results. */
   selectedOption?: ComboboxOption;
@@ -116,6 +118,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
       isClearable = false,
       shape = "minimal",
       bordered = false,
+      disableHover = false,
       variant = "filled",
       size = "md",
       labelPlacement = "inside",
@@ -465,7 +468,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
                 ref={ref}
                 type="button"
                 disabled={disabled}
-                className={triggerClassName}
+                data-disable-hover={disableHover || undefined} className={triggerClassName}
               >
                 {triggerContent}
               </button>
@@ -503,7 +506,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
               ref={ref}
               type="button"
               disabled={disabled}
-              className={triggerClassName}
+              data-disable-hover={disableHover || undefined} className={triggerClassName}
             >
               {triggerContent}
             </button>

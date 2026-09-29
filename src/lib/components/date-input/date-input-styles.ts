@@ -96,7 +96,7 @@ export const getDateInputSlotClassNames = (
       )
       break
     case 'filled-inverted':
-      wrapperClasses.push('bg-surface-container-low hover:bg-surface-container focus-within:bg-surface-container ')
+      wrapperClasses.push('bg-surface-container-lowest hover:bg-filled-inverted-hover focus-within:bg-surface-container-lowest')
       break
     case 'outlined':
       wrapperClasses.push(

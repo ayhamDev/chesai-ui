@@ -56,7 +56,7 @@ export const inputWrapperVariants = cva(
     variants: {
       variant: {
         filled: 'bg-surface-container-highest/60 hover:bg-surface-container-highest border-b-2 border-transparent',
-        'filled-inverted': 'bg-surface-container-low hover:bg-surface-container border-b-2 border-transparent',
+        'filled-inverted': 'bg-surface-container-lowest hover:bg-filled-inverted-hover border-b-2 border-transparent',
         outlined: 'bg-transparent border-2 border-outline-variant hover:border-on-surface-variant',
         'outlined-inverted': 'bg-transparent border-2 border-primary/50 hover:border-primary',
         underlined: 'bg-transparent border-b-2 border-outline-variant px-0 shadow-none rounded-none!',
@@ -85,7 +85,7 @@ export const inputWrapperVariants = cva(
     compoundVariants: [
       // Focus States
       { variant: 'filled', isFocused: true, className: 'bg-surface-container-highest border-primary' },
-      { variant: 'filled-inverted', isFocused: true, className: 'bg-surface-container border-primary' },
+      { variant: 'filled-inverted', isFocused: true, className: 'bg-surface-container-lowest border-primary' },
       { variant: 'outlined', isFocused: true, className: 'border-primary ring-1 ring-primary' },
       { variant: 'outlined-inverted', isFocused: true, className: 'border-primary ring-2 ring-primary bg-primary/5' },
       { variant: 'underlined', isFocused: true, className: 'border-primary' },

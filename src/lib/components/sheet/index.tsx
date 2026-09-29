@@ -8,6 +8,7 @@ import { clsx } from "clsx";
 import React, { createContext, forwardRef, useContext, useEffect } from "react";
 import { twMerge } from "tailwind-merge";
 import { Drawer as VaulDrawer } from "vaul";
+import { overlayBlurClasses, type OverlayBlur } from "../../utils/overlay";
 
 type SheetVariant =
   | "primary"
@@ -33,6 +34,7 @@ interface SheetContextProps {
   isLocked: boolean;
   glass: boolean;
   width: SheetWidth;
+  overlayBlur: OverlayBlur;
 }
 
 const SheetContext = createContext<SheetContextProps>({
@@ -44,6 +46,7 @@ const SheetContext = createContext<SheetContextProps>({
   isLocked: false,
   glass: false,
   width: "sm",
+  overlayBlur: "none",
 });
 
 const useSheetContext = () => useContext(SheetContext);
@@ -64,6 +67,7 @@ export interface SheetProps extends Omit<
   isLocked?: boolean;
   glass?: boolean;
   width?: SheetWidth;
+  overlayBlur?: OverlayBlur;
 }
 
 const SheetRoot = ({
@@ -76,6 +80,7 @@ const SheetRoot = ({
   isLocked = false,
   glass = false,
   width = "sm",
+  overlayBlur = "none",
   snapPoints,
   activeSnapPoint,
   setActiveSnapPoint,
@@ -111,6 +116,7 @@ const SheetRoot = ({
         isLocked,
         glass,
         width,
+        overlayBlur,
         hasSnapPoints: renderAsSideSheet
           ? false
           : !!snapPoints && snapPoints.length > 0,
@@ -461,6 +467,7 @@ const SheetContent = forwardRef<
       isLocked,
       glass: glassContext,
       width: widthContext,
+      overlayBlur,
     } = useSheetContext();
 
     const textDirection = useDirection(undefined, props.dir);
@@ -477,7 +484,7 @@ const SheetContent = forwardRef<
     return (
       <SheetPortal>
         <VaulDrawer.Overlay
-          className="fixed inset-0 z-50 bg-black/50"
+          className={clsx("fixed inset-0 z-50 bg-black/50", overlayBlurClasses[overlayBlur])}
           onClick={(e) => isLocked && e.stopPropagation()}
         />
         <VaulDrawer.Content

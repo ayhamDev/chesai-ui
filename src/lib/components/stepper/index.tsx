@@ -4,6 +4,7 @@ import { useDirection } from "../../context/direction";
 
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 import { motion, useReducedMotion } from "framer-motion";
 import { Check } from "lucide-react";
 import React, { createContext, useContext } from "react";
@@ -68,6 +69,7 @@ const StepperRoot = React.forwardRef<HTMLDivElement, StepperProps>(
       children,
       color,
       dir: explicitDir,
+      style,
       ...props
     },
     ref,
@@ -78,6 +80,18 @@ const StepperRoot = React.forwardRef<HTMLDivElement, StepperProps>(
     const childArray = React.Children.toArray(children).filter(
       React.isValidElement,
     );
+    // overflow-x:auto also clips the vertical axis. Reserve the painted bounds
+    // of the 2px ring + 2px offset, including rotated diamond indicators.
+    const indicatorOverflow = childArray.reduce((space, child) => {
+      const step = child.props as StepperStepProps;
+      const indicator = React.Children.toArray(step.children).find(
+        (item) => React.isValidElement(item) && item.type === StepperIndicator,
+      ) as React.ReactElement<StepperIndicatorProps> | undefined;
+      const size = { sm: 24, md: 32, lg: 40 }[indicator?.props.size ?? step.size ?? "md"];
+      return Math.max(space, indicator?.props.shape === "diamond"
+        ? Math.ceil(((size + 8) * Math.SQRT2 - size) / 2)
+        : 4);
+    }, 4);
 
     return (
       <StepperContext.Provider value={{ currentStep, orientation, variant, color, dir }}>
@@ -85,14 +99,15 @@ const StepperRoot = React.forwardRef<HTMLDivElement, StepperProps>(
           ref={localRef}
           dir={explicitDir}
           role="list"
-          className={clsx(
-            "flex w-full",
+          className={twMerge(clsx(
+            "flex w-full min-w-0",
             orientation === "horizontal"
-              ? "flex-row items-stretch overflow-x-auto"
+              ? "flex-row items-stretch overflow-x-auto p-[var(--stepper-indicator-overflow)]"
               : "flex-col items-start",
             className,
-          )}
+          ))}
           {...props}
+          style={{ "--stepper-indicator-overflow": `${indicatorOverflow}px`, ...style } as React.CSSProperties}
         >
           {childArray.map((child, index) => {
             const status =
