@@ -10,8 +10,6 @@ const meta: Meta<typeof ButtonGroup> = {
   component: ButtonGroup,
   tags: ["autodocs"],
   argTypes: {
-    expressive: { control: 'boolean', description: 'Expand the pressed button and compress its immediate neighbors.' },
-    expansion: { control: { type: 'range', min: 0, max: 0.3, step: 0.01 }, description: 'Requested expansion as a fraction of the pressed width.' },
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],
@@ -40,8 +38,6 @@ export const Default: Story = {
   args: {
     shape: "full",
     gap: "none",
-    expressive: true,
-    expansion: 0.15,
   },
   render: (args) => (
     <ButtonGroup {...args}>
