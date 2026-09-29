@@ -45,6 +45,7 @@ export const EventPopover = () => {
     onEventUpdate,
     onEventDelete,
     hidePopoverTitle,
+    bordered,
     hidePopoverTime,
     hidePopoverRecurrence,
     renderPopoverHeader,
@@ -488,7 +489,7 @@ export const EventPopover = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 top-0 bg-surface-container-high border border-outline-variant/50 rounded-2xl shadow-2xl pointer-events-auto flex flex-col h-auto max-h-[90vh]"
+            className={`absolute left-0 top-0 bg-surface-container-high rounded-2xl shadow-2xl pointer-events-auto flex flex-col h-auto max-h-[90vh] ${bordered ? "border border-outline-variant/50" : "border-0"}`}
           >
             <div
               onPointerDown={(e) => {

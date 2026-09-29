@@ -12,7 +12,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { useTheme } from "../../context";
 
 import {
@@ -44,12 +44,14 @@ type MenubarShape = "full" | "minimal" | "sharp";
 
 interface MenubarContextProps {
   shape: MenubarShape;
+  bordered: boolean;
   isClickMode: boolean;
   setIsClickMode: (val: boolean) => void;
   closeMenu: () => void;
 }
 const MenubarContext = createContext<MenubarContextProps>({
   shape: "minimal",
+  bordered: false,
   isClickMode: false,
   setIsClickMode: () => {},
   closeMenu: () => {},
@@ -69,12 +71,14 @@ interface MenubarProps extends React.ComponentPropsWithoutRef<
   typeof RadixNavigationMenu.Root
 > {
   shape?: MenubarShape;
+  /** Show outer popup borders. Defaults to false. */
+  bordered?: boolean;
 }
 
 const MenubarRoot = React.forwardRef<
   React.ElementRef<typeof RadixNavigationMenu.Root>,
   MenubarProps
->(({ className, shape = "minimal", children, ...props }, ref) => {
+>(({ className, shape = "minimal", bordered = false, children, ...props }, ref) => {
   const [value, setValue] = useState("");
   const [isClickMode, setIsClickMode] = useState(false);
 
@@ -86,7 +90,7 @@ const MenubarRoot = React.forwardRef<
 
   return (
     <MenubarContext.Provider
-      value={{ shape, isClickMode, setIsClickMode, closeMenu }}
+      value={{ shape, bordered, isClickMode, setIsClickMode, closeMenu }}
     >
       <MenubarDepthContext.Provider value={0}>
         <RadixNavigationMenu.Root
@@ -109,7 +113,8 @@ const MenubarRoot = React.forwardRef<
           <div className="absolute start-0 top-full flex justify-start">
             <RadixNavigationMenu.Viewport
               className={clsx(
-                "origin-top-left relative mt-2 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden border border-outline-variant bg-surface-container text-on-surface shadow-lg transition-[width,height] duration-300 data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out sm:w-[var(--radix-navigation-menu-viewport-width)]",
+                "origin-top-left relative mt-2 h-[var(--radix-navigation-menu-viewport-height)] w-full overflow-hidden bg-surface-container text-on-surface shadow-lg transition-[width,height] duration-300 data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out sm:w-[var(--radix-navigation-menu-viewport-width)]",
+                bordered ? "border border-outline-variant" : "border-0",
                 shape === "full"
                   ? "rounded-3xl"
                   : shape === "minimal"
@@ -225,7 +230,6 @@ const MenubarItem: React.ForwardRefExoticComponent<
       theme === "dark"
         ? "var(--color-ripple-dark)"
         : "var(--color-ripple-light)",
-    duration: 400,
   });
 
   React.useImperativeHandle(ref, () => localRef.current as any);
@@ -319,12 +323,12 @@ const MenubarSub = (
   props: React.ComponentPropsWithoutRef<typeof DropdownMenuSub>,
 ) => {
   const depth = useMenubarDepth();
-  const { shape } = useMenubarContext();
+  const { shape, bordered } = useMenubarContext();
 
   if (depth === 1) {
     return (
       <MenubarDepthContext.Provider value={depth + 1}>
-        <DropdownMenu shape={shape} modal={false} {...props} />
+        <DropdownMenu shape={shape} bordered={bordered} modal={false} {...props} />
       </MenubarDepthContext.Provider>
     );
   }
@@ -342,7 +346,7 @@ const MenubarSubTrigger: React.ForwardRefExoticComponent<
   } & React.RefAttributes<React.ElementRef<typeof DropdownMenuSubTrigger>>
 > = React.forwardRef(({ className, children, inset, ...props }, ref) => {
   const depth = useMenubarDepth();
-  const { shape } = useMenubarContext();
+  const { shape, bordered } = useMenubarContext();
   const { theme } = useTheme();
 
   const localRef = useRef<HTMLButtonElement>(null);
@@ -352,7 +356,6 @@ const MenubarSubTrigger: React.ForwardRefExoticComponent<
       theme === "dark"
         ? "var(--color-ripple-dark)"
         : "var(--color-ripple-light)",
-    duration: 400,
   });
 
   React.useImperativeHandle(ref, () => localRef.current as any);
@@ -399,7 +402,7 @@ const MenubarSubContent: React.ForwardRefExoticComponent<
   React.ComponentPropsWithoutRef<typeof DropdownMenuSubContent> & React.RefAttributes<React.ElementRef<typeof DropdownMenuSubContent>>
 > = React.forwardRef(({ className, ...props }, ref) => {
   const depth = useMenubarDepth();
-  const { shape } = useMenubarContext();
+  const { shape, bordered } = useMenubarContext();
 
   if (depth === 2) {
     return (
@@ -454,7 +457,6 @@ const MenubarCheckboxItem: React.ForwardRefExoticComponent<
       theme === "dark"
         ? "var(--color-ripple-dark)"
         : "var(--color-ripple-light)",
-    duration: 400,
   });
 
   React.useImperativeHandle(ref, () => localRef.current as any);
@@ -555,7 +557,6 @@ const MenubarRadioItem: React.ForwardRefExoticComponent<
       theme === "dark"
         ? "var(--color-ripple-dark)"
         : "var(--color-ripple-light)",
-    duration: 400,
   });
 
   React.useImperativeHandle(ref, () => localRef.current as any);

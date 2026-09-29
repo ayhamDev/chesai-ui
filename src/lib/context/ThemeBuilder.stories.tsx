@@ -379,6 +379,9 @@ const SidebarControls = () => {
     setContrast,
     animationStyle,
     setAnimationStyle,
+    rippleSettings,
+    setRippleSettings,
+    resetRippleSettings,
     colorMatch,
     setColorMatch,
   } = useTheme();
@@ -391,6 +394,7 @@ const SidebarControls = () => {
     setTheme("light");
     setContrast("standard");
     setAnimationStyle("expressive");
+    resetRippleSettings();
     setSeedColor(null);
     resetOverrides();
     setFonts({
@@ -410,6 +414,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       defaultTheme="${theme}"
       defaultContrast="${contrast}"
       defaultAnimationStyle="${animationStyle}"${seedColor ? `\n      defaultSeedColor="${seedColor}"` : ""}${colorMatch ? `\n      defaultColorMatch={${colorMatch}}` : ""}
+      defaultRippleSettings={${JSON.stringify(rippleSettings, null, 2).split("\n").join("\n      ")}}
       defaultFonts={${JSON.stringify(fonts, null, 2).split("\n").join("\n      ")}}
       defaultOverrides={${JSON.stringify(overrides, null, 2).split("\n").join("\n      ")}}
     >
@@ -645,6 +650,37 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 items={fontOptions}
               />
             </div>
+          </section>
+
+          <section className="flex flex-col gap-5 border-t border-outline-variant/30 pt-6">
+            <Typography variant="label-small" className="uppercase tracking-widest opacity-60 font-bold">Ripple physics</Typography>
+            <label className="flex items-center justify-between gap-3 text-sm">
+              Liquid ripple
+              <Switch checked={rippleSettings.style === "liquid"} onCheckedChange={checked => setRippleSettings({ style: checked ? "liquid" : "classic" })} />
+            </label>
+            <Typography variant="body-small" muted>
+              {rippleSettings.style === "classic" ? "Classic solid ripple. The controls below are saved for liquid mode." : "Liquid waves, gradient fill and optional shimmer."}
+            </Typography>
+            <fieldset disabled={rippleSettings.style === "classic"} className="flex flex-col gap-5 disabled:opacity-50">
+            {([
+              ["waveAmp", "Wave amplitude", 0, 0.12, 0.005, "%"],
+              ["waveFreq", "Wave detail", 1, 8, 0.5, ""],
+              ["waveSpeed", "Wave speed", 0, 3, 0.1, "×"],
+              ["expandMs", "Expansion", 150, 1600, 10, "ms"],
+              ["fadeMs", "Fade out", 100, 1200, 10, "ms"],
+            ] as const).map(([key, label, min, max, step, unit]) => (
+              <label key={key} className="flex flex-col gap-2 text-sm">
+                <span className="flex justify-between">{label}<output>{key === "waveAmp" ? (rippleSettings[key] * 100).toFixed(1) : rippleSettings[key]}{unit}</output></span>
+                <input type="range" min={min} max={max} step={step} value={rippleSettings[key]} onChange={e => setRippleSettings({ [key]: Number(e.target.value) })} className="w-full accent-primary" />
+              </label>
+            ))}
+            {([ ["sparkle", "Sparkle shimmer"], ["drift", "Drift toward center"] ] as const).map(([key, label]) => (
+              <label key={key} className="flex items-center justify-between gap-3 text-sm">{label}<Switch checked={rippleSettings[key]} onCheckedChange={checked => setRippleSettings({ [key]: checked })} /></label>
+            ))}
+            <label className="flex items-center justify-between gap-3 text-sm">Slow motion (¼ speed)<Switch checked={rippleSettings.timeScale === 0.25} onCheckedChange={checked => setRippleSettings({ timeScale: checked ? 0.25 : 1 })} /></label>
+            </fieldset>
+            <Button onClick={resetRippleSettings}>Reset ripple</Button>
+            <Button className="min-h-24" variant="secondary">Press and hold to preview</Button>
           </section>
 
           {/* --- CORE COLORS (OVERRIDES) --- */}

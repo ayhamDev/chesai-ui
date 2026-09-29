@@ -7,6 +7,7 @@ const meta: Meta<typeof Select> = {
   component: Select,
   tags: ["autodocs"],
   argTypes: {
+    bordered: { control: "boolean", description: "Show the popup outer border (off by default)." },
     variant: {
       control: "select",
       options: [

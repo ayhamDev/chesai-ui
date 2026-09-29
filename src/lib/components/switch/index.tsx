@@ -11,7 +11,7 @@ import { useDirection } from "../../context/direction";
 // --- VARIANTS ---
 
 const switchTrackVariants = cva(
-  "relative border-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 outline-none rounded-full transition-colors duration-300",
+  "relative border-2 outline-none rounded-full transition-colors duration-300",
   {
     variants: {
       size: {
@@ -134,7 +134,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
     const iconSizePixel = size === "sm" ? 10 : size === "lg" ? 20 : 16;
 
     return (
-      <div ref={directionRef} dir={props.dir} className={clsx("inline-flex items-center gap-3", className)}>
+      <div ref={directionRef} dir={props.dir} className={clsx("inline-flex items-center gap-3", disabled && "opacity-50 cursor-not-allowed", className)}>
         <label
           htmlFor={switchId}
           className={clsx(
@@ -157,15 +157,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
             {...props}
           />
 
-          <div
-            className={clsx(
-              switchTrackVariants({ size, checked: isChecked }),
-              disabled && isChecked && "bg-on-surface/12 border-transparent",
-              disabled &&
-                !isChecked &&
-                "bg-surface-container-highest/38 border-on-surface/12",
-            )}
-          >
+          <div className={switchTrackVariants({ size, checked: isChecked })}>
             <motion.div
               transition={springTransition}
               initial={false}
@@ -181,10 +173,7 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
                 left: isRtl ? "auto" : 0,
                 right: isRtl ? 0 : "auto",
               }}
-              className={clsx(
-                "absolute top-1/2 -translate-y-1/2 rounded-full shadow-sm flex items-center justify-center z-10",
-                disabled && "!bg-on-surface/38",
-              )}
+              className="absolute top-1/2 -translate-y-1/2 rounded-full shadow-sm flex items-center justify-center z-10"
             >
               {/* STATE LAYER (Bloom Effect on Hover) */}
               {!disabled && (
@@ -251,22 +240,14 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
           >
             {label && (
               <span
-                className={clsx(
-                  "text-sm font-medium select-none",
-                  disabled ? "text-on-surface/38" : "text-on-surface",
-                )}
+                className="text-sm font-medium select-none text-on-surface"
               >
                 {label}
               </span>
             )}
             {description && (
               <span
-                className={clsx(
-                  "text-xs select-none",
-                  disabled
-                    ? "text-on-surface-variant/38"
-                    : "text-on-surface-variant",
-                )}
+                className="text-xs select-none text-on-surface-variant"
               >
                 {description}
               </span>

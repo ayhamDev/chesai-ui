@@ -1,134 +1,101 @@
-# Layout and UX reference
+# Layout and UX
 
-Read this reference when designing a full application shell, a responsive multi-region screen, or reviewing an existing screen for generic component-library patterns.
+Use this reference for application shells, responsive screens, navigation, multi-pane workflows, and state design. Compose around the work; do not begin by choosing a sidebar and filling a card grid.
 
-## What to take from Material You
+## Choose the task model
 
-Material You is not a checklist of rounded cards and pastel surfaces. Its product quality comes from an interface that makes hierarchy and context easy to read:
-
-- stable product chrome lets a user recognize where they are;
-- navigation reflects the product's actual information architecture;
-- a contextual row or pane keeps the current task oriented;
-- tonal roles distinguish emphasis without visual noise;
-- empty, loading, and error states preserve the structure of the working area.
-
-The official [Material canonical layouts](https://m3.material.io/foundations/layout/canonical-examples/overview) identify feed, list–detail, and supporting pane as starting patterns. Treat them as task models, not templates to copy.
-
-## Responsive scaffold
-
-Use these thresholds as a design starting point. The exact CSS implementation may use the project's existing responsive utilities.
-
-| Window class | Width | Default frame |
-| --- | ---: | --- |
-| Compact | under 600 | One focused working route; bottom navigation for 3–5 stable product destinations |
-| Medium | 600–839 | More page margin; consider a rail or two regions only when both aid the task |
-| Expanded | 840–1199 | Persistent rail/drawer and a canonical multi-region layout are practical |
-| Large | 1200–1599 | More breathing room; do not widen reading lines indefinitely |
-| Extra-large | 1600+ | Preserve readable content widths and use extra space for useful support, not empty decoration |
-
-Starting page margins / gutters: compact `16 / 8`, medium `24 / 16`, expanded `24 / 16`, large and extra-large `24 / 24` (margin / gutter). Use the 8-point spacing rhythm: 4, 8, 16, 24, 32, and 48.
-
-### Pattern transformations
-
-| Pattern | Compact | Medium and expanded |
+| Work the user performs | Starting pattern | What earns its space |
 | --- | --- | --- |
-| Feed | One column with concise filters | Wider reading area or purposeful multi-column grouping |
-| List–detail | List **or** detail; back navigation switches state | List about one-third, detail about two-thirds when simultaneous context aids work |
-| Supporting pane | Primary task; support is a route, sheet, or disclosure | Primary task about two-thirds, supporting pane about one-third |
-| Settings hub | Section list then a focused section route | Grouped persistent drawer plus readable section content |
-| Schedule workspace | Date/context controls plus one day/state | Same controls with more horizontal workspace, not more cards |
+| Scan, triage, select, inspect | List–detail | Simultaneous context reduces back-and-forth |
+| Create or edit with contextual tools | Primary canvas + supporting pane | Properties directly affect the selected subject |
+| Browse independently actionable content | Feed or collection | Repetition makes discovery and comparison faster |
+| Change preferences | Settings hub | Grouping reflects the user's mental model |
+| Coordinate time | Schedule or timeline | Shared time axis helps decisions |
+| Understand performance, then act | Overview + drill-down | Each metric answers a question with a timeframe |
+| Complete a short focused task | Single-task screen or flow | Clear sequence, feedback, and recovery |
 
-Never vertically stack a desktop list and its detail view just because a CSS grid collapsed. That changes a selection workflow into an exhausting scroll.
+The first three correspond to Material's canonical layout families. Treat them as task models, not screenshots to reproduce. A two-thirds/one-third split can be a useful sketch, but actual pane minimums, readable width, and information needs determine the result. [Canonical layouts](https://m3.material.io/foundations/layout/canonical-examples/overview)
 
-### Chesai implementation for adjustable panes
+## Separate the scopes of control
 
-An expanded list–detail or primary/supporting-pane screen must use the local `Resizable` component rather than a fixed CSS grid. Start from the working composition in `src/lib/components/resizable/Resizable.stories.tsx` (the Gmail split-view showcase): a fixed-width `Resizable.Pane`, a `Resizable.Handle`, and a `flex` task pane. Set a realistic `defaultWidth` and `minWidth` for the non-flex pane so a user cannot reduce an inbox, outline, or contextual list below a usable scan width. Keep the handle quiet (`variant="pill"` is appropriate for a clean product surface) and use a plain surface division rather than a card-like bordered column.
+A typical product shell has a product bar (global search/account), product navigation (destinations), working context (title/date/filter/selection), and a working canvas (task and data). A simple single-task screen may not need all four.
 
-Use the resizable composition only where both panes are concurrently useful and the window is wide enough. Below that threshold, replace it with the focused compact state described above; do not leave a tiny resizable list beside a clipped detail pane. The app shell still has one vertical scroll owner: resizing changes width, not scrolling ownership.
+- Keep product-level search and account controls stable. Place page filters next to the content they filter.
+- Count stable destinations before selecting a navigator. Compact `BottomTabs` suits roughly 3–5 peer destinations; a wider `NavigationRail` suits a small persistent set, often 3–7. Use `Sidebar` for grouped hierarchies and many destinations. These are starting ranges, not a law that requires inventing destinations.
+- A two-item feature switch can be local tabs, a segmented control, or an established local navigator. Do not introduce global navigation just to make the screen look like Material.
+- Give active location a persistent indicator and semantic state, distinct from temporary hover and keyboard focus. Keep destination labels unless the product has a justified, accessible compact alternative.
+- Put creation where its scope is clear. A global “New” action and an empty-canvas creation action can coexist when they perform the same understandable job. Do not multiply competing primary actions merely to fill space.
+- Selecting rows should reveal selection count and scoped batch actions without destroying orientation. Preserve filters and scroll when returning from detail.
 
-## Navigation is hierarchy, not decoration
+Keep chrome visually calm. A rail ordinarily belongs to the shell, with little need for its own decorative card or shadow. A tonal change or restrained boundary may distinguish navigation when useful. A product bar can span the shell, while contextual tools belong to the active pane; do not force all products into one top-bar geometry.
 
-First count *stable product destinations*. Then choose the navigator:
+## Adapt the task, not only the columns
 
-| Situation | Preferred pattern |
-| --- | --- |
-| 3–5 top-level destinations on compact | `BottomTabs`, always labelled |
-| 3–7 stable destinations on wider screens | `NavigationRail` with an active tonal indicator |
-| Many destinations, categories, or settings sections | `Sidebar` / drawer grouped with labels and dividers |
-| 1–2 choices inside one feature | Contextual tabs, segmented control, or local rail—not product navigation |
+Material's current guidance distinguishes adaptive layout from simple scaling: panes may be shown/hidden, reflowed, or presented as floating/docked surfaces; available space and input matter as well as device name. These are web-app design choices, not a reason to import native Android code. [Layout overview](https://m3.material.io/foundations/layout/understanding-layout/overview), [adaptive design](https://m3.material.io/foundations/layout/understanding-layout/adaptive-design)
 
-An active state should be clear through a tonal indicator, text weight, and location—not color alone. Product navigation, local scope navigation, and a filter should not compete for the same visual weight.
+Use the existing application's breakpoints. Material's familiar width bands can guide an initial sketch: compact below 600, medium 600–839, expanded 840–1199, large 1200–1599, and extra-large 1600+. Treat these as logical width guidance; native dp and CSS px are not universally interchangeable, and default Tailwind breakpoints do not match these bands. The component's actual available width determines when it stops working.
 
-### Default rail and bar treatment
+| Pattern | Compact behavior | Wider behavior |
+| --- | --- | --- |
+| List–detail | List **or** detail; back restores selection and scroll | Both panes when they have usable widths |
+| Supporting pane | Main task; support moves to a route, sheet, or disclosure | Context beside the work, optionally resizable |
+| Settings | Section index then focused settings | Grouped navigation + bounded reading width |
+| Schedule | Day/agenda with visible date and relevant action | Larger time workspace or week view |
+| Data overview | Key conclusion then evidence; accessible detail | Deliberate region sizes based on importance |
+| Dense table | Keep essential comparison columns; disclose other fields | Full comparison; horizontal scrolling if the task requires it |
 
-Navigation belongs to the application surface; it is not a sidebar card. A default desktop rail should sit flush against the same `surface` as the app, with no border, shadow, rounded rail container, or custom decoration. Its only strong visual treatment is the active destination indicator. Use a rail only for 3–7 app-wide destinations on larger windows. For 3–5 equivalent destinations on compact windows, use the labelled bottom navigation bar; it becomes the rail as space grows.
+Do not vertically stack a list and its selected detail as a “mobile split view.” Do not turn a comparison table into cards if that removes necessary side-by-side comparison. Support keyboard, pointer, and touch; a narrow desktop window may still be keyboard-driven.
 
-Top app bars span the application shell, including the space above the rail. The rail begins below the bar. Keep product chrome, rail, and pinned bottom navigation outside the working scroller. The working canvas owns the one vertical scrollbar; it reserves the bar/tab space with padding instead of nesting another scrolling frame.
+Start with margins near 16px on compact screens and 24px on wider screens, then tune gutters and readable widths to the composition. Avoid stretching a settings form across a large monitor or leaving a primary work area cramped beside oversized chrome. Specify reading order as well as visual order, and preserve meaningful state when crossing a breakpoint.
 
-```text
-viewport-height app shell, overflow hidden
-├─ top app bar (full width)
-└─ body below the bar
-   ├─ rail (wide only; same surface, fixed)
-   └─ one scrolling working canvas
-      └─ compact bottom navigation is pinned at the shell edge
-```
+## Chesai shell contract
 
-## Product-screen observations from the supplied references
+Inspect `src/lib/components/appbar/index.tsx`, `bottom-tabs/index.tsx`, and the app's existing shell before composing one.
 
-These are layout observations from the user's Google product screenshots. They are evidence of product grammar, not assets or layouts to reproduce.
+For persistent in-app navigation, use a bounded, relative, overflow-hidden frame. `AppBar` is absolutely positioned inside its parent and observes `scrollContainerRef`. Supply the intended content scroller and reserve the bar's space in that content. Base heights are 64px for small/center, 112px medium, and 152px large; custom content and configured heights can change them. Do not hardcode these as universally sufficient, especially with bottom content or large text.
 
-### Operational schedule / Meet-like empty state
+Place the pinned `BottomTabs` wrapper outside the working scroller and reserve its height plus applicable safe-area space. Appending it after a long list does not pin it. In flex layouts, `min-h-0` and `min-w-0` are often necessary for intended overflow and truncation.
 
-```text
-top product bar: brand | global join/search field | global actions | account
-left local rail: two feature destinations with labels
-working context: date title + compact date navigator
-state notice: one wide, low-emphasis safety/information band
-working canvas: generous quiet space + centered illustration/status + one creation action
-```
+**Assign scroll ownership deliberately.** A simple screen or showcase should have one working vertical scroller with bars outside it; avoid both document scrolling and an accidentally nested fixed-height demo. A true mail/editor workspace can legitimately have independently scrolling list and detail panes. Give each a bounded height and accessible focus path, retain pane scroll positions, and bind the app bar to the intended owner. Do not force independent panes into one giant scrolling page.
 
-Useful decisions:
+For an expanded adjustable list–detail or supporting-pane screen, use Chesai `Resizable`. Read `src/lib/components/resizable/Resizable.stories.tsx`, including its Gmail composition. Set a useful `defaultWidth` and `minWidth` on the non-flex pane, use a restrained `Resizable.Handle`, and let the task pane flex. The local handle's `pill` variant is available. Switch to focused compact navigation when both panes no longer fit. A simple static content grid does not need resizers.
 
-- The empty canvas is not “unfinished”; it makes the absence of scheduled work legible.
-- The date, navigation, notice, empty state, and “New” action all speak to the same scheduling task.
-- The strong action is repeated only where it is contextually useful, not scattered through a card grid.
-- The rail is a small *local* mode switch. It does not mean every app needs a rail for two global destinations.
+For a document-scrolling page, semantic header/main flow is usually appropriate. Do not impose an app frame solely to use an animated app bar.
 
-### Account / settings-hub home
+## Match the state to the user's next step
 
-```text
-top product bar: product title | utility actions | account
-left permanent drawer: many grouped settings categories with clear active state
-centered subject area: identity/context
-working tools: a search field and a few related shortcuts
-quiet lower canvas: privacy/trust note constrained to readable width
-```
+| State | Preserve | Provide |
+| --- | --- | --- |
+| Initial loading | Shell, context, approximate content structure | `Skeleton` or progress suited to the operation |
+| Background refresh | Existing usable data | Modest progress indication, no blanking of the canvas |
+| First-use empty | Location and purpose | One relevant creation/import action |
+| No results | Query and filters | Clear/reset filters or revise query |
+| Nothing scheduled today | Selected date and date navigation | Quiet `EmptyState`, optional creation |
+| Partial failure | Successful content and unsaved input | Scoped explanation and retry |
+| Blocking failure | Enough context to understand the failure | Recovery or route back |
+| Permission-limited | Clear explanation of unavailable work | Appropriate next step, no inert mystery controls |
+| Save or completion | The user's place in the workflow | Persistent resulting state and proportionate feedback |
 
-Useful decisions:
+Use `EmptyState variant="default"` directly in a quiet canvas; a surrounding card only makes sense if this is one peer region. State illustrations are optional. Notices should explain something consequential and remain at the affected scope. Do not add a generic security banner to every page.
 
-- A settings hub with many categories earns a drawer; a rail or bottom bar would conceal the hierarchy.
-- The page has a large quiet canvas because the main job is orientation and search, not simultaneous data scanning.
-- Coloured category markers differentiate areas sparingly. In chesai-ui, use semantic roles and icons unless the product has an accessible established category-color system.
-- The screen is centered around the user's relationship to the product, not a generic dashboard summary.
+For forms, keep labels visible, put errors by the relevant field, and preserve input after failure. Reserve dialogs for decisions that need interruption; use inline disclosure for ordinary help. Sheets/dialogs need appropriate focus entry, escape/cancel behavior, and focus restoration. Check those behaviors in the assembled flow, even when the underlying primitives implement them.
 
-## Anti-pattern diagnostic
+## Accessibility belongs in the geometry
 
-Flag a design for revision when several of these are true:
+Make targets large enough for the input. A practical touch goal is approximately 48 CSS px in this web library, with adequate separation; this is a design target, not a statement that WCAG mandates 48px. WCAG 2.2 AA's minimum target criterion is 24×24 CSS px with specified exceptions, including spacing. Do not shrink a critical action to its icon glyph. [WCAG target size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html)
 
-- It begins with a marketing slogan rather than the task or context.
-- It uses a card as every section boundary, producing a floating tile wall.
-- The same primary color fills actions, badges, navigation, and multiple cards.
-- Desktop regions simply wrap on mobile instead of becoming routes, sheets, or a focused flow.
-- Navigation is chosen because it looks “MD3,” not because destination count and hierarchy support it.
-- Empty space is filled with fake statistics, placeholder charts, avatars, or decorative copy.
-- Actions have no scope: creation, filter, account, and page actions appear together without a hierarchy.
+Check visible focus, logical keyboard order, text zoom, reachable sticky controls, and readable long labels. Use logical start/end spacing for RTL. Directional navigation may mirror; numbers, media playback, and data plots need deliberate treatment rather than mechanically flipping everything. Prioritize DOM order and semantics before visual repositioning.
 
-Correct the information architecture first. Changing radius, color, or shadows cannot fix a screen with no task model.
+## Quick architecture diagnosis
 
-## Sources
+If a screen feels generic, identify the structural cause before changing decoration:
 
-- [Material Design canonical layouts](https://m3.material.io/foundations/layout/canonical-examples/overview)
-- [Material Design](https://m3.material.io/)
-- [Google Workspace](https://workspace.google.com/)
-- [Material 3 skill repository used only as a structural reference](https://github.com/hamen/material-3-skill)
+- Unrelated cards imply a dashboard where the task is actually triage.
+- A hero headline delays access to daily work.
+- A sidebar encodes implementation modules rather than user destinations.
+- A chart lacks units, timeframe, comparison, or a decision it supports.
+- Mobile hides primary capabilities or leaves three tiny desktop panes.
+- Every section has its own border, radius, and background without a distinct role.
+- An empty state explains nothing, or offers an action unrelated to the selected scope.
+
+Use the worked examples and review prompts in [Critique and examples](critique-and-examples.md) to choose a concrete repair.

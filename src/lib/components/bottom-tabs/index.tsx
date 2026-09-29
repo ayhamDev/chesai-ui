@@ -10,7 +10,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { Typography } from "../typography";
 
 // --- TYPE DEFINITIONS & CONTEXT ---
@@ -172,7 +172,6 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
     color: rippleColor,
-    duration: 400,
   });
 
   const isShiftLayout = itemLayout === "inline";

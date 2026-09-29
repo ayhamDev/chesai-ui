@@ -5,7 +5,7 @@ import * as PopoverPrimitive from '@radix-ui/react-popover'
 import { useMediaQuery } from '@uidotdev/usehooks'
 import { clsx } from 'clsx'
 import type { CountryCode } from 'libphonenumber-js'
-import { getExampleNumber } from 'libphonenumber-js'
+import { getExampleNumber, parsePhoneNumberFromString } from 'libphonenumber-js'
 import examples from 'libphonenumber-js/examples.mobile.json'
 import { Check, ChevronDown, Search } from 'lucide-react'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -43,6 +43,10 @@ const BASE_COUNTRY_OPTIONS: CountryOption[] = getCountries().map(country => ({
 
 const normalizePhoneValue = (value?: string | null) => (value ? value : undefined)
 
+// National numbers cannot identify a country without additional context.
+const countryFromPhoneValue = (value?: string): CountryCode | undefined =>
+  value?.trim().startsWith('+') ? parsePhoneNumberFromString(value.trim())?.country : undefined
+
 export const getFlagEmoji = (countryCode: string) => {
   if (!countryCode) return 'ZZ'
 
@@ -50,6 +54,7 @@ export const getFlagEmoji = (countryCode: string) => {
 }
 
 interface CountryPickerProps {
+  bordered?: boolean
   value: CountryCode
   onChange: (country: CountryCode) => void
   disabled?: boolean
@@ -103,6 +108,7 @@ const CountryPicker = React.memo(
     variant = 'filled',
     size = 'md',
     shape = 'minimal',
+    bordered = false,
     isInvalid = false,
   }: CountryPickerProps) => {
     const [open, setOpen] = useState(false)
@@ -250,7 +256,8 @@ const CountryPicker = React.memo(
           <PopoverPrimitive.Content
             className={clsx(
               'z-50 w-[320px] max-h-80 overflow-hidden flex flex-col p-0',
-              'rounded-xl border border-outline-variant bg-surface-container text-on-surface shadow-md',
+              'rounded-xl bg-surface-container text-on-surface shadow-md',
+              bordered ? 'border border-outline-variant' : 'border-0',
               'data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit',
             )}
             align="start"
@@ -313,8 +320,13 @@ export interface PhoneInputProps
   extends Omit<InputProps, 'value' | 'defaultValue' | 'onChange' | 'onValueChange' | 'maxLength'> {
   value?: string
   onValueChange?: (value: string | undefined) => void
+  /** Show an outer country popup border. Defaults to false. */
+  bordered?: boolean
+  /** Fallback for an empty or unidentifiable initial number. International values infer their country. */
   defaultCountry?: CountryCode
+  /** Explicit country override. When provided, automatic country inference does not override it. */
   country?: CountryCode
+  /** Called when the user chooses a country, not when a supplied value is inferred. */
   onCountryChange?: (country: CountryCode) => void
   labels?: CountryLabels
 }
@@ -335,6 +347,7 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
       variant = 'filled',
       size = 'md',
       shape = 'minimal',
+      bordered = false,
       isInvalid = false,
       errorMessage,
       onFocus,
@@ -347,7 +360,11 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
     },
     ref,
   ) => {
-    const [internalCountry, setInternalCountry] = useState<CountryCode>(() => defaultCountry)
+    const normalizedPhoneValue = normalizePhoneValue(value)
+    const [countryState, setCountryState] = useState(() => ({
+      value: normalizedPhoneValue,
+      country: countryFromPhoneValue(value) ?? defaultCountry,
+    }))
     const [isFocused, setIsFocused] = useState(false)
     const lastEmittedValueRef = useRef<string | undefined>(normalizePhoneValue(value))
 
@@ -356,6 +373,13 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
     }, [value])
 
     const isCountryControlled = controlledCountry !== undefined
+    // Reconcile new form values before rendering the formatter with a stale country.
+    // Unchanged values leave an explicit picker choice intact; clearing keeps that choice.
+    let internalCountry = countryState.country
+    if (countryState.value !== normalizedPhoneValue) {
+      internalCountry = countryFromPhoneValue(value) ?? internalCountry
+      setCountryState({ value: normalizedPhoneValue, country: internalCountry })
+    }
     const selectedCountry = controlledCountry ?? internalCountry
 
     const handleCountryChange = useCallback(
@@ -363,12 +387,12 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
         if (nextCountry === selectedCountry) return
 
         if (!isCountryControlled) {
-          setInternalCountry(nextCountry)
+          setCountryState({ value: normalizedPhoneValue, country: nextCountry })
         }
 
         onCountryChange?.(nextCountry)
       },
-      [isCountryControlled, onCountryChange, selectedCountry],
+      [isCountryControlled, normalizedPhoneValue, onCountryChange, selectedCountry],
     )
 
     const handlePhoneValueChange = useCallback(
@@ -418,13 +442,14 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
               variant={variant}
               size={size}
               shape={shape}
+              bordered={bordered}
               isInvalid={activeInvalid}
             />
           </div>
           {startContent}
         </>
       ),
-      [activeInvalid, disabled, handleCountryChange, labels, selectedCountry, shape, size, startContent, variant],
+      [bordered, activeInvalid, disabled, handleCountryChange, labels, selectedCountry, shape, size, startContent, variant],
     )
 
     const dynamicPlaceholder = useMemo(() => {

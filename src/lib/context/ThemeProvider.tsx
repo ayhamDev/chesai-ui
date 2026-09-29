@@ -1,6 +1,7 @@
 "use client";
 
 import type { Transition } from "framer-motion";
+import { RippleContext } from "./ripple-context";
 import type React from "react";
 import {
   createContext,
@@ -18,6 +19,9 @@ import {
   type ThemeOverrides,
 } from "../utils/theme-generator";
 
+import { defaultRippleSettings, normalizeRippleSettings, type RippleSettings } from "../utils/ripple-settings";
+export { defaultRippleSettings, type RippleSettings, type RippleStyle } from "../utils/ripple-settings";
+
 type Theme = "dark" | "light" | "system";
 type Contrast = "standard" | "medium" | "high";
 type AnimationStyle = "expressive" | "standard";
@@ -30,6 +34,9 @@ export interface FontSettings {
 export type ThemePalette = Record<ThemeColorKey, string>;
 
 interface ThemeProviderState {
+  rippleSettings: RippleSettings;
+  setRippleSettings: (settings: Partial<RippleSettings>) => void;
+  resetRippleSettings: () => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
   contrast: Contrast;
@@ -62,6 +69,9 @@ const staticPalette = Object.keys(CSS_MAPPING).reduce((acc, key) => {
 }, {} as ThemePalette);
 
 const initialState: ThemeProviderState = {
+  rippleSettings: defaultRippleSettings,
+  setRippleSettings: () => {},
+  resetRippleSettings: () => {},
   theme: "system",
   setTheme: () => null,
   contrast: "standard",
@@ -84,7 +94,10 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
-interface ThemeProviderProps {
+export interface ThemeProviderProps {
+  /** Ripple style ('classic' or 'liquid') and liquid physics defaults. */
+  defaultRippleSettings?: Partial<RippleSettings>;
+  rippleStorageKey?: string;
   children: React.ReactNode;
   defaultTheme?: Theme;
   defaultContrast?: Contrast;
@@ -104,6 +117,8 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({
   children,
+  defaultRippleSettings: initialRippleSettings = defaultRippleSettings,
+  rippleStorageKey = "chesai-ui-ripple",
   defaultTheme = "system",
   defaultContrast = "standard",
   defaultFonts = defaultFontSettings,
@@ -120,6 +135,22 @@ export function ThemeProvider({
   defaultColorMatch = false,
   ...props
 }: ThemeProviderProps) {
+  const [rippleSettings, setRippleSettingsState] = useState<RippleSettings>(() => {
+    const defaults = normalizeRippleSettings(initialRippleSettings);
+    try {
+      return typeof window === "undefined" ? defaults : normalizeRippleSettings(JSON.parse(localStorage.getItem(rippleStorageKey) || "null"), defaults);
+    } catch { return defaults; }
+  });
+  const setRippleSettings = useCallback((settings: Partial<RippleSettings>) => {
+    setRippleSettingsState(previous => normalizeRippleSettings(settings, previous));
+  }, []);
+  const resetRippleSettings = useCallback(() => {
+    setRippleSettingsState(normalizeRippleSettings(initialRippleSettings));
+  }, [initialRippleSettings]);
+  useEffect(() => {
+    try { localStorage.setItem(rippleStorageKey, JSON.stringify(rippleSettings)); } catch { /* Storage may be unavailable. */ }
+  }, [rippleSettings, rippleStorageKey]);
+
   // --- 1. STATE INITIALIZATION ---
 
   const [theme, setThemeState] = useState<Theme>(() => {
@@ -385,6 +416,7 @@ export function ThemeProvider({
   }, []);
 
   const value = {
+    rippleSettings, setRippleSettings, resetRippleSettings,
     theme,
     setTheme: (newTheme: Theme) => {
       localStorage.setItem(storageKey, newTheme);
@@ -419,7 +451,7 @@ export function ThemeProvider({
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
-      {children}
+      <RippleContext.Provider value={rippleSettings}>{children}</RippleContext.Provider>
     </ThemeProviderContext.Provider>
   );
 }

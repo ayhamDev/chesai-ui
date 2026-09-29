@@ -50,6 +50,8 @@ export interface MultiSelectProps {
     | "ghost"
     | "ghost-inverted";
   size?: "sm" | "md" | "lg";
+  /** Show an outer popup border. Defaults to false. */
+  bordered?: boolean;
   shape?: "full" | "minimal" | "sharp";
   labelPlacement?: "inside" | "outside" | "outside-left";
   disabled?: boolean;
@@ -80,6 +82,7 @@ export const MultiSelect = React.forwardRef<
       variant = "filled",
       size = "md",
       shape = "minimal",
+      bordered = false,
       labelPlacement = "inside",
       disabled = false,
       isInvalid = false,
@@ -431,7 +434,8 @@ export const MultiSelect = React.forwardRef<
         className={clsx(
           "z-50 w-[var(--radix-popover-trigger-width)] min-w-48 overflow-hidden p-0",
           "max-h-80 flex flex-col",
-          "rounded-xl border border-outline-variant bg-surface-container text-on-surface shadow-md",
+          "rounded-xl bg-surface-container text-on-surface shadow-md",
+              bordered ? "border border-outline-variant" : "border-0",
           "data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit",
         )}
         align="start"

@@ -36,12 +36,13 @@ export const selectStyles = cva('group flex flex-col w-full relative', {
 export const selectContentVariants = cva(
   [
     'z-[1000] min-w-[var(--radix-select-trigger-width)] max-h-[var(--radix-select-content-available-height)] overflow-hidden',
-    'border border-outline-variant bg-surface-container text-on-surface p-1.5',
+    'bg-surface-container text-on-surface p-1.5',
     'shadow-md',
     'data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit',
   ],
   {
     variants: {
+      bordered: { true: 'border border-outline-variant', false: 'border-0' },
       position: {
         popper: '',
         'item-aligned': 'shadow-xl',
@@ -53,6 +54,7 @@ export const selectContentVariants = cva(
       },
     },
     defaultVariants: {
+      bordered: false,
       position: 'popper',
       shape: 'minimal',
     },

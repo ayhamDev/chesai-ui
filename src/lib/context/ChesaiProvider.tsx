@@ -4,7 +4,7 @@ import React from "react";
 import { Toaster } from "../components/toast";
 import { TooltipProvider } from "../components/tooltip";
 import { ActionSheetProvider } from "./ActionSheetProvider";
-import { ThemeProvider, type FontSettings } from "./ThemeProvider";
+import { ThemeProvider, type FontSettings, type RippleSettings } from "./ThemeProvider";
 import { LayoutProvider, type Direction } from "./layout-context";
 import { DialogProvider } from "./DialogProvider";
 import { type ThemeOverrides } from "../utils/theme-generator";
@@ -14,6 +14,9 @@ type Contrast = "standard" | "medium" | "high";
 type AnimationStyle = "expressive" | "standard";
 
 export interface ChesaiProviderProps {
+  /** Ripple style ('classic' or 'liquid') and liquid physics defaults. */
+  defaultRippleSettings?: Partial<RippleSettings>;
+  rippleStorageKey?: string;
   children: React.ReactNode;
   /** Initial theme preference. Defaults to 'system' */
   defaultTheme?: Theme;
@@ -43,6 +46,8 @@ export interface ChesaiProviderProps {
 
 export function ChesaiProvider({
   children,
+  defaultRippleSettings,
+  rippleStorageKey,
   defaultTheme = "system",
   defaultContrast = "standard",
   defaultAnimationStyle = "expressive",
@@ -58,6 +63,8 @@ export function ChesaiProvider({
 }: ChesaiProviderProps) {
   return (
     <ThemeProvider
+      defaultRippleSettings={defaultRippleSettings}
+      rippleStorageKey={rippleStorageKey}
       defaultTheme={defaultTheme}
       defaultContrast={defaultContrast}
       defaultAnimationStyle={defaultAnimationStyle}

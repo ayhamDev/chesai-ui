@@ -21,6 +21,8 @@ export interface ColorPickerProps {
   errorMessage?: React.ReactNode;
   disabled?: boolean;
   isInvalid?: boolean;
+  /** Show an outer popup border. Defaults to false. */
+  bordered?: boolean;
   shape?: "full" | "minimal" | "sharp";
   variant?: "flat" | "bordered" | "faded" | "underlined";
   size?: "sm" | "md" | "lg";
@@ -59,6 +61,7 @@ export const ColorPicker = React.forwardRef<
       disabled = false,
       isInvalid = false,
       shape = "minimal",
+      bordered = false,
       variant = "flat",
       size = "md",
       labelPlacement = "inside",
@@ -195,7 +198,8 @@ export const ColorPicker = React.forwardRef<
               align="start"
               sideOffset={4}
               className={clsx(
-                "z-50 w-[280px] rounded-2xl border border-outline-variant bg-surface-container-high p-4 shadow-xl",
+                "z-50 w-[280px] rounded-2xl bg-surface-container-high p-4 shadow-xl",
+              bordered ? "border border-outline-variant" : "border-0",
                 "data-[state=open]:animate-menu-enter data-[state=closed]:animate-menu-exit",
               )}
             >

@@ -14,7 +14,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { useDirection } from "../../context/direction";
 
 import { IconButton } from "../icon-button";
@@ -210,7 +210,6 @@ const NavigationRailFAB = React.forwardRef<
       variant === "primary"
         ? "var(--color-ripple-dark)"
         : "var(--color-ripple-light)",
-    duration: 400,
   });
 
   const variantClasses = {
@@ -328,7 +327,6 @@ const TabItem: React.FC<TabItemProps> = ({ screen }) => {
     // @ts-ignore
     ref: localRef,
     color: rippleColor,
-    duration: 400,
   });
 
   let activeBg = "bg-secondary-container";

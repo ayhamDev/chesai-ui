@@ -9,6 +9,7 @@ const meta: Meta<typeof Combobox> = {
   tags: ["autodocs"],
   parameters: { layout: "centered" },
   argTypes: {
+    bordered: { control: "boolean", description: "Show the popup outer border (off by default)." },
     variant: {
       control: "select",
       options: [

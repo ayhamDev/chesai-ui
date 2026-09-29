@@ -5,3 +5,5 @@ export * from './useCapacitorBackButton'
 export * from './useFlubber'
 export * from './useShallowRouter'
 export * from './useWindowSizeClass'
+
+export * from './useRipple'

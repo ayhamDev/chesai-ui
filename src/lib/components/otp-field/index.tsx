@@ -40,6 +40,7 @@ const slotVariants = cva(
         minimal: "",
         sharp: "rounded-none!",
       },
+      separated: { true: "", false: "" },
       isInvalid: {
         true: "",
         false: "",
@@ -113,15 +114,29 @@ const slotVariants = cva(
       {
         shape: "full",
         variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
+        separated: false,
         className: "first:rounded-s-full last:rounded-e-full",
       },
       {
         shape: "minimal",
         variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
+        separated: false,
         className: "first:rounded-s-2xl last:rounded-e-2xl",
       },
 
       // --- Separated Rounding (Gapped/Individual Slots) ---
+      {
+        separated: true,
+        shape: "full",
+        variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
+        className: "rounded-full",
+      },
+      {
+        separated: true,
+        shape: "minimal",
+        variant: ["filled", "filled-inverted", "outlined", "outlined-inverted"],
+        className: "rounded-2xl",
+      },
       {
         shape: "full",
         variant: ["ghost", "ghost-inverted"],
@@ -153,6 +168,8 @@ interface InputOTPContextValue {
     | "ghost-inverted";
   size?: "sm" | "md" | "lg";
   shape?: "full" | "minimal" | "sharp";
+  /** Space each digit apart without adding a separator glyph. */
+  separated?: boolean;
   isInvalid?: boolean;
 }
 
@@ -177,11 +194,12 @@ const InputOTP = React.forwardRef<HTMLInputElement, InputOTPProps>(
       size = "md",
       shape = "minimal",
       isInvalid = false,
+      separated = false,
       ...props
     },
     ref,
   ) => (
-    <InputOTPStyleContext.Provider value={{ variant, size, shape, isInvalid }}>
+    <InputOTPStyleContext.Provider value={{ variant, size, shape, isInvalid, separated }}>
       <OTPInput
         ref={ref}
         containerClassName={clsx(
@@ -200,9 +218,9 @@ const InputOTPGroup = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-  const { variant } = React.useContext(InputOTPStyleContext);
+  const { variant, separated } = React.useContext(InputOTPStyleContext);
   const isSeparated =
-    variant?.includes("underlined") || variant?.includes("ghost");
+    separated || variant?.includes("underlined") || variant?.includes("ghost");
 
   return (
     <div
@@ -223,7 +241,7 @@ const InputOTPSlot = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement> & { index: number }
 >(({ index, className, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext);
-  const { variant, size, shape, isInvalid } =
+  const { variant, size, shape, isInvalid, separated = false } =
     React.useContext(InputOTPStyleContext);
 
   const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index];
@@ -232,7 +250,7 @@ const InputOTPSlot = React.forwardRef<
     <div
       ref={ref}
       className={clsx(
-        slotVariants({ variant, size, shape, isInvalid, isActive }),
+        slotVariants({ variant, size, shape, isInvalid, isActive, separated }),
         className,
       )}
       {...props}

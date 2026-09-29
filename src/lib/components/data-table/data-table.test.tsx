@@ -251,8 +251,8 @@ describe("DataTable", () => {
     );
     expect(screen.getByText("Alpha")).toBeTruthy();
     expect(screen.queryByText("Beta")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Filter", exact: true })).toBeNull();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Name", exact: true }), { key: "Enter" });
+    expect(screen.queryByRole("button", { name: /^Filter$/ })).toBeNull();
+    fireEvent.keyDown(screen.getByRole("button", { name: /^Name$/ }), { key: "Enter" });
     expect(await screen.findByRole("menuitem", { name: "Ascending" })).toBeTruthy();
     expect(screen.queryByRole("menuitem", { name: "Hide Column" })).toBeNull();
     expect(screen.queryByRole("menuitem", { name: /Filter/ })).toBeNull();
@@ -270,7 +270,7 @@ describe("DataTable", () => {
     }];
     render(<DataTable data={data} columns={customColumns}
       visibility={{ toolbar: mode !== "toolbar", filters: false, search: false, export: false, pagination: false }} />);
-    fireEvent.keyDown(screen.getByRole("button", { name: "Name", exact: true }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: /^Name$/ }), { key: "Enter" });
     expect(await screen.findByRole("menuitem", { name: "Ascending" })).toBeTruthy();
     expect(screen.queryByRole("menuitem", { name: "Hide Column" })).toBeNull();
     expect(screen.queryByRole("separator")).toBeNull();
@@ -283,12 +283,12 @@ describe("DataTable", () => {
     }];
     render(<DataTable data={data} columns={customColumns}
       visibility={{ filters: false, search: false, export: false, pagination: false }} />);
-    const viewButton = screen.getByRole("button", { name: "View", exact: true });
+    const viewButton = screen.getByRole("button", { name: /^View$/ });
     expect(viewButton.className.split(" ")).not.toContain("hidden");
-    fireEvent.keyDown(screen.getByRole("button", { name: "Custom", exact: true }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: /^Custom$/ }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Hide Column" }));
     await waitFor(() => expect(screen.queryByRole("columnheader")).toBeNull());
-    fireEvent.keyDown(screen.getByRole("button", { name: "View", exact: true }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: /^View$/ }), { key: "Enter" });
     const restore = await screen.findByRole("menuitemcheckbox", { name: "custom" });
     expect(restore.getAttribute("aria-checked")).toBe("false");
     fireEvent.click(restore);

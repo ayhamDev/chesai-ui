@@ -25,6 +25,7 @@ import {
 import React from "react";
 import { clsx } from "clsx";
 import { Table, type TableRootProps } from "../table";
+import { LoadingIndicator } from "../loadingIndicator";
 import { DataTableColumnHeader } from "./column-header";
 import {
   DataTableContext,
@@ -47,7 +48,11 @@ import {
   type DataTableState,
   type DataTableUrlState,
   type DataTableVisibility,
+  type DataTableMode,
+  type DataTableInfiniteScroll,
+  type DataTableCursorPagination,
 } from "./types";
+import { useInfiniteLoading } from "./use-infinite-loading";
 
 export {
   DataTableColumnHeader,
@@ -97,7 +102,11 @@ export type {
   DataTableState,
   DataTableUrlState,
   DataTableVisibility,
+  DataTableMode,
+  DataTableInfiniteScroll,
+  DataTableCursorPagination,
 } from "./types";
+export type { TableVirtualizationOptions } from "../table";
 export type { DataTableSearchInputProps } from "./context";
 
 type ControlledServerState = DataTableUrlState &
@@ -108,6 +117,14 @@ interface DataTableBaseProps<TData extends {}>
   data: TData[];
   columns: ColumnDef<TData>[];
   variant?: "primary" | "secondary";
+  /** Controlled display mode. Pagination is the default. */
+  mode?: DataTableMode;
+  defaultMode?: DataTableMode;
+  onModeChange?: (mode: DataTableMode) => void;
+  /** Show a built-in mode selector independently of toolbar visibility. */
+  showModeSwitch?: boolean;
+  infiniteScroll?: DataTableInfiniteScroll;
+  cursorPagination?: DataTableCursorPagination;
 
   initialState?: Partial<DataTableState>;
   getRowId?: TableOptions<TData>["getRowId"];
@@ -166,7 +183,8 @@ type ClientDataTableProps = {
 
 type ServerDataTableProps = {
   serverSide: true;
-  rowCount: number;
+  /** Omit when the backend does not provide a total (e.g. cursor APIs). */
+  rowCount?: number;
   state: ControlledServerState;
   onStateChange: OnChangeFn<DataTableState>;
 };
@@ -218,8 +236,18 @@ export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
     stickyScrollbar = false,
     stickyScrollbarOffset = 0,
     hideToolbar = false,
+    mode: controlledMode,
+    defaultMode = "pagination",
+    onModeChange,
+    showModeSwitch = false,
+    infiniteScroll,
+    cursorPagination,
+    virtualization,
+    onEndReached,
     ...tableProps
   } = props;
+  const [internalMode, setInternalMode] = React.useState(defaultMode);
+  const mode = controlledMode ?? internalMode;
 
   const [internalState, setInternalState] = React.useState<DataTableState>(() => ({
     ...defaultDataTableState,
@@ -387,7 +415,7 @@ export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
   const legacyManualSorting = !serverSide && !!onSortingChange;
   const legacyManualFiltering =
     !serverSide && (!!onColumnFiltersChange || !!onGlobalFilterChange);
-  const manualPagination = serverSide || legacyManualPagination;
+  const manualPagination = mode === "infinite" || serverSide || legacyManualPagination;
   const manualSorting = serverSide || legacyManualSorting;
   const manualFiltering = serverSide || legacyManualFiltering;
   const preparedColumns = React.useMemo(
@@ -401,7 +429,7 @@ export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
     state: resolvedState,
     rowCount: manualPagination ? rowCount : undefined,
     pageCount:
-      manualPagination && rowCount === undefined ? pageCount : undefined,
+      manualPagination && rowCount === undefined ? (pageCount ?? (serverSide ? -1 : undefined)) : undefined,
     getRowId,
     onPaginationChange: handlePaginationChange,
     onSortingChange: handleSortingChange,
@@ -434,7 +462,17 @@ export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
     toolbar: hideToolbar
       ? false
       : (visibility?.toolbar ?? defaultDataTableVisibility.toolbar),
+    pagination: mode === "pagination" && (visibility?.pagination ?? true),
   };
+  const scrollResetKey = JSON.stringify([mode, resolvedState.sorting, resolvedState.columnFilters,
+    resolvedState.globalFilter, resolvedState.pagination.pageSize, infiniteScroll?.resetKey]);
+  const loading = useInfiniteLoading({
+    enabled: mode === "infinite",
+    config: infiniteScroll,
+    rowCount: data.length,
+    resetKey: scrollResetKey,
+    isLoading: !!isLoading,
+  });
   const showStickyFooter = stickyFooter && resolvedVisibility.pagination;
   const showStickyScrollbar = stickyScrollbar || showStickyFooter;
 
@@ -447,29 +485,54 @@ export function DataTable<TData extends {}>(props: DataTableProps<TData>) {
         searchDebounceMs,
         rowCount,
         serverSide,
+        cursorPagination,
         resetFilters,
         exportOptions,
         exportColumns: columns,
       }}
     >
       <div className="flex w-full flex-col space-y-4">
+        {showModeSwitch && <label className="flex items-center gap-2 text-sm">
+          Display mode
+          <select className="rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-on-surface" aria-label="Display mode" value={mode} onChange={event => {
+            const next = event.target.value as DataTableMode;
+            if (controlledMode === undefined) setInternalMode(next);
+            handlePaginationChange({ ...resolvedState.pagination, pageIndex: 0 });
+            onModeChange?.(next);
+          }}>
+            <option value="pagination">Pagination</option>
+            <option value="infinite">Infinite scrolling</option>
+          </select>
+        </label>}
         <DataTableToolbar bulkActions={bulkActions}>
           {toolbarChildren}
         </DataTableToolbar>
         <Table
+          key={mode === "infinite" ? scrollResetKey : "pagination"}
           variant={variant}
           table={table}
           density={density}
           renderContextMenu={renderContextMenu}
           renderExpandedRow={renderExpandedRow}
-          isLoading={isLoading}
+          isLoading={isLoading && (mode !== "infinite" || data.length === 0)}
           {...tableProps}
+          virtualization={mode === "infinite" ? (virtualization ?? {}) : virtualization}
+          onEndReached={() => { loading.loadMore(); onEndReached?.(); }}
           scrollContainerRef={scrollContainerRef}
           className={clsx(
             tableProps.className,
             showStickyScrollbar && "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           )}
         />
+        {mode === "infinite" && infiniteScroll && <div role="status" aria-live="polite" className="text-center text-sm">
+          {loading.isFetching || isLoading ? (
+            <div className="flex w-full justify-center p-4">
+              <LoadingIndicator variant="material-morph-background" aria-label="Loading more rows" />
+            </div>
+          ) : loading.error ? <><span>Could not load more rows. </span><button type="button" onClick={loading.retry}>Retry</button></>
+            : infiniteScroll.hasNextPage ? <button type="button" onClick={loading.retry}>Load more</button>
+            : "All rows loaded."}
+        </div>}
         {showStickyScrollbar && (
           <DataTableStickyFooter
             scrollContainerRef={scrollContainerRef}

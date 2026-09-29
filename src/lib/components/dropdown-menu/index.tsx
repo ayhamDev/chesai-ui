@@ -7,7 +7,7 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import React, { createContext, useContext, useRef } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { useTheme } from "../../context";
 
 type DropdownMenuShape = "full" | "minimal" | "sharp";
@@ -15,11 +15,13 @@ type DropdownMenuShape = "full" | "minimal" | "sharp";
 interface DropdownMenuContextProps {
   shape: DropdownMenuShape;
   glass: boolean;
+  bordered: boolean;
 }
 
 const DropdownMenuContext = createContext<DropdownMenuContextProps>({
   shape: "minimal",
   glass: false,
+  bordered: false,
 });
 
 const useDropdownMenuContext = () => useContext(DropdownMenuContext);
@@ -27,15 +29,18 @@ const useDropdownMenuContext = () => useContext(DropdownMenuContext);
 interface DropdownMenuProps extends RadixDropdownMenu.DropdownMenuProps {
   shape?: DropdownMenuShape;
   glass?: boolean;
+  /** Show an outer popup border. Defaults to false. */
+  bordered?: boolean;
 }
 
 const DropdownMenu: React.FC<DropdownMenuProps> = ({
   shape = "minimal",
   glass = false,
+  bordered = false,
   ...props
 }) => {
   return (
-    <DropdownMenuContext.Provider value={{ shape, glass }}>
+    <DropdownMenuContext.Provider value={{ shape, glass, bordered }}>
       <RadixDropdownMenu.Root {...props} dir={useDirection(undefined, props.dir)} />
     </DropdownMenuContext.Provider>
   );
@@ -44,18 +49,19 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-dropdown-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-outline-variant text-on-surface p-1.5",
+    "text-on-surface p-1.5",
     "shadow-md",
   ],
   {
     variants: {
+      bordered: { true: "border border-outline-variant", false: "border-0" },
       shape: {
         full: "rounded-3xl",
         minimal: "rounded-xl",
         sharp: "rounded-none",
       },
       glass: {
-        true: "bg-surface-container/60 backdrop-blur-xl border-outline-variant/30",
+        true: "bg-surface-container/60 backdrop-blur-xl",
         false: "bg-surface-container",
       },
     },
@@ -76,14 +82,14 @@ const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.Content>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.Content>
 >(({ className, sideOffset = 8, ...props }, ref) => {
-  const { shape, glass } = useDropdownMenuContext();
+  const { shape, glass, bordered } = useDropdownMenuContext();
   return (
     <RadixDropdownMenu.Portal>
       <RadixDropdownMenu.Content
         ref={ref}
         sideOffset={sideOffset}
         className={clsx(
-          contentVariants({ shape, glass }),
+          contentVariants({ shape, glass, bordered }),
           "data-[state=open]:animate-menu-enter",
           "data-[state=closed]:animate-menu-exit",
           "data-[side=top]:origin-bottom",
@@ -102,10 +108,11 @@ const DropdownMenuContent = React.forwardRef<
 >;
 DropdownMenuContent.displayName = RadixDropdownMenu.Content.displayName;
 
+// Inset radii match the popup radius minus its 0.375rem content padding.
 const itemStyles =
-  "relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm outline-none overflow-hidden z-0 " +
+  "relative flex cursor-pointer select-none items-center gap-2 px-3 py-2.5 text-sm outline-none overflow-hidden z-0 " +
   "transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)] " +
-  "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/20 " +
+  "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40 " +
   "data-[disabled]:pointer-events-none data-[disabled]:opacity-38 " +
   "after:absolute after:inset-0 after:z-[-1] after:bg-secondary-container/50 " +
   "after:opacity-0 after:scale-75 after:origin-center after:rounded-[inherit] " +
@@ -123,7 +130,6 @@ const DropdownMenuItem = React.forwardRef<
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    duration: 400,
   });
   React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
@@ -135,7 +141,7 @@ const DropdownMenuItem = React.forwardRef<
         itemStyles,
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "ps-8",
-        shape === "sharp" && "!rounded-none",
+        shape === "full" ? "rounded-[1.125rem]" : shape === "minimal" ? "rounded-md" : "rounded-none",
         className,
       )}
       {...props}
@@ -157,7 +163,6 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    duration: 400,
   });
   React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
@@ -168,7 +173,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       className={clsx(
         itemStyles,
         "ps-8 pe-3",
-        shape === "sharp" && "!rounded-none",
+        shape === "full" ? "rounded-[1.125rem]" : shape === "minimal" ? "rounded-md" : "rounded-none",
         className,
       )}
       {...props}
@@ -199,7 +204,6 @@ const DropdownMenuRadioItem = React.forwardRef<
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    duration: 400,
   });
   React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
@@ -210,7 +214,7 @@ const DropdownMenuRadioItem = React.forwardRef<
       className={clsx(
         itemStyles,
         "ps-8 pe-3",
-        shape === "sharp" && "!rounded-none",
+        shape === "full" ? "rounded-[1.125rem]" : shape === "minimal" ? "rounded-md" : "rounded-none",
         className,
       )}
       {...props}
@@ -242,7 +246,6 @@ const DropdownMenuSubTrigger = React.forwardRef<
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    duration: 400,
   });
   React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
@@ -255,7 +258,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
         "data-[state=open]:after:opacity-100 data-[state=open]:after:scale-100",
         "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "ps-8",
-        shape === "sharp" && "!rounded-none",
+        shape === "full" ? "rounded-[1.125rem]" : shape === "minimal" ? "rounded-md" : "rounded-none",
         className,
       )}
       {...props}
@@ -279,12 +282,12 @@ const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof RadixDropdownMenu.SubContent>,
   React.ComponentPropsWithoutRef<typeof RadixDropdownMenu.SubContent>
 >(({ className, ...props }, ref) => {
-  const { shape, glass } = useDropdownMenuContext();
+  const { shape, glass, bordered } = useDropdownMenuContext();
   return (
     <RadixDropdownMenu.SubContent
       ref={ref}
       className={clsx(
-        contentVariants({ shape, glass }),
+        contentVariants({ shape, glass, bordered }),
         "data-[state=open]:data-[side=right]:animate-submenu-enter-right",
         "data-[state=closed]:data-[side=right]:animate-submenu-exit-right",
         "data-[state=open]:data-[side=left]:animate-submenu-enter-left",

@@ -98,6 +98,20 @@ export const Default: Story = {
   render: (args) => <PhoneInputWithValidation {...args} />,
 };
 
+export const EditSavedNumber: Story = {
+  name: "Edit Saved Number (Automatic Country)",
+  render: () => {
+    const [value, setValue] = useState<string | undefined>();
+    return (
+      <div className="grid gap-4 max-w-sm">
+        <Button onClick={() => setValue("+201012345678")}>Load saved Egyptian number</Button>
+        <PhoneInput label="Phone number" defaultCountry="US" value={value} onValueChange={setValue}
+          description="The country is inferred when the saved international number loads." />
+      </div>
+    );
+  },
+};
+
 export const ControlledState: Story = {
   name: "Controlled State Dashboard",
   render: () => {

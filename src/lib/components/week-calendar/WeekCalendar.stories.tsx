@@ -32,6 +32,7 @@ const meta = {
   ],
   args: { defaultValue: initialDate },
   argTypes: {
+    daysToShow: { control: { type: 'number', min: 1, max: 7, step: 1 } },
     variant: { control: 'select', options: ['embedded', 'default', 'outlined'] },
     color: { control: 'select', options: Object.keys(weekCalendarColors) },
     size: { control: 'select', options: ['xs', 'sm', 'md', 'lg', 'xl'] },
@@ -242,9 +243,10 @@ export const CustomDayContent: Story = {
 }
 
 export const CompactMobile: Story = {
-  render: () => (
+  args: { daysToShow: 3, size: 'md', showHeader: true, swipeMode: 'week' },
+  render: args => (
     <div className="w-[min(320px,100%)]">
-      <WeekCalendar defaultValue={initialDate} size="sm" weekdayFormat="narrow" showHeader />
+      <WeekCalendar {...args} defaultValue={initialDate} />
     </div>
   ),
 }

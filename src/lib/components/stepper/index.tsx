@@ -1,19 +1,26 @@
-import { useDirection } from "../../context/direction";
 // src/lib/components/stepper/index.tsx
 "use client";
+import { useDirection } from "../../context/direction";
 
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Check } from "lucide-react";
 import React, { createContext, useContext } from "react";
 import { Typography } from "../typography";
+import { Timeline, type TimelineConnectorProps } from "../timeline";
+import { TimelineLayoutContext, themeColor, pairedColor, type TimelineColor } from "../timeline/primitives";
+export { timelineColors as stepperColors } from "../timeline/primitives";
+export type StepperColor = TimelineColor;
+export type StepperStatus = "complete" | "current" | "upcoming" | "error";
 
 // --- CONTEXT ---
 interface StepperContextProps {
   currentStep: number;
   orientation: "horizontal" | "vertical";
   variant: "primary" | "secondary";
+  color?: StepperColor;
+  dir: 'ltr' | 'rtl';
 }
 
 const StepperContext = createContext<StepperContextProps | null>(null);
@@ -27,7 +34,9 @@ const useStepper = () => {
 
 interface StepContextProps {
   index: number;
-  status: "complete" | "current" | "upcoming";
+  status: StepperStatus;
+  color?: StepperColor;
+  size?: 'sm' | 'md' | 'lg';
   isFirst: boolean;
   isLast: boolean;
 }
@@ -46,6 +55,7 @@ export interface StepperProps extends React.HTMLAttributes<HTMLDivElement> {
   currentStep: number;
   orientation?: "horizontal" | "vertical";
   variant?: "primary" | "secondary";
+  color?: StepperColor;
 }
 
 const StepperRoot = React.forwardRef<HTMLDivElement, StepperProps>(
@@ -56,22 +66,29 @@ const StepperRoot = React.forwardRef<HTMLDivElement, StepperProps>(
       orientation = "horizontal",
       variant = "primary",
       children,
+      color,
+      dir: explicitDir,
       ...props
     },
     ref,
   ) => {
+    const localRef = React.useRef<HTMLDivElement>(null);
+    React.useImperativeHandle(ref, () => localRef.current!);
+    const dir = useDirection(localRef, explicitDir);
     const childArray = React.Children.toArray(children).filter(
       React.isValidElement,
     );
 
     return (
-      <StepperContext.Provider value={{ currentStep, orientation, variant }}>
+      <StepperContext.Provider value={{ currentStep, orientation, variant, color, dir }}>
         <div
-          ref={ref}
+          ref={localRef}
+          dir={explicitDir}
+          role="list"
           className={clsx(
             "flex w-full",
             orientation === "horizontal"
-              ? "flex-row items-start"
+              ? "flex-row items-stretch overflow-x-auto"
               : "flex-col items-start",
             className,
           )}
@@ -89,7 +106,7 @@ const StepperRoot = React.forwardRef<HTMLDivElement, StepperProps>(
 
             return (
               <StepContext.Provider
-                key={index}
+                key={child.key ?? index}
                 value={{ index, status, isFirst, isLast }}
               >
                 {child}
@@ -104,27 +121,40 @@ const StepperRoot = React.forwardRef<HTMLDivElement, StepperProps>(
 StepperRoot.displayName = "Stepper";
 
 // --- STEP WRAPPER ---
+export interface StepperStepProps extends React.HTMLAttributes<HTMLDivElement> {
+  color?: StepperColor;
+  status?: StepperStatus;
+  size?: 'sm' | 'md' | 'lg';
+}
 const StepperStep = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, children, ...props }, ref) => {
-  const { orientation } = useStepper();
-  const { isLast } = useStep();
+  StepperStepProps
+>(({ className, children, color, status, size, style, ...props }, ref) => {
+  const { orientation, color: rootColor } = useStepper();
+  const step = useStep();
+  const indicator = React.Children.toArray(children).find(child => React.isValidElement(child) && child.type === StepperIndicator) as React.ReactElement<StepperIndicatorProps> | undefined;
+  const effectiveSize = indicator?.props.size ?? size ?? 'md';
+  const pixels = { sm: 24, md: 32, lg: 40 }[effectiveSize];
+  const effectiveStatus = status ?? step.status;
 
   return (
-    <div
+    <StepContext.Provider value={{ ...step, color: color ?? rootColor, status: effectiveStatus, size: effectiveSize }}><div
       ref={ref}
+      role="listitem"
+      aria-current={effectiveStatus === 'current' ? 'step' : undefined}
+      data-status={effectiveStatus}
       className={clsx(
         "relative flex",
         orientation === "horizontal"
-          ? clsx("flex-row items-center", !isLast && "flex-1")
+          ? "flex-col items-start flex-1 min-w-36"
           : "flex-row items-start pb-8 last:pb-0",
         className,
       )}
       {...props}
+      style={{ '--stepper-indicator-size': `${pixels}px`, ...style } as React.CSSProperties}
     >
       {children}
-    </div>
+    </div></StepContext.Provider>
   );
 });
 StepperStep.displayName = "Stepper.Step";
@@ -139,6 +169,7 @@ const indicatorVariants = cva(
         current:
           "bg-secondary-container text-on-secondary-container ring-2 ring-primary ring-offset-2 ring-offset-background",
         upcoming: "bg-surface-container-highest text-on-surface-variant",
+        error: "bg-error text-on-error",
       },
       size: {
         sm: "h-6 w-6 text-xs",
@@ -152,86 +183,74 @@ const indicatorVariants = cva(
   },
 );
 
-interface StepperIndicatorProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface StepperIndicatorProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: "sm" | "md" | "lg";
   icon?: React.ReactNode;
+  completedIcon?: React.ReactNode;
+  color?: StepperColor;
+  foreground?: StepperColor;
+  shape?: 'circle' | 'square' | 'diamond';
 }
 
 const StepperIndicator = React.forwardRef<
   HTMLDivElement,
   StepperIndicatorProps
->(({ className, size = "md", icon, children, ...props }, ref) => {
-  const { status, index } = useStep();
+>(({ className, size: explicitSize, icon, completedIcon, color, foreground, shape = 'circle', style, children, ...props }, ref) => {
+  const { status, index, color: stepColor, size: stepSize } = useStep();
+  const { variant } = useStepper();
+  const reducedMotion = useReducedMotion();
+  const size = explicitSize ?? stepSize ?? 'md';
+  const effectiveColor = color ?? stepColor ?? (variant === 'secondary' && status !== 'upcoming' ? 'secondary' : undefined);
 
   return (
     <div
       ref={ref}
       className={clsx(indicatorVariants({ status, size }), className)}
       {...props}
+      style={{ ...(effectiveColor ? { backgroundColor: themeColor(effectiveColor), color: themeColor(foreground ?? pairedColor(effectiveColor)), '--tw-ring-color': themeColor(effectiveColor) } : foreground ? { color: themeColor(foreground) } : {}), ...(shape !== 'circle' ? { borderRadius: 6, transform: shape === 'diamond' ? 'rotate(45deg)' : undefined } : {}), ...style } as React.CSSProperties}
     >
+      <span className="flex items-center justify-center" style={shape === 'diamond' ? { transform: 'rotate(-45deg)' } : undefined}>
       {status === "complete" ? (
         <motion.div
-          initial={{ scale: 0 }}
+          initial={reducedMotion ? false : { scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring" }}
         >
-          <Check
+          {completedIcon ?? <Check
+            aria-hidden="true"
             className={size === "sm" ? "h-3 w-3" : "h-4 w-4"}
             strokeWidth={3}
-          />
+          />}
         </motion.div>
       ) : (
         icon || children || <span>{index + 1}</span>
       )}
+      </span>
     </div>
   );
 });
 StepperIndicator.displayName = "Stepper.Indicator";
 
 // --- SEPARATOR (The Line) ---
-const StepperSeparator = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  const { orientation } = useStepper();
-  const { status, isLast } = useStep();
-
-  if (isLast) return null;
-
-  const isHorizontal = orientation === "horizontal";
-  const isComplete = status === "complete";
-
-  // Check the document direction layout state dynamically on runtime
-  const isRtl = useDirection() === "rtl";
-
-  return (
-    <div
-      ref={ref}
-      className={clsx(
-        "absolute bg-surface-container-highest",
-        isHorizontal
-          ? "top-4 ltr:left-10 ltr:right-2 rtl:right-10 rtl:left-2 h-[2px] -translate-y-1/2"
-          : "top-8 bottom-0 ltr:left-4 rtl:right-4 w-[2px] ltr:-translate-x-1/2 rtl:translate-x-1/2",
-        className,
-      )}
-      {...props}
-    >
-      <motion.div
-        className="bg-primary h-full w-full"
-        initial={{ scaleX: 0, scaleY: 0 }}
-        animate={{
-          scaleX: isHorizontal ? (isComplete ? 1 : 0) : 1,
-          scaleY: !isHorizontal ? (isComplete ? 1 : 0) : 1,
-        }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{
-          // Scale connectors inwards from right-to-left in RTL horizontal modes
-          transformOrigin: isHorizontal ? (isRtl ? "right" : "left") : "top",
-        }}
-      />
-    </div>
-  );
-});
+export interface StepperSeparatorProps extends TimelineConnectorProps {}
+const StepperSeparator = React.forwardRef<HTMLDivElement, StepperSeparatorProps>(
+  ({ className, color, style, ...props }, ref) => {
+    const { orientation, dir, variant } = useStepper();
+    const { status, isLast, color: stepColor } = useStep();
+    if (isLast) return null;
+    const horizontal = orientation === "horizontal";
+    const effectiveColor = color ?? stepColor ?? (status === 'complete' ? variant : status === 'error' ? 'error' : 'surface-container-highest');
+    return (
+      <TimelineLayoutContext.Provider value={{ horizontal, dir }}>
+        <div className="absolute pointer-events-none flex items-center justify-center" aria-hidden="true"
+          style={horizontal ? { top: 'calc(var(--stepper-indicator-size) / 2)', insetInlineStart: 'calc(var(--stepper-indicator-size) + 8px)', insetInlineEnd: 8, transform: 'translateY(-50%)' } : { top: 'calc(var(--stepper-indicator-size) + 4px)', bottom: 4, insetInlineStart: 'calc(var(--stepper-indicator-size) / 2)', transform: dir === 'rtl' ? 'translateX(50%)' : 'translateX(-50%)' }}>
+          <Timeline.Connector ref={ref} {...props} color={effectiveColor} className={clsx('!m-0', className)}
+            style={{ ...(horizontal ? { width: '100%' } : { height: '100%', position: 'absolute' }), ...style }} />
+        </div>
+      </TimelineLayoutContext.Provider>
+    );
+  },
+);
 StepperSeparator.displayName = "Stepper.Separator";
 
 // --- CONTENT ---
@@ -240,7 +259,6 @@ const StepperContent = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
   const { orientation } = useStepper();
-  const { isFirst, isLast } = useStep();
 
   return (
     <div
@@ -248,20 +266,8 @@ const StepperContent = React.forwardRef<
       className={clsx(
         "flex flex-col",
         orientation === "horizontal"
-          ? clsx(
-              "absolute top-10 w-max max-w-[100px] sm:max-w-[140px] whitespace-normal break-words",
-              // First step anchors left
-              isFirst &&
-                "ltr:left-0 ltr:items-start ltr:text-left rtl:right-0 rtl:items-start rtl:text-right",
-              // Last step anchors right
-              isLast &&
-                "ltr:right-0 ltr:items-end ltr:text-right rtl:left-0 rtl:items-end rtl:text-left",
-              // Middle steps center exactly underneath the indicator circle
-              !isFirst &&
-                !isLast &&
-                "ltr:left-4 ltr:-translate-x-1/2 rtl:right-4 rtl:translate-x-1/2 items-center text-center",
-            )
-          : "ms-4 pt-1 items-start text-left",
+          ? "mt-3 pe-6 pb-2 min-w-0 break-words items-start text-start"
+          : "ms-4 pt-1 items-start text-start",
         className,
       )}
       {...props}

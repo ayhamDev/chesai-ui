@@ -45,6 +45,7 @@ export interface SwipeableProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 interface SwipeableContextProps {
+  getContainerWidth: () => number;
   x: MotionValue<number>;
   isDismissed: boolean;
   setIsDismissed: React.Dispatch<React.SetStateAction<boolean>>;
@@ -104,6 +105,10 @@ const SwipeableRoot = React.forwardRef<HTMLDivElement, SwipeableProps>(
     ref,
   ) => {
     const x = useMotionValue(0);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    React.useImperativeHandle(ref, () => containerRef.current!);
+    // Layout pixels match the motion value even inside a scaled Storybook canvas.
+    const getContainerWidth = React.useCallback(() => containerRef.current?.clientWidth ?? 0, []);
     const [isDismissed, setIsDismissed] = React.useState(false);
 
     React.useEffect(() => {
@@ -116,6 +121,7 @@ const SwipeableRoot = React.forwardRef<HTMLDivElement, SwipeableProps>(
     const contextValue = React.useMemo(
       () => ({
         x,
+        getContainerWidth,
         isDismissed,
         setIsDismissed,
         type,
@@ -130,6 +136,7 @@ const SwipeableRoot = React.forwardRef<HTMLDivElement, SwipeableProps>(
       }),
       [
         x,
+        getContainerWidth,
         isDismissed,
         type,
         leftAction,
@@ -146,7 +153,7 @@ const SwipeableRoot = React.forwardRef<HTMLDivElement, SwipeableProps>(
     return (
       <SwipeableContext.Provider value={contextValue}>
         <motion.div
-          ref={ref}
+          ref={containerRef}
           className={twMerge(
             clsx(
               "relative w-full overflow-hidden z-0 bg-transparent transform-gpu will-change-[height,opacity] transition-all duration-200 ease-out",
@@ -192,6 +199,7 @@ const SwipeableContent = React.forwardRef<
 
   const {
     x,
+    getContainerWidth,
     type,
     disabled,
     leftAction,
@@ -224,7 +232,7 @@ const SwipeableContent = React.forwardRef<
 
     if (type === "dismiss") {
       if (offsetX > threshold && leftAction) {
-        targetX = 600;
+        targetX = getContainerWidth();
         animate(x, targetX, { type: "tween", duration: 0.2 }).then(() => {
           setIsDismissed(true);
           leftAction.onClick?.();
@@ -232,7 +240,7 @@ const SwipeableContent = React.forwardRef<
         });
         return;
       } else if (offsetX < -threshold && rightAction) {
-        targetX = -600;
+        targetX = -getContainerWidth();
         animate(x, targetX, { type: "tween", duration: 0.2 }).then(() => {
           setIsDismissed(true);
           rightAction.onClick?.();
@@ -285,6 +293,7 @@ const SwipeableContent = React.forwardRef<
       style={{ x }}
       drag={disabled ? false : "x"}
       dragDirectionLock
+      dragMomentum={false}
       dragConstraints={stableConstraints}
       dragElastic={type === "reveal" ? 0.2 : 0.3}
       onDragEnd={handleDragEnd}
@@ -315,11 +324,7 @@ const SwipeableAction = React.forwardRef<HTMLDivElement, SwipeableActionProps>(
 
     const { x, leftAction, rightAction } = context;
 
-    const width = useTransform(
-      x,
-      side === "left" ? [-1000, 0, 1000] : [-1000, 0, 1000],
-      side === "left" ? [0, 0, 1000] : [1000, 0, 0],
-    );
+    const width = useTransform(x, value => Math.max(0, side === "left" ? value : -value));
 
     const opacity = useTransform(
       x,
@@ -335,7 +340,7 @@ const SwipeableAction = React.forwardRef<HTMLDivElement, SwipeableActionProps>(
     return (
       <motion.div
         ref={ref}
-        style={{ width }}
+        style={{ width, maxWidth: "100%" }}
         className={twMerge(
           clsx(
             "absolute inset-y-0 flex items-center justify-center overflow-hidden z-0 transform-gpu will-change-[width,opacity] rounded-[inherit]",

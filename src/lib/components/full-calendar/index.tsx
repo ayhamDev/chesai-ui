@@ -306,6 +306,7 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
       renderPopoverFooter,
       renderPopoverCustomFields,
       hidePopoverTitle,
+      bordered,
       hidePopoverTime,
       hidePopoverRecurrence,
 
@@ -338,6 +339,7 @@ const FullCalendarRoot = React.forwardRef<HTMLDivElement, FullCalendarProps>(
         renderPopoverFooter={renderPopoverFooter}
         renderPopoverCustomFields={renderPopoverCustomFields}
         hidePopoverTitle={hidePopoverTitle}
+        bordered={bordered}
         hidePopoverTime={hidePopoverTime}
         hidePopoverRecurrence={hidePopoverRecurrence}
         disableCreatePopover={disableCreatePopover}

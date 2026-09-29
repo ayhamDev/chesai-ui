@@ -22,7 +22,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { ImageOff, X } from "lucide-react";
 import { Shape } from "./index";
 import { SHAPE_PATHS, type ShapeType } from "./paths";
@@ -604,7 +604,6 @@ export const ShapedIconButton = forwardRef<
       // @ts-ignore
       ref: localRef,
       color: "rgba(255, 255, 255, 0.3)",
-      duration: 400,
     });
 
     const contentColorClass =

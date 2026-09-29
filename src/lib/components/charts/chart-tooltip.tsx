@@ -4,7 +4,7 @@ import { Card } from "../card";
 import { Typography } from "../typography";
 import React from "react";
 
-export const ChartTooltip = ({ active, payload, label, hideLabel }: any) => {
+export const ChartTooltip = ({ active, payload, label, hideLabel, bordered = false }: any) => {
   if (active && payload && payload.length) {
     return (
       <Card
@@ -12,7 +12,8 @@ export const ChartTooltip = ({ active, payload, label, hideLabel }: any) => {
         shape="minimal"
         padding="sm"
         elevation={2}
-        className="min-w-[120px] !bg-surface-container-high/95 backdrop-blur-sm border border-outline-variant"
+        bordered={bordered}
+        className="min-w-[120px] !bg-surface-container-high/95 backdrop-blur-sm"
       >
         {!hideLabel && (
           <Typography

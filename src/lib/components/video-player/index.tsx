@@ -141,6 +141,7 @@ interface TrackOption {
 // Extracted to prevent re-renders on video timeupdate
 
 interface VideoSettingsMenuProps {
+  bordered?: boolean;
   view: SettingsView;
   onViewChange: (view: SettingsView) => void;
   playbackRate: number;
@@ -158,6 +159,7 @@ interface VideoSettingsMenuProps {
 
 const VideoSettingsMenu = React.memo(
   ({
+    bordered = false,
     view,
     onViewChange,
     playbackRate,
@@ -173,7 +175,7 @@ const VideoSettingsMenu = React.memo(
     onSubtitleChange,
   }: VideoSettingsMenuProps) => {
     const menuClass =
-      "absolute bottom-full right-0 mb-3 w-64 max-h-80 overflow-hidden overflow-y-auto rounded-xl bg-graphite-card border border-graphite-border p-1 shadow-xl flex flex-col gap-1 z-50 scrollbar-thin";
+      "absolute bottom-full right-0 mb-3 w-64 max-h-80 overflow-hidden overflow-y-auto rounded-xl bg-graphite-card p-1 shadow-xl flex flex-col gap-1 z-50 scrollbar-thin" + (bordered ? " border border-outline-variant" : " border-0");
 
     const SettingsHeader = ({
       title,
@@ -368,6 +370,8 @@ VideoSettingsMenu.displayName = "VideoSettingsMenu";
 // --- MAIN COMPONENT ---
 
 export interface VideoPlayerProps {
+  /** Show the settings popup outer border. Defaults to false. */
+  bordered?: boolean;
   src: string;
   poster?: string;
   autoPlay?: boolean;
@@ -389,6 +393,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
       loop = false,
       className,
       shape = "minimal",
+      bordered = false,
       title,
       objectFit = "contain",
     },
@@ -983,6 +988,7 @@ export const VideoPlayer = React.forwardRef<HTMLDivElement, VideoPlayerProps>(
                     <AnimatePresence>
                       {isSettingsOpen && (
                         <VideoSettingsMenu
+                    bordered={bordered}
                           view={settingsView}
                           onViewChange={handleViewChange}
                           playbackRate={playbackRate}

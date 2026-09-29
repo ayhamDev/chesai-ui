@@ -41,6 +41,7 @@ const meta: Meta<typeof DropdownMenu> = {
     layout: "centered",
   },
   argTypes: {
+    bordered: { control: "boolean", description: "Show the popup outer border (off by default)." },
     shape: {
       control: "select",
       options: ["full", "minimal", "sharp"],

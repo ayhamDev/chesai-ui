@@ -60,6 +60,8 @@ export interface SelectProps extends React.ComponentPropsWithoutRef<
     | "ghost-inverted";
   color?: "primary" | "secondary" | "error";
   size?: "sm" | "md" | "lg";
+  /** Show an outer popup border. Defaults to false. */
+  bordered?: boolean;
   shape?: "full" | "minimal" | "sharp";
   label?: React.ReactNode;
   labelPlacement?: "inside" | "outside" | "outside-left";
@@ -93,6 +95,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
       color = "primary",
       size = "md",
       shape = "minimal",
+      bordered = false,
       label,
       labelPlacement = "inside",
       placeholder,
@@ -447,6 +450,7 @@ export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                 } : undefined}
                 className={clsx(
                   selectContentVariants({
+                    bordered,
                     position,
                     shape,
                   }),

@@ -27,6 +27,8 @@ interface TimePickerProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
   "value" | "onChange" | "size"
 > {
+  /** Show an outer popup border. Defaults to false. */
+  bordered?: boolean;
   shape?: "full" | "minimal" | "sharp";
   size?: "sm" | "md" | "lg";
   label?: string;
@@ -357,6 +359,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
       onChange,
       variant: variantProp,
       shape = "minimal",
+      bordered = false,
       size = "md",
       disabled,
       className,
@@ -494,7 +497,8 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(
               sideOffset={8}
               align="start"
               className={clsx(
-                "z-50 w-auto rounded-xl border border-outline-variant bg-surface-container-high shadow-md",
+                "z-50 w-auto rounded-xl bg-surface-container-high shadow-md",
+              bordered ? "border border-outline-variant" : "border-0",
                 "data-[state=open]:animate-menu-enter",
                 "data-[state=closed]:animate-menu-exit",
               )}

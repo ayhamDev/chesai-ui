@@ -7,7 +7,7 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { ChevronDown } from "lucide-react";
 import React, { createContext, useContext, useRef } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 
 type AccordionGap = "none" | "xs" | "sm" | "md" | "lg";
 
@@ -241,7 +241,6 @@ const AccordionTrigger: React.ForwardRefExoticComponent<
     const [, event] = useRipple({
       ref: localRef as React.RefObject<HTMLElement>,
       color: rippleColor,
-      duration: 400,
       disabled: disableRipple,
     });
     React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);

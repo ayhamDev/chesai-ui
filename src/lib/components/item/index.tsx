@@ -16,7 +16,7 @@ import {
 } from "framer-motion";
 import * as React from "react";
 import { twMerge } from "tailwind-merge";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 
 // --- Types ---
 
@@ -411,7 +411,6 @@ const Item = React.forwardRef<HTMLDivElement, ItemProps>(
     const [, event] = useRipple({
       ref: localRef as React.RefObject<HTMLElement>,
       color: rippleColor,
-      duration: 400,
       disabled: disabled || disableRipple,
     });
 

@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import * as React from "react";
 import { twMerge } from "tailwind-merge";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 
 // --- Card Variants Definition ---
 
@@ -393,7 +393,6 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     const [, event] = useRipple({
       ref: localRef as React.RefObject<HTMLElement>,
       color: rippleColor,
-      duration: 600,
       disabled: !enableRipple,
     });
 

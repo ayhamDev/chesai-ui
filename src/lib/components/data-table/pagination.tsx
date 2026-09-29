@@ -23,11 +23,13 @@ export function DataTablePagination<TData>({
     visibility,
     rowCount,
     serverSide,
+    cursorPagination,
   } = useDataTable<TData>();
 
   const pageIndex = table.getState().pagination.pageIndex;
   const pageSize = table.getState().pagination.pageSize;
   const pageCount = table.getPageCount();
+  const sequential = !!cursorPagination || pageCount < 0;
   const selectedCount = Object.values(table.getState().rowSelection).filter(
     Boolean,
   ).length;
@@ -46,7 +48,7 @@ export function DataTablePagination<TData>({
     let page = Number(pageInput) - 1;
     if (Number.isNaN(page)) page = 0;
     if (page < 0) page = 0;
-    if (page >= pageCount) page = pageCount - 1;
+    if (page >= pageCount) page = Math.max(0, pageCount - 1);
 
     table.setPageIndex(page);
     setPageInput(String(page + 1));
@@ -81,7 +83,9 @@ export function DataTablePagination<TData>({
       {/* Selected Count */}
       {visibility?.selectionSummary !== false && (
         <div className="text-sm text-graphite-foreground/70 order-2 sm:order-1">
-          {selectedCount} of {totalCount} row(s) selected.
+          {serverSide && rowCount === undefined
+            ? `${selectedCount} row(s) selected.`
+            : `${selectedCount} of ${totalCount} row(s) selected.`}
         </div>
       )}
 
@@ -114,11 +118,13 @@ export function DataTablePagination<TData>({
           <div className="flex items-center justify-center text-sm font-medium text-graphite-foreground gap-2">
             <span>Page</span>
             <Input
+              aria-label="Current page"
+              readOnly={sequential}
               value={pageInput}
               onChange={(e) => setPageInput(e.target.value)}
-              onBlur={handlePageSubmit}
+              onBlur={sequential ? undefined : handlePageSubmit}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (!sequential && e.key === "Enter") {
                   handlePageSubmit();
                   e.currentTarget.blur();
                 }
@@ -128,13 +134,13 @@ export function DataTablePagination<TData>({
               variant="filled"
               size="sm"
             />
-            <span className="whitespace-nowrap">of {pageCount || 1}</span>
+            {!sequential && <span className="whitespace-nowrap">of {pageCount || 1}</span>}
           </div>
         </div>
 
         {/* Navigation Arrows */}
         <div className="flex items-center space-x-2">
-          <IconButton
+          {!sequential && <IconButton
             variant="ghost"
             size="sm"
             className="hidden h-8 w-8 p-0 lg:flex"
@@ -143,13 +149,13 @@ export function DataTablePagination<TData>({
           >
             <span className="sr-only">Go to first page</span>
             <ChevronsLeft className="rtl:rotate-180 h-4 w-4" />
-          </IconButton>
+          </IconButton>}
           <IconButton
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            onClick={() => cursorPagination ? cursorPagination.onPreviousPage() : table.previousPage()}
+            disabled={cursorPagination ? cursorPagination.isFetching || !cursorPagination.hasPreviousPage : !table.getCanPreviousPage()}
           >
             <span className="sr-only">Go to previous page</span>
             <ChevronLeft className="rtl:rotate-180 h-4 w-4" />
@@ -158,13 +164,13 @@ export function DataTablePagination<TData>({
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            onClick={() => cursorPagination ? cursorPagination.onNextPage() : table.nextPage()}
+            disabled={cursorPagination ? cursorPagination.isFetching || !cursorPagination.hasNextPage : !table.getCanNextPage()}
           >
             <span className="sr-only">Go to next page</span>
             <ChevronRight className="rtl:rotate-180 h-4 w-4" />
           </IconButton>
-          <IconButton
+          {!sequential && <IconButton
             variant="ghost"
             size="sm"
             className="hidden h-8 w-8 p-0 lg:flex"
@@ -173,7 +179,7 @@ export function DataTablePagination<TData>({
           >
             <span className="sr-only">Go to last page</span>
             <ChevronsRight className="rtl:rotate-180 h-4 w-4" />
-          </IconButton>
+          </IconButton>}
         </div>
       </div>
     </div>

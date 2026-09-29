@@ -16,7 +16,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { ShallowRouter, useRouter } from "../shallow-router";
 
 // Safely access unstable_Activity from React with support for fallback
@@ -380,7 +380,6 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
       // @ts-ignore
       ref: localRef,
       color: "var(--color-ripple-dark)",
-      duration: 400,
     });
     // @ts-ignore
     React.useImperativeHandle(ref, () => localRef.current!);

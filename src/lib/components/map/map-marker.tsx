@@ -228,16 +228,19 @@ MarkerTooltip.displayName = "MarkerTooltip";
 export const MarkerPopup = ({
   children,
   closeButton = true,
+  bordered = false,
   className,
 }: {
   children: React.ReactNode;
   closeButton?: boolean;
+  bordered?: boolean;
   className?: string;
 }) => {
   return (
     <div
       className={clsx(
-        "relative min-w-[150px] rounded-xl border border-outline-variant bg-surface-container-high p-3 shadow-xl text-on-surface animate-in fade-in zoom-in-95 duration-200",
+        "relative min-w-[150px] rounded-xl bg-surface-container-high p-3 shadow-xl text-on-surface animate-in fade-in zoom-in-95 duration-200",
+        bordered ? "border border-outline-variant" : "border-0",
         className,
       )}
     >

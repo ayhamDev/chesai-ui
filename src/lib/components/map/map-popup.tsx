@@ -12,6 +12,7 @@ export const MapPopup = ({
   onClose,
   className,
   closeButton = true,
+  bordered = false,
 }: {
   longitude: number;
   latitude: number;
@@ -19,6 +20,7 @@ export const MapPopup = ({
   onClose?: () => void;
   className?: string;
   closeButton?: boolean;
+  bordered?: boolean;
 }) => {
   return (
     <ReactMapPopup
@@ -33,7 +35,8 @@ export const MapPopup = ({
     >
       <div
         className={clsx(
-          "relative rounded-xl border border-outline-variant bg-surface-container-high p-3 shadow-xl text-on-surface",
+          "relative rounded-xl bg-surface-container-high p-3 shadow-xl text-on-surface",
+          bordered ? "border border-outline-variant" : "border-0",
           className,
         )}
       >

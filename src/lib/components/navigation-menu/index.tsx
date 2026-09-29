@@ -7,7 +7,7 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { ChevronDown } from "lucide-react";
 import React, { useImperativeHandle, useRef } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { Typography } from "../typography";
 
 // --- CVA Variants ---
@@ -27,8 +27,8 @@ const contentItemVariants = cva([
 
 // --- Core Components ---
 const NavigationMenuRoot: React.ForwardRefExoticComponent<
-  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Root> & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Root>>
-> = React.forwardRef(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Root> & { bordered?: boolean } & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Root>>
+> = React.forwardRef(({ className, children, bordered = false, ...props }, ref) => (
   <RadixNavigationMenu.Root
     ref={ref}
     className={clsx(
@@ -38,7 +38,7 @@ const NavigationMenuRoot: React.ForwardRefExoticComponent<
     {...props} dir={useDirection(undefined, props.dir)}
   >
     {children}
-    <NavigationMenuViewport />
+    <NavigationMenuViewport bordered={bordered} />
   </RadixNavigationMenu.Root>
 ));
 NavigationMenuRoot.displayName = RadixNavigationMenu.Root.displayName;
@@ -155,7 +155,6 @@ const NavigationMenuContentItem = React.forwardRef<
       // @ts-ignore
       ref: localRef,
       color: "var(--color-ripple-light)",
-      duration: 400,
 });
 
     const hasDescription = !!children;
@@ -217,12 +216,13 @@ NavigationMenuContentItem.displayName = "NavigationMenu.ContentItem";
 
 // --- Viewport & Indicator ---
 const NavigationMenuViewport: React.ForwardRefExoticComponent<
-  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Viewport> & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Viewport>>
-> = React.forwardRef(({ className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof RadixNavigationMenu.Viewport> & { bordered?: boolean } & React.RefAttributes<React.ElementRef<typeof RadixNavigationMenu.Viewport>>
+> = React.forwardRef(({ className, bordered = false, ...props }, ref) => (
   <div className={clsx("absolute left-0 top-full flex justify-center")}>
     <RadixNavigationMenu.Viewport
       className={clsx(
-        "origin-top-center relative mt-2 h-(--radix-navigation-menu-viewport-height) w-full overflow-hidden  rounded-xl border border-graphite-border bg-graphite-card text-graphite-foreground shadow-lg data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out md:w-(--radix-navigation-menu-viewport-width)",
+        "origin-top-center relative mt-2 h-(--radix-navigation-menu-viewport-height) w-full overflow-hidden  rounded-xl bg-graphite-card text-graphite-foreground shadow-lg data-[state=open]:animate-nav-scale-in data-[state=closed]:animate-nav-scale-out md:w-(--radix-navigation-menu-viewport-width)",
+        bordered ? "border border-outline-variant" : "border-0",
         className,
       )}
       ref={ref}

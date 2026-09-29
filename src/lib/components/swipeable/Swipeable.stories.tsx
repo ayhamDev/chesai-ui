@@ -3,7 +3,8 @@ import { Archive, Heart, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { Card } from "../card";
 import { Typography } from "../typography";
-import { Swipeable } from "./index";
+import { Swipeable, useSwipeable } from "./index";
+import { Button } from "../button";
 
 const meta: Meta<typeof Swipeable> = {
   title: "Components/Data/Swipeable (Headless)",
@@ -15,6 +16,28 @@ const meta: Meta<typeof Swipeable> = {
 };
 
 export default meta;
+
+const BoundsControls = () => {
+  const swipe = useSwipeable();
+  return <div className="flex gap-2 p-3">
+    <Button size="sm" onClick={() => swipe?.x.set(-1200)}>Show full delete area</Button>
+    <Button size="sm" onClick={() => swipe?.x.set(0)}>Reset</Button>
+  </div>;
+};
+
+export const ActionBounds: StoryObj<typeof Swipeable> = {
+  name: "3. Action Bounds (Overswipe Regression)",
+  parameters: { docs: { description: { story: "The button deliberately moves the content beyond the row. The action remains capped at the row width with its icon centered. Reset before testing a real drag." } } },
+  render: () => <div className="w-80">
+    <Swipeable type="dismiss" rightAction={{ icon: <Trash2 />, label: 'Delete', color: 'error', onClick: () => {} }}>
+      <div className="relative overflow-hidden h-24 rounded-xl">
+        <Swipeable.Action side="right" />
+        <Swipeable.Content><Card className="h-24 p-4">Swipe to delete</Card></Swipeable.Content>
+      </div>
+      <BoundsControls />
+    </Swipeable>
+  </div>,
+};
 
 export const HeadlessCardSwipe: StoryObj<typeof Swipeable> = {
   name: "1. Headless Card Swipe (Dismiss)",

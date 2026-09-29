@@ -11,7 +11,7 @@ import React, {
   useEffect,
   forwardRef,
 } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 
 // --- CONTEXT ---
 interface FABMenuContextType {
@@ -275,7 +275,6 @@ const FABMenuItem = forwardRef<HTMLButtonElement, FABMenuItemProps>(
     const [, event] = useRipple({
       ref: localRef as React.RefObject<HTMLElement>,
       color: rippleColor,
-      duration: 400,
     });
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {

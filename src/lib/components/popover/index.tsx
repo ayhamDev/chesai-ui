@@ -26,41 +26,44 @@ interface PopoverContextProps {
   shape: PopoverShape;
   variant: PopoverVariant;
   glass: boolean;
+  bordered: boolean;
 }
 
 const PopoverContext = createContext<PopoverContextProps>({
   shape: "minimal",
   variant: "secondary",
   glass: false,
+  bordered: false,
 });
 
 const usePopoverContext = () => useContext(PopoverContext);
 
 const contentVariants = cva(
-  "z-50 p-4 border transition-all duration-300 shadow-md outline-none",
+  "z-50 p-4 transition-all duration-300 shadow-md outline-none",
   {
     variants: {
+      bordered: { true: "border border-outline-variant", false: "border-0" },
       variant: {
         primary:
-          "bg-surface-container-low text-on-surface border-outline-variant/50",
+          "bg-surface-container-low text-on-surface",
         secondary:
-          "bg-surface-container-highest text-on-surface border-outline-variant/50",
+          "bg-surface-container-highest text-on-surface",
         tertiary:
-          "bg-tertiary-container text-on-tertiary-container border-transparent",
+          "bg-tertiary-container text-on-tertiary-container",
         "high-contrast":
-          "bg-inverse-surface text-inverse-on-surface border-transparent",
-        ghost: "bg-transparent text-on-surface border-transparent shadow-none",
-        surface: "bg-surface text-on-surface border-outline-variant",
+          "bg-inverse-surface text-inverse-on-surface",
+        ghost: "bg-transparent text-on-surface shadow-none",
+        surface: "bg-surface text-on-surface",
         "surface-container-lowest":
-          "bg-surface-container-lowest text-on-surface border-outline-variant/30",
+          "bg-surface-container-lowest text-on-surface",
         "surface-container-low":
-          "bg-surface-container-low text-on-surface border-outline-variant/30",
+          "bg-surface-container-low text-on-surface",
         "surface-container":
-          "bg-surface-container text-on-surface border-outline-variant/30",
+          "bg-surface-container text-on-surface",
         "surface-container-high":
-          "bg-surface-container-high text-on-surface border-outline-variant/30",
+          "bg-surface-container-high text-on-surface",
         "surface-container-highest":
-          "bg-surface-container-highest text-on-surface border-outline-variant/30",
+          "bg-surface-container-highest text-on-surface",
       },
       shape: {
         full: "rounded-3xl",
@@ -174,16 +177,19 @@ export interface PopoverProps extends RadixPopover.PopoverProps {
   shape?: PopoverShape;
   variant?: PopoverVariant;
   glass?: boolean;
+  /** Show an outer popup border. Defaults to false. */
+  bordered?: boolean;
 }
 
 const PopoverRoot = ({
   shape = "minimal",
   variant = "secondary",
   glass = false,
+  bordered = false,
   ...props
 }: PopoverProps) => {
   return (
-    <PopoverContext.Provider value={{ shape, variant, glass }}>
+    <PopoverContext.Provider value={{ shape, variant, glass, bordered }}>
       <RadixPopover.Root {...props} />
     </PopoverContext.Provider>
   );
@@ -237,7 +243,7 @@ const PopoverContent = React.forwardRef<
   React.ElementRef<typeof RadixPopover.Content>,
   PopoverContentProps
 >(({ className, align = "center", sideOffset = 8, ...props }, ref) => {
-  const { shape, variant, glass } = usePopoverContext();
+  const { shape, variant, glass, bordered } = usePopoverContext();
   const direction = useDirection(undefined, props.dir);
 
   return (
@@ -248,7 +254,7 @@ const PopoverContent = React.forwardRef<
         align={align}
         sideOffset={sideOffset}
         className={clsx(
-          contentVariants({ shape, variant, glass }),
+          contentVariants({ shape, variant, glass, bordered }),
           "data-[state=open]:animate-menu-enter",
           "data-[state=closed]:animate-menu-exit",
           className,
@@ -268,14 +274,14 @@ const PopoverArrow = React.forwardRef<
   React.ElementRef<typeof RadixPopover.Arrow>,
   PopoverArrowProps
 >(({ className, width = 14, height = 7, ...props }, ref) => {
-  const { variant } = usePopoverContext();
+  const { variant, bordered } = usePopoverContext();
 
   return (
     <RadixPopover.Arrow
       ref={ref}
       width={width}
       height={height}
-      className={clsx(arrowVariants({ variant }), className)}
+      className={clsx(arrowVariants({ variant }), !bordered && "!stroke-none [&>polygon]:!stroke-none", className)}
       {...props}
     />
   );

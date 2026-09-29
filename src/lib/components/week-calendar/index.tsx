@@ -1,12 +1,22 @@
 'use client'
 
-import { addDays, type Day, format, isSameDay, isToday, type Locale, startOfDay, startOfWeek } from 'date-fns'
+import {
+  addDays,
+  differenceInCalendarDays,
+  type Day,
+  format,
+  isSameDay,
+  isToday,
+  type Locale,
+  startOfDay,
+  startOfWeek,
+} from 'date-fns'
 import { enUS } from 'date-fns/locale'
 import { MotionConfig, useReducedMotion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import useRipple from 'use-ripple-hook'
+import useRipple from '../../hooks/useRipple'
 import { useDirection } from '../../context/direction'
 import type { DateRange } from '../../hooks/use-calender'
 import { IconButton } from '../icon-button'
@@ -46,10 +56,12 @@ interface WeekCalendarBaseProps
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   shape?: 'full' | 'minimal' | 'sharp'
   itemShape?: 'full' | 'minimal' | 'sharp'
-  /** Initially reveals the containing week. Later changes scroll to the date; scroll callbacks report the leading date. */
+  /** Number of visible days (1–7). Navigation advances by this count. Defaults to 7. */
+  daysToShow?: number
+  /** Seven-day views initially reveal the containing week; shorter views start at this date. Later changes scroll to the date; scroll callbacks report the leading date. */
   visibleDate?: Date
   defaultVisibleDate?: Date
-  onVisibleDateChange?: (weekStart: Date) => void
+  onVisibleDateChange?: (firstDate: Date) => void
   /** date-fns locale; its week start is used unless weekStartsOn is supplied. */
   locale?: Locale
   weekStartsOn?: Day
@@ -65,10 +77,10 @@ interface WeekCalendarBaseProps
   showHeader?: boolean
   /** Mouse, touch, and pen dragging can be disabled independently of the arrow buttons. */
   swipeable?: boolean
-  /** Settle direct scrolling on individual days or complete calendar weeks. */
+  /** Settle direct scrolling on individual days or pages (calendar weeks when daysToShow is 7). */
   swipeMode?: 'day' | 'week'
   disableAnimation?: boolean
-  /** Carry the selected weekday into the interval reached by the previous/next buttons. */
+  /** Carry the selected day position into the interval reached by the previous/next buttons. */
   selectionFollowsNavigation?: boolean
   classNames?: Partial<Record<WeekCalendarSlot, string>>
   /** Local dates that display a dot to indicate one or more events. Times of day are ignored. */
@@ -119,7 +131,6 @@ const DayButton = React.forwardRef<
   const [, ripple] = useRipple({
     ref: ref as React.RefObject<HTMLElement>,
     color: selected ? 'var(--color-ripple-light)' : 'var(--color-ripple-dark)',
-    duration: 400,
     disabled: !animate || !!props.disabled || !!props['aria-disabled'],
   })
   return (
@@ -140,6 +151,7 @@ DayButton.displayName = 'WeekCalendarDayButton'
 export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>((props, forwardedRef) => {
   const {
     mode = 'single',
+    daysToShow: requestedDaysToShow = 7,
     value,
     defaultValue,
     onSelect,
@@ -179,13 +191,21 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
     onClickCapture,
     ...rootProps
   } = props
+  const daysToShow = Number.isFinite(requestedDaysToShow)
+    ? Math.max(1, Math.min(7, Math.floor(requestedDaysToShow)))
+    : 7
   const rootRef = useRef<HTMLDivElement>(null)
   React.useImperativeHandle(forwardedRef, () => rootRef.current as HTMLDivElement)
   const direction = useDirection(rootRef, dir)
   const reducedMotion = useReducedMotion()
   const animate = !disableAnimation && !reducedMotion
   const id = useId()
-  const text = { calendar: 'Choose a date', previousWeek: 'Previous week', nextWeek: 'Next week', ...labels }
+  const text = {
+    calendar: 'Choose a date',
+    previousWeek: daysToShow === 7 ? 'Previous week' : `Previous ${daysToShow} days`,
+    nextWeek: daysToShow === 7 ? 'Next week' : `Next ${daysToShow} days`,
+    ...labels,
+  }
   const [internalValue, setInternalValue] = useState<Date | DateRange | null>(defaultValue ?? null)
   const selection = mode === 'none' ? null : value !== undefined ? value : internalValue
   const selectedDate = selectionStart(selection)
@@ -209,6 +229,7 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
     }
   }, [selectedKey, selectedDate, visibleDate])
   const strip = useDateStrip({
+    daysToShow,
     reducedMotion: !animate,
     swipeMode,
     date: visibleDate ?? internalVisibleDate,
@@ -220,7 +241,7 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
     onVisibleDateChange,
   })
   const days = strip.items.filter(item => item.visible).map(item => item.date)
-  const weekEnd = days[days.length - 1] ?? addDays(strip.firstDate, 6)
+  const weekEnd = days[days.length - 1] ?? addDays(strip.firstDate, daysToShow - 1)
   const range = mode === 'range' && !(selection instanceof Date) ? selection : null
   const unavailable = (day: Date) =>
     disabled ||
@@ -261,8 +282,14 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
     }
   })
 
+  const pageStart = (date: Date) => {
+    if (daysToShow === 7) return startOfWeek(clamp(date), { weekStartsOn })
+    const lastStart = maxDate ? addDays(startOfDay(maxDate), 1 - daysToShow) : null
+    const next = lastStart && date > lastStart ? lastStart : date
+    return clamp(next)
+  }
   const changeWeek = (date: Date) => {
-    const next = startOfWeek(clamp(date), { weekStartsOn })
+    const next = pageStart(date)
     if (isSameDay(next, strip.navigationDate())) return
     strip.prepareNavigation(next)
     if (visibleDate === undefined) setInternalVisibleDate(next)
@@ -272,11 +299,17 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
   const nextDisabled = disabled || !!(maxDate && weekEnd >= startOfDay(maxDate))
   const navigate = (offset: number) => {
     if (offset < 0 ? previousDisabled : nextDisabled) return
-    const currentWeek = startOfWeek(strip.navigationDate(), { weekStartsOn })
-    const next = startOfWeek(clamp(addDays(currentWeek, offset * 7)), { weekStartsOn })
+    const current = strip.navigationDate()
+    const currentWeek = daysToShow === 7 ? startOfWeek(current, { weekStartsOn }) : current
+    const requested = clamp(addDays(currentWeek, offset * daysToShow))
+    const next = pageStart(requested)
     changeWeek(next)
     if (mode === 'single' && selection instanceof Date && selectionFollowsNavigation && !readOnly) {
-      const target = addDays(next, (selection.getDay() - next.getDay() + 7) % 7)
+      const position =
+        daysToShow === 7
+          ? (selection.getDay() - next.getDay() + 7) % 7
+          : Math.max(0, Math.min(daysToShow - 1, differenceInCalendarDays(selection, current)))
+      const target = addDays(next, position)
       if (!unavailable(target)) {
         lastSelectedKey.current = dayKey(target)
         if (value === undefined) setInternalValue(target)
@@ -324,17 +357,18 @@ export const WeekCalendar = React.forwardRef<HTMLDivElement, WeekCalendarProps>(
         break
       case 'ArrowDown':
       case 'PageDown':
-        target = addDays(day, 7)
+        target = addDays(day, daysToShow)
         break
       case 'ArrowUp':
       case 'PageUp':
-        target = addDays(day, -7)
+        target = addDays(day, -daysToShow)
         break
       case 'Home':
-        target = startOfWeek(day, { weekStartsOn })
+        target = daysToShow === 7 ? startOfWeek(day, { weekStartsOn }) : strip.firstDate
         break
       case 'End':
-        target = addDays(startOfWeek(day, { weekStartsOn }), 6)
+        target =
+          daysToShow === 7 ? addDays(startOfWeek(day, { weekStartsOn }), 6) : addDays(strip.firstDate, daysToShow - 1)
         break
       default:
         return

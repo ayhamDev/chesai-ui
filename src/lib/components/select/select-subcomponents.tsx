@@ -5,7 +5,7 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { Check } from "lucide-react";
 import React, { useRef } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 
 // --- Re-define Context/Logic just for subcomponents if needed, or import if exported ---
 // Since we split the file, we can't easily share the Context without circular deps or a separate context file.
@@ -51,7 +51,6 @@ export const SelectItem = React.forwardRef<
     // @ts-ignore
     ref: localRef,
     color: "var(--color-ripple-dark)",
-    duration: 400,
   });
   // @ts-ignore
   React.useImperativeHandle(ref, () => localRef.current!);

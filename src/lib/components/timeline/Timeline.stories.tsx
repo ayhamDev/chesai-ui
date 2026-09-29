@@ -5,6 +5,11 @@ import {
   GitCommitVertical,
   Save,
   TerminalSquare,
+  Check,
+  Package,
+  Truck,
+  MapPin,
+  CircleAlert,
 } from "lucide-react";
 import { Avatar } from "../avatar";
 import { Badge } from "../badge";
@@ -32,6 +37,55 @@ const meta: Meta<typeof Timeline> = {
 
 export default meta;
 type Story = StoryObj<typeof Timeline>;
+
+export const DeliveryTracking: Story = {
+  name: "3. Delivery Tracking",
+  render: () => (
+    <section className="w-full max-w-lg p-6 text-on-surface" aria-label="Order delivery status">
+      <Typography variant="label-medium" muted>ORDER #CH-2048</Typography>
+      <Typography as="h2" variant="headline-medium" className="mt-2">Your order is on its way</Typography>
+      <Typography variant="body-medium" muted className="mt-2 mb-8">Expected today, 2–5 PM · Cairo</Typography>
+      <Timeline aria-label="Delivery milestones">
+        <Timeline.Item status="completed">
+          <Timeline.Separator><Timeline.Dot size="lg"><Check aria-hidden="true" /></Timeline.Dot><Timeline.Connector /></Timeline.Separator>
+          <Timeline.Content><Typography as="h3" variant="title-medium">Order confirmed</Typography><Typography variant="body-small" muted>Completed · Yesterday, 4:12 PM</Typography></Timeline.Content>
+        </Timeline.Item>
+        <Timeline.Item status="completed">
+          <Timeline.Separator><Timeline.Dot size="lg"><Package aria-hidden="true" /></Timeline.Dot><Timeline.Connector variant="dashed" /></Timeline.Separator>
+          <Timeline.Content><Typography as="h3" variant="title-medium">Dispatched from warehouse</Typography><Typography variant="body-small" muted>Completed · Today, 8:30 AM</Typography><Typography variant="body-medium" className="mt-2">Package scanned at the Cairo distribution center.</Typography></Timeline.Content>
+        </Timeline.Item>
+        <Timeline.Item status="current">
+          <Timeline.Separator><Timeline.Dot size="lg"><Truck aria-hidden="true" /></Timeline.Dot><Timeline.Connector shape="wavy" animated /></Timeline.Separator>
+          <Timeline.Content className="pb-12"><Typography as="h3" variant="title-medium">Out for delivery</Typography><Typography variant="body-small" className="text-primary">Current stage · Today, 11:05 AM</Typography><Typography variant="body-medium" className="mt-2">The courier has your package. Keep your phone available for delivery.</Typography></Timeline.Content>
+        </Timeline.Item>
+        <Timeline.Item status="pending">
+          <Timeline.Separator><Timeline.Dot size="lg"><MapPin aria-hidden="true" /></Timeline.Dot></Timeline.Separator>
+          <Timeline.Content className="pb-0"><Typography as="h3" variant="title-medium">Delivered to your address</Typography><Typography variant="body-small" muted>Pending · Signature required</Typography></Timeline.Content>
+        </Timeline.Item>
+      </Timeline>
+    </section>
+  ),
+};
+
+export const DeliveryException: Story = {
+  name: "4. Delivery Exception",
+  render: () => (
+    <Timeline aria-label="Shipment exception" className="w-full max-w-md p-6">
+      <Timeline.Item status="completed">
+        <Timeline.Separator><Timeline.Dot><Check aria-hidden="true" /></Timeline.Dot><Timeline.Connector /></Timeline.Separator>
+        <Timeline.Content><Typography as="h3" variant="title-medium">Arrived at local hub</Typography><Typography variant="body-small" muted>Completed · 9:10 AM</Typography></Timeline.Content>
+      </Timeline.Item>
+      <Timeline.Item status="error">
+        <Timeline.Separator><Timeline.Dot><CircleAlert aria-hidden="true" /></Timeline.Dot><Timeline.Connector variant="dotted" /></Timeline.Separator>
+        <Timeline.Content><Typography as="h3" variant="title-medium">Delivery attempt unsuccessful</Typography><Typography variant="body-small" className="text-error">Action required · 12:40 PM</Typography><Typography variant="body-medium" className="mt-2">The address could not be located. Contact the carrier to confirm delivery instructions.</Typography></Timeline.Content>
+      </Timeline.Item>
+      <Timeline.Item status="pending">
+        <Timeline.Separator><Timeline.Dot variant="outline" /></Timeline.Separator>
+        <Timeline.Content><Typography as="h3" variant="title-medium">Delivery rescheduled</Typography><Typography variant="body-small" muted>Pending address confirmation</Typography></Timeline.Content>
+      </Timeline.Item>
+    </Timeline>
+  ),
+};
 
 export const VersionControlHistory: Story = {
   name: "1. Version Control (With Custom Icons)",

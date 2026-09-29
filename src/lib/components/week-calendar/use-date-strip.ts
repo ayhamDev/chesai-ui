@@ -8,6 +8,7 @@ const OVERSCAN = 7
 /** Native touch/trackpad scrolling, with mouse/pen dragging layered on the same scroll offset. */
 export function useDateStrip({
   date,
+  daysToShow = 7,
   weekStartsOn,
   minDate,
   maxDate,
@@ -17,6 +18,7 @@ export function useDateStrip({
   swipeMode = 'day',
   onVisibleDateChange,
 }: {
+  daysToShow?: number
   date: Date
   weekStartsOn: Day
   minDate?: Date
@@ -28,14 +30,24 @@ export function useDateStrip({
   onVisibleDateChange?: (date: Date) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const initialDate = startOfWeek(date, { weekStartsOn })
+  const initialDate = daysToShow === 7 ? startOfWeek(date, { weekStartsOn }) : startOfDay(date)
+  const pageAnchor = useRef(initialDate.getTime())
+  const lastDaysToShow = useRef(daysToShow)
   const [origin, setOrigin] = useState(() => addDays(initialDate, -BUFFER_DAYS).getTime())
-  const start = minDate ? startOfWeek(minDate, { weekStartsOn }) : new Date(origin)
+  const start = minDate
+    ? daysToShow === 7
+      ? startOfWeek(minDate, { weekStartsOn })
+      : startOfDay(minDate)
+    : new Date(origin)
   const startTime = start.getTime()
   const hasMin = !!minDate
   const hasMax = !!maxDate
-  const end = maxDate ? endOfWeek(maxDate, { weekStartsOn }) : addDays(new Date(origin), BUFFER_DAYS * 2 + 6)
-  const count = Math.max(7, differenceInCalendarDays(end, start) + 1)
+  const end = maxDate
+    ? daysToShow === 7
+      ? endOfWeek(maxDate, { weekStartsOn })
+      : startOfDay(maxDate)
+    : addDays(new Date(origin), BUFFER_DAYS * 2 + daysToShow - 1)
+  const count = Math.max(daysToShow, differenceInCalendarDays(end, start) + 1)
   const [position, setPosition] = useState(() => ({ day: initialDate.getTime(), fraction: 0, width: 700 }))
   const positionRef = useRef(position)
   const [scrolling, setScrolling] = useState(false)
@@ -58,7 +70,7 @@ export function useDateStrip({
   const lastWeekStart = useRef(weekStartsOn)
   const requested = date.getTime()
   const lastRequested = useRef(requested)
-  const dayWidth = position.width / 7
+  const dayWidth = position.width / daysToShow
   const firstIndex = Math.max(0, differenceInCalendarDays(new Date(position.day), start))
   const readOffset = useCallback(() => (rtl ? -1 : 1) * (ref.current?.scrollLeft ?? 0), [rtl])
   const writeOffset = useCallback(
@@ -70,11 +82,11 @@ export function useDateStrip({
   const updatePosition = useCallback(
     (notify = true) => {
       const width = positionRef.current.width
-      const cellWidth = width / 7
-      const offset = Math.max(0, Math.min(readOffset(), (count - 7) * cellWidth))
+      const cellWidth = width / daysToShow
+      const offset = Math.max(0, Math.min(readOffset(), (count - daysToShow) * cellWidth))
       const rawIndex = offset / cellWidth
       const nearest = Math.round(rawIndex)
-      // Browsers round large scroll offsets to subpixels; don't expose a phantom eighth day at rest.
+      // Browsers round large scroll offsets to subpixels; don't expose a phantom extra day at rest.
       const logicalIndex = Math.abs(rawIndex - nearest) * cellWidth < 0.5 ? nearest : rawIndex
       const index = Math.floor(logicalIndex)
       const day = addDays(new Date(startTime), index).getTime()
@@ -95,7 +107,7 @@ export function useDateStrip({
         setOrigin(addDays(new Date(day), -BUFFER_DAYS).getTime())
       }
     },
-    [count, readOffset, startTime, hasMin, hasMax],
+    [count, daysToShow, readOffset, startTime, hasMin, hasMax],
   )
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Explicit navigation must run even when returning to the unchanged date prop after a swipe.
@@ -112,7 +124,7 @@ export function useDateStrip({
         setPosition(resized)
         return
       }
-      const cellWidth = width / 7
+      const cellWidth = width / daysToShow
       let current = positionRef.current
       const animateNavigation = navigationTarget.current === requested
       if (requested !== lastRequested.current || animateNavigation) {
@@ -124,20 +136,40 @@ export function useDateStrip({
           lastReported.current = current.day
         }
       }
+      if (lastDaysToShow.current !== daysToShow) {
+        lastDaysToShow.current = daysToShow
+        stopAlignment()
+        gesture.current = null
+        touchDown.current = false
+        setScrolling(false)
+        const requestedDay = startOfDay(new Date(requested))
+        const offset = differenceInCalendarDays(requestedDay, new Date(current.day))
+        current = { ...current, fraction: 0 }
+        if (daysToShow === 7) current.day = startOfWeek(requestedDay, { weekStartsOn }).getTime()
+        else if (offset < 0 || offset >= daysToShow) current.day = requestedDay.getTime()
+        pageAnchor.current = current.day
+      }
       if (lastWeekStart.current !== weekStartsOn) {
         lastWeekStart.current = weekStartsOn
-        current = { ...current, day: startOfWeek(new Date(requested), { weekStartsOn }).getTime(), fraction: 0 }
+        current = {
+          ...current,
+          day: (daysToShow === 7
+            ? startOfWeek(new Date(requested), { weekStartsOn })
+            : startOfDay(new Date(requested))
+          ).getTime(),
+          fraction: 0,
+        }
       }
       if (
         (!hasMin && current.day < startTime) ||
-        (!hasMax && differenceInCalendarDays(new Date(current.day), new Date(startTime)) > count - 7)
+        (!hasMax && differenceInCalendarDays(new Date(current.day), new Date(startTime)) > count - daysToShow)
       ) {
         positionRef.current = current
         setOrigin(addDays(new Date(current.day), -BUFFER_DAYS).getTime())
         return
       }
       const index = differenceInCalendarDays(new Date(current.day), new Date(startTime)) + current.fraction
-      const target = Math.max(0, Math.min(index, count - 7)) * cellWidth
+      const target = Math.max(0, Math.min(index, count - daysToShow)) * cellWidth
       if (animateNavigation && !reducedMotion) {
         navigationTarget.current = requested
         setScrolling(true)
@@ -167,6 +199,7 @@ export function useDateStrip({
     // Preserve sub-day offsets on resizing, RTL changes, or buffer expansion; never reset during a gesture.
   }, [
     requested,
+    daysToShow,
     startTime,
     count,
     weekStartsOn,
@@ -185,13 +218,16 @@ export function useDateStrip({
 
   const settle = () => {
     if (gesture.current || touchDown.current || alignment.current) return
-    const cellWidth = positionRef.current.width / 7
+    const cellWidth = positionRef.current.width / daysToShow
     const from = readOffset()
     const index = from / cellWidth
-    const weekAnchor = differenceInCalendarDays(startOfWeek(new Date(startTime), { weekStartsOn }), new Date(startTime))
+    const weekAnchor = differenceInCalendarDays(
+      daysToShow === 7 ? startOfWeek(new Date(startTime), { weekStartsOn }) : new Date(pageAnchor.current),
+      new Date(startTime),
+    )
     const snappedIndex =
-      swipeMode === 'week' ? weekAnchor + Math.round((index - weekAnchor) / 7) * 7 : Math.round(index)
-    const target = Math.max(0, Math.min(snappedIndex, count - 7)) * cellWidth
+      swipeMode === 'week' ? weekAnchor + Math.round((index - weekAnchor) / daysToShow) * daysToShow : Math.round(index)
+    const target = Math.max(0, Math.min(snappedIndex, count - daysToShow)) * cellWidth
     const complete = () => {
       alignment.current = null
       updatePosition()
@@ -228,7 +264,7 @@ export function useDateStrip({
     const index = differenceInCalendarDays(day, start)
     const current = readOffset() / dayWidth
     if (index < current) writeOffset(index * dayWidth)
-    else if (index + 1 > current + 7) writeOffset((index - 6) * dayWidth)
+    else if (index + 1 > current + daysToShow) writeOffset((index - daysToShow + 1) * dayWidth)
     updatePosition(false)
   }
   const finish = (event: PointerEvent<HTMLDivElement>) => {
@@ -256,15 +292,15 @@ export function useDateStrip({
       setNavigationRequest(previous => previous + 1)
     },
     firstDate: new Date(position.day),
-    // A partially visible eighth day stays accessible, while overscan cells stay out of the accessibility tree.
+    // A partially visible trailing day stays accessible, while overscan cells stay out of the accessibility tree.
     items: Array.from(
-      { length: Math.min(count, firstIndex + 8 + OVERSCAN) - Math.max(0, firstIndex - OVERSCAN) },
+      { length: Math.min(count, firstIndex + daysToShow + 1 + OVERSCAN) - Math.max(0, firstIndex - OVERSCAN) },
       (_, i) => {
         const index = Math.max(0, firstIndex - OVERSCAN) + i
         return {
           date: addDays(start, index),
           index,
-          visible: index >= firstIndex && index < firstIndex + (position.fraction > 0.001 ? 8 : 7),
+          visible: index >= firstIndex && index < firstIndex + (daysToShow + (position.fraction > 0.001 ? 1 : 0)),
         }
       },
     ),
@@ -308,7 +344,7 @@ export function useDateStrip({
           event.currentTarget.setPointerCapture(event.pointerId)
         }
         event.preventDefault()
-        writeOffset(Math.max(0, Math.min(startGesture.offset + dx * (rtl ? 1 : -1), (count - 7) * dayWidth)))
+        writeOffset(Math.max(0, Math.min(startGesture.offset + dx * (rtl ? 1 : -1), (count - daysToShow) * dayWidth)))
         scroll()
       },
       onPointerUp: finish,

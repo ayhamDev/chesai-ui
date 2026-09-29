@@ -292,3 +292,115 @@ downloadDataTableExport(result);
 Set `visibility={{ export: false }}` to remove the built-in menu. The exported
 `DataTableExportButton` can be rendered in a custom toolbar inside the
 `DataTable` provider.
+## Pagination and virtualized infinite scrolling
+
+Pagination remains the default. Set `mode="infinite"`, or use `defaultMode` and
+`showModeSwitch` for a built-in selector. Use `mode` / `onModeChange` to control
+the mode from your application. The selector resets `pagination.pageIndex` to 0;
+when changing `mode` externally, reset your controlled pagination and data source
+in the same update.
+
+```tsx
+<DataTable
+  data={allRows}
+  columns={columns}
+  getRowId={row => row.id}
+  defaultMode="infinite"
+  showModeSwitch
+  stickyHeader
+  virtualization={{ estimateRowHeight: 56, overscan: 8 }}
+/>
+```
+
+Client mode sorts and filters the full `data` array before virtualizing it; page
+size does not truncate infinite mode. Only visible rows plus overscan are mounted.
+Row heights, including expanded content, are measured with ResizeObserver. Column
+widths follow TanStack column sizes to avoid shifting as rows enter the viewport.
+All visible columns render for each mounted row (horizontal column virtualization
+is not enabled). `virtualization` can also be supplied in pagination mode for large
+pages. `estimateRowHeight` defaults to 56px, `overscan` to 8, and
+`loadMoreThreshold` to 5 rows. Scrolling belongs to the main page: virtualization
+automatically follows the nearest vertically scrollable ancestor, or the browser
+window. It never creates a fixed-height vertical viewport inside the table.
+For an explicit external page scroller, set
+`virtualization={{ getScrollElement: () => pageScrollRef.current }}`.
+The existing outer-scroller sticky header and footer behavior is preserved.
+Sorting, filters, page-size changes and `infiniteScroll.resetKey` return the page
+to the table's start if it was scrolled past it; appending rows preserves position.
+
+## Server infinite loading (offsets or cursors)
+
+Pass accumulated pages in `data`. The component calls `onLoadMore` near the end,
+including when the initial page does not fill the viewport. It does not increment
+`state.pagination.pageIndex` in infinite mode: your data source owns offsets,
+cursor tokens, fetching, caching and cancellation. `rowCount` is optional.
+
+```tsx
+<DataTable
+  serverSide
+  mode="infinite"
+  data={query.data?.pages.flatMap(page => page.rows) ?? []}
+  columns={columns}
+  getRowId={row => row.id}
+  state={state}
+  onStateChange={setState}
+  isLoading={query.isPending}
+  infiniteScroll={{
+    hasNextPage: query.hasNextPage,
+    isFetching: query.isFetching,
+    onLoadMore: () => query.fetchNextPage(),
+    error: query.error,
+    resetKey: accountId,
+  }}
+/>
+```
+
+For a cursor endpoint, configure your query's next page parameter from the
+response's `nextCursor`, and send that opaque token unchanged on the next request.
+For offsets, `onLoadMore` can request `offset: data.length` instead. Return the
+request promise so the component can show loading and catch failures, or supply
+`isFetching` and `error` when an external query library owns the request.
+
+Automatic requests are deduplicated per query and loaded row count. Failures stop
+automatic fetching and show Retry. A response that appends no rows will not cause
+a request loop; use Load more or change `resetKey` to re-arm an unchanged range. Set
+`hasNextPage=false` at the end. Existing rows remain visible during fetching.
+
+Include sorting, column filters, global search, page size and mode in the server
+query key. On changes, replace accumulated rows and reset the cursor/offset;
+cancel or ignore responses from the previous query. Pass `isLoading` or
+`infiniteScroll.isFetching` while replacing the first page so stale rows cannot
+trigger another request. Use stable `getRowId` values for selection and expansion.
+Virtualization bounds DOM size; the caller still owns accumulated data in memory.
+When switching to pagination, supply only the requested server page; when switching
+back to infinite mode, start a new accumulated result set.
+
+## Cursor-based paginated navigation
+
+Use `cursorPagination` for a sequential API, with or without a known total:
+
+```tsx
+<DataTable
+  serverSide
+  data={page.rows}
+  columns={columns}
+  state={state}
+  onStateChange={setState}
+  cursorPagination={{
+    hasNextPage: page.nextCursor != null,
+    hasPreviousPage: cursorHistory.length > 0,
+    isFetching,
+    onNextPage: () => navigate(page.nextCursor, "next"),
+    onPreviousPage: () => navigate(cursorHistory.at(-1), "previous"),
+  }}
+/>
+```
+
+These callbacks replace TanStack's next/previous actions. Your `navigate` handler
+owns the cursor history, fetching and `state.pagination.pageIndex` used for the
+page label. Reset the history on filter/sort/page-size changes. First/last-page
+buttons are hidden and the styled page-number input is read-only because opaque
+cursors cannot support random access. Availability flags and `isFetching` determine button availability.
+Without a total or `cursorPagination`, offset pagination displays an unknown total
+and allows Next; supply availability flags or a known `rowCount`/`pageCount` to
+identify the end. Unknown totals are never represented as the loaded page length.

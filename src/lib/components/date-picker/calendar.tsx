@@ -15,7 +15,7 @@ import {
 } from "framer-motion";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useEffect, useRef, useState, memo } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { ElasticScrollArea } from "../elastic-scroll-area";
 import { IconButton } from "../icon-button";
 import { type DateRange, useCalendar } from "../../hooks/use-calender";
@@ -125,7 +125,6 @@ const DayButton = memo(
     const [, event] = useRipple({
       ref: buttonRef as React.RefObject<HTMLElement>,
       color: "var(--color-ripple-dark)",
-      duration: 400,
     });
 
     if (!isCurrentMonth) {

@@ -23,7 +23,7 @@ import React, {
   useState,
   forwardRef,
 } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { useDirection } from "../../context/direction";
 
 import { ElasticScrollArea } from "../elastic-scroll-area";
@@ -633,7 +633,6 @@ const SidebarFAB = React.forwardRef<HTMLButtonElement, SidebarFABProps>(
         variant === "primary"
           ? "var(--color-ripple-dark)"
           : "var(--color-ripple-light)",
-      duration: 400,
     });
 
     const variantClasses = {
@@ -867,7 +866,6 @@ const SidebarItem = React.forwardRef<HTMLButtonElement, SidebarItemProps>(
       // @ts-ignore
       ref: rippleRef,
       color: rippleColor,
-      duration: 300,
     });
 
     const [isPressed, setIsPressed] = useState(false);
@@ -1084,7 +1082,6 @@ const SidebarCollapse = React.forwardRef<
     const [, event] = useRipple({
       ref: rippleRef as React.RefObject<HTMLElement>,
       color: rippleColor,
-      duration: 300,
     });
 
     const [isPressed, setIsPressed] = useState(false);

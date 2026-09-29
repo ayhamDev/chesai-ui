@@ -7,6 +7,28 @@ import type {
   VisibilityState,
 } from "@tanstack/react-table";
 
+export type DataTableMode = "pagination" | "infinite";
+
+/** Cursor tokens and request cancellation remain owned by the data source. */
+export interface DataTableInfiniteScroll {
+  hasNextPage: boolean;
+  onLoadMore: () => void | Promise<unknown>;
+  isFetching?: boolean;
+  /** Change when replacing the data source without changing table filters. */
+  resetKey?: string | number;
+  /** External query errors stop automatic loading until Retry is pressed. */
+  error?: unknown;
+}
+
+/** Sequential navigation for APIs that cannot jump to arbitrary pages. */
+export interface DataTableCursorPagination {
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  onNextPage: () => void;
+  onPreviousPage: () => void;
+  isFetching?: boolean;
+}
+
 export interface DataTableState {
   pagination: PaginationState;
   sorting: SortingState;

@@ -4,7 +4,7 @@ import type { ColumnDef, Table } from "@tanstack/react-table";
 import { createContext, useContext } from "react";
 import type { InputProps } from "../input";
 import type { DataTableExportConfig } from "./export";
-import type { DataTableVisibility } from "./types";
+import type { DataTableVisibility, DataTableCursorPagination } from "./types";
 
 export type DataTableSearchInputProps = Partial<
   Omit<
@@ -20,6 +20,7 @@ interface DataTableContextProps<TData> {
   searchDebounceMs?: number;
   rowCount?: number;
   serverSide?: boolean;
+  cursorPagination?: DataTableCursorPagination;
   resetFilters?: () => void;
   exportOptions?: DataTableExportConfig<TData>;
   exportColumns?: readonly ColumnDef<TData, unknown>[];

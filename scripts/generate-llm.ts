@@ -1,6 +1,7 @@
 // scripts/generate-llm.ts
 import fs from 'node:fs'
 import path from 'node:path'
+import { generateComponentRegistry } from './generate-component-registry.ts'
 
 // --- CONFIGURATION ---
 const SOURCE_DIR = 'src/lib'
@@ -35,7 +36,7 @@ const BASE_URL = process.env.BASE_URL || getDotEnvValue('BASE_URL') || ''
 // Exclusions
 const EXCLUDE_DIRS = ['src/examples', 'node_modules', '.git', 'dist']
 const IGNORE_FILES = ['.test.ts', '.spec.ts', '.test.tsx', '.spec.tsx', '.d.ts']
-const INCLUDE_EXTENSIONS = ['.ts', '.tsx', '.css', '.mdx']
+const INCLUDE_EXTENSIONS = ['.ts', '.tsx', '.css', '.mdx', '.md']
 
 // Robots.txt Content (AI Permissive)
 const ROBOTS_CONTENT = `User-agent: *
@@ -559,6 +560,7 @@ function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
 
 function generate() {
   console.log(`🚀 Starting Generation...`)
+  generateComponentRegistry()
 
   // 1. Setup Directories
   if (!fs.existsSync(FULL_OUTPUT_DIR)) fs.mkdirSync(FULL_OUTPUT_DIR, { recursive: true })
@@ -608,9 +610,25 @@ function generate() {
     fs.writeFileSync(path.join(FULL_OUTPUT_DIR, file.assetFileName), mdContent)
   })
 
+  // Local skill links target repository files; deployed references target source assets.
+  const assetBySource = new Map(validFiles.map(file => [file.originalPath, file.assetFileName]))
+  for (const reference of getAllFiles(SKILL_REFERENCES_DIR).filter(file => file.endsWith('.md'))) {
+    const outputFile = path.join(OUTPUT_SKILL_REFERENCES_DIR, path.relative(SKILL_REFERENCES_DIR, reference))
+    const content = fs.readFileSync(reference, 'utf8').replace(/\]\(([^)]+)\)/g, (match, href: string) => {
+      if (/^(https?:|#)/.test(href)) return match
+      const resolved = path.relative(process.cwd(), path.resolve(path.dirname(reference), href)).split(path.sep).join('/')
+      const filename = assetBySource.get(resolved)
+      if (!filename) return match
+      return `](${path.relative(path.dirname(outputFile), path.join(FULL_OUTPUT_DIR, filename)).split(path.sep).join('/')})`
+    })
+    fs.writeFileSync(outputFile, content)
+  }
+  const registryLinks = '[Design skill](skill.md) · [Component selection guide](references/component-registry.md) · [Machine-readable registry](references/components/registry.json)'
+
   // Write llm-full.txt
   const fullContent = [
     `# Full Source Code`,
+    registryLinks,
     `\n---\n`,
     SHARED_OVERVIEW,
     `\n\n`,
@@ -622,6 +640,7 @@ function generate() {
   console.log(`📝 Generating component index...`)
 
   let indexContent = `# chesai-ui Component Registry\n\n`
+  indexContent += `${registryLinks}\n\nStart with the selection guide for uses, public imports and API pitfalls; the file index below includes internal implementations.\n\n`
   indexContent += `> Legend: **[Source]** = Implementation file, **[Stories]** = Storybook file.\n\n`
   indexContent += `\n${SHARED_OVERVIEW}\n\n`
 
@@ -670,6 +689,7 @@ function generate() {
       filesInFolder.forEach(filename => {
         // Skip ignored files (tests, d.ts)
         if (IGNORE_FILES.some(ignore => filename.endsWith(ignore))) return
+        if (!INCLUDE_EXTENSIONS.includes(path.extname(filename))) return
 
         // Reconstruct the flat asset name
         // Path: src/lib/components/{folder}/{filename}

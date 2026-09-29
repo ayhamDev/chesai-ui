@@ -143,6 +143,7 @@ export const FullCalendarProvider = ({
 
   // Customization Props Extracted
   hidePopoverTitle = false,
+  bordered = false,
   hidePopoverTime = false,
   hidePopoverRecurrence = false,
   renderPopoverHeader,
@@ -339,6 +340,7 @@ export const FullCalendarProvider = ({
 
       // Included new customization props
       hidePopoverTitle,
+      bordered,
       hidePopoverTime,
       hidePopoverRecurrence,
       renderPopoverHeader,
@@ -383,6 +385,7 @@ export const FullCalendarProvider = ({
       onViewChange,
       onDateRangeChange,
       hidePopoverTitle,
+      bordered,
       hidePopoverTime,
       hidePopoverRecurrence,
       renderPopoverHeader,

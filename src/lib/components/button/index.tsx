@@ -3,7 +3,7 @@ import { cva } from "class-variance-authority";
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import React from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { LoadingIndicator } from "../loadingIndicator";
 
 export const buttonVariants = cva(
@@ -118,7 +118,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const [, event] = useRipple({
       ref: rippleRef,
       color: rippleColor,
-      duration: 400,
       disabled: disabled || isLoading,
     });
 

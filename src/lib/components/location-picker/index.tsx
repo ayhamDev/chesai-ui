@@ -43,6 +43,9 @@ export interface LocationPickerProps extends React.HTMLAttributes<HTMLDivElement
   /** Optional: Callback when map stops moving */
   onMapIdle?: (coordinates: { latitude: number; longitude: number }) => void;
 
+  /** Show the docked search outer border. Defaults to false. */
+  bordered?: boolean;
+
   // UI Configuration
   title?: string;
   placeholder?: string;
@@ -63,6 +66,7 @@ export interface LocationPickerProps extends React.HTMLAttributes<HTMLDivElement
 }
 
 export const LocationPicker = ({
+  bordered = false,
   className,
   defaultCoordinates = [-0.1276, 51.5072],
   onSelect,
@@ -186,7 +190,7 @@ export const LocationPicker = ({
           open={isSearchOpen}
           onOpenChange={setIsSearchOpen}
           placeholder={placeholder}
-          className="shadow-xl border border-outline-variant/40"
+          className={clsx("shadow-xl", bordered && "border border-outline-variant/40")}
           dockedLeadingIcon={<MapPin className="w-5 h-5 text-primary" />}
         >
           <div className="p-2">

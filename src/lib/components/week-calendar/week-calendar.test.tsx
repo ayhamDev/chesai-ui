@@ -85,12 +85,12 @@ describe('WeekCalendar', () => {
   it('shows an event dot for passed dates without changing day selection', () => {
     render(<WeekCalendar defaultVisibleDate={date(23)} eventDates={[date(22), date(24)]} disableAnimation />)
 
-    expect(dayButton(22)).toHaveAttribute('data-has-event')
-    expect(dayButton(24)).toHaveAttribute('data-has-event')
-    expect(dayButton(23)).not.toHaveAttribute('data-has-event')
-    expect(dayButton(24)).toHaveAccessibleName(/September 24th, 2026, has events/)
+    expect(dayButton(22).hasAttribute('data-has-event')).toBe(true)
+    expect(dayButton(24).hasAttribute('data-has-event')).toBe(true)
+    expect(dayButton(23).hasAttribute('data-has-event')).toBe(false)
+    expect(dayButton(24).getAttribute('aria-label')).toMatch(/September 24th, 2026, has events/)
     expect(dayButton(24).querySelector('[data-slot="week-calendar-event-indicator"]')).toBeTruthy()
-    expect(dayButton(24).closest('[role="gridcell"]')).toHaveAttribute('aria-selected', 'false')
+    expect(dayButton(24).closest('[role="gridcell"]')?.getAttribute('aria-selected')).toBe('false')
   })
 
   it('supports navigation only without selection or form values', async () => {
@@ -656,5 +656,81 @@ describe('WeekCalendar', () => {
     expect(screen.getByRole('grid', { name: 'Appointments' })).toBeTruthy()
     expect(ref.current?.getAttribute('data-slot')).toBe('week-calendar')
     expect(screen.getByText('3 slots')).toBeTruthy()
+  })
+})
+
+describe('configurable visible day count', () => {
+  const shown = () =>
+    screen.getAllByRole('gridcell').map(cell => cell.querySelector('button')!.getAttribute('data-date'))
+  it.each([1, 3, 5])('pages %i days without gaps and carries the selected position', count => {
+    const onSelect = vi.fn()
+    render(<WeekCalendar daysToShow={count} defaultValue={date(23)} onSelect={onSelect} disableAnimation />)
+    expect(shown()).toHaveLength(count)
+    expect(shown()[0]).toBe('2026-09-23')
+    fireEvent.click(screen.getByRole('button', { name: `Next ${count} days` }))
+    expect(shown()[0]).toBe(`2026-09-${23 + count}`)
+    expect(onSelect).toHaveBeenLastCalledWith(date(23 + count))
+    fireEvent.click(screen.getByRole('button', { name: `Previous ${count} days` }))
+    expect(shown()[0]).toBe('2026-09-23')
+  })
+  it('keeps the final bounded page, callback and carried selection in sync', () => {
+    const onVisibleDateChange = vi.fn()
+    const onSelect = vi.fn()
+    render(
+      <WeekCalendar
+        daysToShow={3}
+        defaultValue={date(23)}
+        minDate={date(22)}
+        maxDate={date(27)}
+        onSelect={onSelect}
+        onVisibleDateChange={onVisibleDateChange}
+        disableAnimation
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Next 3 days' }))
+    expect(shown()).toEqual(['2026-09-25', '2026-09-26', '2026-09-27'])
+    expect(onVisibleDateChange).toHaveBeenLastCalledWith(date(25))
+    expect(onSelect).toHaveBeenLastCalledWith(date(25))
+    expect((screen.getByRole('button', { name: 'Next 3 days' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+  it('uses page boundaries for keyboard focus and reveals the next date', () => {
+    render(<WeekCalendar daysToShow={3} defaultValue={date(23)} disableAnimation />)
+    fireEvent.keyDown(dayButton(23), { key: 'End' })
+    expect(document.activeElement).toBe(dayButton(25))
+    fireEvent.keyDown(dayButton(25), { key: 'ArrowRight' })
+    expect(shown()).toEqual(['2026-09-24', '2026-09-25', '2026-09-26'])
+    expect(document.activeElement).toBe(dayButton(26))
+    fireEvent.keyDown(dayButton(26), { key: 'PageDown' })
+    expect(document.activeElement).toBe(dayButton(29))
+  })
+  it.each(['ltr', 'rtl'] as const)('snaps short pages in %s without skipping days', dir => {
+    vi.useFakeTimers()
+    render(<WeekCalendar daysToShow={3} defaultValue={date(23)} dir={dir} swipeMode="week" disableAnimation />)
+    drag(dir === 'rtl' ? 500 : -500)
+    act(() => vi.advanceTimersByTime(200))
+    expect(shown()).toEqual(['2026-09-26', '2026-09-27', '2026-09-28'])
+  })
+  it('updates the count at runtime and preserves access to the requested date', () => {
+    const { rerender } = render(<WeekCalendar daysToShow={7} defaultValue={date(23)} disableAnimation />)
+    rerender(<WeekCalendar daysToShow={3} defaultValue={date(23)} disableAnimation />)
+    expect(shown()).toHaveLength(3)
+    expect(shown()).toContain('2026-09-23')
+    fireEvent.click(screen.getByRole('button', { name: 'Next 3 days' }))
+    expect(shown()[0]).toBe('2026-09-26')
+    rerender(<WeekCalendar daysToShow={7} defaultValue={date(23)} disableAnimation />)
+    expect(shown()).toHaveLength(7)
+    expect(shown()[0]).toBe('2026-09-20')
+  })
+  it('supports controlled page navigation', () => {
+    function Controlled() {
+      const [visibleDate, setVisibleDate] = React.useState(date(23))
+      return (
+        <WeekCalendar daysToShow={3} visibleDate={visibleDate} onVisibleDateChange={setVisibleDate} disableAnimation />
+      )
+    }
+    render(<Controlled />)
+    fireEvent.click(screen.getByRole('button', { name: 'Next 3 days' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Next 3 days' }))
+    expect(shown()).toEqual(['2026-09-29', '2026-09-30', '2026-10-01'])
   })
 })

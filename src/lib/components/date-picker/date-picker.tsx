@@ -31,6 +31,8 @@ export type DatePickerInputVariant =
   | "ghost-inverted";
 
 export interface DatePickerProps {
+  /** Show an outer docked popup border. Defaults to false. */
+  bordered?: boolean;
   value?: Date;
   onChange?: (date: Date | undefined) => void;
   variant?: DatePickerVariant;
@@ -217,6 +219,7 @@ export const DatePicker = ({
   isInvalid,
   shape = "minimal",
   itemShape = "full",
+  bordered = false,
   classNames,
 }: DatePickerProps) => {
   const [open, setOpen] = useState(false);
@@ -294,6 +297,7 @@ export const DatePicker = ({
               sideOffset={4}
               className={clsx(
                 "z-[1000] w-[330px] min-w-auto bg-surface-container-high p-0 shadow-xl overflow-hidden",
+                bordered ? "border border-outline-variant" : "border-0",
                 shapeStyles[shape],
                 "data-[state=open]:animate-menu-enter",
                 "data-[state=closed]:animate-menu-exit",

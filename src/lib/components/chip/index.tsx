@@ -1,6 +1,6 @@
 import { cva } from "class-variance-authority";
 import React from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 
 const chipVariants = cva(
   "inline-flex items-center justify-center h-10 px-4 rounded-full font-semibold text-sm border transition-colors relative overflow-hidden disabled:pointer-events-none disabled:opacity-50 z-0",
@@ -42,7 +42,6 @@ export const Chip = React.forwardRef<HTMLButtonElement, ChipProps>(
     const [, event] = useRipple({
       ref: rippleRef,
       color: rippleColor,
-      duration: 400,
       // Fix: Removed invalid opacity property
       disabled: disabled,
     });

@@ -90,6 +90,8 @@ export interface FullCalendarProps<T = any> {
   initialView?: CalendarView;
   variant?: CalendarVariant;
 
+  /** Show the event popup outer border. Defaults to false. */
+  bordered?: boolean;
   hidePopoverTitle?: boolean;
   hidePopoverTime?: boolean;
   hidePopoverRecurrence?: boolean;

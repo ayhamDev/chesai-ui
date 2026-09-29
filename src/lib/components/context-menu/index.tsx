@@ -7,7 +7,7 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 import { Check, ChevronRight, Circle } from "lucide-react";
 import React, { createContext, useContext, useRef } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { useTheme } from "../../context";
 
 type ContextMenuShape = "full" | "minimal" | "sharp";
@@ -17,12 +17,14 @@ interface ContextMenuContextProps {
   shape: ContextMenuShape;
   size: ContextMenuSize;
   glass: boolean;
+  bordered: boolean;
 }
 
 const ContextMenuContext = createContext<ContextMenuContextProps>({
   shape: "minimal",
   size: "md",
   glass: false,
+  bordered: false,
 });
 
 const useContextMenuContext = () => useContext(ContextMenuContext);
@@ -30,11 +32,12 @@ const useContextMenuContext = () => useContext(ContextMenuContext);
 const contentVariants = cva(
   [
     "z-50 min-w-[12rem] max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto overflow-x-hidden",
-    "border border-outline-variant text-on-surface p-1.5",
+    "text-on-surface p-1.5",
     "shadow-md",
   ],
   {
     variants: {
+      bordered: { true: "border border-outline-variant", false: "border-0" },
       shape: {
         full: "rounded-3xl",
         minimal: "rounded-xl",
@@ -86,16 +89,19 @@ interface ContextMenuProps extends RadixContextMenu.ContextMenuProps {
   shape?: ContextMenuShape;
   size?: ContextMenuSize;
   glass?: boolean;
+  /** Show an outer popup border. Defaults to false. */
+  bordered?: boolean;
 }
 
 const ContextMenuRoot: React.FC<ContextMenuProps> = ({
   shape = "minimal",
   size = "md",
   glass = false,
+  bordered = false,
   ...props
 }) => {
   return (
-    <ContextMenuContext.Provider value={{ shape, size, glass }}>
+    <ContextMenuContext.Provider value={{ shape, size, glass, bordered }}>
       <RadixContextMenu.Root {...props} dir={useDirection(undefined, props.dir)} />
     </ContextMenuContext.Provider>
   );
@@ -110,13 +116,13 @@ const ContextMenuRadioGroup: typeof RadixContextMenu.RadioGroup = RadixContextMe
 const ContextMenuContent: React.ForwardRefExoticComponent<
   React.ComponentPropsWithoutRef<typeof RadixContextMenu.Content> & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.Content>>
 > = React.forwardRef(({ className, ...props }, ref) => {
-  const { shape, glass } = useContextMenuContext();
+  const { shape, glass, bordered } = useContextMenuContext();
   return (
     <RadixContextMenu.Portal>
       <RadixContextMenu.Content
         ref={ref}
         className={clsx(
-          contentVariants({ shape, glass }),
+          contentVariants({ shape, glass, bordered }),
           "data-[state=open]:animate-menu-enter",
           "data-[state=closed]:animate-menu-exit",
           "data-[side=top]:origin-bottom",
@@ -140,7 +146,6 @@ const ContextMenuItem: React.ForwardRefExoticComponent<
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    duration: 400,
   });
   React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
@@ -171,7 +176,6 @@ const ContextMenuCheckboxItem: React.ForwardRefExoticComponent<
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    duration: 400,
   });
   React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
@@ -201,7 +205,6 @@ const ContextMenuRadioItem: React.ForwardRefExoticComponent<
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    duration: 400,
   });
   React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
@@ -231,7 +234,6 @@ const ContextMenuSubTrigger: React.ForwardRefExoticComponent<
   const [, event] = useRipple({
     ref: localRef as React.RefObject<HTMLElement>,
     color: "var(--color-ripple-dark)",
-    duration: 400,
   });
   React.useImperativeHandle(ref as React.Ref<any>, () => localRef.current!);
 
@@ -258,12 +260,12 @@ ContextMenuSubTrigger.displayName = RadixContextMenu.SubTrigger.displayName;
 const ContextMenuSubContent: React.ForwardRefExoticComponent<
   React.ComponentPropsWithoutRef<typeof RadixContextMenu.SubContent> & React.RefAttributes<React.ElementRef<typeof RadixContextMenu.SubContent>>
 > = React.forwardRef(({ className, ...props }, ref) => {
-  const { shape, glass } = useContextMenuContext();
+  const { shape, glass, bordered } = useContextMenuContext();
   return (
     <RadixContextMenu.SubContent
       ref={ref}
       className={clsx(
-        contentVariants({ shape, glass }),
+        contentVariants({ shape, glass, bordered }),
         "data-[state=open]:data-[side=right]:animate-submenu-enter-right",
         "data-[state=closed]:data-[side=right]:animate-submenu-exit-right",
         "data-[state=open]:data-[side=left]:animate-submenu-enter-left",

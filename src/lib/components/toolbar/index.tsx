@@ -7,7 +7,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { clsx } from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import React, { createContext, useContext, useState } from "react";
-import useRipple from "use-ripple-hook";
+import useRipple from "../../hooks/useRipple";
 import { iconButtonVariants } from "../icon-button";
 import { Tooltip, TooltipProvider, TooltipTrigger } from "../tooltip";
 import { Typography } from "../typography";
@@ -299,7 +299,6 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       // @ts-ignore
       ref: localRef,
       color: rippleColor,
-      duration: 400,
       // Fix: Removed opacity
     });
 
@@ -406,7 +405,6 @@ const ToolbarToggleItem = React.forwardRef<
       // @ts-ignore
       ref: localRef,
       color: rippleColor,
-      duration: 400,
       // Fix: Removed opacity
     });
 

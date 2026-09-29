@@ -12,6 +12,8 @@ import React, { createContext, useContext, useMemo } from "react";
 import { ContextMenu } from "../context-menu";
 import { Skeleton } from "../skeleton";
 import { useStickyHeader } from "./use-sticky-header";
+import { VirtualTableBody, type TableVirtualizationOptions } from "./virtual-body";
+export type { TableVirtualizationOptions } from "./virtual-body";
 
 // --- Types & Context ---
 type TableDensity = "default" | "compact";
@@ -230,6 +232,8 @@ export interface TableRootProps<
   renderExpandedRow?: (row: Row<TData>) => React.ReactNode; // Add prop
   isLoading?: boolean;
   skeletonCount?: number;
+  virtualization?: TableVirtualizationOptions;
+  onEndReached?: () => void;
   /** Follow the outer vertical scroller while preserving horizontal scrolling. */
   stickyHeader?: boolean;
   /** Space below a sticky app bar, in pixels relative to the outer scroller. */
@@ -250,12 +254,17 @@ export const TableRoot = <TData extends {}>({
   stickyHeader = false,
   stickyHeaderOffset = 0,
   scrollContainerRef,
+  virtualization,
+  onEndReached,
   ...props
 }: TableRootProps<TData>) => {
+  const outerStickyHeader = stickyHeader;
   const { containerRef, headerRef, stickyViewportRef, stickyTableRef } =
-    useStickyHeader(stickyHeader);
+    useStickyHeader(outerStickyHeader);
+  const [scrollElement, setScrollElement] = React.useState<HTMLDivElement | null>(null);
   const setContainerRef = React.useCallback((node: HTMLDivElement | null) => {
     containerRef.current = node;
+    setScrollElement(node);
     if (scrollContainerRef) scrollContainerRef.current = node;
   }, [containerRef, scrollContainerRef]);
   const contextValue = useMemo(
@@ -286,22 +295,24 @@ export const TableRoot = <TData extends {}>({
         ref={setContainerRef}
         className={clsx(
           tableContainerVariants({ variant }),
-          stickyHeader && "col-start-1 row-start-1 min-w-0",
+          outerStickyHeader && "col-start-1 row-start-1 min-w-0",
           className,
         )}
         {...props}
       >
-        <table data-table-body="" role={stickyHeader ? "presentation" : undefined} className={tableVariants()}>
+        <table data-table-body="" role={outerStickyHeader ? "presentation" : undefined} className={tableVariants()}
+          style={virtualization ? { tableLayout: "fixed", minWidth: table.getTotalSize() } : undefined}>
+          {virtualization && <colgroup>{table.getVisibleLeafColumns().map(column => <col key={column.id} style={{ width: column.getSize() }} />)}</colgroup>}
           <thead
             ref={headerRef}
             role="rowgroup"
-            aria-hidden={stickyHeader || undefined}
-            inert={stickyHeader || undefined}
-            style={stickyHeader ? { visibility: "hidden" } : undefined}
+            aria-hidden={outerStickyHeader || undefined}
+            inert={outerStickyHeader || undefined}
+            style={outerStickyHeader ? { visibility: "hidden" } : undefined}
           >
             {renderHeaderRows()}
           </thead>
-          <tbody role="rowgroup" className={stickyHeader ? "relative z-0 isolate" : undefined}>
+          {virtualization && !isLoading ? <VirtualTableBody table={table} scrollElement={scrollElement} headerRef={headerRef} options={virtualization} onEndReached={onEndReached} /> : <tbody role="rowgroup" className={outerStickyHeader ? "relative z-0 isolate" : undefined}>
             {isLoading ? (
               Array.from({ length: skeletonCount }).map((_, rowIndex) => (
                 <tr role="row" key={rowIndex} className={trVariants({ variant })}>
@@ -327,14 +338,14 @@ export const TableRoot = <TData extends {}>({
                 </td>
               </tr>
             )}
-          </tbody>
+          </tbody>}
         </table>
       </div>
   );
 
   return (
     <TableContext.Provider value={contextValue}>
-      {stickyHeader ? (
+      {outerStickyHeader ? (
         <div role="table" className="relative grid grid-cols-1 min-w-0">
           <div
             ref={stickyViewportRef}

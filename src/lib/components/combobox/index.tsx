@@ -65,6 +65,8 @@ export interface ComboboxProps {
   disabled?: boolean;
   isInvalid?: boolean;
   isClearable?: boolean;
+  /** Show an outer popup border. Defaults to false. */
+  bordered?: boolean;
   shape?: "full" | "minimal" | "sharp";
   variant?:
     | "filled"
@@ -113,6 +115,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
       isInvalid = false,
       isClearable = false,
       shape = "minimal",
+      bordered = false,
       variant = "filled",
       size = "md",
       labelPlacement = "inside",
@@ -521,7 +524,7 @@ export const Combobox = React.forwardRef<HTMLButtonElement, ComboboxProps>(
               maxHeight: "var(--radix-popover-content-available-height)",
             }}
             className={clsx(
-              selectContentVariants({ position: "popper", shape }),
+              selectContentVariants({ position: "popper", shape, bordered }),
               "z-[1000] p-0! flex flex-col",
             )}
           >

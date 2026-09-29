@@ -1,6 +1,6 @@
 # WeekCalendar
 
-A continuous date strip showing approximately seven days, with previous/next week controls. It uses Chesai semantic color tokens, typography, shapes, ripple feedback, and `IconButton`. It inherits light/dark themes and direction from the application. No additional dependencies are required.
+A continuous date strip with a configurable visible day count and previous/next page controls. Seven days are shown by default. It uses Chesai semantic color tokens, typography, shapes, ripple feedback, and `IconButton`. It inherits light/dark themes and direction from the application. No additional dependencies are required.
 
 ```tsx
 import { WeekCalendar } from 'chesai-ui'
@@ -43,7 +43,7 @@ Omit `value` and use `defaultValue` for internal state. Use `null` to clear a co
 | `weekdayFormat` | `narrow`, `short` (default), `long` |
 | `eventDates` | `Date[]`; local dates that receive an event dot |
 
-The component fills its container. Use `size="sm"` and `weekdayFormat="narrow"` for compact mobile layouts. Pass `eventDates` to show a small dot for each date that has one or more events; it is a presentational indicator only and does not change selection or interaction. `className` styles the root; `classNames` provides `header`, `navigation`, `grid`, `day`, `weekday`, `dayNumber`, and `eventIndicator` overrides. Exported CVA functions are available for styling integrations.
+The component fills its container. Use `daysToShow={3}` or `daysToShow={5}` for compact mobile layouts without squeezing seven days into the available width. Pass `eventDates` to show a small dot for each date that has one or more events; it is a presentational indicator only and does not change selection or interaction. `className` styles the root; `classNames` provides `header`, `navigation`, `grid`, `day`, `weekday`, `dayNumber`, and `eventIndicator` overrides. Exported CVA functions are available for styling integrations.
 
 Unselected days and navigation controls use the same expanding bloom color, opacity, scale, and timing. Selected days have no hover bloom. Navigation hover areas match the day pills' size and shape. Every color comes from the existing semantic theme, including the softer container tones and neutral surface/inverse options.
 
@@ -53,7 +53,7 @@ Unselected days and navigation controls use the same expanding bloom color, opac
 
 - `locale` accepts a date-fns locale (default `enUS`). `weekStartsOn` overrides the locale's first weekday (`0` Sunday through `6` Saturday). Dates remain Gregorian; locale controls labels and week conventions.
 - Supply translated `labels={{ calendar, previousWeek, nextWeek }}`. Direction inherits `DirectionProvider` or DOM direction; `dir` overrides it.
-- One day is in the Tab sequence. Left/right move spatially, up/down and Page Up/Down move one week, Home/End move to week boundaries, and Enter/Space select. Unavailable days remain keyboard discoverable and are announced as disabled.
+- One day is in the Tab sequence. Left/right move spatially, up/down and Page Up/Down move one page, Home/End move to visible page boundaries (calendar-week boundaries for seven-day views), and Enter/Space select. Unavailable days remain keyboard discoverable and are announced as disabled.
 - With the default `swipeMode="day"`, freely scroll through consecutive dates, then gently align to the nearest **day** after scrolling and momentum stop, so both edge dates are fully visible. Day-mode alignment never jumps to a week boundary; use `swipeMode="week"` for whole-week alignment. Touch and trackpad gestures use native browser scrolling, including mobile momentum, vertical page scrolling, and pinch zoom. Mouse/pen dragging changes the same scroll offset without selecting a date or changing the cursor. Dates ahead and behind the viewport are virtualized, keeping the strip filled during long drags. Gestures respect RTL and date bounds. Set `swipeable={false}` to disable direct scrolling. Previous/next week buttons smoothly scroll to the start of the adjacent calendar week, including repeated clicks. A new gesture interrupts navigation. Reduced-motion preferences and `disableAnimation` make navigation and final alignment immediate; `disableAnimation` also removes day transitions/ripples.
 - Library tooltips label the navigation arrows and show each day's compact localized date without a weekday (for example `Sep 23, 2026`) on hover or keyboard focus.
 - `name` adds hidden form inputs with local `yyyy-MM-dd` values. Range inputs use `name.from` and `name.to`. `form` supports an external form ID. Disabled values are omitted. Calendar controls never submit the form. For controlled forms, reset the value in your form's reset handler.
@@ -61,3 +61,27 @@ Unselected days and navigation controls use the same expanding bloom color, opac
 See **Components → Forms & Inputs → WeekCalendar** in Storybook for interactive examples covering appearance, modes, restrictions, mobile layout, RTL, custom content, and form submission.
 
 **Meeting dashboard showcase** composes Chesai UI controls into a responsive meeting dashboard. Selecting a date filters the schedule; New adds a sample meeting to that date, and notes remain available during the preview session. The join flow is a local demonstration, with no calling service or device access. All colors follow the active library theme.
+
+## Visible day count
+
+`daysToShow` accepts 1–7 (default 7). Non-finite values fall back to 7; fractional
+values are rounded down and finite values are clamped to the supported range.
+Developers can update this prop from their own responsive breakpoint logic.
+
+```tsx
+<WeekCalendar daysToShow={3} size="md" swipeMode="week" showHeader />
+```
+
+For shorter views, the initial visible date is the first day instead of the start
+of its calendar week. Previous/next buttons and Page Up/Down advance by the visible
+count, so navigating a three-day view never skips the remaining weekdays.
+`swipeMode="week"` snaps to pages of that size; `swipeMode="day"` still snaps to
+individual days. Seven-day views retain their existing calendar-week alignment.
+
+Selection follows the same position in the destination page when
+`selectionFollowsNavigation` is enabled. Limits clamp the final page to keep
+`maxDate` visible, and callbacks report the actual leading date. Short bounded
+intervals can contain disabled padding dates. Changing the count recalculates cell
+widths and keeps the requested date visible. The existing `previousWeek` and
+`nextWeek` label overrides also apply to shorter pages; their default labels
+become “Previous N days” and “Next N days”.
